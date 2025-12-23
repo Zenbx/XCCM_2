@@ -12,7 +12,7 @@ type HeaderProps = {
 
 const LINKS = [
   { label: "Accueil", href: "/", icon: <FaHome /> },
-  { label: "À propos", href: "/about", icon: <FaInfoCircle /> },
+  { label: "À propos", href: "/edit-home", icon: <FaInfoCircle /> },
   { label: "Éditer", href: "/edit", authOnly: true, icon: <FaEdit /> },
   { label: "Bibliothèque", href: "/library", icon: <FaBook /> },
   { label: "Aide", href: "/help", icon: <FaQuestionCircle /> },
