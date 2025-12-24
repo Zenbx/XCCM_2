@@ -17,10 +17,13 @@ import {
   FolderOpen
 } from 'lucide-react';
 
+import { useRouter } from "next/navigation";
+
+
 const EditHomePage = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFilter, setSelectedFilter] = useState('all');
-
+  const router = useRouter();
   // Templates mockés (sera remplacé par l'API)
   const templates = [
     { id: 1, name: 'Template Vide', type: 'blank', preview: null },
@@ -52,6 +55,7 @@ const EditHomePage = () => {
 
   const handleCreateNew = () => {
     console.log('Créer nouvelle composition');
+    router.push("/edit");
     // TODO: Appel API pour créer une nouvelle composition
   };
 

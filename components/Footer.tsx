@@ -33,7 +33,7 @@ const Footer = () => {
           </div>
         </div>
 
-        {/* Liens de Navigation Style "Copilot" */}
+        {/* Liens de Navigation */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8 py-12">
           {/* Colonne 1: Plateforme */}
           <div>
@@ -57,14 +57,30 @@ const Footer = () => {
             </ul>
           </div>
 
-          {/* Colonne 3: Support */}
+          {/* Colonne 3: Support - AVEC ANCRES */}
           <div>
             <h4 className="font-bold text-lg mb-6 text-white/90">Aide & Support</h4>
             <ul className="space-y-4 text-gray-400">
-              <li><Link href="/centre-aide" className="hover:text-[#99334C] transition-colors">Centre d'aide</Link></li>
-              <li><Link href="/faq" className="hover:text-[#99334C] transition-colors">FAQ</Link></li>
-              <li><Link href="/guide" className="hover:text-[#99334C] transition-colors">Guides Auteurs</Link></li>
-              <li><Link href="/support" className="hover:text-[#99334C] transition-colors">Support Technique</Link></li>
+              <li>
+                <Link href="/centre-aide#documentation#intro" className="hover:text-[#99334C] transition-colors">
+                  Documentation
+                </Link>
+              </li>
+              <li>
+                <Link href="/centre-aide#faq#compte" className="hover:text-[#99334C] transition-colors">
+                  FAQ
+                </Link>
+              </li>
+              <li>
+                <Link href="/centre-aide#guide#premier-cours" className="hover:text-[#99334C] transition-colors">
+                  Guide Auteurs
+                </Link>
+              </li>
+              <li>
+                <Link href="/centre-aide#support#contact" className="hover:text-[#99334C] transition-colors">
+                  Support Technique
+                </Link>
+              </li>
             </ul>
           </div>
 
