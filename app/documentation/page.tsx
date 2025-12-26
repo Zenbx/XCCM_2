@@ -74,7 +74,7 @@ const DocumentationPage = () =>{
             <p className="text-gray-600 mb-4">
               Questions fréquentes, dépannage et bonnes pratiques.
             </p>
-            <Link href="#" className="text-[#99334C] font-semibold hover:underline">
+            <Link href="/faq" className="text-[#99334C] font-semibold hover:underline">
               Consulter →
             </Link>
           </div>

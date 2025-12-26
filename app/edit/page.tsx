@@ -22,8 +22,35 @@ const XCCM2Editor = () => {
     font: 'Arial',
     fontSize: '11'
   });
-  const editorRef = useRef(null);
+  
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const triggerFileSelect = () => {
+  fileInputRef.current?.click();
+};
 
+//state pour le fichier importé
+  const [importedFileContent, setImportedFileContent] = useState<string>('');
+
+const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const file = e.target.files?.[0];
+  if (file) {
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const content = event.target?.result;
+      if (typeof content === 'string') {
+        setEditorContent(content); // rempli l'éditeur
+      }
+    };
+    reader.readAsText(file);
+  }
+};
+
+// Fonction pour drag start depuis l'aperçu
+const handleDragStart = (e: React.DragEvent<HTMLDivElement>) => {
+  e.dataTransfer.setData('text/plain', importedFileContent);
+};
+
+  const editorRef = useRef(null);
   const toggleSection = (sectionId) => {
     setExpandedSections(prev => ({
       ...prev,
@@ -281,7 +308,14 @@ const XCCM2Editor = () => {
               value={editorContent}
               onChange={(e) => setEditorContent(e.target.value)}
               placeholder="Commencez à écrire votre contenu..."
+              onDragOver={(e) => e.preventDefault()} // permet le drop
+              onDrop={(e) => {
+                e.preventDefault();
+                const droppedText = e.dataTransfer.getData('text/plain');
+                setEditorContent(prev => prev + droppedText);
+              }}
             />
+            
           </div>
         </div>
       </div>
@@ -345,21 +379,44 @@ const XCCM2Editor = () => {
             <div className="p-4">
               {rightPanel === 'import' && (
                 <div>
-                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-gray-400 transition-colors">
-                    <Cloud size={48} className="mx-auto mb-4 text-gray-400" />
-                    <p className="text-sm text-black font-medium mb-2">
-                      Glissez-déposez vos documents ici
-                    </p>
-                    <p className="text-xs text-gray-600 mb-4">
-                      ou cliquez pour parcourir
-                    </p>
+                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-gray-400 transition-colors"
+                      onDrop={(e) => e.preventDefault()} // désactiver drop direct ici
+                      onDragOver={(e) => e.preventDefault()}>
+
+                  <Cloud size={48} className="mx-auto mb-4 text-gray-400" />
+                  <p className="text-sm text-black font-medium mb-2">
+                    Glissez-déposez vos documents ici
+                  </p>
+                  <p className="text-xs text-gray-600 mb-4">
+                    ou cliquez pour parcourir
+                  </p>
+
                     <button 
                       className="px-4 py-2 text-white rounded hover:opacity-90"
                       style={{ backgroundColor: '#99334C' }}
+                      onClick={triggerFileSelect} // <-- déclenche l'input
                     >
+
                       Choisir un fichier
                     </button>
+                    
+                    <input
+                      type="file"
+                      accept=".txt,.md,.csv,.json,.jpg,.pdf,.jpeg,.odt,.docx" // tu peux ajouter d'autres formats
+                      ref={fileInputRef}
+                      className="hidden"
+                      onChange={handleFileSelect}
+                    />
                   </div>
+                  {/* Aperçu du fichier importé */}
+                  {importedFileContent && (
+                    <div className="mt-4 p-3 border border-gray-300 rounded bg-gray-50 text-left text-xs text-black cursor-move"
+                          draggable
+                          onDragStart={handleDragStart}>
+                      {importedFileContent.slice(0, 200)}{/* aperçu limité à 200 caractères */}
+                      {importedFileContent.length > 200 && '...'}
+                    </div>
+                 )}
                   <div className="mt-4 p-3 bg-blue-50 rounded border border-blue-200">
                     <p className="text-xs text-black">
                       <strong>Info:</strong> Les documents importés seront automatiquement divisés en granules pédagogiques pour faciliter la structuration de votre cours.
