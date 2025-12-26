@@ -24,7 +24,8 @@ export default function Header({ isAuthenticated }: HeaderProps) {
 
   return (
     <header className="w-full bg-white shadow-sm border-b border-gray-100">
-      <nav className="mx-auto flex max-w-7xl items-center justify-center px-6 py-3 relative">
+      <nav className="mx-auto grid max-w-7xl grid-cols-3 items-center px-6 py-3">
+
         
         {/* Navigation */}
         <ul className="flex items-center gap-[40px] relative">
@@ -56,8 +57,9 @@ export default function Header({ isAuthenticated }: HeaderProps) {
                   {/* Contenu du lien (Icon + Label) */}
                   <span className="relative z-10 flex items-center gap-2 group-hover:text-[#99334C] transition-colors">
                     {link.icon}
-                    {link.label}
+                   <span className="hidden md:inline">{link.label}</span>
                   </span>
+
                 </Link>
               </li>
             );

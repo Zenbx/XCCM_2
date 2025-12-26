@@ -2,15 +2,16 @@
 import React, { useState } from 'react';
 import { ArrowLeft, Eye, EyeOff } from 'lucide-react';
 import { Facebook, Instagram, Twitter } from 'lucide-react';
-
+import { useRouter } from 'next/navigation';
 const LoginPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-
+  const router = useRouter();
   const handleSubmit = () => {
     console.log('Login:', { email, password, rememberMe });
+    router.push('/edit-home');
     // TODO: Appel API pour la connexion
   };
 

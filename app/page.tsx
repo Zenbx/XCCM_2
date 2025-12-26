@@ -1,5 +1,6 @@
 "use client";
 import React, { useState } from 'react';
+import Link from 'next/link';
 import { BookOpen, Users, GraduationCap, Sparkles, FileText, Share2, Zap, Star, ArrowRight, Check } from 'lucide-react';
 
 // Couleurs définies : 
@@ -7,6 +8,12 @@ import { BookOpen, Users, GraduationCap, Sparkles, FileText, Share2, Zap, Star, 
 
 const HomePage = () => {
   const [activeTab, setActiveTab] = useState('organizations');
+
+  const [gridContent, setGridContent] = useState([
+  "pour les organisations", // case 1
+  "pour la maison", // case 2
+  "pour l'éducation"  // case 3
+]);
 
   const tabs = [
     { id: 'organizations', label: 'Pour les Organisations', icon: Users },
@@ -56,15 +63,17 @@ const HomePage = () => {
             XCCM 2 est votre outil de création pédagogique moderne, structuré et centré sur l'utilisateur.
           </p>
           
-          <div className="flex flex-wrap justify-center gap-4">
+          <Link href="/login">
             <button className="bg-[#99334C] text-white px-8 py-3 rounded-full font-semibold hover:bg-[#7a283d] transition-all shadow-lg flex items-center gap-2">
               Commencer <ArrowRight className="w-4 h-4" />
             </button>
+          </Link>
+
             <button className="border-2 border-[#99334C] text-[#99334C] px-8 py-3 rounded-full font-semibold hover:bg-[#99334C]/10 transition-all">
               En savoir plus
             </button>
           </div>
-        </div>
+      
       </section>
 
       {/* --- Zone d'Image avec Fond --- */}
@@ -86,13 +95,27 @@ const HomePage = () => {
               <div className="w-3 h-3 rounded-full bg-green-400" />
             </div>
             <div className="p-8 space-y-4">
-              <div className="h-6 w-3/4 bg-[#99334C]/20 rounded animate-pulse" />
-              <div className="h-6 w-1/2 bg-gray-200 rounded animate-pulse delay-75" />
-              <div className="grid grid-cols-3 gap-4 mt-6">
-                <div className="h-32 bg-[#99334C]/10 rounded-xl border-2 border-[#99334C]/20" />
-                <div className="h-32 bg-[#99334C]/10 rounded-xl border-2 border-[#99334C]/20" />
-                <div className="h-32 bg-[#99334C]/10 rounded-xl border-2 border-[#99334C]/20" />
+              <div className="h-6 w-3/4 bg-[#99334C]/20 rounded animate-pulse" >
+              <p className="bg-[#99334C]/20"> Bienvenue sur XCCM 2</p>
               </div>
+              <div className="h-6 w-1/2 bg-gray-200 rounded animate-pulse delay-75">
+              <p>Trois aperçus disponibles</p></div>
+              <div className="grid grid-cols-3 gap-4 mt-6">
+  {gridContent.map((text, index) => (
+    <textarea
+      key={index}
+      value={text}
+      placeholder={`Contenu ${index + 1}`}
+      onChange={(e) => {
+        const copy = [...gridContent];   // 1️⃣ copie de l’état
+        copy[index] = e.target.value;    // 2️⃣ on modifie UNE case
+        setGridContent(copy);             // 3️⃣ on met à jour l’état
+      }}
+      className="h-32 resize-none bg-[#99334C]/10 rounded-xl border-2 border-[#99334C]/20 p-3 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#99334C]"
+    />
+  ))}
+</div>
+
             </div>
           </div>
         </div>
@@ -149,9 +172,12 @@ const HomePage = () => {
                   <button className="bg-[#99334C] text-white px-8 py-4 rounded-xl font-bold shadow-lg hover:shadow-[#99334C]/30 transition-all flex items-center gap-2">
                     Découvrir les fonctionnalités <Zap className="w-5 h-5" />
                   </button>
-                  <button className="flex items-center gap-2 text-[#99334C] font-bold hover:underline py-4 px-2">
-                    Voir la documentation <ArrowRight className="w-5 h-5" />
-                  </button>
+                  <Link
+                     href="/documentation"
+                     className="flex items-center gap-2 text-[#99334C] font-bold hover:underline py-4 px-2">
+                     Voir la documentation <ArrowRight className="w-5 h-5" />
+                  </Link>
+
                 </div>
               </div>
 
