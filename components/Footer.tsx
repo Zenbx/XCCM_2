@@ -2,6 +2,11 @@
 
 import React from 'react';
 import Link from 'next/link';
+import { useAuth } from '@/context/AuthContext';
+
+// ============= COMPOSANT: Footer =============
+
+
 
 const Footer = () => {
   return (
@@ -41,10 +46,10 @@ const Footer = () => {
           <div>
             <h4 className="font-bold text-lg mb-6 text-white/90">Plateforme</h4>
             <ul className="space-y-4 text-gray-400">
-              <li><Link href="/accueil" className="hover:text-[#99334C] transition-colors">Accueil</Link></li>
-              <li><Link href="/bibliotheque" className="hover:text-[#99334C] transition-colors">Bibliothèque</Link></li>
-              <li><Link href="/cours" className="hover:text-[#99334C] transition-colors">Tous les cours</Link></li>
-              <li><Link href="/creation" className="hover:text-[#99334C] transition-colors">Système Auteur</Link></li>
+              <li><Link href="/" className="hover:text-[#99334C] transition-colors">Accueil</Link></li>
+              <li><Link href="/library" className="hover:text-[#99334C] transition-colors">Bibliothèque</Link></li>
+              <li><Link href="/library" className="hover:text-[#99334C] transition-colors">Tous les cours</Link></li>
+              <li><Link href="/login" className="hover:text-[#99334C] transition-colors">Système Auteur</Link></li>
             </ul>
           </div>
 
@@ -64,22 +69,22 @@ const Footer = () => {
             <h4 className="font-bold text-lg mb-6 text-white/90">Aide & Support</h4>
             <ul className="space-y-4 text-gray-400">
               <li>
-                <Link href="/centre-aide#documentation#intro" className="hover:text-[#99334C] transition-colors">
+                <Link href="/help#documentation#intro" className="hover:text-[#99334C] transition-colors">
                   Documentation
                 </Link>
               </li>
               <li>
-                <Link href="/centre-aide#faq#compte" className="hover:text-[#99334C] transition-colors">
+                <Link href="/help#faq#compte" className="hover:text-[#99334C] transition-colors">
                   FAQ
                 </Link>
               </li>
               <li>
-                <Link href="/centre-aide#guide#premier-cours" className="hover:text-[#99334C] transition-colors">
+                <Link href="/help#guide#premier-cours" className="hover:text-[#99334C] transition-colors">
                   Guide Auteurs
                 </Link>
               </li>
               <li>
-                <Link href="/centre-aide#support#contact" className="hover:text-[#99334C] transition-colors">
+                <Link href="/help#support#contact" className="hover:text-[#99334C] transition-colors">
                   Support Technique
                 </Link>
               </li>

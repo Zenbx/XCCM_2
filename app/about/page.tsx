@@ -126,10 +126,6 @@ const AboutPage = () => {
         </div>
 
         <div className="relative max-w-7xl mx-auto px-6 text-center">
-          <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm px-4 py-2 rounded-full mb-6">
-            <Sparkles className="w-4 h-4" />
-            <span className="text-sm font-semibold">Découvrez notre projet</span>
-          </div>
           
           <h1 className="text-5xl md:text-6xl font-bold mb-6">
             À propos de XCCM2

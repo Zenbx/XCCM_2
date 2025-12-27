@@ -1,12 +1,13 @@
 "use client";
 import React, { useState } from 'react';
-import { BookOpen, Users, GraduationCap, Sparkles, FileText, Share2, Zap, Star, ArrowRight, Check } from 'lucide-react';
-
+import { BookOpen, Users, GraduationCap, Sparkles, FileText, Share2, Zap, Star, ArrowRight, Check, Router } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 // Couleurs définies : 
 // Principal: #99334C | Fond Footer: #36454F | Accent: #99334C/30%
 
 const HomePage = () => {
   const [activeTab, setActiveTab] = useState('organizations');
+  const router = useRouter();
 
   const tabs = [
     { id: 'organizations', label: 'Pour les Organisations', icon: Users },
@@ -38,15 +39,21 @@ const HomePage = () => {
     }
   ];
 
+  const goToEditor = () => {
+    // Logique de navigation vers l'éditeur de cours
+    router.push('/login');
+  }
+
+  const goToAbout = () => {
+    router.push('/about');
+  }
+
   return (
     <main className="min-h-screen bg-white">
       {/* --- SECTION HERO --- */}
       <section className="pt-20 pb-12 px-6">
         <div className="max-w-6xl mx-auto text-center">
-          <div className="inline-flex items-center gap-2 bg-[#99334C]/10 px-4 py-2 rounded-full mb-6">
-            <Sparkles className="w-4 h-4 text-[#99334C]" />
-            <span className="text-sm font-semibold text-[#99334C]">Nouvelle version disponible</span>
-          </div>
+          
           
           <h1 className="text-4xl md:text-6xl font-extrabold text-gray-900 mb-6 tracking-tight">
             Créer vos cours <span className="text-[#99334C]">facilement</span> et <br />
@@ -57,10 +64,14 @@ const HomePage = () => {
           </p>
           
           <div className="flex flex-wrap justify-center gap-4">
-            <button className="bg-[#99334C] text-white px-8 py-3 rounded-full font-semibold hover:bg-[#7a283d] transition-all shadow-lg flex items-center gap-2">
+            <button 
+            onClick={goToEditor}
+            className="bg-[#99334C] text-white px-8 py-3 rounded-full font-semibold hover:bg-[#7a283d] transition-all shadow-lg flex items-center gap-2">
               Commencer <ArrowRight className="w-4 h-4" />
             </button>
-            <button className="border-2 border-[#99334C] text-[#99334C] px-8 py-3 rounded-full font-semibold hover:bg-[#99334C]/10 transition-all">
+            <button
+            onClick={goToAbout}
+            className="border-2 border-[#99334C] text-[#99334C] px-8 py-3 rounded-full font-semibold hover:bg-[#99334C]/10 transition-all">
               En savoir plus
             </button>
           </div>
@@ -282,7 +293,9 @@ const HomePage = () => {
               </p>
 
               <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
-                <button className="bg-white text-[#99334C] px-8 py-4 rounded-xl font-bold shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2">
+                <button 
+                onClick={goToEditor}
+                className="bg-white text-[#99334C] px-8 py-4 rounded-xl font-bold shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2">
                   Commencer gratuitement <ArrowRight className="w-5 h-5" />
                 </button>
                 <button className="border-2 border-white text-white px-8 py-4 rounded-xl font-bold hover:bg-white/10 transition-all">

@@ -4,10 +4,10 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import clsx from "clsx";
 import { FaHome, FaInfoCircle, FaEdit, FaBook, FaQuestionCircle } from "react-icons/fa";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/context/AuthContext";
-import { useState } from "react";
-import { LogOut, Settings, User as UserIcon } from "lucide-react";
+import { useState, useEffect } from "react";
+import { LogOut, Settings, User as UserIcon, Menu, X } from "lucide-react";
 
 const COLORS = {
   primary: "#99334C",
@@ -26,11 +26,22 @@ export default function Header() {
   const pathname = usePathname();
   const router = useRouter();
   const { user, isAuthenticated, logout, isLoading } = useAuth();
+  
+  // État pour le menu dropdown desktop
   const [showUserMenu, setShowUserMenu] = useState(false);
+  // État pour le menu mobile (burger)
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  // Fermer le menu mobile automatiquement quand on change de page
+  useEffect(() => {
+    setIsMobileMenuOpen(false);
+    setShowUserMenu(false);
+  }, [pathname]);
 
   const handleLogout = async () => {
     await logout();
     setShowUserMenu(false);
+    setIsMobileMenuOpen(false);
     router.push('/');
   };
 
@@ -40,16 +51,18 @@ export default function Header() {
 
   return (
     <header className="w-full bg-white shadow-sm border-b border-gray-100 sticky top-0 z-50">
-      <nav className="mx-auto flex max-w-7xl items-center justify-center px-6 py-3 relative">
-        {/* Logo */}
-        <div className="absolute left-6">
+      <nav className="mx-auto flex max-w-7xl items-center justify-between lg:justify-center px-6 py-3 relative min-h-[60px]">
+        
+        {/* --- LOGO --- */}
+        {/* En mobile : position statique. En Desktop : absolute left-6 pour garder ton design */}
+        <div className="lg:absolute lg:left-6 z-20">
           <Link href="/" className="text-xl font-bold" style={{ color: COLORS.primary }}>
             XCCM2
           </Link>
         </div>
 
-        {/* Navigation */}
-        <ul className="flex items-center gap-[40px] relative">
+        {/* --- NAVIGATION DESKTOP (Cachée sur mobile) --- */}
+        <ul className="hidden lg:flex items-center gap-[40px] relative">
           {!isLoading &&
             LINKS.filter(link => !link.authOnly || isAuthenticated).map(link => {
               const isActive = pathname === link.href;
@@ -82,8 +95,8 @@ export default function Header() {
             })}
         </ul>
 
-        {/* Actions utilisateur */}
-        <div className="absolute right-6 flex items-center gap-3">
+        {/* --- ACTIONS UTILISATEUR DESKTOP (Cachées sur mobile) --- */}
+        <div className="hidden lg:flex absolute right-6 items-center gap-3">
           {isLoading ? (
             <div className="w-8 h-8 rounded-full bg-gray-200 animate-pulse" />
           ) : isAuthenticated && user ? (
@@ -96,7 +109,7 @@ export default function Header() {
                 <div className="w-8 h-8 rounded-full bg-[#99334C] text-white flex items-center justify-center font-semibold">
                   {user.firstname?.[0]}{user.lastname?.[0]}
                 </div>
-                <span className="text-sm font-medium text-gray-700 hidden md:block">
+                <span className="text-sm font-medium text-gray-700 block">
                   {user.firstname} {user.lastname}
                 </span>
               </button>
@@ -105,11 +118,11 @@ export default function Header() {
                 <motion.div
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-xl border border-gray-100 py-2"
+                  className="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-xl border border-gray-100 py-2 z-50"
                 >
                   <div className="px-4 py-3 border-b border-gray-100">
                     <p className="font-semibold text-gray-900">{user.firstname} {user.lastname}</p>
-                    <p className="text-sm text-gray-500">{user.email}</p>
+                    <p className="text-sm text-gray-500 truncate">{user.email}</p>
                     {user.occupation && (
                       <p className="text-xs text-gray-400 mt-1">{user.occupation}</p>
                     )}
@@ -166,8 +179,114 @@ export default function Header() {
             </>
           )}
         </div>
+
+        {/* --- BOUTON MENU MOBILE (Visible uniquement sur mobile) --- */}
+        <button 
+          className="lg:hidden p-2 text-gray-600 hover:text-gray-900 focus:outline-none"
+          onClick={() => setIsMobileMenuOpen(true)}
+        >
+          <Menu size={24} />
+        </button>
       </nav>
+
+      {/* --- DRAWER / MENU MOBILE --- */}
+      <AnimatePresence>
+        {isMobileMenuOpen && (
+          <>
+            {/* Backdrop (Fond sombre) */}
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="fixed inset-0 bg-black/20 backdrop-blur-sm z-50 lg:hidden"
+            />
+            
+            {/* Panneau Latéral */}
+            <motion.div 
+              initial={{ x: "100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "100%" }}
+              transition={{ type: "spring", damping: 25, stiffness: 200 }}
+              className="fixed inset-y-0 right-0 w-[280px] bg-white shadow-2xl z-50 flex flex-col lg:hidden overflow-y-auto"
+            >
+              <div className="p-4 border-b border-gray-100 flex items-center justify-between">
+                <span className="font-bold text-lg" style={{ color: COLORS.primary }}>Menu</span>
+                <button onClick={() => setIsMobileMenuOpen(false)} className="p-2 text-gray-500 hover:text-red-500">
+                  <X size={24} />
+                </button>
+              </div>
+
+              {/* Contenu Mobile : Navigation */}
+              <div className="p-4 flex flex-col gap-2">
+                {LINKS.filter(link => !link.authOnly || isAuthenticated).map(link => {
+                  const isActive = pathname === link.href;
+                  return (
+                    <Link
+                      key={link.href}
+                      href={link.href}
+                      className={clsx(
+                        "flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-all",
+                        isActive ? "bg-[#99334C1A]" : "hover:bg-gray-50"
+                      )}
+                      style={{ color: isActive ? COLORS.primary : COLORS.text }}
+                    >
+                      <span className="text-lg">{link.icon}</span>
+                      {link.label}
+                    </Link>
+                  );
+                })}
+              </div>
+
+              {/* Contenu Mobile : Auth / User Actions */}
+              <div className="mt-auto p-4 border-t border-gray-100">
+                {isAuthenticated && user ? (
+                  <div className="flex flex-col gap-4">
+                    <div className="flex items-center gap-3 px-2">
+                      <div className="w-10 h-10 rounded-full bg-[#99334C] text-white flex items-center justify-center font-bold">
+                        {user.firstname?.[0]}{user.lastname?.[0]}
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="font-semibold text-gray-800">{user.firstname} {user.lastname}</span>
+                        <span className="text-xs text-gray-500 truncate max-w-[150px]">{user.email}</span>
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-1">
+                      <Link href="/account" className="flex items-center gap-3 px-4 py-2 text-gray-600 hover:bg-gray-50 rounded-lg text-sm">
+                        <UserIcon size={16} /> Mon compte
+                      </Link>
+                      <Link href="/settings" className="flex items-center gap-3 px-4 py-2 text-gray-600 hover:bg-gray-50 rounded-lg text-sm">
+                        <Settings size={16} /> Paramètres
+                      </Link>
+                      <button onClick={handleLogout} className="w-full flex items-center gap-3 px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg text-sm">
+                        <LogOut size={16} /> Déconnexion
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-3">
+                    <Link
+                      href="/login"
+                      className="w-full flex justify-center py-2.5 rounded-lg border text-sm font-medium"
+                      style={{ color: COLORS.primary, borderColor: COLORS.primary }}
+                    >
+                      Se connecter
+                    </Link>
+                    <Link
+                      href="/register"
+                      className="w-full flex justify-center py-2.5 rounded-lg text-white text-sm font-medium"
+                      style={{ backgroundColor: COLORS.primary }}
+                    >
+                      S'inscrire
+                    </Link>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </header>
   );
 }
-    
