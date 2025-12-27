@@ -370,7 +370,7 @@ const EditHomePage = () => {
               value={newProjectName}
               onChange={(e) => setNewProjectName(e.target.value)}
               placeholder="Nom du projet"
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#99334C]/20 focus:border-[#99334C] mb-4"
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#99334C]/20 focus:border-[#99334C] mb-4 text-gray-900 placeholder-gray-400"
               autoFocus
             />
             {error && (
@@ -384,7 +384,7 @@ const EditHomePage = () => {
                   setError('');
                 }}
                 disabled={isCreating}
-                className="flex-1 px-4 py-3 border border-gray-300 rounded-xl hover:bg-gray-50 transition-all disabled:opacity-50"
+                className="flex-1 px-4 py-3 border border-gray-300 rounded-xl text-gray-700 flex items-center justify-center hover:bg-gray-50 transition-all disabled:opacity-50"
               >
                 Annuler
               </button>

@@ -16,7 +16,8 @@ import {
   Eye,
   TrendingUp,
   Award,
-  Clock
+  Clock,
+  Octagon
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
@@ -29,11 +30,11 @@ const AccountPage = () => {
   const [success, setSuccess] = useState('');
 
   const [formData, setFormData] = useState({
-    nom: user?.nom || '',
-    prenom: user?.prenom || '',
+    firstname: user?.firstname || '',
+    lastname: user?.lastname || '',
     email: user?.email || '',
-    profession: user?.profession || '',
-    organisation: user?.organisation || '',
+    occupation: user?.occupation || '',
+    org: user?.org || '',
   });
 
   // Données mockées pour les statistiques (à remplacer par l'API)
@@ -41,7 +42,7 @@ const AccountPage = () => {
     coursCreated: 12,
     coursViews: 3450,
     coursDownloads: 890,
-    memberSince: user?.createdAt ? new Date(user.createdAt).toLocaleDateString('fr-FR', { 
+    memberSince: user?.created_at ? new Date(user.created_at).toLocaleDateString('fr-FR', { 
       month: 'long', 
       year: 'numeric' 
     }) : 'Récemment',
@@ -62,11 +63,11 @@ const AccountPage = () => {
   const handleCancel = () => {
     setIsEditing(false);
     setFormData({
-      nom: user?.nom || '',
-      prenom: user?.prenom || '',
+      nom: user?.lastname || '',
+      prenom: user?.firstname || '',
       email: user?.email || '',
-      profession: user?.profession || '',
-      organisation: user?.organisation || '',
+      profession: user?.occupation || '',
+      organisation: user?.org || '',
     });
     setError('');
   };
@@ -151,10 +152,10 @@ const AccountPage = () => {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
                     <div className="w-20 h-20 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center text-3xl font-bold">
-                      {user.prenom?.[0]}{user.nom?.[0]}
+                      {user.firstname?.[0]}{user.lastname?.[0]}
                     </div>
                     <div>
-                      <h2 className="text-2xl font-bold">{user.prenom} {user.nom}</h2>
+                      <h2 className="text-2xl font-bold">{user.firstname} {user.lastname}</h2>
                       <p className="text-white/80">{user.email}</p>
                     </div>
                   </div>
@@ -291,7 +292,7 @@ const AccountPage = () => {
                         <User className="w-5 h-5 text-[#99334C]" />
                         <div>
                           <p className="text-sm text-gray-500">Nom complet</p>
-                          <p className="font-semibold text-gray-900">{user.prenom} {user.nom}</p>
+                          <p className="font-semibold text-gray-900">{user.firstname} {user.lastname}</p>
                         </div>
                       </div>
 
@@ -303,22 +304,22 @@ const AccountPage = () => {
                         </div>
                       </div>
 
-                      {user.profession && (
+                      {user.occupation && (
                         <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl">
                           <Briefcase className="w-5 h-5 text-[#99334C]" />
                           <div>
                             <p className="text-sm text-gray-500">Profession</p>
-                            <p className="font-semibold text-gray-900">{user.profession}</p>
+                            <p className="font-semibold text-gray-900">{user.occupation}</p>
                           </div>
                         </div>
                       )}
 
-                      {user.organisation && (
+                      {user.org && (
                         <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl">
                           <Building2 className="w-5 h-5 text-[#99334C]" />
                           <div>
                             <p className="text-sm text-gray-500">Organisation</p>
-                            <p className="font-semibold text-gray-900">{user.organisation}</p>
+                            <p className="font-semibold text-gray-900">{user.org}</p>
                           </div>
                         </div>
                       )}

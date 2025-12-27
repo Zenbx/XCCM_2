@@ -1,20 +1,23 @@
-// services/authService.ts
+// lib/authService.ts
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+
+export interface User {
+  user_id: string;
+  email: string;
+  firstname: string;
+  lastname: string;
+  occupation?: string; // Champ optionnel
+  org?: string;        // Champ optionnel
+  created_at: string;
+}
 
 export interface LoginResponse {
   success: boolean;
   message: string;
   data: {
     token: string;
-    user: {
-      us_id: string;
-      email: string;
-      prenom: string;
-      nom: string;
-      profession?: string;
-      created_at: string;
-    };
+    user: User;
   };
 }
 
@@ -24,8 +27,8 @@ export interface RegisterData {
   email: string;
   password: string;
   password_confirmation: string;
-  occupation?: string;    // Champ optionnel (profession)
-  org?: string;  // Champ optionnel (organisation)
+  occupation?: string;    
+  org?: string;  
 }
 
 /**
@@ -39,9 +42,7 @@ class AuthService {
     try {
       const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
       });
 
@@ -50,6 +51,10 @@ class AuthService {
       if (!response.ok) {
         throw new Error(data.message || 'Erreur lors de la connexion');
       }
+
+      // Stocker automatiquement le token et user dans localStorage
+      localStorage.setItem('authToken', data.data.token);
+      localStorage.setItem('user', JSON.stringify(data.data.user));
 
       return data;
     } catch (error) {
@@ -63,22 +68,19 @@ class AuthService {
    */
   async register(userData: RegisterData): Promise<LoginResponse> {
     try {
-      // Transformer les données pour correspondre à l'API backend
       const apiData = {
         lastname: userData.lastname,
         firstname: userData.firstname,
         email: userData.email,
         password: userData.password,
         password_confirmation: userData.password_confirmation,
-        occupation: userData.occupation,  // profession → occupation
-        org: userData.org,       // organisation → org
+        occupation: userData.occupation,
+        org: userData.org,
       };
 
       const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(apiData),
       });
 
@@ -87,6 +89,10 @@ class AuthService {
       if (!response.ok) {
         throw new Error(data.message || 'Erreur lors de l\'inscription');
       }
+
+      // Stocker automatiquement le token et user après inscription
+      localStorage.setItem('authToken', data.data.token);
+      localStorage.setItem('user', JSON.stringify(data.data.user));
 
       return data;
     } catch (error) {
@@ -98,13 +104,10 @@ class AuthService {
   /**
    * Récupérer les informations de l'utilisateur connecté
    */
-  async getCurrentUser() {
+  async getCurrentUser(): Promise<User> {
     try {
       const token = this.getAuthToken();
-      
-      if (!token) {
-        throw new Error('Non authentifié');
-      }
+      if (!token) throw new Error('Non authentifié');
 
       const response = await fetch(`${API_BASE_URL}/api/auth/me`, {
         method: 'GET',
@@ -132,7 +135,7 @@ class AuthService {
   async logout(): Promise<void> {
     try {
       const token = this.getAuthToken();
-      
+
       if (token) {
         await fetch(`${API_BASE_URL}/api/auth/logout`, {
           method: 'POST',
@@ -143,11 +146,9 @@ class AuthService {
         });
       }
 
-      // Nettoyer le localStorage
       this.clearAuth();
     } catch (error) {
       console.error('Erreur logout:', error);
-      // Nettoyer quand même le localStorage en cas d'erreur
       this.clearAuth();
     }
   }
@@ -155,7 +156,7 @@ class AuthService {
   /**
    * Récupère le token d'authentification
    */
-  private getAuthToken(): string | null {
+  getAuthToken(): string | null {
     if (typeof window === 'undefined') return null;
     return localStorage.getItem('authToken');
   }
@@ -163,7 +164,7 @@ class AuthService {
   /**
    * Nettoie les données d'authentification
    */
-  private clearAuth(): void {
+  clearAuth(): void {
     if (typeof window !== 'undefined') {
       localStorage.removeItem('authToken');
       localStorage.removeItem('user');
