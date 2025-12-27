@@ -1,16 +1,23 @@
 "use client";
+
 import React, { useState } from 'react';
 import { ArrowLeft, Eye, EyeOff } from 'lucide-react';
 import { Facebook, Instagram, Twitter } from 'lucide-react';
+import { i } from 'framer-motion/client';
+import { useRouter } from 'next/navigation';
+
+// ============= PAGE: LoginPage =============
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const router = useRouter();
 
   const handleSubmit = () => {
     console.log('Login:', { email, password, rememberMe });
+    router.push('/edit-home');
     // TODO: Appel API pour la connexion
   };
 
@@ -131,7 +138,7 @@ const LoginPage = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 onKeyPress={handleKeyPress}
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#99334C]/20 focus:border-[#99334C] transition-all"
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#99334C]/20 focus:border-[#99334C] transition-all text-gray-900 placeholder:text-gray-400"
                 placeholder="exemple@email.com"
               />
             </div>
@@ -148,7 +155,7 @@ const LoginPage = () => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   onKeyPress={handleKeyPress}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#99334C]/20 focus:border-[#99334C] transition-all pr-12"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#99334C]/20 focus:border-[#99334C] transition-all text-gray-900 placeholder:text-gray-400 pr-12"
                   placeholder="••••••••"
                 />
                 <button
@@ -253,7 +260,7 @@ const LoginPage = () => {
             <div className="text-center pt-4 border-t border-gray-200">
               <p className="text-sm text-gray-600">
                 Pas encore de compte ?{' '}
-                <a href="#" className="text-[#99334C] hover:underline font-semibold">
+                <a href="/register" className="text-[#99334C] hover:underline font-semibold">
                   Créer un compte
                 </a>
               </p>

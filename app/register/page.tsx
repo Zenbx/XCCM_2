@@ -212,7 +212,7 @@ const RegisterPage = () => {
                     value={formData.nom}
                     onChange={(e) => updateField('nom', e.target.value)}
                     onKeyPress={handleKeyPress}
-                    className={`w-full pl-10 pr-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-[#99334C]/20 transition-all ${
+                    className={`w-full pl-10 pr-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-[#99334C]/20 transition-all text-gray-900 placeholder:text-gray-400 ${
                       errors.nom ? 'border-red-500' : 'border-gray-300 focus:border-[#99334C]'
                     }`}
                     placeholder="Votre nom"
@@ -234,7 +234,7 @@ const RegisterPage = () => {
                     value={formData.prenom}
                     onChange={(e) => updateField('prenom', e.target.value)}
                     onKeyPress={handleKeyPress}
-                    className={`w-full pl-10 pr-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-[#99334C]/20 transition-all ${
+                    className={`w-full pl-10 pr-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-[#99334C]/20 transition-all text-gray-900 placeholder:text-gray-400 ${
                       errors.prenom ? 'border-red-500' : 'border-gray-300 focus:border-[#99334C]'
                     }`}
                     placeholder="Votre prénom"
@@ -256,7 +256,7 @@ const RegisterPage = () => {
                     value={formData.email}
                     onChange={(e) => updateField('email', e.target.value)}
                     onKeyPress={handleKeyPress}
-                    className={`w-full pl-10 pr-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-[#99334C]/20 transition-all ${
+                    className={`w-full pl-10 pr-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-[#99334C]/20 transition-all text-gray-900 placeholder:text-gray-400 ${
                       errors.email ? 'border-red-500' : 'border-gray-300 focus:border-[#99334C]'
                     }`}
                     placeholder="exemple@email.com"
@@ -278,7 +278,7 @@ const RegisterPage = () => {
                     value={formData.profession}
                     onChange={(e) => updateField('profession', e.target.value)}
                     onKeyPress={handleKeyPress}
-                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#99334C]/20 focus:border-[#99334C] transition-all"
+                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#99334C]/20 focus:border-[#99334C] transition-all text-gray-900 placeholder:text-gray-400"
                     placeholder="Enseignant, Formateur..."
                   />
                 </div>
@@ -297,7 +297,7 @@ const RegisterPage = () => {
                     value={formData.organisation}
                     onChange={(e) => updateField('organisation', e.target.value)}
                     onKeyPress={handleKeyPress}
-                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#99334C]/20 focus:border-[#99334C] transition-all"
+                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#99334C]/20 focus:border-[#99334C] transition-all text-gray-900 placeholder:text-gray-400"
                     placeholder="Nom de votre établissement"
                   />
                 </div>
@@ -368,7 +368,7 @@ const RegisterPage = () => {
                     value={formData.password}
                     onChange={(e) => updateField('password', e.target.value)}
                     onKeyPress={handleKeyPress}
-                    className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-[#99334C]/20 transition-all pr-12 ${
+                    className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-[#99334C]/20 transition-all text-gray-900 placeholder:text-gray-400 pr-12 ${
                       errors.password ? 'border-red-500' : 'border-gray-300 focus:border-[#99334C]'
                     }`}
                     placeholder="Minimum 8 caractères"
@@ -396,7 +396,7 @@ const RegisterPage = () => {
                     value={formData.confirmPassword}
                     onChange={(e) => updateField('confirmPassword', e.target.value)}
                     onKeyPress={handleKeyPress}
-                    className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-[#99334C]/20 transition-all pr-12 ${
+                    className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-[#99334C]/20 transition-all text-gray-900 placeholder:text-gray-400 pr-12 ${
                       errors.confirmPassword ? 'border-red-500' : 'border-gray-300 focus:border-[#99334C]'
                     }`}
                     placeholder="Confirmez votre mot de passe"
@@ -454,7 +454,7 @@ const RegisterPage = () => {
           <div className="text-center pt-6 mt-6 border-t border-gray-200">
             <p className="text-sm text-gray-600">
               Vous avez déjà un compte ?{' '}
-              <a href="#" className="text-[#99334C] hover:underline font-semibold">
+              <a href="/login" className="text-[#99334C] hover:underline font-semibold">
                 Se connecter
               </a>
             </p>
