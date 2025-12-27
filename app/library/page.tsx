@@ -19,6 +19,8 @@ import {
   Grid3x3,
   List
 } from 'lucide-react';
+import { i } from 'framer-motion/client';
+import { useRouter } from 'next/navigation';
 
 const LibraryPage = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -26,7 +28,7 @@ const LibraryPage = () => {
   const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'list'
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [bookmarkedCourses, setBookmarkedCourses] = useState([]);
-
+  const router = useRouter();
   // Données mockées - à remplacer par l'API
   const courses = [
     {
@@ -201,6 +203,7 @@ const LibraryPage = () => {
 
   const handleViewCourse = (courseId) => {
     console.log('Voir le cours:', courseId);
+    router.push("/book-reader/");
     // TODO: Navigation vers la page du cours
   };
 

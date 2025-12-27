@@ -1,37 +1,44 @@
 "use client";
+
 import React, { useState } from 'react';
-import { ArrowLeft, ArrowRight, Eye, EyeOff, Check, User, Mail, Briefcase, Building2 } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Eye, EyeOff, Check, User, Mail, Briefcase, Building2, Loader2 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/context/AuthContext';
 
 const RegisterPage = () => {
   const [currentStep, setCurrentStep] = useState(1);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  // État du formulaire
+  const router = useRouter();
+  const { register } = useAuth();
+
   const [formData, setFormData] = useState({
-    nom: '',
-    prenom: '',
+    lastname: '',
+    firstname: '',
     email: '',
-    profession: '',
-    organisation: '',
+    occupation: '',
+    org: '',
     password: '',
-    confirmPassword: ''
+    password_confirmation: '',
   });
 
-  const [errors, setErrors] = useState({});
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const updateField = (field, value) => {
+  const updateField = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
-    // Effacer l'erreur quand l'utilisateur tape
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: '' }));
     }
+    setError('');
   };
 
   const validateStep1 = () => {
-    const newErrors = {};
-    if (!formData.nom.trim()) newErrors.nom = 'Le nom est requis';
-    if (!formData.prenom.trim()) newErrors.prenom = 'Le prénom est requis';
+    const newErrors: Record<string, string> = {};
+    if (!formData.lastname.trim()) newErrors.lastname = 'Le nom est requis';
+    if (!formData.firstname.trim()) newErrors.firstname = 'Le prénom est requis';
     if (!formData.email.trim()) {
       newErrors.email = 'L\'email est requis';
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
@@ -43,14 +50,14 @@ const RegisterPage = () => {
   };
 
   const validateStep2 = () => {
-    const newErrors = {};
+    const newErrors: Record<string, string> = {};
     if (!formData.password) {
       newErrors.password = 'Le mot de passe est requis';
     } else if (formData.password.length < 8) {
       newErrors.password = 'Minimum 8 caractères';
     }
-    if (formData.password !== formData.confirmPassword) {
-      newErrors.confirmPassword = 'Les mots de passe ne correspondent pas';
+    if (formData.password !== formData.password_confirmation) {
+      newErrors.password_confirmation = 'Les mots de passe ne correspondent pas';
     }
     
     setErrors(newErrors);
@@ -67,10 +74,36 @@ const RegisterPage = () => {
     setCurrentStep(1);
   };
 
-  const handleSubmit = () => {
-    if (validateStep2()) {
-      console.log('Inscription:', formData);
-      // TODO: Appel API pour l'inscription
+  const handleSubmit = async () => {
+    if (!validateStep2()) return;
+
+    setIsLoading(true);
+    setError('');
+
+    try {
+      // Préparer les données pour l'API
+      const registerData = {
+        lastname: formData.lastname,
+        firstname: formData.firstname,
+        email: formData.email,
+        occupation: formData.occupation || undefined,
+        org: formData.org  || undefined,
+        password: formData.password,
+        password_confirmation: formData.password_confirmation,
+      };
+
+      await register(registerData);
+      
+      // Redirection après succès
+      router.push('/edit-home');
+    } catch (err: any) {
+      setError(err.message || 'Erreur lors de l\'inscription');
+      // Retourner à l'étape 1 si erreur d'email déjà utilisé
+      if (err.message.includes('email')) {
+        setCurrentStep(1);
+      }
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -84,8 +117,8 @@ const RegisterPage = () => {
     // TODO: OAuth Microsoft
   };
 
-  const handleKeyPress = (e) => {
-    if (e.key === 'Enter') {
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !isLoading) {
       if (currentStep === 1) {
         handleNextStep();
       } else {
@@ -98,7 +131,6 @@ const RegisterPage = () => {
     <div className="min-h-screen flex">
       {/* Partie gauche avec image et overlay */}
       <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden">
-        {/* Image de fond */}
         <div className="absolute inset-0">
           <img 
             src="/login-background.jpg" 
@@ -107,18 +139,17 @@ const RegisterPage = () => {
           />
         </div>
 
-        {/* Overlay bordeaux avec dégradé */}
         <div className="absolute inset-0 bg-gradient-to-r from-[#99334C]/95 via-[#99334C]/85 to-transparent" />
 
-        {/* Contenu */}
         <div className="relative z-10 flex flex-col justify-between p-12 text-white w-full">
-          {/* Bouton retour */}
-          <button className="flex items-center gap-2 text-white/90 hover:text-white transition-colors w-fit">
+          <button 
+            onClick={() => router.push('/')}
+            className="flex items-center gap-2 text-white/90 hover:text-white transition-colors w-fit"
+          >
             <ArrowLeft className="w-5 h-5" />
             <span className="font-medium">Retour</span>
           </button>
 
-          {/* Texte principal */}
           <div className="max-w-md">
             <h1 className="text-5xl font-bold mb-6 leading-tight">
               Bienvenue sur<br />
@@ -128,7 +159,6 @@ const RegisterPage = () => {
               Notre plateforme vous permet de créer, organiser et partager vos contenus pédagogiques de manière intuitive.
             </p>
 
-            {/* Indicateur d'étapes */}
             <div className="space-y-4">
               <div className="flex items-center gap-4">
                 <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold transition-all ${
@@ -155,7 +185,6 @@ const RegisterPage = () => {
             </div>
           </div>
 
-          {/* Mentions légales */}
           <p className="text-sm text-white/70">
             En créant un compte, vous acceptez notre{' '}
             <a href="#" className="underline hover:text-white">Politique de confidentialité</a>
@@ -168,9 +197,11 @@ const RegisterPage = () => {
       {/* Partie droite avec formulaire */}
       <div className="w-full lg:w-1/2 flex items-center justify-center p-6 bg-white">
         <div className="w-full max-w-md">
-          {/* Header mobile */}
           <div className="lg:hidden mb-8">
-            <button className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors mb-6">
+            <button 
+              onClick={() => router.push('/')}
+              className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors mb-6"
+            >
               <ArrowLeft className="w-5 h-5" />
               <span className="font-medium">Retour</span>
             </button>
@@ -178,7 +209,6 @@ const RegisterPage = () => {
             <p className="text-gray-600">Créez votre compte XCCM2</p>
           </div>
 
-          {/* Titre desktop */}
           <div className="hidden lg:block mb-8">
             <h2 className="text-3xl font-bold text-gray-900 mb-2">Inscription</h2>
             <p className="text-gray-600">Étape {currentStep} sur 2</p>
@@ -196,10 +226,16 @@ const RegisterPage = () => {
             </div>
           </div>
 
+          {/* Message d'erreur global */}
+          {error && (
+            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl">
+              <p className="text-red-700 text-sm">{error}</p>
+            </div>
+          )}
+
           {/* ÉTAPE 1 : Informations personnelles */}
           {currentStep === 1 && (
             <div className="space-y-6">
-              {/* Nom */}
               <div>
                 <label htmlFor="nom" className="block text-sm font-semibold text-gray-700 mb-2">
                   Nom
@@ -209,19 +245,19 @@ const RegisterPage = () => {
                   <input
                     type="text"
                     id="nom"
-                    value={formData.nom}
-                    onChange={(e) => updateField('nom', e.target.value)}
+                    value={formData.lastname}
+                    onChange={(e) => updateField('lastname', e.target.value)}
                     onKeyPress={handleKeyPress}
-                    className={`w-full pl-10 pr-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-[#99334C]/20 transition-all text-gray-900 placeholder:text-gray-400 ${
-                      errors.nom ? 'border-red-500' : 'border-gray-300 focus:border-[#99334C]'
+                    disabled={isLoading}
+                    className={`w-full pl-10 pr-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-[#99334C]/20 transition-all text-gray-900 placeholder:text-gray-400 disabled:bg-gray-100 disabled:cursor-not-allowed ${
+                      errors.lastname ? 'border-red-500' : 'border-gray-300 focus:border-[#99334C]'
                     }`}
                     placeholder="Votre nom"
                   />
                 </div>
-                {errors.nom && <p className="text-red-500 text-sm mt-1">{errors.nom}</p>}
+                {errors.lastname && <p className="text-red-500 text-sm mt-1">{errors.lastname}</p>}
               </div>
 
-              {/* Prénom */}
               <div>
                 <label htmlFor="prenom" className="block text-sm font-semibold text-gray-700 mb-2">
                   Prénom
@@ -231,19 +267,19 @@ const RegisterPage = () => {
                   <input
                     type="text"
                     id="prenom"
-                    value={formData.prenom}
-                    onChange={(e) => updateField('prenom', e.target.value)}
+                    value={formData.firstname}
+                    onChange={(e) => updateField('firstname', e.target.value)}
                     onKeyPress={handleKeyPress}
-                    className={`w-full pl-10 pr-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-[#99334C]/20 transition-all text-gray-900 placeholder:text-gray-400 ${
-                      errors.prenom ? 'border-red-500' : 'border-gray-300 focus:border-[#99334C]'
+                    disabled={isLoading}
+                    className={`w-full pl-10 pr-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-[#99334C]/20 transition-all text-gray-900 placeholder:text-gray-400 disabled:bg-gray-100 disabled:cursor-not-allowed ${
+                      errors.firstname ? 'border-red-500' : 'border-gray-300 focus:border-[#99334C]'
                     }`}
                     placeholder="Votre prénom"
                   />
                 </div>
-                {errors.prenom && <p className="text-red-500 text-sm mt-1">{errors.prenom}</p>}
+                {errors.firstname && <p className="text-red-500 text-sm mt-1">{errors.firstname}</p>}
               </div>
 
-              {/* Email */}
               <div>
                 <label htmlFor="email" className="block text-sm font-semibold text-gray-700 mb-2">
                   E-mail
@@ -256,7 +292,8 @@ const RegisterPage = () => {
                     value={formData.email}
                     onChange={(e) => updateField('email', e.target.value)}
                     onKeyPress={handleKeyPress}
-                    className={`w-full pl-10 pr-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-[#99334C]/20 transition-all text-gray-900 placeholder:text-gray-400 ${
+                    disabled={isLoading}
+                    className={`w-full pl-10 pr-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-[#99334C]/20 transition-all text-gray-900 placeholder:text-gray-400 disabled:bg-gray-100 disabled:cursor-not-allowed ${
                       errors.email ? 'border-red-500' : 'border-gray-300 focus:border-[#99334C]'
                     }`}
                     placeholder="exemple@email.com"
@@ -265,7 +302,6 @@ const RegisterPage = () => {
                 {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
               </div>
 
-              {/* Profession (optionnel) */}
               <div>
                 <label htmlFor="profession" className="block text-sm font-semibold text-gray-700 mb-2">
                   Profession <span className="text-gray-400 font-normal">(optionnel)</span>
@@ -275,16 +311,16 @@ const RegisterPage = () => {
                   <input
                     type="text"
                     id="profession"
-                    value={formData.profession}
-                    onChange={(e) => updateField('profession', e.target.value)}
+                    value={formData.occupation}
+                    onChange={(e) => updateField('occupation', e.target.value)}
                     onKeyPress={handleKeyPress}
-                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#99334C]/20 focus:border-[#99334C] transition-all text-gray-900 placeholder:text-gray-400"
+                    disabled={isLoading}
+                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#99334C]/20 focus:border-[#99334C] transition-all text-gray-900 placeholder:text-gray-400 disabled:bg-gray-100 disabled:cursor-not-allowed"
                     placeholder="Enseignant, Formateur..."
                   />
                 </div>
               </div>
 
-              {/* Organisation (optionnel) */}
               <div>
                 <label htmlFor="organisation" className="block text-sm font-semibold text-gray-700 mb-2">
                   Organisation <span className="text-gray-400 font-normal">(optionnel)</span>
@@ -294,24 +330,24 @@ const RegisterPage = () => {
                   <input
                     type="text"
                     id="organisation"
-                    value={formData.organisation}
-                    onChange={(e) => updateField('organisation', e.target.value)}
+                    value={formData.org}
+                    onChange={(e) => updateField('org', e.target.value)}
                     onKeyPress={handleKeyPress}
-                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#99334C]/20 focus:border-[#99334C] transition-all text-gray-900 placeholder:text-gray-400"
+                    disabled={isLoading}
+                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#99334C]/20 focus:border-[#99334C] transition-all text-gray-900 placeholder:text-gray-400 disabled:bg-gray-100 disabled:cursor-not-allowed"
                     placeholder="Nom de votre établissement"
                   />
                 </div>
               </div>
 
-              {/* Bouton Suivant */}
               <button
                 onClick={handleNextStep}
-                className="w-full bg-[#99334C] text-white py-3 rounded-xl font-semibold hover:bg-[#7a283d] transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
+                disabled={isLoading}
+                className="w-full bg-[#99334C] text-white py-3 rounded-xl font-semibold hover:bg-[#7a283d] transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Continuer <ArrowRight className="w-5 h-5" />
               </button>
 
-              {/* Divider */}
               <div className="relative my-6">
                 <div className="absolute inset-0 flex items-center">
                   <div className="w-full border-t border-gray-200"></div>
@@ -321,11 +357,11 @@ const RegisterPage = () => {
                 </div>
               </div>
 
-              {/* Boutons OAuth */}
               <div className="grid grid-cols-2 gap-4">
                 <button
                   onClick={handleGoogleSignup}
-                  className="flex items-center justify-center gap-3 px-4 py-3 border border-gray-300 rounded-xl hover:bg-gray-50 transition-all font-medium text-gray-700"
+                  disabled={isLoading}
+                  className="flex items-center justify-center gap-3 px-4 py-3 border border-gray-300 rounded-xl hover:bg-gray-50 transition-all font-medium text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <svg className="w-5 h-5" viewBox="0 0 24 24">
                     <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
@@ -338,7 +374,8 @@ const RegisterPage = () => {
 
                 <button
                   onClick={handleMicrosoftSignup}
-                  className="flex items-center justify-center gap-3 px-4 py-3 border border-gray-300 rounded-xl hover:bg-gray-50 transition-all font-medium text-gray-700"
+                  disabled={isLoading}
+                  className="flex items-center justify-center gap-3 px-4 py-3 border border-gray-300 rounded-xl hover:bg-gray-50 transition-all font-medium text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <svg className="w-5 h-5" viewBox="0 0 23 23">
                     <path fill="#f3f3f3" d="M0 0h23v23H0z" />
@@ -356,7 +393,6 @@ const RegisterPage = () => {
           {/* ÉTAPE 2 : Mot de passe */}
           {currentStep === 2 && (
             <div className="space-y-6">
-              {/* Mot de passe */}
               <div>
                 <label htmlFor="password" className="block text-sm font-semibold text-gray-700 mb-2">
                   Mot de passe
@@ -368,7 +404,8 @@ const RegisterPage = () => {
                     value={formData.password}
                     onChange={(e) => updateField('password', e.target.value)}
                     onKeyPress={handleKeyPress}
-                    className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-[#99334C]/20 transition-all text-gray-900 placeholder:text-gray-400 pr-12 ${
+                    disabled={isLoading}
+                    className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-[#99334C]/20 transition-all text-gray-900 placeholder:text-gray-400 pr-12 disabled:bg-gray-100 disabled:cursor-not-allowed ${
                       errors.password ? 'border-red-500' : 'border-gray-300 focus:border-[#99334C]'
                     }`}
                     placeholder="Minimum 8 caractères"
@@ -376,7 +413,8 @@ const RegisterPage = () => {
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                    disabled={isLoading}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors disabled:cursor-not-allowed"
                   >
                     {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                   </button>
@@ -384,7 +422,6 @@ const RegisterPage = () => {
                 {errors.password && <p className="text-red-500 text-sm mt-1">{errors.password}</p>}
               </div>
 
-              {/* Confirmation mot de passe */}
               <div>
                 <label htmlFor="confirmPassword" className="block text-sm font-semibold text-gray-700 mb-2">
                   Confirmer le mot de passe
@@ -393,18 +430,20 @@ const RegisterPage = () => {
                   <input
                     type={showConfirmPassword ? "text" : "password"}
                     id="confirmPassword"
-                    value={formData.confirmPassword}
-                    onChange={(e) => updateField('confirmPassword', e.target.value)}
+                    value={formData.password_confirmation}
+                    onChange={(e) => updateField('password_confirmation', e.target.value)}
                     onKeyPress={handleKeyPress}
-                    className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-[#99334C]/20 transition-all text-gray-900 placeholder:text-gray-400 pr-12 ${
-                      errors.confirmPassword ? 'border-red-500' : 'border-gray-300 focus:border-[#99334C]'
+                    disabled={isLoading}
+                    className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-[#99334C]/20 transition-all text-gray-900 placeholder:text-gray-400 pr-12 disabled:bg-gray-100 disabled:cursor-not-allowed ${
+                      errors.password_confirmation ? 'border-red-500' : 'border-gray-300 focus:border-[#99334C]'
                     }`}
                     placeholder="Confirmez votre mot de passe"
                   />
                   <button
                     type="button"
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                    disabled={isLoading}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors disabled:cursor-not-allowed"
                   >
                     {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                   </button>
@@ -412,7 +451,6 @@ const RegisterPage = () => {
                 {errors.confirmPassword && <p className="text-red-500 text-sm mt-1">{errors.confirmPassword}</p>}
               </div>
 
-              {/* Indicateurs de force du mot de passe */}
               <div className="space-y-2">
                 <p className="text-sm font-medium text-gray-700">Votre mot de passe doit contenir :</p>
                 <div className="space-y-1">
@@ -431,26 +469,33 @@ const RegisterPage = () => {
                 </div>
               </div>
 
-              {/* Boutons */}
               <div className="flex gap-4">
                 <button
                   onClick={handlePreviousStep}
-                  className="flex-1 border-2 border-gray-300 text-gray-700 py-3 rounded-xl font-semibold hover:bg-gray-50 transition-all flex items-center justify-center gap-2"
+                  disabled={isLoading}
+                  className="flex-1 border-2 border-gray-300 text-gray-700 py-3 rounded-xl font-semibold hover:bg-gray-50 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <ArrowLeft className="w-5 h-5" />
                   Retour
                 </button>
                 <button
                   onClick={handleSubmit}
-                  className="flex-1 bg-[#99334C] text-white py-3 rounded-xl font-semibold hover:bg-[#7a283d] transition-all shadow-lg hover:shadow-xl"
+                  disabled={isLoading}
+                  className="flex-1 bg-[#99334C] text-white py-3 rounded-xl font-semibold hover:bg-[#7a283d] transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Créer mon compte
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      <span>Création...</span>
+                    </>
+                  ) : (
+                    'Créer mon compte'
+                  )}
                 </button>
               </div>
             </div>
           )}
 
-          {/* Lien connexion */}
           <div className="text-center pt-6 mt-6 border-t border-gray-200">
             <p className="text-sm text-gray-600">
               Vous avez déjà un compte ?{' '}
