@@ -26,7 +26,7 @@ export default function Header({ isAuthenticated }: HeaderProps) {
 
   return (
     <header className="w-full bg-white shadow-sm border-b border-gray-100">
-      <nav className="mx-auto flex max-w-7xl items-center justify-between lg:justify-center lg:gap-8 px-4 sm:px-6 py-3">
+      <nav className="mx-auto flex max-w-7xl items-center px-4 sm:px-6 py-3">
 
         {/* Bouton Hamburger Mobile (à gauche) */}
         <button
@@ -38,6 +38,9 @@ export default function Header({ isAuthenticated }: HeaderProps) {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
           </svg>
         </button>
+
+        {/* Spacer gauche pour centrer le menu sur desktop */}
+        <div className="flex-1 hidden lg:block" />
 
         {/* Menu Desktop - Centré */}
         <ul className="hidden lg:flex items-center gap-2 xl:gap-6">
@@ -71,10 +74,10 @@ export default function Header({ isAuthenticated }: HeaderProps) {
           })}
         </ul>
 
-        {/* Spacer pour centrer les boutons sur mobile */}
-        <div className="flex-1 lg:hidden" />
+        {/* Spacer droit pour pousser les actions à droite */}
+        <div className="flex-1" />
 
-        {/* Actions (Toujours visibles) - Centrées sur desktop */}
+        {/* Actions (Toujours à droite) */}
         <div className="flex items-center gap-2 sm:gap-3">
           {isAuthenticated ? (
             <>
