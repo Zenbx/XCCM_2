@@ -44,6 +44,10 @@ const HomePage = () => {
     router.push('/login');
   }
 
+  const goToHelp = () => {
+    router.push('/help');
+  }
+
   const goToAbout = () => {
     router.push('/about');
   }
@@ -160,7 +164,9 @@ const HomePage = () => {
                   <button className="bg-[#99334C] text-white px-8 py-4 rounded-xl font-bold shadow-lg hover:shadow-[#99334C]/30 transition-all flex items-center gap-2">
                     Découvrir les fonctionnalités <Zap className="w-5 h-5" />
                   </button>
-                  <button className="flex items-center gap-2 text-[#99334C] font-bold hover:underline py-4 px-2">
+                  <button 
+                  onClick={() => router.push('/help')}  
+                  className="flex items-center gap-2 text-[#99334C] font-bold hover:underline py-4 px-2">
                     Voir la documentation <ArrowRight className="w-5 h-5" />
                   </button>
                 </div>
