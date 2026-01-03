@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ArrowLeft, ArrowRight, Eye, EyeOff, Check, User, Mail, Briefcase, Building2, Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
@@ -11,9 +11,14 @@ const RegisterPage = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [mounted, setMounted] = useState(false);
 
   const router = useRouter();
   const { register } = useAuth();
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const [formData, setFormData] = useState({
     lastname: '',
@@ -130,18 +135,24 @@ const RegisterPage = () => {
   return (
     <div className="min-h-screen flex">
       {/* Partie gauche avec image et overlay */}
-      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden">
+      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-gray-900">
         <div className="absolute inset-0">
           <img 
             src="/login-background.jpg" 
             alt="Background" 
-            className="w-full h-full object-cover"
+            className={`w-full h-full object-cover transition-all duration-700 ease-out ${
+              mounted ? 'opacity-100 scale-100' : 'opacity-0 scale-105'
+            }`}
           />
         </div>
 
-        <div className="absolute inset-0 bg-gradient-to-r from-[#99334C]/95 via-[#99334C]/85 to-transparent" />
+        <div className={`absolute inset-0 bg-gradient-to-r from-[#99334C]/95 via-[#99334C]/85 to-transparent transition-opacity duration-700 ease-out delay-150 ${
+          mounted ? 'opacity-100' : 'opacity-0'
+        }`} />
 
-        <div className="relative z-10 flex flex-col justify-between p-12 text-white w-full">
+        <div className={`relative z-10 flex flex-col justify-between p-12 text-white w-full transition-all duration-700 ease-out delay-300 ${
+          mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+        }`}>
           <button 
             onClick={() => router.push('/')}
             className="flex items-center gap-2 text-white/90 hover:text-white transition-colors w-fit"
@@ -196,7 +207,9 @@ const RegisterPage = () => {
 
       {/* Partie droite avec formulaire */}
       <div className="w-full lg:w-1/2 flex items-center justify-center p-6 bg-white">
-        <div className="w-full max-w-md">
+        <div className={`w-full max-w-md transition-all duration-700 ease-out delay-200 ${
+          mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+        }`}>
           <div className="lg:hidden mb-8">
             <button 
               onClick={() => router.push('/')}
