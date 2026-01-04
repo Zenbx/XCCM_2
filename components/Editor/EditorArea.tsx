@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 
 interface EditorAreaProps {
   content: string;
@@ -9,8 +9,9 @@ interface EditorAreaProps {
     fontSize: string;
   };
   onChange: (content: string) => void;
-  onDrop: (e: React.DragEvent) => void;
-  editorRef?: React.RefObject<HTMLDivElement>;
+  onDrop: (contentToAdd: string) => void; // Modifié pour passer directement le contenu
+  editorRef: React.RefObject<HTMLDivElement>;
+  placeholder?: string;
 }
 
 const EditorArea: React.FC<EditorAreaProps> = ({ 
@@ -18,24 +19,27 @@ const EditorArea: React.FC<EditorAreaProps> = ({
   textFormat, 
   onChange, 
   onDrop,
-  editorRef: externalRef 
+  editorRef,
+  placeholder = "Sélectionnez une notion pour commencer à éditer..."
 }) => {
-  const internalRef = useRef<HTMLDivElement>(null);
-  const editorRef = externalRef || internalRef;
   const isInitialLoad = useRef(true);
+  const [internalPlaceholder, setInternalPlaceholder] = useState(placeholder);
 
-  // Initialiser le contenu uniquement au chargement d'une nouvelle notion
+  // Mettre à jour le placeholder si la prop change
   useEffect(() => {
-    if (editorRef.current && isInitialLoad.current) {
-      editorRef.current.innerHTML = content;
-      isInitialLoad.current = false;
+    setInternalPlaceholder(placeholder);
+  }, [placeholder]);
+
+  // Initialiser le contenu
+  useEffect(() => {
+    if (editorRef.current) {
+      if (editorRef.current.innerHTML !== content) {
+          // On ne met à jour que si le contenu est différent pour éviter de perdre la position du curseur
+          // lors des petites mises à jour, sauf si c'est un changement de contexte (géré par le parent)
+          editorRef.current.innerHTML = content;
+      }
     }
-  }, [content]);
-
-  // Réinitialiser le flag quand le contenu change (nouvelle notion sélectionnée)
-  useEffect(() => {
-    isInitialLoad.current = true;
-  }, [content]);
+  }, [content, editorRef]);
 
   const handleInput = () => {
     if (editorRef.current) {
@@ -45,49 +49,102 @@ const EditorArea: React.FC<EditorAreaProps> = ({
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
-    e.currentTarget.classList.add('ring-2', 'ring-[#99334C]');
+    e.stopPropagation();
+    e.currentTarget.classList.add('ring-2', 'ring-[#99334C]', 'bg-gray-50');
   };
 
   const handleDragLeave = (e: React.DragEvent) => {
-    e.currentTarget.classList.remove('ring-2', 'ring-[#99334C]');
+    e.preventDefault();
+    e.stopPropagation();
+    e.currentTarget.classList.remove('ring-2', 'ring-[#99334C]', 'bg-gray-50');
   };
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
-    e.currentTarget.classList.remove('ring-2', 'ring-[#99334C]');
-    onDrop(e);
+    e.stopPropagation();
+    e.currentTarget.classList.remove('ring-2', 'ring-[#99334C]', 'bg-gray-50');
+
+    const granuleData = e.dataTransfer.getData('granule');
+    if (granuleData) {
+      try {
+        const granule = JSON.parse(granuleData);
+        const contentToAdd = granule.content || granule.granule_content || '';
+        
+        // Insertion intelligente à la position de la souris
+        if (document.caretRangeFromPoint) {
+           const range = document.caretRangeFromPoint(e.clientX, e.clientY);
+           if (range && editorRef.current?.contains(range.startContainer)) {
+             const textNode = document.createTextNode(contentToAdd);
+             range.insertNode(textNode);
+             // Nettoyage : placer le curseur après
+             range.setStartAfter(textNode);
+             range.setEndAfter(textNode);
+             const sel = window.getSelection();
+             sel?.removeAllRanges();
+             sel?.addRange(range);
+             
+             // Déclencher la mise à jour
+             handleInput(); 
+             return;
+           }
+        }
+        
+        // Fallback: Si on ne peut pas déterminer la position, on appelle le handler parent
+        // qui gérera l'ajout (souvent à la fin ou à la position du curseur actuel)
+        onDrop(contentToAdd);
+        
+      } catch (err) {
+        console.error("Erreur lors du drop:", err);
+      }
+    }
   };
 
+  // Gestionnaire pour s'assurer qu'on peut cliquer et focuser facilement
+  const handleClick = (e: React.MouseEvent) => {
+    if (e.target === e.currentTarget && editorRef.current) {
+        // Si on clique dans la zone grise mais pas dans l'éditeur, on focus l'éditeur
+        editorRef.current.focus();
+    }
+  }
+
   return (
-    <div className="flex-1 bg-gray-50 p-8 overflow-y-auto">
+    <div 
+        className="flex-1 bg-gray-50 p-8 overflow-y-auto cursor-text" 
+        onClick={handleClick}
+    >
       <div 
-        className="max-w-4xl mx-auto bg-white shadow-sm transition-all" 
-        style={{ minHeight: '800px' }}
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
-        onDrop={handleDrop}
+        className="max-w-4xl mx-auto bg-white shadow-sm transition-all min-h-[800px]" 
       >
         <div
           ref={editorRef}
           contentEditable
           suppressContentEditableWarning
-          className="w-full h-full min-h-[800px] p-6 focus:outline-none text-black"
+          className="w-full h-full min-h-[800px] p-10 focus:outline-none text-black prose prose-lg max-w-none"
           style={{ 
-            border: `2px solid #99334C`,
-            borderRadius: `16px`,
+            fontFamily: textFormat.font,
+            // fontSize géré via execCommand pour des raisons de sélection, 
+            // mais on peut mettre un défaut ici
             lineHeight: '1.6'
           }}
           onInput={handleInput}
-          data-placeholder="Sélectionnez du texte et utilisez la barre d'outils pour le formater..."
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+          data-placeholder={internalPlaceholder}
         />
       </div>
       
-      <style jsx>{`
+      <style jsx global>{`
         [contenteditable]:empty:before {
           content: attr(data-placeholder);
           color: #9CA3AF;
           pointer-events: none;
-          position: absolute;
+          display: block; /* Important pour l'affichage */
+        }
+        /* Style pour la sélection */
+        ::selection {
+            background-color: #99334C33; /* Rouge transparent */
+            color: inherit;
         }
       `}</style>
     </div>

@@ -1,7 +1,7 @@
 // services/structureService.ts
 import { getAuthToken, getAuthHeaders } from '@/lib/apiHelper';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 
 export interface Part {
   part_id: string;
@@ -23,7 +23,7 @@ export interface Chapter {
 export interface Paragraph {
   para_id: string;
   para_name: string;
-  para_number: string;
+  para_number: number;
   parent_chapter: string;
   notions?: Notion[];
 }
@@ -81,6 +81,30 @@ class StructureService {
     return result.data.parts;
   }
 
+  async updatePart(
+    projectName: string,
+    partTitle: string, // Ancien titre pour l'URL
+    data: { part_title?: string; part_intro?: string; part_number?: number }
+  ): Promise<Part> {
+    const response = await fetch(
+      `${API_BASE_URL}/api/projects/${encodeURIComponent(projectName)}/parts/${encodeURIComponent(partTitle)}`,
+      {
+        method: 'PATCH', // ou PUT selon l'API
+        headers: getAuthHeaders(),
+        body: JSON.stringify(data),
+      }
+    );
+
+    if (!response.ok) {
+      if (response.status === 401) throw new Error('Token invalide ou expiré.');
+      const error = await response.json();
+      throw new Error(error.message || 'Erreur lors de la mise à jour de la partie');
+    }
+
+    const result = await response.json();
+    return result.data.part;
+  }
+
   // ============= CHAPTERS =============
   async createChapter(projectName: string, partTitle: string, data: { chapter_title: string; chapter_number: number }): Promise<Chapter> {
     const response = await fetch(
@@ -130,7 +154,7 @@ class StructureService {
     projectName: string,
     partTitle: string,
     chapterTitle: string,
-    data: { para_name: string; para_number: string }
+    data: { para_name: string; para_number: number }
   ): Promise<Paragraph> {
     const response = await fetch(
       `${API_BASE_URL}/api/projects/${encodeURIComponent(projectName)}/parts/${encodeURIComponent(partTitle)}/chapters/${encodeURIComponent(chapterTitle)}/paragraphs`,
@@ -180,7 +204,7 @@ class StructureService {
     partTitle: string,
     chapterTitle: string,
     paraName: string,
-    data: { notion_name: string; notion_content: string; notion_number?: number }
+    data: { notion_name: string; notion_content: string; notion_number: number }
   ): Promise<Notion> {
     const response = await fetch(
       `${API_BASE_URL}/api/projects/${encodeURIComponent(projectName)}/parts/${encodeURIComponent(partTitle)}/chapters/${encodeURIComponent(chapterTitle)}/paragraphs/${encodeURIComponent(paraName)}/notions`,
@@ -240,7 +264,7 @@ class StructureService {
     const response = await fetch(
       `${API_BASE_URL}/api/projects/${encodeURIComponent(projectName)}/parts/${encodeURIComponent(partTitle)}/chapters/${encodeURIComponent(chapterTitle)}/paragraphs/${encodeURIComponent(paraName)}/notions/${encodeURIComponent(notionName)}`,
       {
-        method: 'PUT',
+        method: 'PATCH',
         headers: getAuthHeaders(),
         body: JSON.stringify(data),
       }
@@ -261,22 +285,22 @@ class StructureService {
   // Charger la structure complète d'un projet
   async getProjectStructure(projectName: string): Promise<Part[]> {
     const parts = await this.getParts(projectName);
-    
+
     // Charger les chapitres de chaque partie
     for (const part of parts) {
       part.chapters = await this.getChapters(projectName, part.part_title);
-      
+
       // Charger les paragraphes de chaque chapitre
       for (const chapter of part.chapters) {
         chapter.paragraphs = await this.getParagraphs(projectName, part.part_title, chapter.chapter_title);
-        
+
         // Charger les notions de chaque paragraphe
         for (const paragraph of chapter.paragraphs) {
           paragraph.notions = await this.getNotions(projectName, part.part_title, chapter.chapter_title, paragraph.para_name);
         }
       }
     }
-    
+
     return parts;
   }
 }

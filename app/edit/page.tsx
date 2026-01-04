@@ -2,19 +2,20 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { Loader2, AlertCircle, Save, X } from 'lucide-react';
+import { Loader2, AlertCircle, Save, X, Eye } from 'lucide-react';
 import TableOfContents from '@/components/Editor/TableOfContents';
 import EditorToolbar from '@/components/Editor/EditorToolBar';
 import EditorArea from '@/components/Editor/EditorArea';
 import RightPanel from '@/components/Editor/RightPanel';
+import ChatBotOverlay from '@/components/Editor/ChatBotOverlay';
 import { projectService } from '@/services/projectService';
 import { structureService, Part, Notion } from '@/services/structureService';
 
 const XCCM2Editor = () => {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const projectName = searchParams.get('projectId');
-  
+  const projectName = searchParams.get('projectName');
+
   const [projectData, setProjectData] = useState<{
     pr_id: string;
     pr_name: string;
@@ -24,20 +25,23 @@ const XCCM2Editor = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const [isSaving, setIsSaving] = useState(false);
-  
+
   const [rightPanel, setRightPanel] = useState<string | null>(null);
   const [textFormat, setTextFormat] = useState({
     font: 'Arial',
     fontSize: '11'
   });
-  
+
   const [currentContext, setCurrentContext] = useState<{
+    type: 'part' | 'notion'; // Ajout du type
     projectName: string;
     partTitle: string;
-    chapterTitle: string;
-    paraName: string;
-    notionName: string;
-    notion: Notion | null;
+    // Optionnels selon le type
+    chapterTitle?: string;
+    paraName?: string;
+    notionName?: string;
+    notion?: Notion | null;
+    part?: Part | null;
   } | null>(null);
 
   const [editorContent, setEditorContent] = useState('');
@@ -65,6 +69,7 @@ const XCCM2Editor = () => {
   const [isCreatingChapter, setIsCreatingChapter] = useState(false);
   const [isCreatingParagraph, setIsCreatingParagraph] = useState(false);
   const [isCreatingNotion, setIsCreatingNotion] = useState(false);
+  const [showChatBot, setShowChatBot] = useState(false);
 
   const [expandedItems, setExpandedItems] = useState<{ [key: string]: boolean }>({});
 
@@ -84,17 +89,17 @@ const XCCM2Editor = () => {
     try {
       setIsLoading(true);
       setError('');
-      
+
       const project = await projectService.getProjectByName(projectName!);
       setProjectData({
         pr_id: project.pr_id,
         pr_name: project.pr_name,
         owner_id: project.owner_id
       });
-      
+
       const projectStructure = await structureService.getProjectStructure(project.pr_name);
       setStructure(projectStructure);
-      
+
     } catch (err: any) {
       setError(err.message || 'Erreur lors du chargement du projet');
       console.error('Erreur chargement projet:', err);
@@ -102,6 +107,17 @@ const XCCM2Editor = () => {
       setIsLoading(false);
     }
   };
+
+  // Auto-save logic
+  useEffect(() => {
+    if (!hasUnsavedChanges || !currentContext) return;
+
+    const timeoutId = setTimeout(() => {
+      handleSave(true); // true = silent/auto
+    }, 2000);
+
+    return () => clearTimeout(timeoutId);
+  }, [editorContent, hasUnsavedChanges, currentContext]);
 
   const handleSelectNotion = (context: {
     projectName: string;
@@ -111,51 +127,88 @@ const XCCM2Editor = () => {
     notionName: string;
     notion: Notion;
   }) => {
-    if (hasUnsavedChanges && currentContext) {
-      if (confirm('Vous avez des modifications non sauvegardées. Voulez-vous les sauvegarder ?')) {
-        handleSave();
-      }
+    // Suppression de window.confirm : auto-save gérera la sauvegarde si nécessaire avant ou après,
+    // mais ici on change de contexte, donc il faut sauvegarder AVANT de changer si on veut pas perdre.
+    // Idéalement on force le save avant switch.
+    if (hasUnsavedChanges) {
+      handleSave(true); // Save immédiat silencieux avant de changer
     }
 
-    setCurrentContext(context);
-    setEditorContent(context.notion.notion_content);
+    setCurrentContext({ ...context, type: 'notion', part: null });
+    setEditorContent(context.notion.notion_content || '');
     setHasUnsavedChanges(false);
   };
 
-  const handleSave = async () => {
+  // Nouveau handler pour sélectionner une partie (Intro)
+  const handleSelectPart = (context: {
+    projectName: string;
+    partTitle: string;
+    part: Part;
+  }) => {
+    if (hasUnsavedChanges) {
+      handleSave(true);
+    }
+    setCurrentContext({
+      type: 'part',
+      projectName: context.projectName,
+      partTitle: context.partTitle,
+      part: context.part,
+      chapterTitle: undefined, paraName: undefined, notionName: undefined, notion: null
+    });
+    setEditorContent(context.part.part_intro || '');
+    setHasUnsavedChanges(false);
+  }
+
+  const handleSave = async (isAuto = false) => {
     if (!currentContext) return;
 
     try {
       setIsSaving(true);
       setError('');
 
-      await structureService.updateNotion(
-        currentContext.projectName,
-        currentContext.partTitle,
-        currentContext.chapterTitle,
-        currentContext.paraName,
-        currentContext.notionName,
-        { notion_content: editorContent }
-      );
-
-      if (currentContext.notion) {
-        currentContext.notion.notion_content = editorContent;
+      if (currentContext.type === 'notion' && currentContext.notionName) {
+        // Sauvegarde NOTION
+        await structureService.updateNotion(
+          currentContext.projectName,
+          currentContext.partTitle,
+          currentContext.chapterTitle!,
+          currentContext.paraName!,
+          currentContext.notionName,
+          { notion_content: editorContent }
+        );
+        // Mise à jour locale
+        if (currentContext.notion) {
+          currentContext.notion.notion_content = editorContent;
+        }
+      } else if (currentContext.type === 'part' && currentContext.partTitle) {
+        // Sauvegarde PARTIE (Intro)
+        await structureService.updatePart(
+          currentContext.projectName,
+          currentContext.partTitle,
+          { part_intro: editorContent }
+        );
+        // Mise à jour locale
+        if (currentContext.part) {
+          currentContext.part.part_intro = editorContent;
+        }
       }
 
       setHasUnsavedChanges(false);
-      
-      const successMsg = document.createElement('div');
-      successMsg.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 flex items-center gap-2';
-      successMsg.innerHTML = '<svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg> Sauvegardé !';
-      document.body.appendChild(successMsg);
-      setTimeout(() => document.body.removeChild(successMsg), 3000);
+
+      if (!isAuto) {
+        const successMsg = document.createElement('div');
+        successMsg.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 flex items-center gap-2 animate-in slide-in-from-right';
+        successMsg.innerHTML = '<svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg> Sauvegardé !';
+        document.body.appendChild(successMsg);
+        setTimeout(() => document.body.removeChild(successMsg), 3000);
+      }
 
     } catch (err: any) {
       setError(err.message || 'Erreur lors de la sauvegarde');
-      
+      // Afficher erreur toast
       const errorMsg = document.createElement('div');
       errorMsg.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 flex items-center gap-2';
-      errorMsg.innerHTML = `<svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/></svg> ${err.message}`;
+      errorMsg.textContent = err.message || "Erreur de sauvegarde";
       document.body.appendChild(errorMsg);
       setTimeout(() => document.body.removeChild(errorMsg), 5000);
     } finally {
@@ -194,24 +247,12 @@ const XCCM2Editor = () => {
     e.dataTransfer.effectAllowed = 'copy';
   };
 
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    const granuleData = e.dataTransfer.getData('granule');
-    
-    if (granuleData && editorRef.current) {
-      const granule = JSON.parse(granuleData);
-      const content = granule.content || granule.granule_content || '';
-      
-      const selection = window.getSelection();
-      if (selection && selection.rangeCount > 0) {
-        const range = selection.getRangeAt(0);
-        range.deleteContents();
-        const textNode = document.createTextNode('\n\n' + content + '\n');
-        range.insertNode(textNode);
-      } else {
-        editorRef.current.innerHTML += '\n\n' + content + '\n';
-      }
-      
+  // Remplacé par handleDropNew qui est plus simple (le EditorArea gère la position)
+  const handleDropNew = (contentToAdd: string) => {
+    if (editorRef.current) {
+      // Fallback si le drop précis n'a pas marché ou n'est pas supporté par le navigateur
+      // On ajoute à la fin ou là où était le curseur avant
+      editorRef.current.innerHTML += '\n' + contentToAdd;
       setEditorContent(editorRef.current.innerHTML);
       setHasUnsavedChanges(true);
     }
@@ -219,39 +260,57 @@ const XCCM2Editor = () => {
 
   // Fonctions d'ouverture des modales
   const handleCreatePart = () => {
-    setPartFormData({ title: '', number: 1 });
+    const maxNumber = structure.length > 0
+      ? Math.max(...structure.map(p => p.part_number || 0))
+      : 0;
+    setPartFormData({ title: '', number: maxNumber + 1 });
     setShowPartModal(true);
   };
 
   const handleCreateChapter = (partTitle: string) => {
     setModalContext({ partTitle });
-    setChapterFormData({ title: '', number: 1 });
+
+    const part = structure.find(p => p.part_title === partTitle);
+    const existingChapters = part?.chapters || [];
+    const maxNumber = existingChapters.length > 0
+      ? Math.max(...existingChapters.map(c => c.chapter_number || 0))
+      : 0;
+
+    setChapterFormData({ title: '', number: maxNumber + 1 });
     setShowChapterModal(true);
   };
 
   const handleCreateParagraph = (partTitle: string, chapterTitle: string) => {
     setModalContext({ partTitle, chapterTitle });
-    setParagraphFormData({ name: '', number: 1 });
+
+    const part = structure.find(p => p.part_title === partTitle);
+    const chapter = part?.chapters?.find(c => c.chapter_title === chapterTitle);
+    const existingParagraphs = chapter?.paragraphs || [];
+    const maxNumber = existingParagraphs.length > 0
+      ? Math.max(...existingParagraphs.map(p => p.para_number || 0))
+      : 0;
+
+    setParagraphFormData({ name: '', number: maxNumber + 1 });
     setShowParagraphModal(true);
   };
 
   const handleCreateNotion = (partTitle: string, chapterTitle: string, paraName: string) => {
     setModalContext({ partTitle, chapterTitle, paraName });
-    
+
     const part = structure.find(p => p.part_title === partTitle);
     const chapter = part?.chapters?.find(c => c.chapter_title === chapterTitle);
     const paragraph = chapter?.paragraphs?.find(p => p.para_name === paraName);
     const existingNotions = paragraph?.notions || [];
-    
+
     const maxNumber = existingNotions.length > 0
       ? Math.max(...existingNotions.map(n => n.notion_number || 0))
       : 0;
-    
-    setNotionFormData({ 
-      name: '', 
+
+    setNotionFormData({
+      name: '',
       number: maxNumber + 1
     });
-    
+
     setShowNotionModal(true);
   };
 
@@ -262,12 +321,12 @@ const XCCM2Editor = () => {
     try {
       setIsCreatingPart(true);
       setError('');
-      
+
       const newPart = await structureService.createPart(projectData.pr_name, {
         part_title: partFormData.title,
         part_number: partFormData.number
       });
-      
+
       setStructure(prevStructure => {
         const exists = prevStructure.some(p => p.part_id === newPart.part_id);
         if (!exists) {
@@ -275,7 +334,7 @@ const XCCM2Editor = () => {
         }
         return prevStructure;
       });
-      
+
       setShowPartModal(false);
     } catch (err: any) {
       setError(err.message || 'Erreur lors de la création de la partie');
@@ -290,16 +349,16 @@ const XCCM2Editor = () => {
     try {
       setIsCreatingChapter(true);
       setError('');
-      
+
       const newChapter = await structureService.createChapter(
-        projectData.pr_name, 
-        modalContext.partTitle, 
+        projectData.pr_name,
+        modalContext.partTitle,
         {
           chapter_title: chapterFormData.title,
           chapter_number: chapterFormData.number
         }
       );
-      
+
       setStructure(prevStructure => {
         const newStructure = [...prevStructure];
         const part = newStructure.find(p => p.part_title === modalContext.partTitle);
@@ -312,7 +371,7 @@ const XCCM2Editor = () => {
         }
         return newStructure;
       });
-      
+
       setShowChapterModal(false);
     } catch (err: any) {
       setError(err.message || 'Erreur lors de la création du chapitre');
@@ -327,7 +386,7 @@ const XCCM2Editor = () => {
     try {
       setIsCreatingParagraph(true);
       setError('');
-      
+
       const newParagraph = await structureService.createParagraph(
         projectData.pr_name,
         modalContext.partTitle,
@@ -337,7 +396,7 @@ const XCCM2Editor = () => {
           para_number: paragraphFormData.number
         }
       );
-      
+
       setStructure(prevStructure => {
         const newStructure = [...prevStructure];
         const part = newStructure.find(p => p.part_title === modalContext.partTitle);
@@ -353,7 +412,7 @@ const XCCM2Editor = () => {
         }
         return newStructure;
       });
-      
+
       setShowParagraphModal(false);
     } catch (err: any) {
       setError(err.message || 'Erreur lors de la création du paragraphe');
@@ -364,13 +423,13 @@ const XCCM2Editor = () => {
 
   const confirmCreateNotion = async () => {
     if (!projectData || !modalContext.partTitle || !modalContext.chapterTitle || !modalContext.paraName || !notionFormData.name.trim()) return;
-    
+
     if (isCreatingNotion) return;
 
     try {
       setIsCreatingNotion(true);
       setError('');
-      
+
       const newNotion = await structureService.createNotion(
         projectData.pr_name,
         modalContext.partTitle,
@@ -382,7 +441,7 @@ const XCCM2Editor = () => {
           notion_content: 'À compléter...'
         }
       );
-      
+
       setStructure(prevStructure => {
         const newStructure = [...prevStructure];
         const part = newStructure.find(p => p.part_title === modalContext.partTitle);
@@ -392,22 +451,22 @@ const XCCM2Editor = () => {
             const paragraph = chapter.paragraphs.find(p => p.para_name === modalContext.paraName);
             if (paragraph) {
               if (!paragraph.notions) paragraph.notions = [];
-              
+
               const exists = paragraph.notions.some(n => n.notion_id === newNotion.notion_id);
               if (!exists) {
                 paragraph.notions.push(newNotion);
               }
-              
-              setExpandedItems(prev => ({ 
-                ...prev, 
-                [`paragraph-${paragraph.para_id}`]: true 
+
+              setExpandedItems(prev => ({
+                ...prev,
+                [`paragraph-${paragraph.para_id}`]: true
               }));
             }
           }
         }
         return newStructure;
       });
-      
+
       setShowNotionModal(false);
     } catch (err: any) {
       console.error('❌ Erreur création notion:', err);
@@ -458,9 +517,55 @@ const XCCM2Editor = () => {
     );
   }
 
+  const handleInsertImage = () => {
+    // Créer un input file invisible
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+
+    input.onchange = (e: Event) => {
+      const target = e.target as HTMLInputElement;
+      const file = target.files?.[0];
+
+      if (file) {
+        // Créer une URL locale pour l'image
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          const imageUrl = event.target?.result as string;
+
+          // Insérer l'image dans l'éditeur
+          if (editorRef.current) {
+            const img = document.createElement('img');
+            img.src = imageUrl;
+            img.style.maxWidth = '100%';
+            img.style.height = 'auto';
+            img.style.margin = '10px 0';
+
+            // Insérer à la position du curseur ou à la fin
+            const selection = window.getSelection();
+            if (selection && selection.rangeCount > 0) {
+              const range = selection.getRangeAt(0);
+              range.insertNode(img);
+              range.collapse(false);
+            } else {
+              editorRef.current.appendChild(img);
+            }
+
+            // Mettre à jour le contenu
+            setEditorContent(editorRef.current.innerHTML);
+            setHasUnsavedChanges(true);
+          }
+        };
+        reader.readAsDataURL(file);
+      }
+    };
+
+    input.click();
+  };
+
   return (
-    <div className="flex h-screen bg-gray-50">
-      <TableOfContents 
+    <div className="flex h-screen bg-gray-50 overflow-hidden">
+      <TableOfContents
         projectName={projectData?.pr_name || ''}
         structure={structure}
         onSelectNotion={handleSelectNotion}
@@ -469,19 +574,41 @@ const XCCM2Editor = () => {
         onCreateParagraph={handleCreateParagraph}
         onCreateNotion={handleCreateNotion}
         selectedNotionId={currentContext?.notion?.notion_id}
+        // Ajout des props pour la sélection de partie (à update aussi dans TableOfContents)
+        // @ts-ignore (on va update le composant juste après)
+        onSelectPart={handleSelectPart}
+        selectedPartId={currentContext?.part?.part_id}
       />
 
       <div className="flex-1 flex flex-col">
         <div className="bg-white border-b border-gray-200 flex items-center justify-between px-4 py-2">
           <div className="flex items-center gap-4">
             <h1 className="text-lg font-semibold text-gray-900">{projectData?.pr_name}</h1>
-            {currentContext && (
-              <div className="text-sm text-gray-600">
-                {currentContext.partTitle} / {currentContext.chapterTitle} / {currentContext.paraName} / <span className="font-semibold text-[#99334C]">{currentContext.notionName}</span>
-              </div>
-            )}
+            {currentContext ? (
+              currentContext.type === 'notion' ? (
+                <div className="text-sm text-gray-600">
+                  {currentContext.partTitle} / {currentContext.chapterTitle} / {currentContext.paraName} / <span className="font-semibold text-[#99334C]">{currentContext.notionName}</span>
+                </div>
+              ) : (
+                <div className="text-sm text-gray-600">
+                  Partie <span className="font-semibold text-[#99334C]">{currentContext.partTitle}</span> (Introduction)
+                </div>
+              )
+            ) : null}
           </div>
           <div className="flex items-center gap-3">
+
+            <button
+              onClick={() => {
+                if (hasUnsavedChanges) handleSave(true);
+                router.push(`/preview?projectName=${encodeURIComponent(projectData?.pr_name || '')}`);
+              }}
+              className="px-4 py-2 border border-gray-200 text-gray-700 bg-white rounded-lg hover:bg-gray-50 transition-all flex items-center gap-2"
+              title="Aperçu du cours"
+            >
+              <Eye className="w-4 h-4" />
+              Aperçu
+            </button>
             {hasUnsavedChanges && (
               <span className="text-sm text-orange-600 flex items-center gap-1">
                 <span className="w-2 h-2 bg-orange-600 rounded-full animate-pulse"></span>
@@ -489,7 +616,7 @@ const XCCM2Editor = () => {
               </span>
             )}
             <button
-              onClick={handleSave}
+              onClick={() => handleSave(false)}
               disabled={!hasUnsavedChanges || isSaving}
               className="px-4 py-2 bg-[#99334C] text-white rounded-lg hover:bg-[#7a283d] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
             >
@@ -508,36 +635,45 @@ const XCCM2Editor = () => {
           </div>
         </div>
 
-        <EditorToolbar 
+        <EditorToolbar
           textFormat={textFormat}
           onFormatChange={applyFormat}
           onFontChange={handleFontChange}
           onFontSizeChange={handleFontSizeChange}
+          onChatToggle={() => setShowChatBot(!showChatBot)}
+          onInsertImage={handleInsertImage}
         />
 
         {currentContext ? (
-          <EditorArea 
+          <EditorArea
             content={editorContent}
             textFormat={textFormat}
             onChange={setEditorContent}
-            onDrop={handleDrop}
+            onDrop={handleDropNew} // Utilise la nouvelle méthode
             editorRef={editorRef}
+            placeholder={
+              currentContext.type === 'part'
+                ? "Rédigez l'introduction de cette partie..."
+                : "Commencez à rédaction votre notion ici..."
+            }
           />
         ) : (
           <div className="flex-1 flex items-center justify-center text-gray-500">
             <div className="text-center">
-              <p className="text-lg mb-2">Sélectionnez une notion pour commencer à éditer</p>
-              <p className="text-sm">ou créez-en une nouvelle dans la table des matières</p>
+              <p className="text-lg mb-2">Sélectionnez une notion ou une partie pour commencer à éditer</p>
+              <p className="text-sm">ou utilisez la table des matières à gauche</p>
             </div>
           </div>
         )}
       </div>
 
-      <RightPanel 
+      <RightPanel
         activePanel={rightPanel}
         onToggle={toggleRightPanel}
         granules={[]}
         onDragStart={handleDragStart}
+        project={projectData}
+        structure={structure}
         currentContext={currentContext ? {
           projectName: currentContext.projectName,
           partTitle: currentContext.partTitle,
@@ -546,6 +682,8 @@ const XCCM2Editor = () => {
           notionName: currentContext.notionName
         } : undefined}
       />
+
+      <ChatBotOverlay isOpen={showChatBot} onClose={() => setShowChatBot(false)} />
 
       {/* MODALE PARTIE */}
       {showPartModal && (
@@ -557,7 +695,7 @@ const XCCM2Editor = () => {
                 <X className="w-6 h-6" />
               </button>
             </div>
-            
+
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Titre de la partie</label>
@@ -570,7 +708,7 @@ const XCCM2Editor = () => {
                   autoFocus
                 />
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Numéro</label>
                 <input
@@ -592,7 +730,7 @@ const XCCM2Editor = () => {
               </button>
               <button
                 onClick={confirmCreatePart}
-                disabled={isCreatingPart || !partFormData.title.trim()}
+                disabled={isCreatingPart || partFormData.title.trim().length < 3}
                 className="flex-1 px-4 py-3 bg-[#99334C] text-white rounded-xl hover:bg-[#7a283d] disabled:opacity-50 flex justify-center items-center gap-2"
               >
                 {isCreatingPart && <Loader2 className="w-4 h-4 animate-spin" />}
@@ -613,11 +751,11 @@ const XCCM2Editor = () => {
                 <X className="w-6 h-6" />
               </button>
             </div>
-            
+
             <div className="mb-3 text-sm text-gray-600">
               Dans la partie : <span className="font-semibold text-[#99334C]">{modalContext.partTitle}</span>
             </div>
-            
+
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Titre du chapitre</label>
@@ -630,7 +768,7 @@ const XCCM2Editor = () => {
                   autoFocus
                 />
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Numéro</label>
                 <input
@@ -652,7 +790,7 @@ const XCCM2Editor = () => {
               </button>
               <button
                 onClick={confirmCreateChapter}
-                disabled={isCreatingChapter || !chapterFormData.title.trim()}
+                disabled={isCreatingChapter || chapterFormData.title.trim().length < 3}
                 className="flex-1 px-4 py-3 bg-[#99334C] text-white rounded-xl hover:bg-[#7a283d] disabled:opacity-50 flex justify-center items-center gap-2"
               >
                 {isCreatingChapter && <Loader2 className="w-4 h-4 animate-spin" />}
@@ -664,7 +802,7 @@ const XCCM2Editor = () => {
       )}
 
       {/* MODALE PARAGRAPHE */}
-       {showParagraphModal && (
+      {showParagraphModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl">
             <div className="flex justify-between items-center mb-4">
@@ -673,11 +811,11 @@ const XCCM2Editor = () => {
                 <X className="w-6 h-6" />
               </button>
             </div>
-            
+
             <div className="mb-3 text-sm text-gray-600">
               Dans : <span className="font-semibold text-[#99334C]">{modalContext.partTitle} / {modalContext.chapterTitle}</span>
             </div>
-            
+
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Nom du paragraphe</label>
@@ -690,15 +828,15 @@ const XCCM2Editor = () => {
                   autoFocus
                 />
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Numéro</label>
                 <input
                   type="number"
                   min="1"
                   value={paragraphFormData.number}
-                  onChange={(e) => setParagraphFormData(prev => ({ 
-                    ...prev, 
+                  onChange={(e) => setParagraphFormData(prev => ({
+                    ...prev,
                     number: parseInt(e.target.value) || 1
                   }))}
                   placeholder="1"
@@ -716,7 +854,7 @@ const XCCM2Editor = () => {
               </button>
               <button
                 onClick={confirmCreateParagraph}
-                disabled={isCreatingParagraph || !paragraphFormData.name.trim()}
+                disabled={isCreatingParagraph || paragraphFormData.name.trim().length < 3}
                 className="flex-1 px-4 py-3 bg-[#99334C] text-white rounded-xl hover:bg-[#7a283d] disabled:opacity-50 flex justify-center items-center gap-2"
               >
                 {isCreatingParagraph && <Loader2 className="w-4 h-4 animate-spin" />}
@@ -748,11 +886,11 @@ const XCCM2Editor = () => {
                 <X className="w-6 h-6" />
               </button>
             </div>
-            
+
             <div className="mb-3 text-sm text-gray-600">
               Dans : <span className="font-semibold text-[#99334C]">{modalContext.partTitle} / {modalContext.chapterTitle} / {modalContext.paraName}</span>
             </div>
-            
+
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Nom de la notion</label>
@@ -765,16 +903,16 @@ const XCCM2Editor = () => {
                   autoFocus
                 />
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Numéro</label>
                 <input
                   type="number"
                   min="1"
                   value={notionFormData.number}
-                  onChange={(e) => setNotionFormData(prev => ({ 
-                    ...prev, 
-                    number: parseInt(e.target.value) || 1 
+                  onChange={(e) => setNotionFormData(prev => ({
+                    ...prev,
+                    number: parseInt(e.target.value) || 1
                   }))}
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#99334C] text-gray-900"
                 />
@@ -790,7 +928,7 @@ const XCCM2Editor = () => {
               </button>
               <button
                 onClick={confirmCreateNotion}
-                disabled={isCreatingNotion || !notionFormData.name.trim()}
+                disabled={isCreatingNotion || notionFormData.name.trim().length < 3}
                 className="flex-1 px-4 py-3 bg-[#99334C] text-white rounded-xl hover:bg-[#7a283d] disabled:opacity-50 flex justify-center items-center gap-2"
               >
                 {isCreatingNotion && <Loader2 className="w-4 h-4 animate-spin" />}

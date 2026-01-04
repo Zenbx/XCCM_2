@@ -1,6 +1,6 @@
 // services/projectService.ts
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '';
 
 export interface Project {
   pr_id: string;
@@ -34,11 +34,14 @@ export interface ApiResponse<T> {
  */
 class ProjectService {
   /**
-   * Récupère le token d'authentification depuis le localStorage
+   * Récupère le token d'authentification depuis les cookies
    */
   private getAuthToken(): string | null {
     if (typeof window === 'undefined') return null;
-    return localStorage.getItem('authToken');
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; auth_token=`);
+    if (parts.length === 2) return parts.pop()?.split(';').shift() || null;
+    return null;
   }
 
   /**
@@ -47,7 +50,7 @@ class ProjectService {
   async getAllProjects(): Promise<Project[]> {
     try {
       const token = this.getAuthToken();
-      
+
       if (!token) {
         throw new Error('Non authentifié');
       }
@@ -79,7 +82,7 @@ class ProjectService {
   async getProjectByName(projectName: string): Promise<ProjectWithOwner> {
     try {
       const token = this.getAuthToken();
-      
+
       if (!token) {
         throw new Error('Non authentifié');
       }
@@ -111,7 +114,7 @@ class ProjectService {
   async createProject(data: CreateProjectData): Promise<Project> {
     try {
       const token = this.getAuthToken();
-      
+
       if (!token) {
         throw new Error('Non authentifié');
       }
@@ -146,7 +149,7 @@ class ProjectService {
   async updateProject(currentName: string, data: { pr_name: string }): Promise<Project> {
     try {
       const token = this.getAuthToken();
-      
+
       if (!token) {
         throw new Error('Non authentifié');
       }
@@ -180,7 +183,7 @@ class ProjectService {
   async deleteProject(projectName: string): Promise<void> {
     try {
       const token = this.getAuthToken();
-      
+
       if (!token) {
         throw new Error('Non authentifié');
       }

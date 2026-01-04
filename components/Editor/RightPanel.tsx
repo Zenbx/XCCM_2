@@ -14,7 +14,7 @@ import SettingsPanel from '../Editor/Panels/SettingsPanel';
 
 
 
-const RightPanel = ({ activePanel, onToggle, granules, onDragStart }) => {
+const RightPanel = ({ activePanel, onToggle, granules, onDragStart, project, structure }) => {
   const panels = [
     { id: 'import', icon: Cloud, title: 'Importer des documents' },
     { id: 'comments', icon: MessageSquare, title: 'Commentaires' },
@@ -23,35 +23,40 @@ const RightPanel = ({ activePanel, onToggle, granules, onDragStart }) => {
   ];
 
   return (
-    <div className="relative">
-      <div className="w-14 bg-white border-l border-gray-200 flex flex-col items-center py-4 gap-4">
+    <div className="relative h-full flex flex-row-reverse">
+      {/* Barre d'icônes - toujours visible et fixe */}
+      <div className="w-14 bg-white border-l border-gray-200 flex flex-col items-center py-4 gap-4 z-20 shadow-sm">
         {panels.map(({ id, icon: Icon, title }) => (
           <button
             key={id}
             onClick={() => onToggle(id)}
-            className={`p-3 rounded-lg transition-colors ${
-              activePanel === id ? 'text-white' : 'text-gray-700 hover:bg-gray-100'
-            }`}
-            style={activePanel === id ? { backgroundColor: '#99334C' } : {}}
+            className={`p-3 rounded-xl transition-all duration-200 ${activePanel === id
+                ? 'bg-[#99334C] text-white shadow-md transform scale-105'
+                : 'text-gray-500 hover:bg-gray-100'
+              }`}
             title={title}
           >
-            <Icon size={20} />
+            <Icon size={20} strokeWidth={activePanel === id ? 2.5 : 2} />
           </button>
         ))}
       </div>
 
+      {/* Panneau de contenu - s'ouvre à gauche des icônes */}
       {activePanel && (
-        <div className="absolute top-0 right-14 w-80 h-full bg-white border-l border-gray-200 shadow-lg overflow-y-auto z-10">
-          <div className="p-4 border-b" style={{ backgroundColor: '#6C7A89' }}>
-            <h3 className="text-white font-semibold">
+        <div className="w-80 lg:w-96 xl:w-[28rem] h-full bg-white border-l border-gray-200 flex flex-col animate-in slide-in-from-right duration-300">
+          <div className="p-5 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
+            <h3 className="font-bold text-gray-900">
               {panels.find(p => p.id === activePanel)?.title}
             </h3>
+            <button onClick={() => onToggle(activePanel)} className="text-gray-400 hover:text-gray-600">
+              {/* Close icon could go here */}
+            </button>
           </div>
-          <div className="p-4">
+          <div className="p-6 flex-1 overflow-y-auto">
             {activePanel === 'import' && <ImportPanel granules={granules} onDragStart={onDragStart} />}
             {activePanel === 'comments' && <CommentsPanel />}
-            {activePanel === 'info' && <InfoPanel />}
-            {activePanel === 'settings' && <SettingsPanel />}
+            {activePanel === 'info' && <InfoPanel project={project} structure={structure} />}
+            {activePanel === 'settings' && <SettingsPanel project={project} />}
           </div>
         </div>
       )}

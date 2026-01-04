@@ -1,10 +1,10 @@
 "use client";
 import React, { useState, useEffect } from 'react';
-import { 
-  Plus, 
-  ChevronLeft, 
-  ChevronRight, 
-  Search, 
+import {
+  Plus,
+  ChevronLeft,
+  ChevronRight,
+  Search,
   Filter,
   Download,
   Share2,
@@ -29,7 +29,7 @@ const EditHomePage = () => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
-  
+
   // --- États Modale Création ---
   const [isCreating, setIsCreating] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -45,7 +45,7 @@ const EditHomePage = () => {
   const [projectToRename, setProjectToRename] = useState<Project | null>(null);
   const [renameValue, setRenameValue] = useState('');
   const [isRenaming, setIsRenaming] = useState(false);
-  
+
   const router = useRouter();
   const { user } = useAuth();
 
@@ -89,7 +89,7 @@ const EditHomePage = () => {
       setProjects(prev => [newProject, ...prev]);
       setShowCreateModal(false);
       setNewProjectName('');
-      router.push(`/edit?projectId=${newProject.pr_id}`);
+      router.push(`/edit?projectName=${encodeURIComponent(newProject.pr_name)}`);
     } catch (err: any) {
       setError(err.message || 'Erreur création');
     } finally {
@@ -109,10 +109,10 @@ const EditHomePage = () => {
     try {
       setIsDeleting(true);
       await projectService.deleteProject(projectToDelete.pr_id);
-      
+
       // Mise à jour de l'UI : on filtre la liste actuelle pour retirer l'ID supprimé
       setProjects(prevProjects => prevProjects.filter(p => p.pr_id !== projectToDelete.pr_id));
-      
+
       setShowDeleteModal(false);
       setProjectToDelete(null);
     } catch (err: any) {
@@ -129,22 +129,22 @@ const EditHomePage = () => {
     setShowRenameModal(true);
   };
 
- // Dans EditHomePage.tsx, fonction confirmRename
+  // Dans EditHomePage.tsx, fonction confirmRename
 
-const confirmRename = async () => {
+  const confirmRename = async () => {
     if (!projectToRename || !renameValue.trim()) return;
 
     try {
       setIsRenaming(true);
-      
+
       // CORRECTION ICI : On passe le nom actuel (projectToRename.pr_name) comme premier argument
       // car l'API est définie sur /api/projects/{pr_name}
       await projectService.updateProject(projectToRename.pr_name, { pr_name: renameValue });
 
       // Mise à jour de l'UI locale
-      setProjects(prevProjects => prevProjects.map(p => 
-        p.pr_id === projectToRename.pr_id 
-          ? { ...p, pr_name: renameValue, updated_at: new Date().toISOString() } 
+      setProjects(prevProjects => prevProjects.map(p =>
+        p.pr_id === projectToRename.pr_id
+          ? { ...p, pr_name: renameValue, updated_at: new Date().toISOString() }
           : p
       ));
 
@@ -155,11 +155,11 @@ const confirmRename = async () => {
     } finally {
       setIsRenaming(false);
     }
-};
+  };
 
   // --- Navigation ---
-  const handleOpenEditor = (projectId: string) => {
-    router.push(`/edit?projectId=${projectId}`);
+  const handleOpenEditor = (projectName: string) => {
+    router.push(`/edit?projectName=${encodeURIComponent(projectName)}`);
   };
 
   const formatDate = (dateString: string) => {
@@ -191,7 +191,7 @@ const confirmRename = async () => {
           <p className="text-xl text-white/80 mb-8 max-w-2xl">
             Commencez à créer vos cours et compositions dès maintenant
           </p>
-          <button 
+          <button
             onClick={() => setShowCreateModal(true)}
             className="bg-white text-[#99334C] px-8 py-4 rounded-xl font-bold shadow-lg hover:shadow-xl transition-all flex items-center gap-3 hover:scale-105"
           >
@@ -280,7 +280,11 @@ const confirmRename = async () => {
                       </tr>
                     ) : (
                       filteredProjects.map((project) => (
-                        <tr key={project.pr_id} className="hover:bg-gray-50 transition-colors group">
+                        <tr
+                          key={project.pr_id}
+                          onClick={() => handleOpenEditor(project.pr_name)}
+                          className="hover:bg-gray-50 transition-colors group cursor-pointer"
+                        >
                           <td className="px-6 py-4">
                             <div className="flex items-center gap-3">
                               <div className="w-10 h-10 rounded-lg bg-[#99334C]/10 flex items-center justify-center">
@@ -291,20 +295,11 @@ const confirmRename = async () => {
                           </td>
                           <td className="px-6 py-4 text-gray-600">{formatDate(project.updated_at)}</td>
                           <td className="px-6 py-4 text-gray-600">{formatDate(project.created_at)}</td>
-                          <td className="px-6 py-4">
+                          <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
                             <div className="flex items-center justify-center gap-2">
-                              {/* Bouton Ouvrir Éditeur */}
+                              {/* Bouton Renommer */}
                               <button
-                                onClick={() => handleOpenEditor(project.pr_id)}
-                                className="p-2 rounded-lg hover:bg-[#99334C]/10 text-[#99334C] transition-all"
-                                title="Ouvrir dans l'éditeur"
-                              >
-                                <Edit3 className="w-5 h-5" />
-                              </button>
-                              
-                              {/* Bouton Renommer (Nouveau) */}
-                              <button
-                                onClick={() => clickRename(project)}
+                                onClick={(e) => { e.stopPropagation(); clickRename(project); }}
                                 className="p-2 rounded-lg hover:bg-amber-50 text-amber-600 transition-all"
                                 title="Renommer"
                               >
@@ -313,6 +308,7 @@ const confirmRename = async () => {
 
                               {/* Bouton Télécharger */}
                               <button
+                                onClick={(e) => e.stopPropagation()}
                                 className="p-2 rounded-lg hover:bg-blue-50 text-blue-600 transition-all"
                                 title="Télécharger"
                               >
@@ -321,7 +317,7 @@ const confirmRename = async () => {
 
                               {/* Bouton Supprimer */}
                               <button
-                                onClick={() => clickDelete(project)}
+                                onClick={(e) => { e.stopPropagation(); clickDelete(project); }}
                                 className="p-2 rounded-lg hover:bg-red-50 text-red-600 transition-all"
                                 title="Supprimer"
                               >
@@ -421,8 +417,8 @@ const confirmRename = async () => {
           <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border-l-4 border-red-500">
             <h3 className="text-xl font-bold text-gray-900 mb-2">Confirmer la suppression</h3>
             <p className="text-gray-600 mb-6">
-              Êtes-vous sûr de vouloir supprimer <span className="font-semibold text-gray-900">"{projectToDelete.pr_name}"</span> ? 
-              <br/>Cette action est irréversible.
+              Êtes-vous sûr de vouloir supprimer <span className="font-semibold text-gray-900">"{projectToDelete.pr_name}"</span> ?
+              <br />Cette action est irréversible.
             </p>
             <div className="flex gap-3">
               <button
