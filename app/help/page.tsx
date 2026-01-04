@@ -1,12 +1,14 @@
 "use client"
 
 import React, { useState, useEffect } from 'react';
-import { ChevronRight, Search, Book, HelpCircle, FileText, Headphones } from 'lucide-react';
+import { ChevronRight, Search, Book, HelpCircle, FileText, Headphones, Menu, X } from 'lucide-react';
 
 const HelpCenter = () => {
   const [activeSection, setActiveSection] = useState('documentation');
   const [activeSubSection, setActiveSubSection] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const [isMobileTocOpen, setIsMobileTocOpen] = useState(false);
 
   // Structure du contenu
   const sections = {
@@ -421,7 +423,6 @@ Limites de taux
     }
   };
 
-  // Détection du scroll pour mettre à jour la subsection active
   useEffect(() => {
     const handleScroll = () => {
       const subsections = sections[activeSection]?.subsections || [];
@@ -443,7 +444,6 @@ Limites de taux
     return () => window.removeEventListener('scroll', handleScroll);
   }, [activeSection]);
 
-  // Navigation via URL hash (depuis footer)
   useEffect(() => {
     const hash = window.location.hash.slice(1);
     if (hash) {
@@ -462,6 +462,7 @@ Limites de taux
     const element = document.getElementById(subsectionId);
     element?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     setActiveSubSection(subsectionId);
+    setIsMobileTocOpen(false);
   };
 
   const changeSection = (sectionKey) => {
@@ -469,21 +470,67 @@ Limites de taux
     window.scrollTo({ top: 0, behavior: 'smooth' });
     const firstSubsection = sections[sectionKey].subsections[0].id;
     setActiveSubSection(firstSubsection);
+    setIsMobileSidebarOpen(false);
   };
 
   const currentSection = sections[activeSection];
   const Icon = currentSection?.icon || Book;
 
   return (
-    <div className="flex h-screen bg-gray-50 text-gray-900">
-      {/* Sidebar Gauche - Navigation principale */}
-      <div className="w-64 bg-white border-r border-gray-200 overflow-y-auto">
-        <div className="p-6 border-b border-gray-200">
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">XCCM 2</h1>
-          <p className="text-sm text-gray-600">Centre d'aide</p>
+    <div className="flex flex-col md:flex-row h-screen bg-gray-50 text-gray-900">
+      {/* Header Mobile */}
+      <div className="md:hidden bg-white border-b border-gray-200 p-4 flex items-center justify-between sticky top-0 z-50">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
+            className="p-2 hover:bg-gray-100 rounded-lg"
+          >
+            <Menu size={24} />
+          </button>
+          <div>
+            <h1 className="text-lg font-bold text-gray-900">XCCM 2</h1>
+            <p className="text-xs text-gray-600">Centre d'aide</p>
+          </div>
+        </div>
+        <button
+          onClick={() => setIsMobileTocOpen(!isMobileTocOpen)}
+          className="p-2 hover:bg-gray-100 rounded-lg text-[#99334C]"
+        >
+          <FileText size={20} />
+        </button>
+      </div>
+
+      {/* Overlay Mobile */}
+      {(isMobileSidebarOpen || isMobileTocOpen) && (
+        <div
+          className="fixed inset-0 bg-black/50 z-40 md:hidden"
+          onClick={() => {
+            setIsMobileSidebarOpen(false);
+            setIsMobileTocOpen(false);
+          }}
+        />
+      )}
+
+      {/* Sidebar Gauche */}
+      <div className={`
+        fixed md:relative inset-y-0 left-0 z-50
+        w-72 md:w-64 bg-white border-r border-gray-200 overflow-y-auto
+        transform transition-transform duration-300 ease-in-out
+        ${isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+      `}>
+        <div className="p-6 border-b border-gray-200 flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">XCCM 2</h1>
+            <p className="text-sm text-gray-600">Centre d'aide</p>
+          </div>
+          <button
+            onClick={() => setIsMobileSidebarOpen(false)}
+            className="md:hidden p-2 hover:bg-gray-100 rounded-lg"
+          >
+            <X size={20} />
+          </button>
         </div>
 
-        {/* Barre de recherche */}
         <div className="p-4 border-b border-gray-200">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
@@ -497,7 +544,6 @@ Limites de taux
           </div>
         </div>
 
-        {/* Menu de navigation */}
         <nav className="p-4">
           <div className="space-y-1">
             {Object.entries(sections).map(([key, section]) => {
@@ -520,7 +566,6 @@ Limites de taux
           </div>
         </nav>
 
-        {/* Footer sidebar */}
         <div className="p-4 border-t border-gray-200 mt-auto">
           <p className="text-xs text-gray-500">Version 2.0.0</p>
           <p className="text-xs text-gray-500 mt-1">Projet IHM 2025</p>
@@ -529,16 +574,15 @@ Limites de taux
 
       {/* Contenu principal */}
       <div className="flex-1 overflow-y-auto bg-white">
-        <div className="max-w-4xl mx-auto p-8 pb-24">
-          {/* En-tête de section */}
-          <div className="mb-12">
+        <div className="max-w-4xl mx-auto p-4 md:p-8 pb-24">
+          <div className="mb-8 md:mb-12">
             <div className="flex items-center gap-3 mb-4">
-              <div className="p-3 bg-[#99334C] rounded-lg">
-                <Icon size={24} className="text-white" />
+              <div className="p-2 md:p-3 bg-[#99334C] rounded-lg">
+                <Icon size={20} className="text-white md:w-6 md:h-6" />
               </div>
-              <h1 className="text-4xl font-bold text-gray-900">{currentSection?.title}</h1>
+              <h1 className="text-2xl md:text-4xl font-bold text-gray-900">{currentSection?.title}</h1>
             </div>
-            <p className="text-gray-600 text-lg">
+            <p className="text-gray-600 text-sm md:text-lg">
               {activeSection === 'documentation' && 'Découvrez toutes les fonctionnalités de XCCM 2'}
               {activeSection === 'faq' && 'Réponses aux questions fréquemment posées'}
               {activeSection === 'guide' && 'Apprenez à créer des cours de qualité'}
@@ -546,20 +590,19 @@ Limites de taux
             </p>
           </div>
 
-          {/* Contenu des subsections */}
           {currentSection?.subsections.map((subsection) => {
             const subsectionContent = content[activeSection]?.[subsection.id];
             return (
               <section
                 key={subsection.id}
                 id={subsection.id}
-                className="mb-16 scroll-mt-24"
+                className="mb-12 md:mb-16 scroll-mt-24"
               >
-                <h2 className="text-2xl font-bold text-gray-900 mb-6 pb-3 border-b border-gray-200">
+                <h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-4 md:mb-6 pb-3 border-b border-gray-200">
                   {subsectionContent?.title || subsection.title}
                 </h2>
-                <div className="prose prose-lg max-w-none">
-                  <p className="text-gray-700 leading-relaxed whitespace-pre-line">
+                <div className="prose prose-sm md:prose-lg max-w-none">
+                  <p className="text-gray-700 leading-relaxed whitespace-pre-line text-sm md:text-base">
                     {subsectionContent?.content}
                   </p>
                 </div>
@@ -569,12 +612,25 @@ Limites de taux
         </div>
       </div>
 
-      {/* Sidebar Droite - Table des matières de la page */}
-      <div className="w-64 bg-white border-l border-gray-200 overflow-y-auto hidden xl:block">
-        <div className="p-6 sticky top-0">
-          <h3 className="text-sm font-semibold text-gray-600 uppercase tracking-wider mb-4">
-            Sur cette page
-          </h3>
+   {/* Sidebar Droite - TOC Mobile (drawer) */}
+      <div className={`
+        fixed xl:relative inset-y-0 right-0 z-50
+        w-72 xl:w-64 bg-white border-l border-gray-200 overflow-y-auto
+        transform transition-transform duration-300 ease-in-out
+        ${isMobileTocOpen ? 'translate-x-0' : 'translate-x-full xl:translate-x-0'}
+      `}>
+        <div className="p-6 sticky top-0 bg-white">
+          <div className="flex items-center justify-between mb-4 md:mb-4">
+            <h3 className="text-sm font-semibold text-gray-600 uppercase tracking-wider">
+              Sur cette page
+            </h3>
+            <button
+              onClick={() => setIsMobileTocOpen(false)}
+              className="md:hidden p-1 hover:bg-gray-100 rounded"
+            >
+              <X size={18} />
+            </button>
+          </div>
           <nav>
             <ul className="space-y-2">
               {currentSection?.subsections.map((subsection) => (
@@ -600,6 +656,14 @@ Limites de taux
           </nav>
         </div>
       </div>
+
+      {/* Bouton TOC flottant pour tablettes */}
+      <button
+        onClick={() => setIsMobileTocOpen(true)}
+        className="fixed bottom-6 right-6 xl:hidden bg-[#99334C] text-white p-4 rounded-full shadow-lg z-30 hover:bg-[#7a283d] transition-colors"
+      >
+        <FileText size={24} />
+      </button>
     </div>
   );
 };

@@ -50,7 +50,7 @@ export default function Header() {
   };
 
   return (
-    <header className="w-full bg-white shadow-sm border-b border-gray-100 sticky top-0 z-50">
+    <header className="w-full bg-white shadow-sm border-b border-gray-100 sticky top-0 z-60">
       <nav className="mx-auto flex max-w-7xl items-center justify-between lg:justify-center px-6 py-3 relative min-h-[60px]">
         
         {/* --- LOGO --- */}

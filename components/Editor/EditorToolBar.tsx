@@ -1,15 +1,40 @@
 "use client";
 
 import React from 'react';
-import { Bot, Eye } from 'lucide-react';
+import { 
+  Bot, 
+  Eye, 
+  Bold, 
+  Italic, 
+  Underline, 
+  Strikethrough,
+  AlignLeft,
+  AlignCenter,
+  AlignRight,
+  AlignJustify,
+  List,
+  ListOrdered
+} from 'lucide-react';
 
-// ============= COMPOSANT: EditorToolBar =============
+interface EditorToolbarProps {
+  onFormatChange: (format: string) => void;
+  onFontChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
+  onFontSizeChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
+  textFormat: {
+    font: string;
+    fontSize: string;
+  };
+}
 
-
-
-const EditorToolbar = ({ textFormat, onFormatChange, onFontChange, onFontSizeChange }) => {
+const EditorToolbar: React.FC<EditorToolbarProps> = ({ 
+  onFormatChange, 
+  onFontChange, 
+  onFontSizeChange,
+  textFormat 
+}) => {
   return (
     <div className="bg-white border-b border-gray-200 p-2 flex items-center gap-1">
+      {/* Police */}
       <select 
         className="px-2 py-1 border border-gray-300 rounded text-sm bg-white text-black"
         value={textFormat.font}
@@ -20,8 +45,11 @@ const EditorToolbar = ({ textFormat, onFormatChange, onFontChange, onFontSizeCha
         <option>Calibri</option>
         <option>Verdana</option>
         <option>Georgia</option>
+        <option>Courier New</option>
+        <option>Comic Sans MS</option>
       </select>
       
+      {/* Taille */}
       <select 
         className="px-2 py-1 border border-gray-300 rounded text-sm w-16 bg-white text-black"
         value={textFormat.fontSize}
@@ -37,63 +65,103 @@ const EditorToolbar = ({ textFormat, onFormatChange, onFontChange, onFontSizeCha
         <option>18</option>
         <option>20</option>
         <option>24</option>
+        <option>28</option>
+        <option>32</option>
+        <option>36</option>
       </select>
 
       <div className="w-px h-6 bg-gray-300 mx-1"></div>
 
+      {/* Formatage de texte */}
       <button 
-        className={`px-2 py-1 hover:bg-gray-100 rounded font-bold text-black ${textFormat.bold ? 'bg-gray-200' : ''}`}
+        className="px-2 py-1 hover:bg-gray-100 rounded text-black"
         onClick={() => onFormatChange('bold')}
-        title="Gras"
+        title="Gras (Ctrl+B)"
       >
-        B
+        <Bold size={18} />
       </button>
       
       <button 
-        className={`px-2 py-1 hover:bg-gray-100 rounded italic text-black ${textFormat.italic ? 'bg-gray-200' : ''}`}
+        className="px-2 py-1 hover:bg-gray-100 rounded text-black"
         onClick={() => onFormatChange('italic')}
-        title="Italique"
+        title="Italique (Ctrl+I)"
       >
-        I
+        <Italic size={18} />
       </button>
       
       <button 
-        className={`px-2 py-1 hover:bg-gray-100 rounded underline text-black ${textFormat.underline ? 'bg-gray-200' : ''}`}
+        className="px-2 py-1 hover:bg-gray-100 rounded text-black"
         onClick={() => onFormatChange('underline')}
-        title="Souligné"
+        title="Souligné (Ctrl+U)"
       >
-        U
+        <Underline size={18} />
       </button>
       
       <button 
-        className={`px-2 py-1 hover:bg-gray-100 rounded text-black ${textFormat.strikethrough ? 'bg-gray-200' : ''}`}
+        className="px-2 py-1 hover:bg-gray-100 rounded text-black"
         onClick={() => onFormatChange('strikethrough')}
         title="Barré"
-        style={{ textDecoration: 'line-through' }}
       >
-        S
+        <Strikethrough size={18} />
       </button>
 
       <div className="w-px h-6 bg-gray-300 mx-1"></div>
 
+      {/* Alignement */}
       <button 
-        className={`px-2 py-1 hover:bg-gray-100 rounded text-black text-sm ${textFormat.subscript ? 'bg-gray-200' : ''}`}
-        onClick={() => onFormatChange('subscript')}
-        title="Indice"
+        className="px-2 py-1 hover:bg-gray-100 rounded text-black"
+        onClick={() => onFormatChange('justifyLeft')}
+        title="Aligner à gauche"
       >
-        X<sub>2</sub>
+        <AlignLeft size={18} />
       </button>
-      
+
       <button 
-        className={`px-2 py-1 hover:bg-gray-100 rounded text-black text-sm ${textFormat.superscript ? 'bg-gray-200' : ''}`}
-        onClick={() => onFormatChange('superscript')}
-        title="Exposant"
+        className="px-2 py-1 hover:bg-gray-100 rounded text-black"
+        onClick={() => onFormatChange('justifyCenter')}
+        title="Centrer"
       >
-        X<sup>2</sup>
+        <AlignCenter size={18} />
+      </button>
+
+      <button 
+        className="px-2 py-1 hover:bg-gray-100 rounded text-black"
+        onClick={() => onFormatChange('justifyRight')}
+        title="Aligner à droite"
+      >
+        <AlignRight size={18} />
+      </button>
+
+      <button 
+        className="px-2 py-1 hover:bg-gray-100 rounded text-black"
+        onClick={() => onFormatChange('justifyFull')}
+        title="Justifier"
+      >
+        <AlignJustify size={18} />
+      </button>
+
+      <div className="w-px h-6 bg-gray-300 mx-1"></div>
+
+      {/* Listes */}
+      <button 
+        className="px-2 py-1 hover:bg-gray-100 rounded text-black"
+        onClick={() => onFormatChange('insertUnorderedList')}
+        title="Liste à puces"
+      >
+        <List size={18} />
+      </button>
+
+      <button 
+        className="px-2 py-1 hover:bg-gray-100 rounded text-black"
+        onClick={() => onFormatChange('insertOrderedList')}
+        title="Liste numérotée"
+      >
+        <ListOrdered size={18} />
       </button>
 
       <div className="flex-1"></div>
 
+      {/* Actions */}
       <button 
         className="px-4 py-1.5 rounded text-white flex items-center gap-2 text-sm hover:opacity-90"
         style={{ backgroundColor: '#6C7A89' }}
