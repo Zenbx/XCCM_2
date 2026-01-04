@@ -57,10 +57,10 @@ const Footer = () => {
           <div>
             <h4 className="font-bold text-lg mb-6 text-white/90">À propos</h4>
             <ul className="space-y-4 text-gray-400">
-              <li><Link href="/projet" className="hover:text-[#99334C] transition-colors">Le projet IHM</Link></li>
-              <li><Link href="/vision" className="hover:text-[#99334C] transition-colors">Notre Vision</Link></li>
-              <li><Link href="/equipe" className="hover:text-[#99334C] transition-colors">L'équipe</Link></li>
-              <li><Link href="/contact" className="hover:text-[#99334C] transition-colors">Nous contacter</Link></li>
+              <li><Link href="/about#presentation" className="hover:text-[#99334C] transition-colors">Le projet IHM</Link></li>
+              <li><Link href="/about#vision" className="hover:text-[#99334C] transition-colors">Notre Vision</Link></li>
+              <li><Link href="/about#equipe" className="hover:text-[#99334C] transition-colors">L'équipe</Link></li>
+              <li><Link href="/about#contact" className="hover:text-[#99334C] transition-colors">Nous contacter</Link></li>
             </ul>
           </div>
 
@@ -74,17 +74,17 @@ const Footer = () => {
                 </Link>
               </li>
               <li>
-                <Link href="/help#faq#compte" className="hover:text-[#99334C] transition-colors">
+                <Link href="/help#faq" className="hover:text-[#99334C] transition-colors">
                   FAQ
                 </Link>
               </li>
               <li>
-                <Link href="/help#guide#premier-cours" className="hover:text-[#99334C] transition-colors">
+                <Link href="/help#guide" className="hover:text-[#99334C] transition-colors">
                   Guide Auteurs
                 </Link>
               </li>
               <li>
-                <Link href="/help#support#contact" className="hover:text-[#99334C] transition-colors">
+                <Link href="/help#support" className="hover:text-[#99334C] transition-colors">
                   Support Technique
                 </Link>
               </li>

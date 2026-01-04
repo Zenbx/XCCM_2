@@ -7,8 +7,8 @@ export interface User {
   email: string;
   firstname: string;
   lastname: string;
-  occupation?: string; // Champ optionnel
-  org?: string;        // Champ optionnel
+  occupation?: string;
+  org?: string;
   created_at: string;
 }
 
@@ -32,6 +32,27 @@ export interface RegisterData {
 }
 
 /**
+ * Helpers pour gérer les cookies côté client
+ */
+function setCookie(name: string, value: string, days: number = 7) {
+  const expires = new Date();
+  expires.setTime(expires.getTime() + days * 24 * 60 * 60 * 1000);
+  document.cookie = `${name}=${value}; expires=${expires.toUTCString()}; path=/; SameSite=Lax`;
+}
+
+function getCookie(name: string): string | null {
+  if (typeof window === 'undefined') return null;
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) return parts.pop()?.split(';').shift() || null;
+  return null;
+}
+
+function deleteCookie(name: string) {
+  document.cookie = `${name}=; Max-Age=0; path=/;`;
+}
+
+/**
  * Service pour gérer l'authentification
  */
 class AuthService {
@@ -52,9 +73,13 @@ class AuthService {
         throw new Error(data.message || 'Erreur lors de la connexion');
       }
 
-      // Stocker automatiquement le token et user dans localStorage
-      localStorage.setItem('authToken', data.data.token);
-      localStorage.setItem('user', JSON.stringify(data.data.user));
+      // Stocker le token dans un cookie (au lieu de localStorage)
+      setCookie('auth_token', data.data.token, 7);
+      
+      // Optionnel : stocker l'utilisateur pour y accéder rapidement
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('user', JSON.stringify(data.data.user));
+      }
 
       return data;
     } catch (error) {
@@ -90,9 +115,12 @@ class AuthService {
         throw new Error(data.message || 'Erreur lors de l\'inscription');
       }
 
-      // Stocker automatiquement le token et user après inscription
-      localStorage.setItem('authToken', data.data.token);
-      localStorage.setItem('user', JSON.stringify(data.data.user));
+      // Stocker le token dans un cookie
+      setCookie('auth_token', data.data.token, 7);
+      
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('user', JSON.stringify(data.data.user));
+      }
 
       return data;
     } catch (error) {
@@ -154,20 +182,19 @@ class AuthService {
   }
 
   /**
-   * Récupère le token d'authentification
+   * Récupère le token d'authentification depuis le cookie
    */
   getAuthToken(): string | null {
-    if (typeof window === 'undefined') return null;
-    return localStorage.getItem('authToken');
+    return getCookie('auth_token');
   }
 
   /**
    * Nettoie les données d'authentification
    */
   clearAuth(): void {
+    deleteCookie('auth_token');
     if (typeof window !== 'undefined') {
-      localStorage.removeItem('authToken');
-      localStorage.removeItem('user');
+      sessionStorage.removeItem('user');
     }
   }
 }

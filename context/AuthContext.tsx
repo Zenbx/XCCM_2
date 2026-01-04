@@ -53,21 +53,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const checkAuth = async () => {
     setIsLoading(true);
     try {
-      const token = document.cookie
-        .split('; ')
-        .find(row => row.startsWith('auth_token='))
-        ?.split('=')[1];
+      const token = authService.getAuthToken();
 
       if (!token) {
         setUser(null);
         return;
       }
 
-      const userData = await authService.getCurrentUser(token); // injecter le token dans Authorization
+      const userData = await authService.getCurrentUser();
       setUser(userData);
     } catch (error) {
-      console.error(error);
+      console.error('Auth check error:', error);
       setUser(null);
+      authService.clearAuth();
     } finally {
       setIsLoading(false);
     }
@@ -76,27 +74,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = async (email: string, password: string) => {
     const response = await authService.login(email, password);
 
-    if (response.data.token && response.data.user) {
-      // Stocker le token dans un cookie HttpOnly via backend ou localStorage temporairement
-      document.cookie = `auth_token=${response.data.token}; path=/;`;
-
+    if (response.data.user) {
       setUser(response.data.user);
+      router.push('/edit-home');
     } else {
       throw new Error('Connexion échouée');
     }
   };
 
   const logout = async () => {
-    document.cookie = 'auth_token=; Max-Age=0; path=/;';
+    await authService.logout();
     setUser(null);
     router.push('/');
   };
 
   const register = async (userData: any) => {
     const response = await authService.register(userData);
-    if (response.data.token && response.data.user) {
-      document.cookie = `auth_token=${response.data.token}; path=/;`;
+    if (response.data.user) {
       setUser(response.data.user);
+      router.push('/edit-home');
     }
   };
 

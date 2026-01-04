@@ -186,8 +186,8 @@ const AccountPage = () => {
                           <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                           <input
                             type="text"
-                            value={formData.nom}
-                            onChange={(e) => setFormData({...formData, nom: e.target.value})}
+                            value={formData.lastname}
+                            onChange={(e) => setFormData({...formData, lastname: e.target.value})}
                             className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#99334C]/20 focus:border-[#99334C] transition-all"
                           />
                         </div>
@@ -201,8 +201,8 @@ const AccountPage = () => {
                           <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                           <input
                             type="text"
-                            value={formData.prenom}
-                            onChange={(e) => setFormData({...formData, prenom: e.target.value})}
+                            value={formData.firstname}
+                            onChange={(e) => setFormData({...formData, firstname: e.target.value})}
                             className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#99334C]/20 focus:border-[#99334C] transition-all"
                           />
                         </div>
@@ -232,8 +232,8 @@ const AccountPage = () => {
                         <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                         <input
                           type="text"
-                          value={formData.profession}
-                          onChange={(e) => setFormData({...formData, profession: e.target.value})}
+                          value={formData.occupation}
+                          onChange={(e) => setFormData({...formData, occupation: e.target.value})}
                           className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#99334C]/20 focus:border-[#99334C] transition-all"
                           placeholder="Enseignant, Formateur..."
                         />
@@ -248,8 +248,8 @@ const AccountPage = () => {
                         <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                         <input
                           type="text"
-                          value={formData.organisation}
-                          onChange={(e) => setFormData({...formData, organisation: e.target.value})}
+                          value={formData.org}
+                          onChange={(e) => setFormData({...formData, org: e.target.value})}
                           className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#99334C]/20 focus:border-[#99334C] transition-all"
                           placeholder="Nom de votre établissement"
                         />

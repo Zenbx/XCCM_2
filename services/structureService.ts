@@ -1,5 +1,5 @@
-// ============= FICHIER 1: services/structureService.ts =============
-// Service pour gérer la structure hiérarchique (Parts, Chapters, Paragraphs, Notions)
+// services/structureService.ts
+import { getAuthToken, getAuthHeaders } from '@/lib/apiHelper';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -37,29 +37,21 @@ export interface Notion {
 }
 
 class StructureService {
-  private getToken(): string {
-    return localStorage.getItem('auth_token') || '';
-  }
-
-  private getHeaders() {
-    return {
-      'Authorization': `Bearer ${this.getToken()}`,
-      'Content-Type': 'application/json',
-    };
-  }
-
   // ============= PARTS =============
   async createPart(projectName: string, data: { part_title: string; part_intro?: string; part_number: number }): Promise<Part> {
     const response = await fetch(
       `${API_BASE_URL}/api/projects/${encodeURIComponent(projectName)}/parts`,
       {
         method: 'POST',
-        headers: this.getHeaders(),
+        headers: getAuthHeaders(),
         body: JSON.stringify(data),
       }
     );
 
     if (!response.ok) {
+      if (response.status === 401) {
+        throw new Error('Token invalide ou expiré.');
+      }
       const error = await response.json();
       throw new Error(error.message || 'Erreur lors de la création de la partie');
     }
@@ -73,11 +65,14 @@ class StructureService {
       `${API_BASE_URL}/api/projects/${encodeURIComponent(projectName)}/parts`,
       {
         method: 'GET',
-        headers: this.getHeaders(),
+        headers: getAuthHeaders(),
       }
     );
 
     if (!response.ok) {
+      if (response.status === 401) {
+        throw new Error('Token invalide ou expiré.');
+      }
       const error = await response.json();
       throw new Error(error.message || 'Erreur lors de la récupération des parties');
     }
@@ -92,12 +87,15 @@ class StructureService {
       `${API_BASE_URL}/api/projects/${encodeURIComponent(projectName)}/parts/${encodeURIComponent(partTitle)}/chapters`,
       {
         method: 'POST',
-        headers: this.getHeaders(),
+        headers: getAuthHeaders(),
         body: JSON.stringify(data),
       }
     );
 
     if (!response.ok) {
+      if (response.status === 401) {
+        throw new Error('Token invalide ou expiré.');
+      }
       const error = await response.json();
       throw new Error(error.message || 'Erreur lors de la création du chapitre');
     }
@@ -111,11 +109,14 @@ class StructureService {
       `${API_BASE_URL}/api/projects/${encodeURIComponent(projectName)}/parts/${encodeURIComponent(partTitle)}/chapters`,
       {
         method: 'GET',
-        headers: this.getHeaders(),
+        headers: getAuthHeaders(),
       }
     );
 
     if (!response.ok) {
+      if (response.status === 401) {
+        throw new Error('Token invalide ou expiré.');
+      }
       const error = await response.json();
       throw new Error(error.message || 'Erreur lors de la récupération des chapitres');
     }
@@ -135,12 +136,15 @@ class StructureService {
       `${API_BASE_URL}/api/projects/${encodeURIComponent(projectName)}/parts/${encodeURIComponent(partTitle)}/chapters/${encodeURIComponent(chapterTitle)}/paragraphs`,
       {
         method: 'POST',
-        headers: this.getHeaders(),
+        headers: getAuthHeaders(),
         body: JSON.stringify(data),
       }
     );
 
     if (!response.ok) {
+      if (response.status === 401) {
+        throw new Error('Token invalide ou expiré.');
+      }
       const error = await response.json();
       throw new Error(error.message || 'Erreur lors de la création du paragraphe');
     }
@@ -154,11 +158,14 @@ class StructureService {
       `${API_BASE_URL}/api/projects/${encodeURIComponent(projectName)}/parts/${encodeURIComponent(partTitle)}/chapters/${encodeURIComponent(chapterTitle)}/paragraphs`,
       {
         method: 'GET',
-        headers: this.getHeaders(),
+        headers: getAuthHeaders(),
       }
     );
 
     if (!response.ok) {
+      if (response.status === 401) {
+        throw new Error('Token invalide ou expiré.');
+      }
       const error = await response.json();
       throw new Error(error.message || 'Erreur lors de la récupération des paragraphes');
     }
@@ -179,12 +186,15 @@ class StructureService {
       `${API_BASE_URL}/api/projects/${encodeURIComponent(projectName)}/parts/${encodeURIComponent(partTitle)}/chapters/${encodeURIComponent(chapterTitle)}/paragraphs/${encodeURIComponent(paraName)}/notions`,
       {
         method: 'POST',
-        headers: this.getHeaders(),
+        headers: getAuthHeaders(),
         body: JSON.stringify(data),
       }
     );
 
     if (!response.ok) {
+      if (response.status === 401) {
+        throw new Error('Token invalide ou expiré.');
+      }
       const error = await response.json();
       throw new Error(error.message || 'Erreur lors de la création de la notion');
     }
@@ -203,11 +213,14 @@ class StructureService {
       `${API_BASE_URL}/api/projects/${encodeURIComponent(projectName)}/parts/${encodeURIComponent(partTitle)}/chapters/${encodeURIComponent(chapterTitle)}/paragraphs/${encodeURIComponent(paraName)}/notions`,
       {
         method: 'GET',
-        headers: this.getHeaders(),
+        headers: getAuthHeaders(),
       }
     );
 
     if (!response.ok) {
+      if (response.status === 401) {
+        throw new Error('Token invalide ou expiré.');
+      }
       const error = await response.json();
       throw new Error(error.message || 'Erreur lors de la récupération des notions');
     }
@@ -228,12 +241,15 @@ class StructureService {
       `${API_BASE_URL}/api/projects/${encodeURIComponent(projectName)}/parts/${encodeURIComponent(partTitle)}/chapters/${encodeURIComponent(chapterTitle)}/paragraphs/${encodeURIComponent(paraName)}/notions/${encodeURIComponent(notionName)}`,
       {
         method: 'PUT',
-        headers: this.getHeaders(),
+        headers: getAuthHeaders(),
         body: JSON.stringify(data),
       }
     );
 
     if (!response.ok) {
+      if (response.status === 401) {
+        throw new Error('Token invalide ou expiré.');
+      }
       const error = await response.json();
       throw new Error(error.message || 'Erreur lors de la mise à jour de la notion');
     }

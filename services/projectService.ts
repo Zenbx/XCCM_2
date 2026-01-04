@@ -10,6 +10,15 @@ export interface Project {
   updated_at: string;
 }
 
+export interface ProjectWithOwner extends Project {
+  owner: {
+    user_id: string;
+    email: string;
+    firstname: string;
+    lastname: string;
+  };
+}
+
 export interface CreateProjectData {
   pr_name: string;
 }
@@ -65,6 +74,38 @@ class ProjectService {
   }
 
   /**
+   * Récupère un projet spécifique par son nom
+   */
+  async getProjectByName(projectName: string): Promise<ProjectWithOwner> {
+    try {
+      const token = this.getAuthToken();
+      
+      if (!token) {
+        throw new Error('Non authentifié');
+      }
+
+      const response = await fetch(`${API_BASE_URL}/api/projects/${encodeURIComponent(projectName)}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Erreur lors de la récupération du projet');
+      }
+
+      const result: ApiResponse<{ project: ProjectWithOwner }> = await response.json();
+      return result.data.project;
+    } catch (error) {
+      console.error('Erreur getProjectByName:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Crée un nouveau projet
    */
   async createProject(data: CreateProjectData): Promise<Project> {
@@ -98,9 +139,11 @@ class ProjectService {
   }
 
   /**
-   * Supprime un projet
+   * Met à jour le nom d'un projet
+   * @param currentName - Le nom ACTUEL du projet (utilisé pour l'URL)
+   * @param data - Objet contenant le NOUVEAU nom { pr_name: string }
    */
-  async deleteProject(projectId: string): Promise<void> {
+  async updateProject(currentName: string, data: { pr_name: string }): Promise<Project> {
     try {
       const token = this.getAuthToken();
       
@@ -108,7 +151,41 @@ class ProjectService {
         throw new Error('Non authentifié');
       }
 
-      const response = await fetch(`${API_BASE_URL}/api/projects/${projectId}`, {
+      const response = await fetch(`${API_BASE_URL}/api/projects/${encodeURIComponent(currentName)}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Erreur lors de la mise à jour du projet');
+      }
+
+      const result: ApiResponse<{ project: Project }> = await response.json();
+      return result.data.project;
+    } catch (error) {
+      console.error('Erreur updateProject:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Supprime un projet par son nom
+   * @param projectName - Le nom du projet à supprimer
+   */
+  async deleteProject(projectName: string): Promise<void> {
+    try {
+      const token = this.getAuthToken();
+      
+      if (!token) {
+        throw new Error('Non authentifié');
+      }
+
+      const response = await fetch(`${API_BASE_URL}/api/projects/${encodeURIComponent(projectName)}`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',

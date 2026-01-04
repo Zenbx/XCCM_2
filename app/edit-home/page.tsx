@@ -355,7 +355,7 @@ const confirmRename = async () => {
               value={newProjectName}
               onChange={(e) => setNewProjectName(e.target.value)}
               placeholder="Nom du projet"
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#99334C] mb-4"
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl text-gray-700 placeholder-gray-400 focus:ring-2 focus:ring-[#99334C] mb-4"
               autoFocus
             />
             <div className="flex gap-3">

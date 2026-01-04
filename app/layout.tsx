@@ -16,10 +16,12 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-const geistPoppins = Geist({
+const poppins = Poppins({
   variable: "--font-poppins",
   subsets: ["latin"],
+  weight: ["400", "500", "600", "700"], // choose what you need
 });
+
 
 export const metadata: Metadata = {
   title: "Create Next App",
@@ -34,7 +36,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistPoppins.variable} ${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${poppins.variable} ${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <Providers>
           <Header />

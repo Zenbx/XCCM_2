@@ -116,7 +116,7 @@ const AboutPage = () => {
   return (
     <div className="min-h-screen bg-white">
       {/* Hero Section */}
-      <section className="relative bg-gradient-to-br from-[#99334C] to-[#7a283d] text-white overflow-hidden py-20">
+      <section id="hero" className="relative bg-gradient-to-br from-[#99334C] to-[#7a283d] text-white overflow-hidden py-20">
         {/* Motif de fond */}
         <div className="absolute inset-0 opacity-10">
           <div className="absolute inset-0" style={{
@@ -146,7 +146,7 @@ const AboutPage = () => {
       </section>
 
       {/* Section Présentation Générale */}
-      <section className="py-20 px-6">
+      <section id="presentation" className="py-20 px-6 scroll-mt-20">
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-gray-900 mb-4">
@@ -202,7 +202,7 @@ const AboutPage = () => {
       </section>
 
       {/* Section Vision */}
-      <section className="py-20 px-6 bg-gradient-to-b from-white to-gray-50">
+      <section id="vision" className="py-20 px-6 bg-gradient-to-b from-white to-gray-50 scroll-mt-20">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <div className="inline-flex items-center gap-2 bg-[#99334C]/10 px-4 py-2 rounded-full mb-4">
@@ -261,7 +261,7 @@ const AboutPage = () => {
       </section>
 
       {/* Section L'équipe */}
-      <section className="py-20 px-6">
+      <section id="equipe" className="py-20 px-6 scroll-mt-20">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <div className="inline-flex items-center gap-2 bg-[#99334C]/10 px-4 py-2 rounded-full mb-4">
@@ -316,7 +316,7 @@ const AboutPage = () => {
       </section>
 
       {/* Section Contact */}
-      <section className="py-20 px-6 bg-gradient-to-b from-gray-50 to-white">
+      <section id="contact" className="py-20 px-6 bg-gradient-to-b from-gray-50 to-white scroll-mt-20">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <div className="inline-flex items-center gap-2 bg-[#99334C]/10 px-4 py-2 rounded-full mb-4">
@@ -383,7 +383,7 @@ const AboutPage = () => {
                   <textarea
                     value={contactForm.message}
                     onChange={(e) => setContactForm({...contactForm, message: e.target.value})}
-                    rows="5"
+                    rows={5}
                     className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#99334C]/20 focus:border-[#99334C] transition-all resize-none"
                     placeholder="Écrivez votre message ici..."
                   />
