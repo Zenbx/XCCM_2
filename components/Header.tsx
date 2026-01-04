@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import clsx from "clsx";
 import { FaHome, FaInfoCircle, FaEdit, FaBook, FaQuestionCircle } from "react-icons/fa";
@@ -26,7 +27,7 @@ export default function Header() {
   const pathname = usePathname();
   const router = useRouter();
   const { user, isAuthenticated, logout, isLoading } = useAuth();
-  
+
   // État pour le menu dropdown desktop
   const [showUserMenu, setShowUserMenu] = useState(false);
   // État pour le menu mobile (burger)
@@ -52,12 +53,19 @@ export default function Header() {
   return (
     <header className="w-full bg-white shadow-sm border-b border-gray-100 sticky top-0 z-60">
       <nav className="mx-auto flex max-w-7xl items-center justify-between lg:justify-center px-6 py-3 relative min-h-[60px]">
-        
+
         {/* --- LOGO --- */}
         {/* En mobile : position statique. En Desktop : absolute left-6 pour garder ton design */}
         <div className="lg:absolute lg:left-6 z-20">
-          <Link href="/" className="text-xl font-bold" style={{ color: COLORS.primary }}>
-            XCCM2
+          <Link href="/" className="flex items-center gap-2">
+            <Image
+              src="/logo-pro.png"
+              alt="XCCM2 Logo"
+              width={180}
+              height={60}
+              className="h-24 w-auto object-contain"
+              priority
+            />
           </Link>
         </div>
 
@@ -181,7 +189,7 @@ export default function Header() {
         </div>
 
         {/* --- BOUTON MENU MOBILE (Visible uniquement sur mobile) --- */}
-        <button 
+        <button
           className="lg:hidden p-2 text-gray-600 hover:text-gray-900 focus:outline-none"
           onClick={() => setIsMobileMenuOpen(true)}
         >
@@ -194,16 +202,16 @@ export default function Header() {
         {isMobileMenuOpen && (
           <>
             {/* Backdrop (Fond sombre) */}
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setIsMobileMenuOpen(false)}
               className="fixed inset-0 bg-black/20 backdrop-blur-sm z-50 lg:hidden"
             />
-            
+
             {/* Panneau Latéral */}
-            <motion.div 
+            <motion.div
               initial={{ x: "100%" }}
               animate={{ x: 0 }}
               exit={{ x: "100%" }}
@@ -251,7 +259,7 @@ export default function Header() {
                         <span className="text-xs text-gray-500 truncate max-w-[150px]">{user.email}</span>
                       </div>
                     </div>
-                    
+
                     <div className="space-y-1">
                       <Link href="/account" className="flex items-center gap-3 px-4 py-2 text-gray-600 hover:bg-gray-50 rounded-lg text-sm">
                         <UserIcon size={16} /> Mon compte

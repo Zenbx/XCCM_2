@@ -282,24 +282,24 @@ class StructureService {
     return result.data.notion;
   }
 
-  // Charger la structure complète d'un projet
+  // Charger la structure complète d'un projet en parallèle
   async getProjectStructure(projectName: string): Promise<Part[]> {
     const parts = await this.getParts(projectName);
 
-    // Charger les chapitres de chaque partie
-    for (const part of parts) {
+    // Charger les chapitres de chaque partie en parallèle
+    await Promise.all(parts.map(async (part) => {
       part.chapters = await this.getChapters(projectName, part.part_title);
 
-      // Charger les paragraphes de chaque chapitre
-      for (const chapter of part.chapters) {
+      // Charger les paragraphes de chaque chapitre en parallèle
+      await Promise.all(part.chapters.map(async (chapter) => {
         chapter.paragraphs = await this.getParagraphs(projectName, part.part_title, chapter.chapter_title);
 
-        // Charger les notions de chaque paragraphe
-        for (const paragraph of chapter.paragraphs) {
+        // Charger les notions de chaque paragraphe en parallèle
+        await Promise.all(chapter.paragraphs.map(async (paragraph) => {
           paragraph.notions = await this.getNotions(projectName, part.part_title, chapter.chapter_title, paragraph.para_name);
-        }
-      }
-    }
+        }));
+      }));
+    }));
 
     return parts;
   }
