@@ -24,3 +24,87 @@ body {
   color: var(--foreground);
   font-family: Poppins, Arial, Helvetica, sans-serif;
 }
+
+@media print {
+
+  /* Supprimer les en-têtes et pieds de page par défaut du navigateur (Date, URL, etc.) */
+  @page {
+    margin: 1cm;
+  }
+
+  /* Masquer les éléments d'interface */
+  .no-print,
+  header,
+  footer,
+  nav,
+  button,
+  .sticky {
+    display: none !important;
+  }
+
+  /* Reset du fond et des marges pour le papier */
+  body {
+    background: white !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  /* Optimiser l'espace du document */
+  #printable-content {
+    max-width: 100% !important;
+    width: 100% !important;
+    box-shadow: none !important;
+    border: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  .max-w-4xl {
+    max-width: 100% !important;
+    width: 100% !important;
+    padding: 0 !important;
+  }
+
+  .min-h-screen {
+    min-height: auto !important;
+    background: white !important;
+  }
+
+  /* Saut de page propre pour les parties */
+  h2 {
+    page-break-before: always;
+  }
+
+  /* Forcer des couleurs simples pour éviter les erreurs 'lab' d'html2canvas */
+  .prose,
+  .prose *,
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  p,
+  span {
+    color: #000000 !important;
+    background-color: transparent !important;
+  }
+
+  /* Éviter de couper les chapitres/paragraphes en deux si possible */
+  h3,
+  h4,
+  h5 {
+    page-break-after: avoid;
+  }
+
+  div {
+    page-break-inside: auto;
+  }
+}
+
+.page-break-after-always {
+  page-break-after: always;
+}
+
+.page-break-before-always {
+  page-break-before: always;
+}
