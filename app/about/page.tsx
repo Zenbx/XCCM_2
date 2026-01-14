@@ -20,6 +20,8 @@ import {
   TrendingUp
 } from 'lucide-react';
 import router from 'next/router';
+import { useLanguage } from '@/context/LanguageContext';
+import { translations } from '@/services/locales';
 
 const AboutPage = () => {
   const [contactForm, setContactForm] = useState({
@@ -28,6 +30,9 @@ const AboutPage = () => {
     sujet: '',
     message: ''
   });
+
+  const { language } = useLanguage();
+  const t = translations[language] ?? translations.fr;
 
   // Gestion des animations au scroll
   useEffect(() => {
@@ -231,7 +236,7 @@ const AboutPage = () => {
         <div className="relative max-w-7xl mx-auto px-6 text-center">
 
           <h1 className="text-5xl md:text-6xl font-bold mb-6">
-            À propos de XCCM2
+            {t.about.hero.title}
           </h1>
 
           {/* Soulignement décoratif */}
@@ -242,8 +247,7 @@ const AboutPage = () => {
           </div>
 
           <p className="text-xl text-white/90 max-w-3xl mx-auto leading-relaxed">
-            Une plateforme éducative numérique conçue pour faciliter la création,
-            l'organisation et la publication de contenus pédagogiques en ligne.
+            {t.about.hero.subtitle}
           </p>
         </div>
       </section>
@@ -253,7 +257,7 @@ const AboutPage = () => {
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-16 animate-on-scroll">
             <h2 className="text-4xl font-bold text-gray-900 mb-4">
-              Présentation générale
+              {t.about.presentation.title}
             </h2>
             <div className="w-20 h-1 bg-[#99334C] mx-auto rounded-full"></div>
           </div>
@@ -261,23 +265,16 @@ const AboutPage = () => {
           <div className="bg-gradient-to-br from-gray-50 to-white rounded-3xl p-8 md:p-12 shadow-lg border border-gray-100 animate-on-scroll">
             <div className="prose prose-lg max-w-none text-gray-700 leading-relaxed space-y-6">
               <p>
-                <span className="text-[#99334C] font-bold text-xl">XCCM 2</span> est une plateforme
-                éducative numérique conçue pour faciliter la création, l'organisation et la publication
-                de contenus pédagogiques en ligne. Elle s'adresse aux enseignants, formateurs et créateurs
-                de contenus souhaitant structurer leurs cours de manière claire, intuitive et accessible.
+                <span className="text-[#99334C] font-bold text-xl">XCCM 2</span> {t.about.presentation.intro}
               </p>
 
               <p>
-                Pensée dans une logique de <strong>système auteur</strong>, la plateforme permet de concevoir
-                des cours modulaires, organisés par parties, chapitres et notions, tout en offrant une
-                expérience utilisateur fluide et cohérente. XCCM 2 met l'accent sur la <strong>simplicité
-                  d'utilisation</strong> afin de rendre la production de contenus pédagogiques accessible,
-                même sans compétences techniques avancées.
+                {t.about.presentation.paragraph}
               </p>
 
               <div className="grid md:grid-cols-2 gap-6 mt-8">
-                {features.map((feature, index) => {
-                  const IconComponent = feature.icon;
+                {t.about.features.map((feature, index) => {
+                  const IconComponent = features[index]?.icon || BookOpen;
                   return (
                     <div key={index} className="flex gap-4 p-4 bg-white rounded-xl border border-gray-200 hover:border-[#99334C]/50 transition-all">
                       <div className="w-12 h-12 bg-[#99334C]/10 rounded-lg flex items-center justify-center flex-shrink-0">
@@ -285,7 +282,7 @@ const AboutPage = () => {
                       </div>
                       <div>
                         <h3 className="font-bold text-gray-900 mb-1">{feature.title}</h3>
-                        <p className="text-sm text-gray-600">{feature.description}</p>
+                        <p className="text-sm text-gray-600">{feature.desc}</p>
                       </div>
                     </div>
                   );
@@ -310,26 +307,26 @@ const AboutPage = () => {
           <div className="text-center mb-16 animate-on-scroll">
             <div className="inline-flex items-center gap-2 bg-[#99334C]/10 px-4 py-2 rounded-full mb-4">
               <Target className="w-5 h-5 text-[#99334C]" />
-              <span className="text-sm font-semibold text-[#99334C]">Notre vision</span>
+              <span className="text-sm font-semibold text-[#99334C]">{t.about.vision.title}</span>
             </div>
             <h2 className="text-4xl font-bold text-gray-900 mb-4">
-              Vision du projet
+              {t.about.vision.title}
             </h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Transformer la manière dont les contenus pédagogiques sont créés et partagés
+              {t.about.vision.subtitle}
             </p>
           </div>
 
           <div className="grid md:grid-cols-2 gap-8 mb-12">
-            {values.map((value, index) => {
-              const IconComponent = value.icon;
+            {t.about.values.map((value, index) => {
+              const IconComponent = values[index]?.icon || Lightbulb;
               return (
                 <div key={index} className="bg-white rounded-2xl p-8 shadow-lg hover:shadow-xl transition-all border border-gray-100 group animate-on-scroll" style={{ animationDelay: `${index * 0.1}s` }}>
                   <div className="w-16 h-16 bg-gradient-to-br from-[#99334C] to-[#7a283d] rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                     <IconComponent className="w-8 h-8 text-white" />
                   </div>
                   <h3 className="text-2xl font-bold text-gray-900 mb-3">{value.title}</h3>
-                  <p className="text-gray-600 leading-relaxed">{value.description}</p>
+                  <p className="text-gray-600 leading-relaxed">{value.desc}</p>
                 </div>
               );
             })}
@@ -339,16 +336,13 @@ const AboutPage = () => {
             <div className="flex flex-col md:flex-row gap-8 items-center">
               <div className="flex-1">
                 <h3 className="text-3xl font-bold text-gray-900 mb-6">
-                  Notre ambition
+                  {t.about.vision.ambitionTitle}
                 </h3>
                 <p className="text-lg text-gray-700 leading-relaxed mb-6">
-                  À travers XCCM 2, l'ambition est de proposer une <strong>plateforme éducative moderne</strong> qui
-                  valorise la structuration du savoir, favorise l'autonomie des auteurs et améliore l'expérience
-                  d'apprentissage des utilisateurs finaux.
+                  {t.about.vision.ambitionParagraph1}
                 </p>
                 <p className="text-lg text-gray-700 leading-relaxed">
-                  XCCM 2 se positionne ainsi comme un <strong>outil pédagogique fiable, évolutif et centré sur l'humain</strong>,
-                  répondant aux besoins actuels de l'enseignement numérique.
+                  {t.about.vision.ambitionParagraph2}
                 </p>
               </div>
               <div className="w-full md:w-1/3">
@@ -369,13 +363,13 @@ const AboutPage = () => {
           <div className="text-center mb-16 animate-on-scroll">
             <div className="inline-flex items-center gap-2 bg-[#99334C]/10 px-4 py-2 rounded-full mb-4">
               <Users className="w-5 h-5 text-[#99334C]" />
-              <span className="text-sm font-semibold text-[#99334C]">Qui sommes-nous</span>
+              <span className="text-sm font-semibold text-[#99334C]">{t.about.team.title}</span>
             </div>
             <h2 className="text-4xl font-bold text-gray-900 mb-4">
-              Notre équipe
+              {t.about.team.title}
             </h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Des passionnés d'éducation et de technologie réunis pour créer la meilleure expérience
+              {t.about.team.subtitle}
             </p>
           </div>
 
@@ -393,7 +387,7 @@ const AboutPage = () => {
                       {/* Overlay au hover */}
                       <div className="absolute inset-0 bg-[#99334C]/90 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center gap-4">
                         {member.email && (
-                          <a href={`mailto:${member.email}`} className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white/30 transition-all" title="Email">
+                          <a href={`mailto:${member.email}`} className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white/30 transition-all" title={t.about.contact.email}>
                             <Mail className="w-5 h-5 text-white" />
                           </a>
                         )}
@@ -426,71 +420,71 @@ const AboutPage = () => {
           <div className="text-center mb-16 animate-on-scroll">
             <div className="inline-flex items-center gap-2 bg-[#99334C]/10 px-4 py-2 rounded-full mb-4">
               <Mail className="w-5 h-5 text-[#99334C]" />
-              <span className="text-sm font-semibold text-[#99334C]">Contactez-nous</span>
+              <span className="text-sm font-semibold text-[#99334C]">{t.about.contact.sectionLabel}</span>
             </div>
             <h2 className="text-4xl font-bold text-gray-900 mb-4">
-              Nous contacter
+              {t.about.contact.heading}
             </h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Une question ? Une suggestion ? N'hésitez pas à nous écrire
+              {t.about.contact.subtitle}
             </p>
           </div>
 
           <div className="grid lg:grid-cols-2 gap-12">
             {/* Formulaire */}
             <div className="bg-white rounded-3xl p-8 shadow-xl border border-gray-100 animate-on-scroll">
-              <h3 className="text-2xl font-bold text-gray-900 mb-6">Envoyez-nous un message</h3>
+              <h3 className="text-2xl font-bold text-gray-900 mb-6">{t.about.contact.formTitle}</h3>
 
               <div className="space-y-6">
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Nom complet
+                    {t.about.contact.name}
                   </label>
                   <input
                     type="text"
                     value={contactForm.nom}
                     onChange={(e) => setContactForm({ ...contactForm, nom: e.target.value })}
                     className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#99334C]/20 focus:border-[#99334C] transition-all"
-                    placeholder="Votre nom"
+                    placeholder={t.about.contact.namePlaceholder}
                   />
                 </div>
 
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Email
+                    {t.about.contact.email}
                   </label>
                   <input
                     type="email"
                     value={contactForm.email}
                     onChange={(e) => setContactForm({ ...contactForm, email: e.target.value })}
                     className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#99334C]/20 focus:border-[#99334C] transition-all"
-                    placeholder="votre@email.com"
+                    placeholder={t.about.contact.emailPlaceholder}
                   />
                 </div>
 
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Sujet
+                    {t.about.contact.subject}
                   </label>
                   <input
                     type="text"
                     value={contactForm.sujet}
                     onChange={(e) => setContactForm({ ...contactForm, sujet: e.target.value })}
                     className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#99334C]/20 focus:border-[#99334C] transition-all"
-                    placeholder="Objet de votre message"
+                    placeholder={t.about.contact.subjectPlaceholder}
                   />
                 </div>
 
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Message
-                  </label>
-                  <textarea
+                    {t.about.contact.message}
+                    </label>
+                    <textarea
                     value={contactForm.message}
                     onChange={(e) => setContactForm({ ...contactForm, message: e.target.value })}
                     rows={5}
                     className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#99334C]/20 focus:border-[#99334C] transition-all resize-none"
-                    placeholder="Écrivez votre message ici..."
+                    placeholder={t.about.contact.messagePlaceholder}
                   />
                 </div>
 
@@ -499,7 +493,7 @@ const AboutPage = () => {
                   className="w-full bg-[#99334C] text-white py-3 rounded-xl font-semibold hover:bg-[#7a283d] transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
                 >
                   <Send className="w-5 h-5" />
-                  Envoyer le message
+                  {t.about.contact.send}
                 </button>
               </div>
             </div>
@@ -507,7 +501,7 @@ const AboutPage = () => {
             {/* Informations de contact */}
             <div className="space-y-6 animate-on-scroll" style={{ animationDelay: '0.2s' }}>
               <div className="bg-gradient-to-br from-[#99334C] to-[#7a283d] rounded-3xl p-8 text-white shadow-xl">
-                <h3 className="text-2xl font-bold mb-6">Informations de contact</h3>
+                <h3 className="text-2xl font-bold mb-6">{t.about.contact.infoTitle}</h3>
 
                 <div className="space-y-6">
                   <div className="flex items-start gap-4">
@@ -560,7 +554,7 @@ const AboutPage = () => {
               </div>
 
               <div className="bg-white rounded-3xl p-8 shadow-lg border border-gray-100">
-                <h4 className="text-xl font-bold text-gray-900 mb-4">Horaires d'ouverture</h4>
+                <h4 className="text-xl font-bold text-gray-900 mb-4">{t.about.contact.hoursTitle}</h4>
                 <div className="space-y-3 text-gray-700">
                   <div className="flex justify-between">
                     <span>Lundi - Vendredi</span>

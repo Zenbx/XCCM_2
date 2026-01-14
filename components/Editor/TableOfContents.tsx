@@ -60,7 +60,7 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
   onReorder,
   language = 'fr'
 }) => {
-  const t = translations[language].toc;
+  const t = (translations[language] ?? translations.fr).toc;
   const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({});
   const [editingId, setEditingId] = useState<string | null>(null);
   const [tempTitle, setTempTitle] = useState("");
