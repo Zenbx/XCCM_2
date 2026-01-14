@@ -12,12 +12,35 @@ const PreviewPage = () => {
     const projectName = searchParams.get('projectName');
 
     const [structure, setStructure] = useState<Part[]>([]);
+    const [projectData, setProjectData] = useState<any>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isExporting, setIsExporting] = useState(false);
     const [showPublishMenu, setShowPublishMenu] = useState(false);
 
     // State for granular loading
     const [loadingProgress, setLoadingProgress] = useState<{ current: number; total: number } | null>(null);
+
+    const getCssFromStyleConfig = (config: any) => {
+        if (!config) return '';
+        let css = '';
+        if (config.fontFamily) css += `font-family: "${config.fontFamily}", sans-serif !important; `;
+        if (config.fontSize) css += `font-size: ${config.fontSize}px !important; `;
+        if (config.color) css += `color: ${config.color} !important; `;
+        if (config.fontWeight) css += `font-weight: ${config.fontWeight} !important; `;
+        if (config.fontStyle) css += `font-style: ${config.fontStyle} !important; `;
+        return css;
+    };
+
+    const getStyleObject = (config: any) => {
+        if (!config) return {};
+        return {
+            fontFamily: config.fontFamily || 'inherit',
+            fontSize: config.fontSize ? `${config.fontSize}px` : 'inherit',
+            color: config.color || 'inherit',
+            fontWeight: config.fontWeight || 'inherit',
+            fontStyle: config.fontStyle || 'inherit'
+        };
+    };
 
     useEffect(() => {
         if (projectName) {
@@ -29,7 +52,11 @@ const PreviewPage = () => {
         try {
             setIsLoading(true);
 
-            // 1. Fetch Parts List first (Fast)
+            // 1. Fetch Project Info (to get styles)
+            const project = await projectService.getProjectByName(projectName!);
+            setProjectData(project);
+
+            // 2. Fetch Parts List first (Fast)
             const parts = await structureService.getParts(projectName!);
 
             // Initialize progress
@@ -285,6 +312,7 @@ const PreviewPage = () => {
                     font-weight: 700;
                     color: rgb(17, 24, 39);
                     margin-top: 8px;
+                    ${getCssFromStyleConfig(projectData?.styles?.part?.title)}
                 }
                 .part-intro {
                     margin-bottom: 48px;
@@ -294,6 +322,7 @@ const PreviewPage = () => {
                     font-style: italic;
                     border-left: 4px solid rgba(153, 51, 76, 0.2);
                     padding-left: 24px;
+                    ${getCssFromStyleConfig(projectData?.styles?.part?.intro)}
                 }
                 h3 {
                     font-size: 30px;
@@ -304,6 +333,7 @@ const PreviewPage = () => {
                     display: flex;
                     align-items: center;
                     gap: 12px;
+                    ${getCssFromStyleConfig(projectData?.styles?.chapter?.title)}
                 }
                 .chapter-number {
                     color: rgb(153, 51, 76);
@@ -690,7 +720,7 @@ const PreviewPage = () => {
                     <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-12 mb-8 min-h-[842px] flex flex-col items-center justify-center text-center page-break-after-always">
                         <div className="w-24 h-1 bg-[#99334C] mb-8"></div>
                         <h1 className="text-5xl font-bold text-gray-900 mb-6 tracking-tight">
-                            {projectName}
+                            {projectData?.pr_name || projectName}
                         </h1>
                         <p className="text-xl text-gray-500 uppercase tracking-widest font-light">Document de Composition</p>
                         <div className="mt-20 flex flex-col items-center">
@@ -746,20 +776,29 @@ const PreviewPage = () => {
                         <div key={part.part_id} id={`part-${pIdx}`} className="bg-white rounded-2xl shadow-sm border border-gray-200 p-12 mb-8 min-h-[842px] page-break-before-always">
                             <div className="mb-12 border-b border-gray-100 pb-6">
                                 <span className="inline-block px-3 py-1 bg-[#99334C]/10 text-[#99334C] text-sm font-bold rounded-full mb-4">Partie {structure.indexOf(part) + 1}</span>
-                                <h2 className="text-4xl font-bold text-gray-900 mt-2">
+                                <h2
+                                    className="text-4xl font-bold text-gray-900 mt-2"
+                                    style={getStyleObject(projectData?.styles?.part?.title)}
+                                >
                                     {part.part_title}
                                 </h2>
                             </div>
 
                             {part.part_intro && (
-                                <div className="mb-12 text-lg text-gray-600 leading-relaxed italic border-l-4 border-[#99334C]/20 pl-6"
-                                    dangerouslySetInnerHTML={{ __html: part.part_intro }} />
+                                <div
+                                    className="mb-12 text-lg text-gray-600 leading-relaxed italic border-l-4 border-[#99334C]/20 pl-6"
+                                    style={getStyleObject(projectData?.styles?.part?.intro)}
+                                    dangerouslySetInnerHTML={{ __html: part.part_intro }}
+                                />
                             )}
 
                             <div className="space-y-12">
                                 {part.chapters?.map((chapter, cIdx) => (
                                     <div key={chapter.chapter_id} id={`part-${pIdx}-chap-${cIdx}`} className="chapter-section">
-                                        <h3 className="text-3xl font-bold text-gray-900 mb-8 mt-12 flex items-center gap-3">
+                                        <h3
+                                            className="text-3xl font-bold text-gray-900 mb-8 mt-12 flex items-center gap-3"
+                                            style={getStyleObject(projectData?.styles?.chapter?.title)}
+                                        >
                                             <span className="text-[#99334C] opacity-50">#</span>
                                             {chapter.chapter_title}
                                         </h3>
@@ -767,7 +806,10 @@ const PreviewPage = () => {
                                         <div className="space-y-10 pl-4 lg:pl-8">
                                             {chapter.paragraphs?.map((para: any) => (
                                                 <div key={para.para_id} className="para-section">
-                                                    <h4 className="text-2xl font-bold text-gray-800 mb-6">
+                                                    <h4
+                                                        className="text-2xl font-bold text-gray-800 mb-6"
+                                                        style={getStyleObject(projectData?.styles?.paragraph?.title)}
+                                                    >
                                                         {para.para_name}
                                                     </h4>
 

@@ -175,6 +175,21 @@ const EditorArea: React.FC<EditorAreaProps> = ({
             background-color: #99334C33; /* Rouge transparent */
             color: inherit;
         }
+        /* Fix pour l'affichage des listes dans le contenteditable */
+        [contenteditable] ul {
+            list-style-type: disc !important;
+            padding-left: 1.5rem !important;
+            margin-bottom: 1rem !important;
+        }
+        [contenteditable] ol {
+            list-style-type: decimal !important;
+            padding-left: 1.5rem !important;
+            margin-bottom: 1rem !important;
+        }
+        [contenteditable] li {
+            display: list-item !important;
+            margin-bottom: 0.25rem !important;
+        }
       `}</style>
     </div>
   );

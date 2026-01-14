@@ -204,7 +204,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ project, onUpdateProject 
       <div>
         <div className="flex items-center gap-2 mb-3">
           <FileText className="w-4 h-4 text-[#99334C]" />
-          <h4 className="text-sm font-bold text-gray-900">Informations du projet</h4>
+          <h4 className="text-sm font-bold text-gray-500">Informations du projet</h4>
         </div>
         <div>
           <label className="block text-sm font-semibold mb-2 text-gray-700">Nom du projet</label>
@@ -217,7 +217,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ project, onUpdateProject 
                 onUpdateProject({ pr_name: name });
               }
             }}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-[#99334C] focus:border-transparent outline-none transition-all"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-500 focus:ring-2 focus:ring-[#99334C] focus:border-transparent outline-none transition-all"
           />
           <p className="text-xs text-gray-500 mt-1">Le changement sera sauvegardé automatiquement.</p>
         </div>
@@ -227,7 +227,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ project, onUpdateProject 
       <div className="pt-4 border-t border-gray-100">
         <div className="flex items-center gap-2 mb-3">
           <BookOpen className="w-4 h-4 text-[#99334C]" />
-          <h4 className="text-sm font-bold text-gray-900">Métadonnées du cours</h4>
+          <h4 className="text-sm font-bold text-gray-500">Métadonnées du cours</h4>
         </div>
 
         <div className="space-y-4">
@@ -238,7 +238,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ project, onUpdateProject 
               onChange={(e) => handleMetadataChange('description', e.target.value)}
               placeholder="Décrivez brièvement le contenu de ce cours..."
               rows={3}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-[#99334C] focus:border-transparent outline-none transition-all resize-none"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-500 focus:ring-2 focus:ring-[#99334C] focus:border-transparent outline-none transition-all resize-none"
             />
           </div>
 
@@ -248,7 +248,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ project, onUpdateProject 
               <select
                 value={metadata.category}
                 onChange={(e) => handleMetadataChange('category', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-[#99334C] focus:outline-none"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-500 focus:ring-2 focus:ring-[#99334C] focus:outline-none"
               >
                 {CATEGORIES.map(cat => <option key={cat}>{cat}</option>)}
               </select>
@@ -259,7 +259,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ project, onUpdateProject 
               <select
                 value={metadata.level}
                 onChange={(e) => handleMetadataChange('level', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-[#99334C] focus:outline-none"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-500 focus:ring-2 focus:ring-[#99334C] focus:outline-none"
               >
                 {LEVELS.map(level => <option key={level}>{level}</option>)}
               </select>
@@ -273,7 +273,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ project, onUpdateProject 
               value={metadata.tags}
               onChange={(e) => handleMetadataChange('tags', e.target.value)}
               placeholder="Python, Web, API..."
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-[#99334C] focus:border-transparent outline-none transition-all"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-500 focus:ring-2 focus:ring-[#99334C] focus:border-transparent outline-none transition-all"
             />
           </div>
 
@@ -284,7 +284,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ project, onUpdateProject 
               value={metadata.author}
               onChange={(e) => handleMetadataChange('author', e.target.value)}
               placeholder="Votre nom"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-[#99334C] focus:border-transparent outline-none transition-all"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-500 focus:ring-2 focus:ring-[#99334C] focus:border-transparent outline-none transition-all"
             />
           </div>
         </div>
@@ -294,7 +294,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ project, onUpdateProject 
       <div className="pt-4 border-t border-gray-100">
         <div className="flex items-center gap-2 mb-3">
           <Globe className="w-4 h-4 text-[#99334C]" />
-          <h4 className="text-sm font-bold text-gray-900">Publication</h4>
+          <h4 className="text-sm font-bold text-gray-500">Publication</h4>
         </div>
 
         <div className="p-4 bg-gray-50 rounded-lg">
@@ -306,7 +306,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ project, onUpdateProject 
               className="mt-1 w-4 h-4 text-[#99334C] rounded focus:ring-[#99334C]"
             />
             <div>
-              <span className="text-sm font-semibold text-gray-900">Publier ce cours dans la bibliothèque</span>
+              <span className="text-sm font-semibold text-gray-500">Publier ce cours dans la bibliothèque</span>
               <p className="text-xs text-gray-600 mt-1">
                 {metadata.isPublished
                   ? "✓ Votre cours est visible publiquement dans la bibliothèque"
@@ -322,7 +322,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ project, onUpdateProject 
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <Palette className="w-4 h-4 text-[#99334C]" />
-            <h4 className="text-sm font-bold text-gray-900">Styles de la structure</h4>
+            <h4 className="text-sm font-bold text-gray-500">Styles de la structure</h4>
           </div>
           <button
             onClick={resetStyles}
@@ -335,7 +335,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ project, onUpdateProject 
         <div className="space-y-6">
           {/* PARTIES */}
           <div className="p-4 bg-gray-50 rounded-lg space-y-4">
-            <h5 className="text-sm font-bold text-gray-900">Parties</h5>
+            <h5 className="text-sm font-bold text-gray-500">Parties</h5>
 
             {/* Titre de Partie */}
             <div>
@@ -458,7 +458,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ project, onUpdateProject 
 
           {/* CHAPITRES */}
           <div className="p-4 bg-gray-50 rounded-lg space-y-4">
-            <h5 className="text-sm font-bold text-gray-900">Chapitres</h5>
+            <h5 className="text-sm font-bold text-gray-500">Chapitres</h5>
 
             {/* Titre de Chapitre */}
             <div>
@@ -522,7 +522,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ project, onUpdateProject 
 
           {/* PARAGRAPHES */}
           <div className="p-4 bg-gray-50 rounded-lg space-y-4">
-            <h5 className="text-sm font-bold text-gray-900">Paragraphes</h5>
+            <h5 className="text-sm font-bold text-gray-500">Paragraphes</h5>
 
             {/* Titre de Paragraphe */}
             <div>
@@ -590,7 +590,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ project, onUpdateProject 
       <div className="pt-4 border-t border-gray-100">
         <div className="flex items-center gap-2 mb-3">
           <SettingsIcon className="w-4 h-4 text-[#99334C]" />
-          <h4 className="text-sm font-bold text-gray-900">Préférences de l'éditeur</h4>
+          <h4 className="text-sm font-bold text-gray-500">Préférences de l'éditeur</h4>
         </div>
 
         <div className="space-y-2">
@@ -630,7 +630,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ project, onUpdateProject 
           <select
             value={metadata.language}
             onChange={(e) => handleMetadataChange('language', e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-[#99334C] focus:outline-none"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-500 focus:ring-2 focus:ring-[#99334C] focus:outline-none"
           >
             {LANGUAGES.map(lang => <option key={lang}>{lang}</option>)}
           </select>
