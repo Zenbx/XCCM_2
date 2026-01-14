@@ -11,6 +11,7 @@ import RightPanel from '@/components/Editor/RightPanel';
 import ChatBotOverlay from '@/components/Editor/ChatBotOverlay';
 import { projectService, Project } from '@/services/projectService';
 import { commentService } from '@/services/commentService';
+import { Language, translations } from '@/services/locales';
 import { structureService, Part, Chapter, Paragraph, Notion } from '@/services/structureService';
 import ShareOverlay from '@/components/Editor/ShareOverlay';
 import pLimit from 'p-limit';
@@ -20,6 +21,7 @@ const XCCM2Editor = () => {
   const searchParams = useSearchParams();
   const router = useRouter();
   const projectName = searchParams.get('projectName');
+  const [language, setLanguage] = useState<Language>('fr');
 
   const [projectData, setProjectData] = useState<Project | null>(null);
   const [comments, setComments] = useState<any[]>([]);
@@ -41,7 +43,9 @@ const XCCM2Editor = () => {
     partTitle: string;
     // Optionnels selon le type
     chapterTitle?: string;
+    chapterId?: string;
     paraName?: string;
+    paraId?: string;
     notionName?: string;
     notion?: Notion | null;
     part?: Part | null;
@@ -229,7 +233,7 @@ const XCCM2Editor = () => {
   }
 
   // Handler pour sélectionner un chapitre (pour drop de paragraphes)
-  const handleSelectChapter = (projectName: string, partTitle: string, chapterTitle: string) => {
+  const handleSelectChapter = (projectName: string, partTitle: string, chapterTitle: string, chapterId: string) => {
     if (hasUnsavedChanges) {
       handleSave(true);
     }
@@ -238,7 +242,9 @@ const XCCM2Editor = () => {
       projectName,
       partTitle,
       chapterTitle,
+      chapterId,
       paraName: undefined,
+      paraId: undefined,
       notionName: undefined,
       notion: null,
       part: null
@@ -248,7 +254,7 @@ const XCCM2Editor = () => {
   };
 
   // Handler pour sélectionner un paragraphe (pour drop de notions)
-  const handleSelectParagraph = (projectName: string, partTitle: string, chapterTitle: string, paraName: string) => {
+  const handleSelectParagraph = (projectName: string, partTitle: string, chapterTitle: string, paraName: string, paraId: string) => {
     if (hasUnsavedChanges) {
       handleSave(true);
     }
@@ -258,6 +264,7 @@ const XCCM2Editor = () => {
       partTitle,
       chapterTitle,
       paraName,
+      paraId,
       notionName: undefined,
       notion: null,
       part: null
@@ -954,474 +961,501 @@ const XCCM2Editor = () => {
   };
 
   return (
-    <div className="flex h-screen bg-gray-50 overflow-hidden">
-      <TableOfContents
-        projectName={projectData?.pr_name || ''}
-        structure={structure}
-        onSelectNotion={handleSelectNotion}
-        onCreatePart={handleCreatePart}
-        onCreateChapter={handleCreateChapter}
-        onCreateParagraph={handleCreateParagraph}
-        onCreateNotion={handleCreateNotion}
-        selectedNotionId={currentContext?.notion?.notion_id}
-        // Props pour sélection de granules parents (pour drop zones)
-        // @ts-ignore (TableOfContents sera mis à jour)
-        onSelectPart={handleSelectPart}
-        onSelectChapter={handleSelectChapter}
-        onSelectParagraph={handleSelectParagraph}
-        selectedPartId={currentContext?.part?.part_id}
-        onRename={handleRename}
-        onReorder={handleReorder}
-      />
+    <>
+      <style dangerouslySetInnerHTML={{
+        __html: `
+        @media only screen and (max-width: 768px) {
+          /* Force desktop-like scale on mobile */
+          viewport { width: 1200px !important; initial-scale: 0.5 !important; }
+        }
+      ` }} />
+      <meta name="viewport" content="width=1200, initial-scale=0.5" />
+      <div className="flex h-screen bg-gray-50 overflow-hidden">
+        <TableOfContents
+          projectName={projectData?.pr_name || ''}
+          structure={structure}
+          onSelectNotion={handleSelectNotion}
+          onCreatePart={handleCreatePart}
+          onCreateChapter={handleCreateChapter}
+          onCreateParagraph={handleCreateParagraph}
+          onCreateNotion={handleCreateNotion}
+          selectedNotionId={currentContext?.notion?.notion_id}
+          selectedChapterId={currentContext?.chapterId}
+          selectedParagraphId={currentContext?.paraId}
+          // Props pour sélection de granules parents (pour drop zones)
+          onSelectPart={handleSelectPart}
+          onSelectChapter={handleSelectChapter}
+          onSelectParagraph={handleSelectParagraph}
+          selectedPartId={currentContext?.part?.part_id}
+          onRename={handleRename}
+          onReorder={handleReorder}
+          language={language}
+        />
 
-      <div className="flex-1 flex flex-col">
-        <div className="bg-white border-b border-gray-200 flex items-center justify-between px-4 py-2">
-          <div className="flex items-center gap-4">
-            <Link
-              href="/edit-home"
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-gray-600 hover:text-[#99334C]"
-              title="Retour à l'accueil"
-            >
-              <Home className="w-5 h-5" />
-            </Link>
+        <div className="flex-1 flex flex-col">
+          <div className="bg-white border-b border-gray-200 flex items-center justify-between px-4 py-2">
+            <div className="flex items-center gap-4">
+              <Link
+                href="/edit-home"
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-gray-600 hover:text-[#99334C]"
+                title="Retour à l'accueil"
+              >
+                <Home className="w-5 h-5" />
+              </Link>
 
-            <h1 className="text-lg font-bold text-gray-900 border-l pl-4 border-gray-200">
-              {projectData?.pr_name}
-            </h1>
+              <h1 className="text-lg font-bold text-gray-900 border-l pl-4 border-gray-200">
+                {projectData?.pr_name}
+              </h1>
 
-            {currentContext && (
-              <div className="flex items-center gap-2 text-sm text-gray-500 ml-4 bg-gray-50 px-3 py-1.5 rounded-full border border-gray-100">
-                {currentContext.type === 'notion' ? (
-                  <>
-                    <span className="hover:text-gray-700 transition-colors uppercase text-[10px] font-bold tracking-wider">{currentContext.partTitle}</span>
-                    <ChevronRight className="w-3 h-3 text-gray-300" />
-                    <span className="hover:text-gray-700 transition-colors uppercase text-[10px] font-bold tracking-wider">{currentContext.chapterTitle}</span>
-                    <ChevronRight className="w-3 h-3 text-gray-300" />
-                    <span className="hover:text-gray-700 transition-colors uppercase text-[10px] font-bold tracking-wider">{currentContext.paraName}</span>
-                    <ChevronRight className="w-3 h-3 text-gray-300" />
-                    <span className="font-bold text-[#99334C]">{currentContext.notionName}</span>
-                  </>
-                ) : (
-                  <>
-                    <span className="uppercase text-[10px] font-bold tracking-wider">Partie</span>
-                    <ChevronRight className="w-3 h-3 text-gray-300" />
-                    <span className="font-bold text-[#99334C]">{currentContext.partTitle}</span>
-                    <span className="ml-1 text-gray-400 font-normal">(Introduction)</span>
-                  </>
-                )}
+              <div className="flex items-center gap-2 border-l ml-4 pl-4 border-gray-200">
+                <button
+                  onClick={() => setLanguage('fr')}
+                  className={`px-2 py-1 text-[10px] font-bold rounded transition-all ${language === 'fr' ? 'bg-[#99334C] text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}
+                >
+                  FR
+                </button>
+                <button
+                  onClick={() => setLanguage('en')}
+                  className={`px-2 py-1 text-[10px] font-bold rounded transition-all ${language === 'en' ? 'bg-[#99334C] text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}
+                >
+                  EN
+                </button>
               </div>
-            )}
-          </div>
-          <div className="flex items-center gap-3">
 
-            <button
-              onClick={() => {
-                if (hasUnsavedChanges) handleSave(true);
-                router.push(`/preview?projectName=${encodeURIComponent(projectData?.pr_name || '')}`);
-              }}
-              className="px-4 py-2 border border-gray-200 text-gray-700 bg-white rounded-lg hover:bg-gray-50 transition-all flex items-center gap-2"
-              title="Aperçu du cours"
-            >
-              <Eye className="w-4 h-4" />
-              Aperçu
-            </button>
+              {currentContext && (
+                <div className="flex items-center gap-2 text-sm text-gray-500 ml-4 bg-gray-50 px-3 py-1.5 rounded-full border border-gray-100">
+                  {currentContext.type === 'notion' ? (
+                    <>
+                      <span className="hover:text-gray-700 transition-colors uppercase text-[10px] font-bold tracking-wider">{currentContext.partTitle}</span>
+                      <ChevronRight className="w-3 h-3 text-gray-300" />
+                      <span className="hover:text-gray-700 transition-colors uppercase text-[10px] font-bold tracking-wider">{currentContext.chapterTitle}</span>
+                      <ChevronRight className="w-3 h-3 text-gray-300" />
+                      <span className="hover:text-gray-700 transition-colors uppercase text-[10px] font-bold tracking-wider">{currentContext.paraName}</span>
+                      <ChevronRight className="w-3 h-3 text-gray-300" />
+                      <span className="font-bold text-[#99334C]">{currentContext.notionName}</span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="uppercase text-[10px] font-bold tracking-wider">{translations[language].editor.part}</span>
+                      <ChevronRight className="w-3 h-3 text-gray-300" />
+                      <span className="font-bold text-[#99334C]">{currentContext.partTitle}</span>
+                      <span className="ml-1 text-gray-400 font-normal">(Intro)</span>
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
+            <div className="flex items-center gap-3">
+
+              <button
+                onClick={() => {
+                  if (hasUnsavedChanges) handleSave(true);
+                  router.push(`/preview?projectName=${encodeURIComponent(projectData?.pr_name || '')}`);
+                }}
+                className="px-4 py-2 border border-gray-200 text-gray-700 bg-white rounded-lg hover:bg-gray-50 transition-all flex items-center gap-2"
+                title={translations[language].editor.publishPreview}
+              >
+                <Eye className="w-4 h-4" />
+                {translations[language].editor.publishPreview.split(' / ')[0]}
+              </button>
 
 
-            {/* Bouton Partager - AVEC CHECK AUTH */}
-            <button
-              onClick={() => {
-                // Simulation Auth Check (à remplacer par le vrai user context si dispo)
-                const isLoggedIn = localStorage.getItem('user_session'); // Ou context user
-                if (!isLoggedIn) {
-                  alert("Veuillez vous connecter pour publier ou partager ce cours.");
-                  // router.push('/login'); 
-                  return;
-                }
-                setShowShareOverlay(true);
-              }}
-              className="px-4 py-2 border border-[#99334C] text-[#99334C] bg-white rounded-lg hover:bg-[#99334C]/5 transition-all flex items-center gap-2 font-medium"
-              title="Publier / Partager le projet"
-            >
-              <Share2 className="w-4 h-4" />
-              Publier
-            </button>
+              {/* Bouton Partager - AVEC CHECK AUTH */}
+              <button
+                onClick={() => {
+                  // Simulation Auth Check (à remplacer par le vrai user context si dispo)
+                  const isLoggedIn = localStorage.getItem('user_session'); // Ou context user
+                  if (!isLoggedIn) {
+                    alert("Veuillez vous connecter pour publier ou partager ce cours.");
+                    // router.push('/login'); 
+                    return;
+                  }
+                  setShowShareOverlay(true);
+                }}
+                className="px-4 py-2 border border-[#99334C] text-[#99334C] bg-white rounded-lg hover:bg-[#99334C]/5 transition-all flex items-center gap-2 font-medium"
+                title="Publier / Partager le projet"
+              >
+                <Share2 className="w-4 h-4" />
+                Publier
+              </button>
 
-            {/*hasUnsavedChanges && (
+              {/*hasUnsavedChanges && (
               <span className="text-sm text-orange-600 flex items-center gap-1">
                 <span className="w-2 h-2 bg-orange-600 rounded-full animate-pulse"></span>
                 Modifications non sauvegardées
               </span>
             )*/}
 
-            <button
-              onClick={() => handleSave(false)}
-              disabled={!hasUnsavedChanges || isSaving}
-              className="px-4 py-2 bg-[#99334C] text-white rounded-lg hover:bg-[#7a283d] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-            >
-              {isSaving ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Sauvegarde...
-                </>
-              ) : (
-                <>
-                  <Save className="w-4 h-4" />
-                  Sauvegarder
-                </>
-              )}
-            </button>
+              <button
+                onClick={() => handleSave(false)}
+                disabled={!hasUnsavedChanges || isSaving}
+                className="px-4 py-2 bg-[#99334C] text-white rounded-lg hover:bg-[#7a283d] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              >
+                {isSaving ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Sauvegarde...
+                  </>
+                ) : (
+                  <>
+                    <Save className="w-4 h-4" />
+                    Sauvegarder
+                  </>
+                )}
+              </button>
+            </div>
           </div>
+
+          <EditorToolbar
+            textFormat={textFormat}
+            onFormatChange={applyFormat}
+            onFontChange={handleFontChange}
+            onFontSizeChange={handleFontSizeChange}
+            onChatToggle={() => setShowChatBot(!showChatBot)}
+            onInsertImage={handleInsertImage}
+          />
+
+          {currentContext ? (
+            <EditorArea
+              content={editorContent}
+              textFormat={textFormat}
+              onChange={setEditorContent}
+              onDrop={handleDropNew} // Utilise la nouvelle méthode
+              editorRef={editorRef}
+              isImporting={isImporting}
+              readOnly={currentContext.type === 'chapter' || currentContext.type === 'paragraph'}
+              placeholder={
+                currentContext.type === 'part'
+                  ? translations[language].editor.partPlaceholder
+                  : currentContext.type === 'chapter'
+                    ? translations[language].editor.chapterPlaceholder
+                    : currentContext.type === 'paragraph'
+                      ? translations[language].editor.paragraphPlaceholder
+                      : currentContext.type === 'notion'
+                        ? translations[language].editor.notionPlaceholder
+                        : translations[language].editor.selectPrompt
+              }
+            />
+          ) : (
+            <div className="flex-1 flex items-center justify-center text-gray-500">
+              <div className="text-center">
+                <p className="text-lg mb-2">Sélectionnez une notion ou une partie pour commencer à éditer</p>
+                <p className="text-sm">ou utilisez la table des matières à gauche</p>
+              </div>
+            </div>
+          )}
         </div>
 
-        <EditorToolbar
-          textFormat={textFormat}
-          onFormatChange={applyFormat}
-          onFontChange={handleFontChange}
-          onFontSizeChange={handleFontSizeChange}
-          onChatToggle={() => setShowChatBot(!showChatBot)}
-          onInsertImage={handleInsertImage}
+        <RightPanel
+          activePanel={rightPanel}
+          onToggle={toggleRightPanel}
+          granules={[
+            {
+              id: 'p1',
+              type: 'part',
+              content: 'Partie 1: Fondamentaux',
+              icon: 'Folder',
+              children: [
+                {
+                  id: 'c1',
+                  type: 'chapter',
+                  content: 'Chapitre 1: Introduction',
+                  icon: 'Book',
+                  children: [
+                    {
+                      id: 'pg1',
+                      type: 'paragraph',
+                      content: 'Paragraphe 1.1: Concepts',
+                      icon: 'FileText',
+                      children: [
+                        { id: 'n1', type: 'notion', content: 'Notion 1: Définition', icon: 'File' },
+                        { id: 'n2', type: 'notion', content: 'Notion 2: Exemples', icon: 'File' }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              id: 'p2',
+              type: 'part',
+              content: 'Partie 2: Avancé',
+              icon: 'Folder',
+              children: []
+            }
+          ]}
+          onDragStart={handleDragStart}
+          project={projectData}
+          structure={structure}
+          currentContext={currentContext ? {
+            projectName: currentContext.projectName,
+            partTitle: currentContext.partTitle,
+            chapterTitle: currentContext.chapterTitle,
+            paraName: currentContext.paraName,
+            notionName: currentContext.notionName
+          } : undefined}
+          onUpdateProject={handleUpdateProjectSettings}
+          comments={comments}
+          onAddComment={handleAddComment}
+          isFetchingComments={isFetchingComments}
         />
 
-        {currentContext ? (
-          <EditorArea
-            content={editorContent}
-            textFormat={textFormat}
-            onChange={setEditorContent}
-            onDrop={handleDropNew} // Utilise la nouvelle méthode
-            editorRef={editorRef}
-            isImporting={isImporting}
-            placeholder={
-              currentContext.type === 'part'
-                ? "📦 Glissez-déposez un Chapitre ici pour l'ajouter à cette Partie..."
-                : currentContext.type === 'chapter'
-                  ? "📄 Glissez-déposez un Paragraphe ici pour l'ajouter à ce Chapitre..."
-                  : currentContext.type === 'paragraph'
-                    ? "💡 Glissez-déposez une Notion ici pour créer une nouvelle notion..."
-                    : currentContext.type === 'notion'
-                      ? "✏️ Commencez à rédiger votre notion ici..."
-                      : "Sélectionnez un élément pour commencer..."
-            }
-          />
-        ) : (
-          <div className="flex-1 flex items-center justify-center text-gray-500">
-            <div className="text-center">
-              <p className="text-lg mb-2">Sélectionnez une notion ou une partie pour commencer à éditer</p>
-              <p className="text-sm">ou utilisez la table des matières à gauche</p>
+
+
+        <ChatBotOverlay isOpen={showChatBot} onClose={() => setShowChatBot(false)} />
+
+        {/* MODALE PARTIE */}
+        {showPartModal && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in">
+            <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-2xl font-bold text-gray-900">Nouvelle Partie</h3>
+                <button onClick={() => setShowPartModal(false)} className="text-gray-400 hover:text-gray-600">
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Titre de la partie</label>
+                  <input
+                    type="text"
+                    value={partFormData.title}
+                    onChange={(e) => setPartFormData(prev => ({ ...prev, title: e.target.value }))}
+                    placeholder="Ex: Introduction"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#99334C] text-gray-900"
+                    autoFocus
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Numéro</label>
+                  <input
+                    type="number"
+                    value={partFormData.number}
+                    onChange={(e) => setPartFormData(prev => ({ ...prev, number: parseInt(e.target.value) || 1 }))}
+                    min="1"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#99334C] text-gray-900"
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-3 mt-6">
+                <button
+                  onClick={() => setShowPartModal(false)}
+                  className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50"
+                >
+                  Annuler
+                </button>
+                <button
+                  onClick={confirmCreatePart}
+                  disabled={isCreatingPart || partFormData.title.trim().length < 3}
+                  className="flex-1 px-4 py-3 bg-[#99334C] text-white rounded-xl hover:bg-[#7a283d] disabled:opacity-50 flex justify-center items-center gap-2"
+                >
+                  {isCreatingPart && <Loader2 className="w-4 h-4 animate-spin" />}
+                  Créer
+                </button>
+              </div>
             </div>
           </div>
         )}
+
+        {/* MODALE CHAPITRE */}
+        {showChapterModal && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in">
+            <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-2xl font-bold text-gray-900">Nouveau Chapitre</h3>
+                <button onClick={() => setShowChapterModal(false)} className="text-gray-400 hover:text-gray-600">
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+
+              <div className="mb-3 text-sm text-gray-600">
+                Dans la partie : <span className="font-semibold text-[#99334C]">{modalContext.partTitle}</span>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Titre du chapitre</label>
+                  <input
+                    type="text"
+                    value={chapterFormData.title}
+                    onChange={(e) => setChapterFormData(prev => ({ ...prev, title: e.target.value }))}
+                    placeholder="Ex: Concepts fondamentaux"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#99334C] text-gray-900"
+                    autoFocus
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Numéro</label>
+                  <input
+                    type="number"
+                    value={chapterFormData.number}
+                    onChange={(e) => setChapterFormData(prev => ({ ...prev, number: parseInt(e.target.value) || 1 }))}
+                    min="1"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#99334C] text-gray-900"
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-3 mt-6">
+                <button
+                  onClick={() => setShowChapterModal(false)}
+                  className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50"
+                >
+                  Annuler
+                </button>
+                <button
+                  onClick={confirmCreateChapter}
+                  disabled={isCreatingChapter || chapterFormData.title.trim().length < 3}
+                  className="flex-1 px-4 py-3 bg-[#99334C] text-white rounded-xl hover:bg-[#7a283d] disabled:opacity-50 flex justify-center items-center gap-2"
+                >
+                  {isCreatingChapter && <Loader2 className="w-4 h-4 animate-spin" />}
+                  Créer
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* MODALE PARAGRAPHE */}
+        {showParagraphModal && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-2xl font-bold text-gray-900">Nouveau Paragraphe</h3>
+                <button onClick={() => setShowParagraphModal(false)} className="text-gray-400 hover:text-gray-600">
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+
+              <div className="mb-3 text-sm text-gray-600">
+                Dans : <span className="font-semibold text-[#99334C]">{modalContext.partTitle} / {modalContext.chapterTitle}</span>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Nom du paragraphe</label>
+                  <input
+                    type="text"
+                    value={paragraphFormData.name}
+                    onChange={(e) => setParagraphFormData(prev => ({ ...prev, name: e.target.value }))}
+                    placeholder="Ex: Définitions"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#99334C] text-gray-900"
+                    autoFocus
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Numéro</label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={paragraphFormData.number}
+                    onChange={(e) => setParagraphFormData(prev => ({
+                      ...prev,
+                      number: parseInt(e.target.value) || 1
+                    }))}
+                    placeholder="1"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#99334C] text-gray-900"
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-3 mt-6">
+                <button
+                  onClick={() => setShowParagraphModal(false)}
+                  className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50"
+                >
+                  Annuler
+                </button>
+                <button
+                  onClick={confirmCreateParagraph}
+                  disabled={isCreatingParagraph || paragraphFormData.name.trim().length < 3}
+                  className="flex-1 px-4 py-3 bg-[#99334C] text-white rounded-xl hover:bg-[#7a283d] disabled:opacity-50 flex justify-center items-center gap-2"
+                >
+                  {isCreatingParagraph && <Loader2 className="w-4 h-4 animate-spin" />}
+                  Créer
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+
+        {/* MODALE NOTION */}
+        {showNotionModal && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in">
+            <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-2xl font-bold text-gray-900">Nouvelle Notion</h3>
+                <button onClick={() => setShowNotionModal(false)} className="text-gray-400 hover:text-gray-600">
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+
+              <div className="mb-3 text-sm text-gray-600">
+                Dans : <span className="font-semibold text-[#99334C]">{modalContext.partTitle} / {modalContext.chapterTitle} / {modalContext.paraName}</span>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Nom de la notion</label>
+                  <input
+                    type="text"
+                    value={notionFormData.name}
+                    onChange={(e) => setNotionFormData(prev => ({ ...prev, name: e.target.value }))}
+                    placeholder="Ex: Théorème de Pythagore"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#99334C] text-gray-900"
+                    autoFocus
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Numéro</label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={notionFormData.number}
+                    onChange={(e) => setNotionFormData(prev => ({
+                      ...prev,
+                      number: parseInt(e.target.value) || 1
+                    }))}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#99334C] text-gray-900"
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-3 mt-6">
+                <button
+                  onClick={() => setShowNotionModal(false)}
+                  className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50"
+                >
+                  Annuler
+                </button>
+                <button
+                  onClick={confirmCreateNotion}
+                  disabled={isCreatingNotion || notionFormData.name.trim().length < 3}
+                  className="flex-1 px-4 py-3 bg-[#99334C] text-white rounded-xl hover:bg-[#7a283d] disabled:opacity-50 flex justify-center items-center gap-2"
+                >
+                  {isCreatingNotion && <Loader2 className="w-4 h-4 animate-spin" />}
+                  Créer
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Overlay de partage */}
+        <ShareOverlay
+          isOpen={showShareOverlay}
+          onClose={() => setShowShareOverlay(false)}
+          projectName={projectName}
+        />
       </div>
-
-      <RightPanel
-        activePanel={rightPanel}
-        onToggle={toggleRightPanel}
-        granules={[
-          {
-            id: 'p1',
-            type: 'part',
-            content: 'Partie 1: Fondamentaux',
-            icon: 'Folder',
-            children: [
-              {
-                id: 'c1',
-                type: 'chapter',
-                content: 'Chapitre 1: Introduction',
-                icon: 'Book',
-                children: [
-                  {
-                    id: 'pg1',
-                    type: 'paragraph',
-                    content: 'Paragraphe 1.1: Concepts',
-                    icon: 'FileText',
-                    children: [
-                      { id: 'n1', type: 'notion', content: 'Notion 1: Définition', icon: 'File' },
-                      { id: 'n2', type: 'notion', content: 'Notion 2: Exemples', icon: 'File' }
-                    ]
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            id: 'p2',
-            type: 'part',
-            content: 'Partie 2: Avancé',
-            icon: 'Folder',
-            children: []
-          }
-        ]}
-        onDragStart={handleDragStart}
-        project={projectData}
-        structure={structure}
-        currentContext={currentContext ? {
-          projectName: currentContext.projectName,
-          partTitle: currentContext.partTitle,
-          chapterTitle: currentContext.chapterTitle,
-          paraName: currentContext.paraName,
-          notionName: currentContext.notionName
-        } : undefined}
-        onUpdateProject={handleUpdateProjectSettings}
-        comments={comments}
-        onAddComment={handleAddComment}
-        isFetchingComments={isFetchingComments}
-      />
-
-
-
-      <ChatBotOverlay isOpen={showChatBot} onClose={() => setShowChatBot(false)} />
-
-      {/* MODALE PARTIE */}
-      {showPartModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-2xl font-bold text-gray-900">Nouvelle Partie</h3>
-              <button onClick={() => setShowPartModal(false)} className="text-gray-400 hover:text-gray-600">
-                <X className="w-6 h-6" />
-              </button>
-            </div>
-
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Titre de la partie</label>
-                <input
-                  type="text"
-                  value={partFormData.title}
-                  onChange={(e) => setPartFormData(prev => ({ ...prev, title: e.target.value }))}
-                  placeholder="Ex: Introduction"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#99334C] text-gray-900"
-                  autoFocus
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Numéro</label>
-                <input
-                  type="number"
-                  value={partFormData.number}
-                  onChange={(e) => setPartFormData(prev => ({ ...prev, number: parseInt(e.target.value) || 1 }))}
-                  min="1"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#99334C] text-gray-900"
-                />
-              </div>
-            </div>
-
-            <div className="flex gap-3 mt-6">
-              <button
-                onClick={() => setShowPartModal(false)}
-                className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50"
-              >
-                Annuler
-              </button>
-              <button
-                onClick={confirmCreatePart}
-                disabled={isCreatingPart || partFormData.title.trim().length < 3}
-                className="flex-1 px-4 py-3 bg-[#99334C] text-white rounded-xl hover:bg-[#7a283d] disabled:opacity-50 flex justify-center items-center gap-2"
-              >
-                {isCreatingPart && <Loader2 className="w-4 h-4 animate-spin" />}
-                Créer
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* MODALE CHAPITRE */}
-      {showChapterModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-2xl font-bold text-gray-900">Nouveau Chapitre</h3>
-              <button onClick={() => setShowChapterModal(false)} className="text-gray-400 hover:text-gray-600">
-                <X className="w-6 h-6" />
-              </button>
-            </div>
-
-            <div className="mb-3 text-sm text-gray-600">
-              Dans la partie : <span className="font-semibold text-[#99334C]">{modalContext.partTitle}</span>
-            </div>
-
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Titre du chapitre</label>
-                <input
-                  type="text"
-                  value={chapterFormData.title}
-                  onChange={(e) => setChapterFormData(prev => ({ ...prev, title: e.target.value }))}
-                  placeholder="Ex: Concepts fondamentaux"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#99334C] text-gray-900"
-                  autoFocus
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Numéro</label>
-                <input
-                  type="number"
-                  value={chapterFormData.number}
-                  onChange={(e) => setChapterFormData(prev => ({ ...prev, number: parseInt(e.target.value) || 1 }))}
-                  min="1"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#99334C] text-gray-900"
-                />
-              </div>
-            </div>
-
-            <div className="flex gap-3 mt-6">
-              <button
-                onClick={() => setShowChapterModal(false)}
-                className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50"
-              >
-                Annuler
-              </button>
-              <button
-                onClick={confirmCreateChapter}
-                disabled={isCreatingChapter || chapterFormData.title.trim().length < 3}
-                className="flex-1 px-4 py-3 bg-[#99334C] text-white rounded-xl hover:bg-[#7a283d] disabled:opacity-50 flex justify-center items-center gap-2"
-              >
-                {isCreatingChapter && <Loader2 className="w-4 h-4 animate-spin" />}
-                Créer
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* MODALE PARAGRAPHE */}
-      {showParagraphModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-2xl font-bold text-gray-900">Nouveau Paragraphe</h3>
-              <button onClick={() => setShowParagraphModal(false)} className="text-gray-400 hover:text-gray-600">
-                <X className="w-6 h-6" />
-              </button>
-            </div>
-
-            <div className="mb-3 text-sm text-gray-600">
-              Dans : <span className="font-semibold text-[#99334C]">{modalContext.partTitle} / {modalContext.chapterTitle}</span>
-            </div>
-
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Nom du paragraphe</label>
-                <input
-                  type="text"
-                  value={paragraphFormData.name}
-                  onChange={(e) => setParagraphFormData(prev => ({ ...prev, name: e.target.value }))}
-                  placeholder="Ex: Définitions"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#99334C] text-gray-900"
-                  autoFocus
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Numéro</label>
-                <input
-                  type="number"
-                  min="1"
-                  value={paragraphFormData.number}
-                  onChange={(e) => setParagraphFormData(prev => ({
-                    ...prev,
-                    number: parseInt(e.target.value) || 1
-                  }))}
-                  placeholder="1"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#99334C] text-gray-900"
-                />
-              </div>
-            </div>
-
-            <div className="flex gap-3 mt-6">
-              <button
-                onClick={() => setShowParagraphModal(false)}
-                className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50"
-              >
-                Annuler
-              </button>
-              <button
-                onClick={confirmCreateParagraph}
-                disabled={isCreatingParagraph || paragraphFormData.name.trim().length < 3}
-                className="flex-1 px-4 py-3 bg-[#99334C] text-white rounded-xl hover:bg-[#7a283d] disabled:opacity-50 flex justify-center items-center gap-2"
-              >
-                {isCreatingParagraph && <Loader2 className="w-4 h-4 animate-spin" />}
-                Créer
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-
-      {/* MODALE NOTION */}
-      {showNotionModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-2xl font-bold text-gray-900">Nouvelle Notion</h3>
-              <button onClick={() => setShowNotionModal(false)} className="text-gray-400 hover:text-gray-600">
-                <X className="w-6 h-6" />
-              </button>
-            </div>
-
-            <div className="mb-3 text-sm text-gray-600">
-              Dans : <span className="font-semibold text-[#99334C]">{modalContext.partTitle} / {modalContext.chapterTitle} / {modalContext.paraName}</span>
-            </div>
-
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Nom de la notion</label>
-                <input
-                  type="text"
-                  value={notionFormData.name}
-                  onChange={(e) => setNotionFormData(prev => ({ ...prev, name: e.target.value }))}
-                  placeholder="Ex: Théorème de Pythagore"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#99334C] text-gray-900"
-                  autoFocus
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Numéro</label>
-                <input
-                  type="number"
-                  min="1"
-                  value={notionFormData.number}
-                  onChange={(e) => setNotionFormData(prev => ({
-                    ...prev,
-                    number: parseInt(e.target.value) || 1
-                  }))}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#99334C] text-gray-900"
-                />
-              </div>
-            </div>
-
-            <div className="flex gap-3 mt-6">
-              <button
-                onClick={() => setShowNotionModal(false)}
-                className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50"
-              >
-                Annuler
-              </button>
-              <button
-                onClick={confirmCreateNotion}
-                disabled={isCreatingNotion || notionFormData.name.trim().length < 3}
-                className="flex-1 px-4 py-3 bg-[#99334C] text-white rounded-xl hover:bg-[#7a283d] disabled:opacity-50 flex justify-center items-center gap-2"
-              >
-                {isCreatingNotion && <Loader2 className="w-4 h-4 animate-spin" />}
-                Créer
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Overlay de partage */}
-      <ShareOverlay
-        isOpen={showShareOverlay}
-        onClose={() => setShowShareOverlay(false)}
-        projectName={projectName}
-      />
-    </div>
-
+    </>
   );
 };
 

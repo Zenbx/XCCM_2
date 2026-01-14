@@ -13,6 +13,7 @@ interface EditorAreaProps {
   editorRef: React.RefObject<HTMLDivElement | null>;
   placeholder?: string;
   isImporting?: boolean;
+  readOnly?: boolean;
 }
 
 const EditorArea: React.FC<EditorAreaProps> = ({
@@ -22,7 +23,8 @@ const EditorArea: React.FC<EditorAreaProps> = ({
   onDrop,
   editorRef,
   placeholder = "Sélectionnez une notion pour commencer à éditer...",
-  isImporting = false
+  isImporting = false,
+  readOnly = false
 }) => {
   const isInitialLoad = useRef(true);
   const [internalPlaceholder, setInternalPlaceholder] = useState(placeholder);
@@ -126,9 +128,9 @@ const EditorArea: React.FC<EditorAreaProps> = ({
       >
         <div
           ref={editorRef}
-          contentEditable
+          contentEditable={!readOnly}
           suppressContentEditableWarning
-          className="w-full h-full min-h-[800px] p-10 focus:outline-none text-black prose prose-lg max-w-none"
+          className={`w-full h-full min-h-[800px] p-10 focus:outline-none text-black prose prose-lg max-w-none ${readOnly ? 'bg-gray-50/50 cursor-not-allowed opacity-80 transition-all duration-300' : 'bg-white transition-all duration-300'}`}
           style={{
             fontFamily: textFormat.font,
             // fontSize géré via execCommand pour des raisons de sélection, 

@@ -4,6 +4,7 @@
 import React, { useState, useRef } from 'react';
 import { ChevronDown, ChevronRight, Plus, Edit3, Trash2, Folder, FolderOpen, FileText, GripVertical } from 'lucide-react';
 import { Part, Chapter, Paragraph, Notion } from '@/services/structureService';
+import { Language, translations } from '@/services/locales';
 
 interface TableOfContentsProps {
   projectName: string;
@@ -22,19 +23,22 @@ interface TableOfContentsProps {
     partTitle: string;
     part: Part;
   }) => void;
-  onSelectChapter?: (projectName: string, partTitle: string, chapterTitle: string) => void;
-  onSelectParagraph?: (projectName: string, partTitle: string, chapterTitle: string, paraName: string) => void;
+  onSelectChapter?: (projectName: string, partTitle: string, chapterTitle: string, chapterId: string) => void;
+  onSelectParagraph?: (projectName: string, partTitle: string, chapterTitle: string, paraName: string, paraId: string) => void;
   selectedPartId?: string;
 
   onCreatePart?: () => void;
   onCreateChapter?: (partTitle: string) => void;
   onCreateParagraph?: (partTitle: string, chapterTitle: string) => void;
   onCreateNotion?: (partTitle: string, chapterTitle: string, paraName: string) => void;
+  selectedChapterId?: string;
+  selectedParagraphId?: string;
   selectedNotionId?: string;
 
   // Nouvelles fonctions pour renommage et réordonnancement
   onRename?: (type: 'part' | 'chapter' | 'paragraph' | 'notion', id: string, newTitle: string) => Promise<void>;
   onReorder?: (type: 'part' | 'chapter' | 'paragraph' | 'notion', parentId: string | null, items: any[]) => Promise<void>;
+  language?: Language;
 }
 
 const TableOfContents: React.FC<TableOfContentsProps> = ({
@@ -50,9 +54,13 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
   onCreateParagraph,
   onCreateNotion,
   selectedNotionId,
+  selectedChapterId,
+  selectedParagraphId,
   onRename,
-  onReorder
+  onReorder,
+  language = 'fr'
 }) => {
+  const t = translations[language].toc;
   const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({});
   const [editingId, setEditingId] = useState<string | null>(null);
   const [tempTitle, setTempTitle] = useState("");
@@ -169,12 +177,12 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
     <div className="w-72 lg:w-80 xl:w-96 bg-white border-r border-gray-200 overflow-y-auto flex flex-col h-full select-none">
       {/* Header */}
       <div className="p-4 border-b border-gray-100 flex items-center justify-between sticky top-0 z-10 bg-white/95 backdrop-blur-sm">
-        <h2 className="text-gray-800 font-bold text-sm uppercase tracking-wider">Plan du projet</h2>
+        <h2 className="text-gray-800 font-bold text-sm uppercase tracking-wider">{t.title}</h2>
         {onCreatePart && (
           <button
             onClick={onCreatePart}
             className="p-1.5 bg-[#99334C]/10 text-[#99334C] hover:bg-[#99334C] hover:text-white rounded-md transition-all"
-            title="Ajouter une partie"
+            title={t.addPart}
           >
             <Plus size={18} />
           </button>
@@ -192,7 +200,7 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
                 onClick={onCreatePart}
                 className="mt-3 text-[#99334C] font-medium hover:underline text-sm"
               >
-                Créer une partie
+                {t.addPart}
               </button>
             )}
           </div>
@@ -303,8 +311,8 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
                           />
                         ) : (
                           <span
-                            className="text-sm text-gray-700 truncate flex-1 font-medium cursor-pointer hover:underline"
-                            onClick={() => onSelectChapter?.(projectName, part.part_title, chapter.chapter_title)}
+                            className={`text-sm truncate flex-1 font-medium cursor-pointer hover:underline ${selectedChapterId === chapter.chapter_id ? 'text-[#99334C]' : 'text-gray-700'}`}
+                            onClick={() => onSelectChapter?.(projectName, part.part_title, chapter.chapter_title, chapter.chapter_id)}
                             onDoubleClick={(e) => startEditing(e, `chapter-${chapter.chapter_id}`, chapter.chapter_title)}
                           >
                             {chapter.chapter_number}. {chapter.chapter_title}
@@ -315,7 +323,7 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
                           <button
                             onClick={(e) => { e.stopPropagation(); onCreateParagraph(part.part_title, chapter.chapter_title); }}
                             className="p-1 text-gray-300 hover:text-amber-600 hover:bg-amber-50 rounded transition-all"
-                            title="Ajouter un paragraphe"
+                            title={t.addParagraph}
                           >
                             <Plus size={14} />
                           </button>
@@ -366,8 +374,8 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
                                   />
                                 ) : (
                                   <span
-                                    className="text-sm text-gray-600 truncate flex-1 cursor-pointer hover:underline"
-                                    onClick={() => onSelectParagraph?.(projectName, part.part_title, chapter.chapter_title, paragraph.para_name)}
+                                    className={`text-sm truncate flex-1 cursor-pointer hover:underline ${selectedParagraphId === paragraph.para_id ? 'text-[#99334C]' : 'text-gray-600'}`}
+                                    onClick={() => onSelectParagraph?.(projectName, part.part_title, chapter.chapter_title, paragraph.para_name, paragraph.para_id)}
                                     onDoubleClick={(e) => startEditing(e, `paragraph-${paragraph.para_id}`, paragraph.para_name)}
                                   >
                                     {paragraph.para_number}. {paragraph.para_name}
@@ -378,7 +386,7 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
                                   <button
                                     onClick={(e) => { e.stopPropagation(); onCreateNotion(part.part_title, chapter.chapter_title, paragraph.para_name); }}
                                     className="p-1 text-gray-300 hover:text-green-600 hover:bg-green-50 rounded transition-all"
-                                    title="Ajouter une notion"
+                                    title={t.addNotion}
                                   >
                                     <Plus size={14} />
                                   </button>
