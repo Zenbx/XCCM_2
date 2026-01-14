@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { ChevronRight, Search, Book, HelpCircle, FileText, Headphones, Menu, X, Send, Mail, Phone, MapPin, Clock } from 'lucide-react';
+import { useLanguage } from '@/context/LanguageContext';
+import { translations } from '@/services/locales';
 
 const HelpCenter = () => {
   const [activeSection, setActiveSection] = useState('documentation');
@@ -19,55 +21,59 @@ const HelpCenter = () => {
   });
   const [formSubmitted, setFormSubmitted] = useState(false);
 
-  // Structure du contenu
+  // Language + translations alias
+  const { language } = useLanguage();
+  const t = translations[language] ?? translations.fr;
+
+  // Structure du contenu (généré depuis les traductions)
   const sections = {
     documentation: {
-      title: 'Documentation',
+      title: t.help.sections.documentation.title,
       icon: Book,
       subsections: [
-        { id: 'intro', title: 'Introduction à XCCM 2' },
-        { id: 'fonctionnalites', title: 'Fonctionnalités principales' },
-        { id: 'interface', title: 'Interface utilisateur' },
-        { id: 'organisation', title: 'Organisation des cours' },
-        { id: 'publication', title: 'Publication et partage' }
+        { id: 'intro', title: t.help.sections.documentation.subsections.intro },
+        { id: 'fonctionnalites', title: t.help.sections.documentation.subsections.fonctionnalites },
+        { id: 'interface', title: t.help.sections.documentation.subsections.interface },
+        { id: 'organisation', title: t.help.sections.documentation.subsections.organisation },
+        { id: 'publication', title: t.help.sections.documentation.subsections.publication }
       ]
     },
     faq: {
-      title: 'FAQ',
+      title: t.help.sections.faq.title,
       icon: HelpCircle,
       subsections: [
-        { id: 'compte', title: 'Gestion du compte' },
-        { id: 'creation', title: 'Création de contenu' },
-        { id: 'problemes', title: 'Problèmes courants' },
-        { id: 'securite', title: 'Sécurité et confidentialité' }
+        { id: 'compte', title: t.help.sections.faq.subsections.compte },
+        { id: 'creation', title: t.help.sections.faq.subsections.creation },
+        { id: 'problemes', title: t.help.sections.faq.subsections.problemes },
+        { id: 'securite', title: t.help.sections.faq.subsections.securite }
       ]
     },
     guide: {
-      title: 'Guide Auteurs',
+      title: t.help.sections.guide.title,
       icon: FileText,
       subsections: [
-        { id: 'premier-cours', title: 'Créer votre premier cours' },
-        { id: 'structuration', title: 'Structurer vos contenus' },
-        { id: 'bonnes-pratiques', title: 'Bonnes pratiques pédagogiques' },
-        { id: 'multimedia', title: 'Ajouter du multimédia' },
-        { id: 'collaboration', title: 'Travailler en équipe' }
+        { id: 'premier-cours', title: t.help.sections.guide.subsections['premier-cours'] },
+        { id: 'structuration', title: t.help.sections.guide.subsections.structuration },
+        { id: 'bonnes-pratiques', title: t.help.sections.guide.subsections['bonnes-pratiques'] },
+        { id: 'multimedia', title: t.help.sections.guide.subsections.multimedia },
+        { id: 'collaboration', title: t.help.sections.guide.subsections.collaboration }
       ]
     },
     support: {
-      title: 'Support Technique',
+      title: t.help.sections.support.title,
       icon: Headphones,
       subsections: [
-        { id: 'contact', title: 'Nous contacter' },
-        { id: 'bug-report', title: 'Signaler un bug' },
-        { id: 'compatibilite', title: 'Compatibilité navigateurs' },
-        { id: 'api', title: 'Documentation API' }
+        { id: 'contact', title: t.help.sections.support.subsections.contact },
+        { id: 'bug-report', title: t.help.sections.support.subsections['bug-report'] },
+        { id: 'compatibilite', title: t.help.sections.support.subsections.compatibilite },
+        { id: 'api', title: t.help.sections.support.subsections.api }
       ]
     }
   };
 
   const handleContactSubmit = () => {
     if (!contactForm.nom || !contactForm.email || !contactForm.sujet || !contactForm.description) {
-      alert('Veuillez remplir tous les champs');
+      alert(t.help.contactForm.fillAll ?? 'Veuillez remplir tous les champs');
       return;
     }
     console.log('Formulaire de contact:', contactForm);
@@ -601,73 +607,73 @@ Limites de taux
                   className="mb-12 md:mb-16 scroll-mt-24"
                 >
                   <h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-6 pb-3 border-b border-gray-200">
-                    Nous contacter
+                    {t.help.sections.support.subsections.contact}
                   </h2>
 
                   <div className="grid lg:grid-cols-2 gap-8">
                     {/* Formulaire */}
                     <div className="bg-gray-50 rounded-2xl p-6 md:p-8 border border-gray-200">
-                      <h3 className="text-xl font-bold text-gray-900 mb-6">Envoyez-nous un message</h3>
+                      <h3 className="text-xl font-bold text-gray-900 mb-6">{t.help.contactForm.formTitle}</h3>
 
                       {formSubmitted ? (
                         <div className="bg-green-50 border border-green-200 rounded-xl p-6 text-center">
                           <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
                             <Send className="w-8 h-8 text-green-600" />
                           </div>
-                          <h4 className="text-lg font-bold text-green-900 mb-2">Message envoyé !</h4>
+                          <h4 className="text-lg font-bold text-green-900 mb-2">{t.help.contactForm.success}</h4>
                           <p className="text-green-700">Nous vous répondrons dans les 24-48h.</p>
                         </div>
                       ) : (
                         <div className="space-y-5">
                           <div>
                             <label className="block text-sm font-semibold text-gray-700 mb-2">
-                              Nom complet
+                              {t.help.contactForm.name}
                             </label>
                             <input
                               type="text"
                               value={contactForm.nom}
                               onChange={(e) => setContactForm({ ...contactForm, nom: e.target.value })}
                               className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#99334C]/20 focus:border-[#99334C] transition-all"
-                              placeholder="Votre nom"
+                              placeholder={t.help.contactForm.namePlaceholder ?? "Votre nom"}
                             />
                           </div>
 
                           <div>
                             <label className="block text-sm font-semibold text-gray-700 mb-2">
-                              Email
+                              {t.help.contactForm.email}
                             </label>
                             <input
                               type="email"
                               value={contactForm.email}
                               onChange={(e) => setContactForm({ ...contactForm, email: e.target.value })}
                               className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#99334C]/20 focus:border-[#99334C] transition-all"
-                              placeholder="votre@email.com"
+                              placeholder={t.help.contactForm.emailPlaceholder ?? "votre@email.com"}
                             />
                           </div>
 
                           <div>
                             <label className="block text-sm font-semibold text-gray-700 mb-2">
-                              Sujet
+                              {t.help.contactForm.subject}
                             </label>
                             <input
                               type="text"
                               value={contactForm.sujet}
                               onChange={(e) => setContactForm({ ...contactForm, sujet: e.target.value })}
                               className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#99334C]/20 focus:border-[#99334C] transition-all"
-                              placeholder="Objet de votre message"
+                              placeholder={t.help.contactForm.subjectPlaceholder ?? "Objet de votre message"}
                             />
                           </div>
 
                           <div>
                             <label className="block text-sm font-semibold text-gray-700 mb-2">
-                              Description du problème
+                              {t.help.contactForm.description}
                             </label>
                             <textarea
                               value={contactForm.description}
                               onChange={(e) => setContactForm({ ...contactForm, description: e.target.value })}
                               rows={5}
                               className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#99334C]/20 focus:border-[#99334C] transition-all resize-none"
-                              placeholder="Décrivez votre problème en détail..."
+                              placeholder={t.help.contactForm.descriptionPlaceholder ?? "Décrivez votre problème en détail..."}
                             />
                           </div>
 
@@ -676,7 +682,7 @@ Limites de taux
                             className="w-full bg-[#99334C] text-white py-3 rounded-xl font-semibold hover:bg-[#7a283d] transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
                           >
                             <Send className="w-5 h-5" />
-                            Envoyer le message
+                            {t.help.contactForm.send}
                           </button>
                         </div>
                       )}

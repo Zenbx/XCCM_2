@@ -2,17 +2,21 @@
 import React, { useState } from 'react';
 import { BookOpen, Users, GraduationCap, Sparkles, FileText, Share2, Zap, Star, ArrowRight, Check, Router } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { useLanguage } from '@/context/LanguageContext';
+import { translations } from '@/services/locales';
 // Couleurs définies : 
 // Principal: #99334C | Fond Footer: #36454F | Accent: #99334C/30%
 
 const HomePage = () => {
   const [activeTab, setActiveTab] = useState('organizations');
   const router = useRouter();
+  const { language } = useLanguage();
+  const t = translations[language] ?? translations.fr;
 
   const tabs = [
-    { id: 'organizations', label: 'Pour les Organisations', icon: Users },
-    { id: 'home', label: 'Pour la Maison', icon: BookOpen },
-    { id: 'education', label: 'Pour l\'Education', icon: GraduationCap },
+    { id: 'organizations', label: t.home.tabs.organizations, icon: Users },
+    { id: 'home', label: t.home.tabs.home, icon: BookOpen },
+    { id: 'education', label: t.home.tabs.education, icon: GraduationCap },
   ];
 
   const testimonials = [
@@ -60,23 +64,23 @@ const HomePage = () => {
 
 
           <h1 className="text-4xl md:text-6xl font-extrabold text-gray-900 mb-6 tracking-tight">
-            Créer vos cours <span className="text-[#99334C]">facilement</span> et <br />
-            <span className="text-[#99334C]">partagez</span> vos connaissances
+            {t.home.hero.titleLine1} <span className="text-[#99334C]">{t.home.hero.emph1}</span> et <br />
+            <span className="text-[#99334C]">{t.home.hero.emph2}</span> {t.home.hero.titleLine2}
           </h1>
           <p className="text-lg text-gray-600 max-w-2xl mx-auto mb-10">
-            XCCM 2 est votre outil de création pédagogique moderne, structuré et centré sur l'utilisateur.
+            {t.home.hero.subtitle}
           </p>
 
           <div className="flex flex-wrap justify-center gap-4">
             <button
               onClick={goToEditor}
               className="bg-[#99334C] text-white px-8 py-3 rounded-full font-semibold hover:bg-[#7a283d] transition-all shadow-lg flex items-center gap-2">
-              Commencer <ArrowRight className="w-4 h-4" />
+              {t.home.hero.ctaPrimary} <ArrowRight className="w-4 h-4" />
             </button>
             <button
               onClick={goToAbout}
               className="border-2 border-[#99334C] text-[#99334C] px-8 py-3 rounded-full font-semibold hover:bg-[#99334C]/10 transition-all">
-              En savoir plus
+              {t.home.hero.ctaSecondary}
             </button>
           </div>
         </div>
@@ -154,7 +158,7 @@ const HomePage = () => {
                   Débloquez la productivité avec <span className="text-[#99334C]">XCCM 2</span>
                 </h2>
                 <p className="text-xl text-gray-600 leading-relaxed mb-10">
-                  {activeTab === 'organizations' && "Optimisez la formation de vos collaborateurs avec des parcours structurés et une gestion centralisée des connaissances."}
+                  {activeTab === 'organizations' && t.home.features.composition.desc}
                   {activeTab === 'home' && "Créez vos propres guides personnels ou partagez votre passion avec une communauté mondiale depuis chez vous."}
                   {activeTab === 'education' && "Simplifiez la production de cours académiques. Idéal pour les enseignants cherchant à réduire la charge cognitive."}
                 </p>
@@ -163,12 +167,12 @@ const HomePage = () => {
                   <button
                     onClick={() => router.push('/help#fonctionnalites')}
                     className="bg-[#99334C] text-white px-8 py-4 rounded-xl font-bold shadow-lg hover:shadow-[#99334C]/30 transition-all flex items-center gap-2">
-                    Découvrir les fonctionnalités <Zap className="w-5 h-5" />
+                    {t.home.hero.discoverFeatures} <Zap className="w-5 h-5" />
                   </button>
                   <button
                     onClick={() => router.push('http://localhost:3001/docs')}
                     className="flex items-center gap-2 text-[#99334C] font-bold hover:underline py-4 px-2">
-                    Voir la documentation <ArrowRight className="w-5 h-5" />
+                    {t.home.hero.docs} <ArrowRight className="w-5 h-5" />
                   </button>
                 </div>
               </div>
@@ -214,8 +218,8 @@ const HomePage = () => {
       {/* --- SECTION FEATURES --- */}
       <section className="py-20 px-6 max-w-7xl mx-auto">
         <div className="text-center mb-16">
-          <h2 className="text-4xl font-bold text-gray-900 mb-4">Fonctionnalités puissantes</h2>
-          <p className="text-xl text-gray-600">Tout ce dont vous avez besoin pour créer des contenus exceptionnels</p>
+          <h2 className="text-4xl font-bold text-gray-900 mb-4">{t.home.features.title}</h2>
+          <p className="text-xl text-gray-600">{t.home.features.subtitle}</p>
         </div>
 
         <div className="grid md:grid-cols-2 gap-8">
@@ -223,32 +227,32 @@ const HomePage = () => {
             <div className="bg-[#99334C]/10 w-12 h-12 rounded-lg flex items-center justify-center mb-6 group-hover:bg-[#99334C] transition-all">
               <FileText className="w-6 h-6 text-[#99334C] group-hover:text-white" />
             </div>
-            <h3 className="text-2xl font-bold mb-4 text-gray-700">Pour la Composition</h3>
-            <p className="text-gray-600">Structurez vos idées en parties, chapitres et notions de manière hiérarchique et logique.</p>
+            <h3 className="text-2xl font-bold mb-4 text-gray-700">{t.home.features.composition.title}</h3>
+            <p className="text-gray-600">{t.home.features.composition.desc}</p>
           </div>
 
           <div className="border border-gray-200 rounded-3xl p-8 hover:border-[#99334C]/50 transition-all group hover:shadow-xl">
             <div className="bg-[#99334C]/10 w-12 h-12 rounded-lg flex items-center justify-center mb-6 group-hover:bg-[#99334C] transition-all">
               <BookOpen className="w-6 h-6 text-[#99334C] group-hover:text-white" />
             </div>
-            <h3 className="text-2xl font-bold mb-4 text-gray-700">Pour les Cours</h3>
-            <p className="text-gray-600">Accédez à une bibliothèque complète et diffusez vos contenus en un seul clic.</p>
+            <h3 className="text-2xl font-bold mb-4 text-gray-700">{t.home.features.courses.title}</h3>
+            <p className="text-gray-600">{t.home.features.courses.desc}</p>
           </div>
 
           <div className="border border-gray-200 rounded-3xl p-8 hover:border-[#99334C]/50 transition-all group hover:shadow-xl">
             <div className="bg-[#99334C]/10 w-12 h-12 rounded-lg flex items-center justify-center mb-6 group-hover:bg-[#99334C] transition-all">
               <Share2 className="w-6 h-6 text-[#99334C] group-hover:text-white" />
             </div>
-            <h3 className="text-2xl font-bold mb-4 text-gray-700">Partage Simplifié</h3>
-            <p className="text-gray-600">Partagez vos créations avec votre équipe ou le monde entier en quelques secondes.</p>
+            <h3 className="text-2xl font-bold mb-4 text-gray-700">{t.home.features.sharing.title}</h3>
+            <p className="text-gray-600">{t.home.features.sharing.desc}</p>
           </div>
 
           <div className="border border-gray-200 rounded-3xl p-8 hover:border-[#99334C]/50 transition-all group hover:shadow-xl">
             <div className="bg-[#99334C]/10 w-12 h-12 rounded-lg flex items-center justify-center mb-6 group-hover:bg-[#99334C] transition-all">
               <Zap className="w-6 h-6 text-[#99334C] group-hover:text-white" />
             </div>
-            <h3 className="text-2xl font-bold mb-4 text-gray-700">Performance Optimale</h3>
-            <p className="text-gray-600">Interface rapide et réactive pour une expérience de création fluide.</p>
+            <h3 className="text-2xl font-bold mb-4 text-gray-700">{t.home.features.performance.title}</h3>
+            <p className="text-gray-600">{t.home.features.performance.desc}</p>
           </div>
         </div>
       </section>
@@ -257,8 +261,8 @@ const HomePage = () => {
       <section className="py-20 px-6 bg-gradient-to-b from-white to-[#99334C]/5">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">Ils nous font confiance</h2>
-            <p className="text-xl text-gray-600">Découvrez ce que nos utilisateurs disent de XCCM 2</p>
+            <h2 className="text-4xl font-bold text-gray-900 mb-4">{t.home.testimonials.title}</h2>
+            <p className="text-xl text-gray-600">{t.home.testimonials.subtitle}</p>
           </div>
 
           <div className="grid md:grid-cols-3 gap-8">
@@ -294,37 +298,31 @@ const HomePage = () => {
             </div>
 
             <div className="relative z-10">
-              <h2 className="text-4xl md:text-5xl font-bold mb-6">Prêt à vous lancer ?</h2>
+              <h2 className="text-4xl md:text-5xl font-bold mb-6">{t.home.ctaBlock.title}</h2>
               <p className="text-xl mb-10 text-white/90 max-w-2xl mx-auto">
-                Rejoignez des milliers d'utilisateurs qui créent déjà des contenus exceptionnels avec XCCM 2
+                {t.home.ctaBlock.subtitle}
               </p>
 
               <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
                 <button
                   onClick={goToEditor}
                   className="bg-white text-[#99334C] px-8 py-4 rounded-xl font-bold shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2">
-                  Commencer gratuitement <ArrowRight className="w-5 h-5" />
+                  {t.home.ctaBlock.primary} <ArrowRight className="w-5 h-5" />
                 </button>
                 <button
                   onClick={() => router.push('/demo')}
                   className="border-2 border-white text-white px-8 py-4 rounded-xl font-bold hover:bg-white/10 transition-all">
-                  Planifier une démo
+                  {t.home.ctaBlock.demo}
                 </button>
               </div>
 
               <div className="grid md:grid-cols-3 gap-8 max-w-3xl mx-auto">
-                <div className="flex items-center justify-center gap-2">
-                  <Check className="w-5 h-5" />
-                  <span>Gratuit pour commencer</span>
-                </div>
-                <div className="flex items-center justify-center gap-2">
-                  <Check className="w-5 h-5" />
-                  <span>Sans carte bancaire</span>
-                </div>
-                <div className="flex items-center justify-center gap-2">
-                  <Check className="w-5 h-5" />
-                  <span>Support 24/7</span>
-                </div>
+                {t.home.ctaBlock.bullets.map((b, idx) => (
+                  <div key={idx} className="flex items-center justify-center gap-2">
+                    <Check className="w-5 h-5" />
+                    <span>{b}</span>
+                  </div>
+                ))}
               </div>
             </div>
           </div>

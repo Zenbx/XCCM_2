@@ -12,6 +12,8 @@ import ChatBotOverlay from '@/components/Editor/ChatBotOverlay';
 import { projectService, Project } from '@/services/projectService';
 import { commentService } from '@/services/commentService';
 import { Language, translations } from '@/services/locales';
+import { useLanguage } from '@/context/LanguageContext';
+import LanguageToggle from '@/components/LanguageToggle';
 import { structureService, Part, Chapter, Paragraph, Notion } from '@/services/structureService';
 import ShareOverlay from '@/components/Editor/ShareOverlay';
 import pLimit from 'p-limit';
@@ -21,7 +23,8 @@ const XCCM2Editor = () => {
   const searchParams = useSearchParams();
   const router = useRouter();
   const projectName = searchParams.get('projectName');
-  const [language, setLanguage] = useState<Language>('fr');
+  const { language } = useLanguage();
+  const t = translations[language] ?? translations.fr;
 
   const [projectData, setProjectData] = useState<Project | null>(null);
   const [comments, setComments] = useState<any[]>([]);
@@ -1097,21 +1100,6 @@ const XCCM2Editor = () => {
                 {projectData?.pr_name}
               </h1>
 
-              <div className="flex items-center gap-2 border-l ml-4 pl-4 border-gray-200">
-                <button
-                  onClick={() => setLanguage('fr')}
-                  className={`px-2 py-1 text-[10px] font-bold rounded transition-all ${language === 'fr' ? 'bg-[#99334C] text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}
-                >
-                  FR
-                </button>
-                <button
-                  onClick={() => setLanguage('en')}
-                  className={`px-2 py-1 text-[10px] font-bold rounded transition-all ${language === 'en' ? 'bg-[#99334C] text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}
-                >
-                  EN
-                </button>
-              </div>
-
               {currentContext && (
                 <div className="flex items-center gap-2 text-sm text-gray-500 ml-4 bg-gray-50 px-3 py-1.5 rounded-full border border-gray-100">
                   {currentContext.type === 'notion' ? (
@@ -1126,7 +1114,7 @@ const XCCM2Editor = () => {
                     </>
                   ) : (
                     <>
-                      <span className="uppercase text-[10px] font-bold tracking-wider">{translations[language].editor.part}</span>
+                      <span className="uppercase text-[10px] font-bold tracking-wider">{t.editor.part}</span>
                       <ChevronRight className="w-3 h-3 text-gray-300" />
                       <span className="font-bold text-[#99334C]">{currentContext.partTitle}</span>
                       <span className="ml-1 text-gray-400 font-normal">(Intro)</span>
@@ -1143,38 +1131,24 @@ const XCCM2Editor = () => {
                   router.push(`/preview?projectName=${encodeURIComponent(projectData?.pr_name || '')}`);
                 }}
                 className="px-4 py-2 border border-gray-200 text-gray-700 bg-white rounded-lg hover:bg-gray-50 transition-all flex items-center gap-2"
-                title={translations[language].editor.publishPreview}
+                title={t.editor.publishPreview}
               >
                 <Eye className="w-4 h-4" />
-                {translations[language].editor.publishPreview.split(' / ')[0]}
+                {t.editor.publishPreview.split(' / ')[0]}
               </button>
 
 
               {/* Bouton Partager - AVEC CHECK AUTH */}
               <button
                 onClick={() => {
-                  // Simulation Auth Check (à remplacer par le vrai user context si dispo)
-                  const isLoggedIn = localStorage.getItem('user_session'); // Ou context user
-                  if (!isLoggedIn) {
-                    alert("Veuillez vous connecter pour publier ou partager ce cours.");
-                    // router.push('/login'); 
-                    return;
-                  }
                   setShowShareOverlay(true);
                 }}
                 className="px-4 py-2 border border-[#99334C] text-[#99334C] bg-white rounded-lg hover:bg-[#99334C]/5 transition-all flex items-center gap-2 font-medium"
                 title="Publier / Partager le projet"
               >
                 <Share2 className="w-4 h-4" />
-                Publier
+                Partager
               </button>
-
-              {/*hasUnsavedChanges && (
-              <span className="text-sm text-orange-600 flex items-center gap-1">
-                <span className="w-2 h-2 bg-orange-600 rounded-full animate-pulse"></span>
-                Modifications non sauvegardées
-              </span>
-            )*/}
 
               <button
                 onClick={() => handleSave(false)}
@@ -1216,14 +1190,14 @@ const XCCM2Editor = () => {
               readOnly={currentContext.type === 'chapter' || currentContext.type === 'paragraph'}
               placeholder={
                 currentContext.type === 'part'
-                  ? translations[language].editor.partPlaceholder
+                  ? t.editor.partPlaceholder
                   : currentContext.type === 'chapter'
-                    ? translations[language].editor.chapterPlaceholder
+                    ? t.editor.chapterPlaceholder
                     : currentContext.type === 'paragraph'
-                      ? translations[language].editor.paragraphPlaceholder
+                      ? t.editor.paragraphPlaceholder
                       : currentContext.type === 'notion'
-                        ? translations[language].editor.notionPlaceholder
-                        : translations[language].editor.selectPrompt
+                        ? t.editor.notionPlaceholder
+                        : t.editor.selectPrompt
               }
             />
           ) : (

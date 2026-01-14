@@ -9,24 +9,34 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/context/AuthContext";
 import { useState, useEffect } from "react";
 import { LogOut, Settings, User as UserIcon, Menu, X, BarChart2, ShieldCheck } from "lucide-react";
+import LanguageToggle from '@/components/LanguageToggle';
+import { useLanguage } from '@/context/LanguageContext';
+import { translations } from '@/services/locales';
 
 const COLORS = {
   primary: "#99334C",
   text: "#4B5563",
 };
 
-export const LINKS = [
-  { label: "Accueil", href: "/", icon: <FaHome /> },
-  { label: "À propos", href: "/about", icon: <FaInfoCircle /> },
-  { label: "Éditer", href: "/edit-home", authOnly: true, icon: <FaEdit /> },
-  { label: "Bibliothèque", href: "/library", icon: <FaBook /> },
-  { label: "Aide", href: "/help", icon: <FaQuestionCircle /> },
-];
+// LINKS are generated per-language inside the component using translations to allow dynamic localization.
 
 export default function Header() {
   const pathname = usePathname();
   const router = useRouter();
   const { user, isAuthenticated, logout, isLoading } = useAuth();
+  const { language } = useLanguage();
+
+  const t = translations[language] ?? translations.fr;
+  // Debug: trace language and header label on render
+  console.log('[Header] render language=', language, 'homeLabel=', t.header?.links?.home);
+
+  const LINKS = [
+    { label: t.header.links.home, href: '/', icon: <FaHome /> },
+    { label: t.header.links.about, href: '/about', icon: <FaInfoCircle /> },
+    { label: t.header.links.edit, href: '/edit-home', authOnly: true, icon: <FaEdit /> },
+    { label: t.header.links.library, href: '/library', icon: <FaBook /> },
+    { label: t.header.links.help, href: '/help', icon: <FaQuestionCircle /> },
+  ];
 
   // État pour le menu dropdown desktop
   const [showUserMenu, setShowUserMenu] = useState(false);
@@ -70,16 +80,15 @@ export default function Header() {
         </div>
 
         {/* --- NAVIGATION DESKTOP (Cachée sur mobile) --- */}
-        <ul className="hidden lg:flex items-center gap-[40px] relative">
-          {!isLoading &&
-            LINKS.filter(link => !link.authOnly || isAuthenticated).map(link => {
+        <ul className="hidden lg:flex items-center gap-10 relative">
+          {!isLoading && LINKS.filter(link => !link.authOnly || isAuthenticated).map(link => {
               const isActive = pathname === link.href;
               return (
                 <li key={link.href} className="relative">
                   <Link
                     href={link.href}
                     className={clsx(
-                      "relative flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors duration-300 rounded-[8px] group"
+                      "relative flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors duration-300 rounded-lg group"
                     )}
                     style={{
                       color: isActive ? COLORS.primary : COLORS.text,
@@ -88,7 +97,7 @@ export default function Header() {
                     {isActive && (
                       <motion.div
                         layoutId="nav-active-bg"
-                        className="absolute inset-0 rounded-[8px]"
+                        className="absolute inset-0 rounded-lg"
                         style={{ backgroundColor: "#99334C4D" }}
                         transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
                       />
@@ -142,7 +151,7 @@ export default function Header() {
                       onClick={() => setShowUserMenu(false)}
                     >
                       <ShieldCheck className="w-4 h-4" />
-                      <span className="text-sm">Administration</span>
+                      <span className="text-sm">{t.auth.admin}</span>
                     </Link>
                     <Link
                       href="/account"
@@ -150,7 +159,7 @@ export default function Header() {
                       onClick={() => setShowUserMenu(false)}
                     >
                       <UserIcon className="w-4 h-4" />
-                      <span className="text-sm">Mon compte</span>
+                      <span className="text-sm">{t.auth.account}</span>
                     </Link>
                     <Link
                       href="/settings"
@@ -158,7 +167,7 @@ export default function Header() {
                       onClick={() => setShowUserMenu(false)}
                     >
                       <Settings className="w-4 h-4" />
-                      <span className="text-sm">Paramètres</span>
+                      <span className="text-sm">{t.auth.settings}</span>
                     </Link>
                     <Link
                       href="/analytics"
@@ -166,7 +175,7 @@ export default function Header() {
                       onClick={() => setShowUserMenu(false)}
                     >
                       <BarChart2 className="w-4 h-4" />
-                      <span className="text-sm">Statistiques</span>
+                      <span className="text-sm">{t.auth.analytics}</span>
                     </Link>
                   </div>
                   <div className="border-t border-gray-100 pt-2">
@@ -175,7 +184,7 @@ export default function Header() {
                       className="flex items-center gap-3 px-4 py-2 text-red-600 hover:bg-red-50 transition-all w-full"
                     >
                       <LogOut className="w-4 h-4" />
-                      <span className="text-sm">Déconnexion</span>
+                      <span className="text-sm">{t.auth.logout}</span>
                     </button>
                   </div>
                 </motion.div>
@@ -188,7 +197,7 @@ export default function Header() {
                 className="rounded-[8px] px-4 py-2 text-sm font-medium text-white transition-opacity hover:opacity-90"
                 style={{ backgroundColor: COLORS.primary }}
               >
-                S'inscrire
+                {t.auth.register}
               </Link>
               <Link
                 href="/login"
@@ -198,10 +207,11 @@ export default function Header() {
                   borderColor: COLORS.primary,
                 }}
               >
-                Se connecter
+                {t.auth.login}
               </Link>
             </>
           )}
+        <LanguageToggle />
         </div>
 
         {/* --- BOUTON MENU MOBILE (Visible uniquement sur mobile) --- */}
@@ -241,6 +251,10 @@ export default function Header() {
                 </button>
               </div>
 
+              <div className="p-4 border-b border-gray-100">
+                <LanguageToggle />
+              </div>
+
               {/* Contenu Mobile : Navigation */}
               <div className="p-4 flex flex-col gap-2">
                 {LINKS.filter(link => !link.authOnly || isAuthenticated).map(link => {
@@ -278,19 +292,19 @@ export default function Header() {
 
                     <div className="space-y-1">
                       <Link href="/admin" className="flex items-center gap-3 px-4 py-2 text-[#99334C] bg-[#99334C]/5 hover:bg-[#99334C]/10 rounded-lg text-sm font-bold">
-                        <ShieldCheck size={16} /> Administration
+                        <ShieldCheck size={16} /> {t.auth.admin}
                       </Link>
                       <Link href="/account" className="flex items-center gap-3 px-4 py-2 text-gray-600 hover:bg-gray-50 rounded-lg text-sm">
-                        <UserIcon size={16} /> Mon compte
+                          <UserIcon size={16} /> {t.auth.account}
                       </Link>
                       <Link href="/settings" className="flex items-center gap-3 px-4 py-2 text-gray-600 hover:bg-gray-50 rounded-lg text-sm">
-                        <Settings size={16} /> Paramètres
+                          <Settings size={16} /> {t.auth.settings}
                       </Link>
                       <Link href="/analytics" className="flex items-center gap-3 px-4 py-2 text-gray-600 hover:bg-gray-50 rounded-lg text-sm">
-                        <BarChart2 size={16} /> Statistiques
+                          <BarChart2 size={16} /> {t.auth.analytics}
                       </Link>
                       <button onClick={handleLogout} className="w-full flex items-center gap-3 px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg text-sm">
-                        <LogOut size={16} /> Déconnexion
+                          <LogOut size={16} /> {t.auth.logout}
                       </button>
                     </div>
                   </div>
@@ -301,14 +315,14 @@ export default function Header() {
                       className="w-full flex justify-center py-2.5 rounded-lg border text-sm font-medium"
                       style={{ color: COLORS.primary, borderColor: COLORS.primary }}
                     >
-                      Se connecter
+                      {t.auth.login}
                     </Link>
                     <Link
                       href="/register"
                       className="w-full flex justify-center py-2.5 rounded-lg text-white text-sm font-medium"
                       style={{ backgroundColor: COLORS.primary }}
                     >
-                      S'inscrire
+                      {t.auth.register}
                     </Link>
                   </div>
                 )}
