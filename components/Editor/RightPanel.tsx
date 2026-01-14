@@ -4,17 +4,17 @@ import React from 'react';
 import { Cloud, MessageSquare, Info, Settings } from 'lucide-react';
 import Granule from '../Granule';
 import { i } from 'framer-motion/client';
-import ImportPanel from '../Editor/Panels/ImportPanel';
-import CommentsPanel from '../Editor/Panels/CommentsPanel';
-import InfoPanel from '../Editor/Panels/InfoPanel';
-import SettingsPanel from '../Editor/Panels/SettingsPanel';
+import ImportPanel from './Panels/ImportPanel';
+import CommentsPanel from './Panels/CommentsPanel';
+import InfoPanel from './Panels/InfoPanel';
+import SettingsPanel from './Panels/SettingsPanel';
 
 // ============= COMPOSANT: RightPanel =============
 
 
 
 
-const RightPanel = ({ activePanel, onToggle, granules, onDragStart, project, structure }) => {
+const RightPanel = ({ activePanel, onToggle, granules, onDragStart, project, structure, currentContext }: any) => {
   const panels = [
     { id: 'import', icon: Cloud, title: 'Importer des documents' },
     { id: 'comments', icon: MessageSquare, title: 'Commentaires' },
@@ -31,8 +31,8 @@ const RightPanel = ({ activePanel, onToggle, granules, onDragStart, project, str
             key={id}
             onClick={() => onToggle(id)}
             className={`p-3 rounded-xl transition-all duration-200 ${activePanel === id
-                ? 'bg-[#99334C] text-white shadow-md transform scale-105'
-                : 'text-gray-500 hover:bg-gray-100'
+              ? 'bg-[#99334C] text-white shadow-md transform scale-105'
+              : 'text-gray-500 hover:bg-gray-100'
               }`}
             title={title}
           >
@@ -41,9 +41,9 @@ const RightPanel = ({ activePanel, onToggle, granules, onDragStart, project, str
         ))}
       </div>
 
-      {/* Panneau de contenu - s'ouvre à gauche des icônes */}
+      {/* Panneau de contenu - s'ouvre à gauche des icônes en overlay */}
       {activePanel && (
-        <div className="w-80 lg:w-96 xl:w-[28rem] h-full bg-white border-l border-gray-200 flex flex-col animate-in slide-in-from-right duration-300">
+        <div className="absolute right-14 top-0 h-full w-80 lg:w-96 xl:w-[28rem] bg-white border-l border-gray-200 flex flex-col shadow-2xl z-50 animate-in slide-in-from-right duration-300">
           <div className="p-5 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
             <h3 className="font-bold text-gray-900">
               {panels.find(p => p.id === activePanel)?.title}

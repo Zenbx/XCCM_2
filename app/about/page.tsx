@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   BookOpen, 
   Target, 
@@ -28,6 +28,28 @@ const AboutPage = () => {
     message: ''
   });
 
+  // Gestion des animations au scroll
+  useEffect(() => {
+    const observerOptions = {
+      threshold: 0.1,
+      rootMargin: '0px 0px -50px 0px'
+    };
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('animate-fade-in-up');
+        }
+      });
+    }, observerOptions);
+
+    // Observer tous les éléments avec la classe 'animate-on-scroll'
+    const elements = document.querySelectorAll('.animate-on-scroll');
+    elements.forEach(el => observer.observe(el));
+
+    return () => observer.disconnect();
+  }, []);
+
   const handleContactSubmit = () => {
     console.log('Contact form:', contactForm);
     // TODO: Appel API pour envoyer le message
@@ -35,35 +57,77 @@ const AboutPage = () => {
 
   const teamMembers = [
     {
-      name: "Marie Dubois",
-      role: "Chef de Projet",
-      image: null,
-      description: "Passionnée par l'éducation numérique",
-      linkedin: "#",
-      twitter: "#"
+      name: "BELEKOTAN II JEFF NICHOSS",
+      pseudo: "Zenbx__",
+      email: "jeffbelekotan@gmail.com",
+      github: "https://github.com/Zenbx__"
     },
     {
-      name: "Jean Martin",
-      role: "Développeur Full Stack",
-      image: null,
-      description: "Expert en architectures web modernes",
-      linkedin: "#",
-      github: "#"
+      name: "NZIELEU NGNOULAYE M. NATHAN",
+      pseudo: "Natech23__",
+      email: "nathan.nzieleu@gmail.com",
+      github: "https://github.com/Natech23__"
+    },
+ 
+    {
+      name: "BISSECK CHALVI NATHANAEL",
+      pseudo: "HinaSejaru124__",
+      email: "bissecknathanael@gmail.com",
+      github: "https://github.com/HinaSejaru124__"
     },
     {
-      name: "Sophie Laurent",
-      role: "Designer UX/UI",
-      image: null,
-      description: "Créatrice d'expériences utilisateur intuitives",
-      linkedin: "#",
-      twitter: "#"
+      name: "WOKMENI RAÏSSA",
+      pseudo: "w-raissa__",
+      email: "rwokmeni@gmail.com",
+      github: "https://github.com/w-raissa__"
     },
     {
-      name: "Thomas Petit",
-      role: "Expert Pédagogique",
-      image: null,
-      description: "15 ans d'expérience en ingénierie pédagogique",
-      linkedin: "#"
+      name: "TAGNE SOUOP THOMAS DISNEY",
+      pseudo: "Override__",
+      email: "tstdtomson@gmail.com",
+      github: "https://github.com/Override__"
+    },
+    {
+      name: "FOFACK ALEMDJOU HENRI JOËL",
+      pseudo: "ALEMDJOU__",
+      email: "fofackhenri36@gmail.com",
+      github: "https://github.com/ALEMDJOU__"
+    },
+    {
+      name: "ELOUNDOU NGOUMA THOMAS",
+      pseudo: "Thomas26__",
+      email: "thomaseloundou3@gmail.com",
+      github: "https://github.com/Thomas26__"
+    },
+    {
+      name: "TOMO MBIANDA ANGELA KATIA",
+      pseudo: "Angela Sevilla__",
+      email: "sevillaangela73@gmail.com",
+      github: "https://github.com/AngelaSevilla__"
+    },
+    {
+      name: "MAGNE ISABELLE CHRIST",
+      pseudo: "Isa-Christ",
+      email: null,
+      github: "https://github.com/Isa-Christ"
+    },
+    {
+      name: "WATONN JEUTA IVANA",
+      pseudo: "Waton-Ivana__",
+      email: "watonjeutaivana@gmail.com",
+      github: "https://github.com/Waton-Ivana__"
+    },
+    {
+      name: "AYISSI ODILE",
+      pseudo: "AyissiOdile__",
+      email: "ayissiodile@gmail.com",
+      github: "https://github.com/Waton-Ivana__"
+    },
+    {
+      name: "MOGOU ULRICH",
+      pseudo: " ",
+      email: "ayissiodile@gmail.com",
+      github: "https://github.com/Waton-Ivana__"
     }
   ];
 
@@ -115,6 +179,44 @@ const AboutPage = () => {
 
   return (
     <div className="min-h-screen bg-white">
+      <style jsx>{`
+        @keyframes fade-in-up {
+          from {
+            opacity: 0;
+            transform: translateY(30px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        @keyframes scroll-horizontal {
+          0% {
+            transform: translateX(0);
+          }
+          100% {
+            transform: translateX(-50%);
+          }
+        }
+
+        .animate-on-scroll {
+          opacity: 0;
+        }
+
+        .animate-fade-in-up {
+          animation: fade-in-up 0.8s ease-out forwards;
+        }
+
+        .animate-scroll-horizontal {
+          animation: scroll-horizontal 40s linear infinite;
+        }
+
+        .animate-scroll-horizontal:hover {
+          animation-play-state: paused;
+        }
+      `}</style>
+
       {/* Hero Section */}
       <section id="hero" className="relative bg-gradient-to-br from-[#99334C] to-[#7a283d] text-white overflow-hidden py-20">
         {/* Motif de fond */}
@@ -148,14 +250,14 @@ const AboutPage = () => {
       {/* Section Présentation Générale */}
       <section id="presentation" className="py-20 px-6 scroll-mt-20">
         <div className="max-w-5xl mx-auto">
-          <div className="text-center mb-16">
+          <div className="text-center mb-16 animate-on-scroll">
             <h2 className="text-4xl font-bold text-gray-900 mb-4">
               Présentation générale
             </h2>
             <div className="w-20 h-1 bg-[#99334C] mx-auto rounded-full"></div>
           </div>
 
-          <div className="bg-gradient-to-br from-gray-50 to-white rounded-3xl p-8 md:p-12 shadow-lg border border-gray-100">
+          <div className="bg-gradient-to-br from-gray-50 to-white rounded-3xl p-8 md:p-12 shadow-lg border border-gray-100 animate-on-scroll">
             <div className="prose prose-lg max-w-none text-gray-700 leading-relaxed space-y-6">
               <p>
                 <span className="text-[#99334C] font-bold text-xl">XCCM 2</span> est une plateforme 
@@ -204,7 +306,7 @@ const AboutPage = () => {
       {/* Section Vision */}
       <section id="vision" className="py-20 px-6 bg-gradient-to-b from-white to-gray-50 scroll-mt-20">
         <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
+          <div className="text-center mb-16 animate-on-scroll">
             <div className="inline-flex items-center gap-2 bg-[#99334C]/10 px-4 py-2 rounded-full mb-4">
               <Target className="w-5 h-5 text-[#99334C]" />
               <span className="text-sm font-semibold text-[#99334C]">Notre vision</span>
@@ -221,7 +323,7 @@ const AboutPage = () => {
             {values.map((value, index) => {
               const IconComponent = value.icon;
               return (
-                <div key={index} className="bg-white rounded-2xl p-8 shadow-lg hover:shadow-xl transition-all border border-gray-100 group">
+                <div key={index} className="bg-white rounded-2xl p-8 shadow-lg hover:shadow-xl transition-all border border-gray-100 group animate-on-scroll" style={{animationDelay: `${index * 0.1}s`}}>
                   <div className="w-16 h-16 bg-gradient-to-br from-[#99334C] to-[#7a283d] rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                     <IconComponent className="w-8 h-8 text-white" />
                   </div>
@@ -232,7 +334,7 @@ const AboutPage = () => {
             })}
           </div>
 
-          <div className="bg-white rounded-3xl p-8 md:p-12 shadow-xl border border-gray-100">
+          <div className="bg-white rounded-3xl p-8 md:p-12 shadow-xl border border-gray-100 animate-on-scroll">
             <div className="flex flex-col md:flex-row gap-8 items-center">
               <div className="flex-1">
                 <h3 className="text-3xl font-bold text-gray-900 mb-6">
@@ -261,9 +363,9 @@ const AboutPage = () => {
       </section>
 
       {/* Section L'équipe */}
-      <section id="equipe" className="py-20 px-6 scroll-mt-20">
+      <section id="equipe" className="py-20 px-6 scroll-mt-20 overflow-hidden">
         <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
+          <div className="text-center mb-16 animate-on-scroll">
             <div className="inline-flex items-center gap-2 bg-[#99334C]/10 px-4 py-2 rounded-full mb-4">
               <Users className="w-5 h-5 text-[#99334C]" />
               <span className="text-sm font-semibold text-[#99334C]">Qui sommes-nous</span>
@@ -276,41 +378,43 @@ const AboutPage = () => {
             </p>
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {teamMembers.map((member, index) => (
-              <div key={index} className="bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all border border-gray-100 group">
-                {/* Photo de profil placeholder */}
-                <div className="relative h-64 bg-gradient-to-br from-[#99334C]/20 to-[#99334C]/40 flex items-center justify-center overflow-hidden">
-                  <div className="w-24 h-24 bg-white/30 backdrop-blur-sm rounded-full flex items-center justify-center">
-                    <Users className="w-12 h-12 text-white" />
-                  </div>
-                  {/* Overlay au hover */}
-                  <div className="absolute inset-0 bg-[#99334C]/90 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center gap-4">
-                    {member.linkedin && (
-                      <a href={member.linkedin} className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white/30 transition-all">
-                        <Linkedin className="w-5 h-5 text-white" />
-                      </a>
-                    )}
-                    {member.github && (
-                      <a href={member.github} className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white/30 transition-all">
-                        <Github className="w-5 h-5 text-white" />
-                      </a>
-                    )}
-                    {member.twitter && (
-                      <a href={member.twitter} className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white/30 transition-all">
-                        <Twitter className="w-5 h-5 text-white" />
-                      </a>
-                    )}
-                  </div>
-                </div>
+          {/* Défilement horizontal automatique */}
+          <div className="relative animate-on-scroll">
+            <div className="overflow-hidden">
+              <div className="flex gap-6 animate-scroll-horizontal">
+                {[...teamMembers, ...teamMembers].map((member, index) => (
+                  <div key={index} className="flex-shrink-0 w-80 bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all border border-gray-100 group">
+                    {/* Photo de profil placeholder */}
+                    <div className="relative h-48 bg-gradient-to-br from-[#99334C]/20 to-[#99334C]/40 flex items-center justify-center overflow-hidden">
+                      <div className="w-20 h-20 bg-white/30 backdrop-blur-sm rounded-full flex items-center justify-center">
+                        <Users className="w-10 h-10 text-white" />
+                      </div>
+                      {/* Overlay au hover */}
+                      <div className="absolute inset-0 bg-[#99334C]/90 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center gap-4">
+                        {member.email && (
+                          <a href={`mailto:${member.email}`} className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white/30 transition-all" title="Email">
+                            <Mail className="w-5 h-5 text-white" />
+                          </a>
+                        )}
+                        {member.github && (
+                          <a href={member.github} target="_blank" rel="noopener noreferrer" className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white/30 transition-all" title="GitHub">
+                            <Github className="w-5 h-5 text-white" />
+                          </a>
+                        )}
+                      </div>
+                    </div>
 
-                <div className="p-6">
-                  <h3 className="text-xl font-bold text-gray-900 mb-1">{member.name}</h3>
-                  <p className="text-[#99334C] font-semibold mb-3">{member.role}</p>
-                  <p className="text-gray-600 text-sm">{member.description}</p>
-                </div>
+                    <div className="p-6">
+                      <h3 className="text-lg font-bold text-gray-900 mb-1">{member.name}</h3>
+                      <p className="text-[#99334C] font-semibold mb-2 text-sm">{member.pseudo}</p>
+                      {member.email && (
+                        <p className="text-gray-600 text-xs truncate">{member.email}</p>
+                      )}
+                    </div>
+                  </div>
+                ))}
               </div>
-            ))}
+            </div>
           </div>
         </div>
       </section>
@@ -318,7 +422,7 @@ const AboutPage = () => {
       {/* Section Contact */}
       <section id="contact" className="py-20 px-6 bg-gradient-to-b from-gray-50 to-white scroll-mt-20">
         <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
+          <div className="text-center mb-16 animate-on-scroll">
             <div className="inline-flex items-center gap-2 bg-[#99334C]/10 px-4 py-2 rounded-full mb-4">
               <Mail className="w-5 h-5 text-[#99334C]" />
               <span className="text-sm font-semibold text-[#99334C]">Contactez-nous</span>
@@ -333,7 +437,7 @@ const AboutPage = () => {
 
           <div className="grid lg:grid-cols-2 gap-12">
             {/* Formulaire */}
-            <div className="bg-white rounded-3xl p-8 shadow-xl border border-gray-100">
+            <div className="bg-white rounded-3xl p-8 shadow-xl border border-gray-100 animate-on-scroll">
               <h3 className="text-2xl font-bold text-gray-900 mb-6">Envoyez-nous un message</h3>
               
               <div className="space-y-6">
@@ -400,7 +504,7 @@ const AboutPage = () => {
             </div>
 
             {/* Informations de contact */}
-            <div className="space-y-6">
+            <div className="space-y-6 animate-on-scroll" style={{animationDelay: '0.2s'}}>
               <div className="bg-gradient-to-br from-[#99334C] to-[#7a283d] rounded-3xl p-8 text-white shadow-xl">
                 <h3 className="text-2xl font-bold mb-6">Informations de contact</h3>
                 
@@ -479,7 +583,7 @@ const AboutPage = () => {
       {/* Call to Action Final */}
       <section className="py-16 px-6">
         <div className="max-w-5xl mx-auto">
-          <div className="bg-gradient-to-br from-[#99334C] to-[#7a283d] rounded-[40px] p-12 text-center text-white relative overflow-hidden">
+          <div className="bg-gradient-to-br from-[#99334C] to-[#7a283d] rounded-[40px] p-12 text-center text-white relative overflow-hidden animate-on-scroll">
             <div className="absolute inset-0 opacity-10">
               <div className="absolute inset-0" style={{
                 backgroundImage: 'radial-gradient(circle, white 2px, transparent 2px)',

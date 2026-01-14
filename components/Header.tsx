@@ -4,18 +4,18 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import clsx from "clsx";
-import { FaHome, FaInfoCircle, FaEdit, FaBook, FaQuestionCircle } from "react-icons/fa";
+import { FaHome, FaInfoCircle, FaEdit, FaBook, FaQuestionCircle, FaGlobe, FaUsers } from "react-icons/fa";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/context/AuthContext";
 import { useState, useEffect } from "react";
-import { LogOut, Settings, User as UserIcon, Menu, X } from "lucide-react";
+import { LogOut, Settings, User as UserIcon, Menu, X, BarChart2, ShieldCheck } from "lucide-react";
 
 const COLORS = {
   primary: "#99334C",
   text: "#4B5563",
 };
 
-const LINKS = [
+export const LINKS = [
   { label: "Accueil", href: "/", icon: <FaHome /> },
   { label: "À propos", href: "/about", icon: <FaInfoCircle /> },
   { label: "Éditer", href: "/edit-home", authOnly: true, icon: <FaEdit /> },
@@ -51,7 +51,7 @@ export default function Header() {
   };
 
   return (
-    <header className="w-full bg-white shadow-sm border-b border-gray-100 sticky top-0 z-60">
+    <header className="w-full bg-white shadow-sm border-b border-gray-100 sticky top-0 z-50">
       <nav className="mx-auto flex max-w-7xl items-center justify-between lg:justify-center px-6 py-3 relative min-h-[60px]">
 
         {/* --- LOGO --- */}
@@ -63,7 +63,7 @@ export default function Header() {
               alt="XCCM2 Logo"
               width={180}
               height={60}
-              className="h-24 w-auto object-contain"
+              className="h-28 w-auto object-contain"
               priority
             />
           </Link>
@@ -126,7 +126,7 @@ export default function Header() {
                 <motion.div
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-xl border border-gray-100 py-2 z-50"
+                  className="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-xl border border-gray-100 py-2 z-100"
                 >
                   <div className="px-4 py-3 border-b border-gray-100">
                     <p className="font-semibold text-gray-900">{user.firstname} {user.lastname}</p>
@@ -137,8 +137,16 @@ export default function Header() {
                   </div>
                   <div className="py-2">
                     <Link
+                      href="/admin"
+                      className="flex items-center gap-3 px-4 py-2 text-[#99334C] hover:bg-[#99334C]/5 transition-all font-bold"
+                      onClick={() => setShowUserMenu(false)}
+                    >
+                      <ShieldCheck className="w-4 h-4" />
+                      <span className="text-sm">Administration</span>
+                    </Link>
+                    <Link
                       href="/account"
-                      className="flex items-center gap-3 px-4 py-2 text-gray-700 hover:bg-gray-50 transition-all"
+                      className="flex items-center gap-3 px-4 py-2 text-gray-700 hover:bg-gray-50 transition-all font-medium"
                       onClick={() => setShowUserMenu(false)}
                     >
                       <UserIcon className="w-4 h-4" />
@@ -151,6 +159,14 @@ export default function Header() {
                     >
                       <Settings className="w-4 h-4" />
                       <span className="text-sm">Paramètres</span>
+                    </Link>
+                    <Link
+                      href="/analytics"
+                      className="flex items-center gap-3 px-4 py-2 text-gray-700 hover:bg-gray-50 transition-all"
+                      onClick={() => setShowUserMenu(false)}
+                    >
+                      <BarChart2 className="w-4 h-4" />
+                      <span className="text-sm">Statistiques</span>
                     </Link>
                   </div>
                   <div className="border-t border-gray-100 pt-2">
@@ -261,11 +277,17 @@ export default function Header() {
                     </div>
 
                     <div className="space-y-1">
+                      <Link href="/admin" className="flex items-center gap-3 px-4 py-2 text-[#99334C] bg-[#99334C]/5 hover:bg-[#99334C]/10 rounded-lg text-sm font-bold">
+                        <ShieldCheck size={16} /> Administration
+                      </Link>
                       <Link href="/account" className="flex items-center gap-3 px-4 py-2 text-gray-600 hover:bg-gray-50 rounded-lg text-sm">
                         <UserIcon size={16} /> Mon compte
                       </Link>
                       <Link href="/settings" className="flex items-center gap-3 px-4 py-2 text-gray-600 hover:bg-gray-50 rounded-lg text-sm">
                         <Settings size={16} /> Paramètres
+                      </Link>
+                      <Link href="/analytics" className="flex items-center gap-3 px-4 py-2 text-gray-600 hover:bg-gray-50 rounded-lg text-sm">
+                        <BarChart2 size={16} /> Statistiques
                       </Link>
                       <button onClick={handleLogout} className="w-full flex items-center gap-3 px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg text-sm">
                         <LogOut size={16} /> Déconnexion

@@ -1,5 +1,6 @@
 // services/structureService.ts
 import { getAuthToken, getAuthHeaders } from '@/lib/apiHelper';
+import pLimit from 'p-limit';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 
@@ -282,26 +283,34 @@ class StructureService {
     return result.data.notion;
   }
 
-  // Charger la structure complète d'un projet en parallèle
+  // Charger la structure complète d'un projet avec contrôle de concurrence
   async getProjectStructure(projectName: string): Promise<Part[]> {
     const parts = await this.getParts(projectName);
+    const limit = pLimit(5); // Limiter à 5 requêtes simultanées
 
-    // Charger les chapitres de chaque partie en parallèle
-    await Promise.all(parts.map(async (part) => {
-      part.chapters = await this.getChapters(projectName, part.part_title);
+    // Charger les détails de chaque partie avec concurrence limitée
+    await Promise.all(parts.map(part => limit(() => this.fillPartDetails(projectName, part))));
 
-      // Charger les paragraphes de chaque chapitre en parallèle
+    return parts;
+  }
+
+  // Remplir les détails d'une partie (Chapitres -> Paragraphes -> Notions)
+  async fillPartDetails(projectName: string, part: Part): Promise<Part> {
+    part.chapters = await this.getChapters(projectName, part.part_title);
+
+    if (part.chapters && part.chapters.length > 0) {
+      // Pour les chapitres d'une même partie, on peut aussi paralléliser un peu, 
+      // mais attention à ne pas exploser le compteur global si on appelle ça depuis getProjectStructure.
+      // Ici on le fait en série pour cette partie pour être safe, ou alors Promise.all simple car le limit est au dessus.
       await Promise.all(part.chapters.map(async (chapter) => {
         chapter.paragraphs = await this.getParagraphs(projectName, part.part_title, chapter.chapter_title);
 
-        // Charger les notions de chaque paragraphe en parallèle
         await Promise.all(chapter.paragraphs.map(async (paragraph) => {
           paragraph.notions = await this.getNotions(projectName, part.part_title, chapter.chapter_title, paragraph.para_name);
         }));
       }));
-    }));
-
-    return parts;
+    }
+    return part;
   }
 }
 

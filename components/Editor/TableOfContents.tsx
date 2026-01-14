@@ -2,7 +2,7 @@
 "use client";
 
 import React, { useState } from 'react';
-import { ChevronDown, ChevronRight, Plus, Edit3, Trash2, Folder, FileText, GripVertical } from 'lucide-react';
+import { ChevronDown, ChevronRight, Plus, Edit3, Trash2, Folder, FolderOpen, FileText, GripVertical } from 'lucide-react';
 import { Part, Chapter, Paragraph, Notion } from '@/services/structureService';
 
 interface TableOfContentsProps {
@@ -16,12 +16,14 @@ interface TableOfContentsProps {
     notionName: string;
     notion: Notion;
   }) => void;
-  // Ajout pour la sélection de partie
+  // Callbacks pour sélection de granules parents (pour drop zones)
   onSelectPart?: (context: {
     projectName: string;
     partTitle: string;
     part: Part;
   }) => void;
+  onSelectChapter?: (projectName: string, partTitle: string, chapterTitle: string) => void;
+  onSelectParagraph?: (projectName: string, partTitle: string, chapterTitle: string, paraName: string) => void;
   selectedPartId?: string;
 
   onCreatePart?: () => void;
@@ -36,6 +38,8 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
   structure = [],
   onSelectNotion,
   onSelectPart,
+  onSelectChapter,
+  onSelectParagraph,
   selectedPartId,
   onCreatePart,
   onCreateChapter,
@@ -108,7 +112,11 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
                   ) : <div className="w-3.5" />}
                 </button>
 
-                <Folder size={18} className="stroke-[1.5px]" color={getIconColor('part')} fill="none" />
+                {expandedItems[`part-${part.part_id}`] ? (
+                  <FolderOpen size={18} className="stroke-[1.5px]" color={getIconColor('part')} fill="none" />
+                ) : (
+                  <Folder size={18} className="stroke-[1.5px]" color={getIconColor('part')} fill="none" />
+                )}
 
                 {onSelectPart ? (
                   <div
@@ -155,9 +163,16 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
                           ) : <div className="w-3.5" />}
                         </button>
 
-                        <Folder size={16} className="stroke-[1.5px]" color={getIconColor('chapter')} fill="none" />
+                        {expandedItems[`chapter-${chapter.chapter_id}`] ? (
+                          <FolderOpen size={16} className="stroke-[1.5px]" color={getIconColor('chapter')} fill="none" />
+                        ) : (
+                          <Folder size={16} className="stroke-[1.5px]" color={getIconColor('chapter')} fill="none" />
+                        )}
 
-                        <span className="text-sm text-gray-700 truncate flex-1 font-medium">
+                        <span
+                          className="text-sm text-gray-700 truncate flex-1 font-medium cursor-pointer hover:underline"
+                          onClick={() => onSelectChapter?.(projectName, part.part_title, chapter.chapter_title)}
+                        >
                           {chapter.chapter_number}. {chapter.chapter_title}
                         </span>
 
@@ -190,9 +205,16 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
                                   ) : <div className="w-3.5" />}
                                 </button>
 
-                                <Folder size={16} className="stroke-[1.5px]" color={getIconColor('paragraph')} fill="none" />
+                                {expandedItems[`paragraph-${paragraph.para_id}`] ? (
+                                  <FolderOpen size={16} className="stroke-[1.5px]" color={getIconColor('paragraph')} fill="none" />
+                                ) : (
+                                  <Folder size={16} className="stroke-[1.5px]" color={getIconColor('paragraph')} fill="none" />
+                                )}
 
-                                <span className="text-sm text-gray-600 truncate flex-1">
+                                <span
+                                  className="text-sm text-gray-600 truncate flex-1 cursor-pointer hover:underline"
+                                  onClick={() => onSelectParagraph?.(projectName, part.part_title, chapter.chapter_title, paragraph.para_name)}
+                                >
                                   {paragraph.para_number}. {paragraph.para_name}
                                 </span>
 

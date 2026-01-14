@@ -11,25 +11,13 @@ import Granule from '../Granule';
 const ImportPanel = ({ granules, onDragStart }) => {
   return (
     <div>
-      <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-gray-400 transition-colors mb-4">
-        <Cloud size={48} className="mx-auto mb-4 text-gray-400" />
-        <p className="text-sm text-black font-medium mb-2">
-          Glissez-déposez vos documents ici
-        </p>
-        <p className="text-xs text-gray-600 mb-4">
-          ou cliquez pour parcourir
-        </p>
-        <button 
-          className="px-4 py-2 text-white rounded hover:opacity-90"
-          style={{ backgroundColor: '#99334C' }}
-        >
-          Choisir un fichier
-        </button>
-      </div>
+      <div className="h-full flex flex-col">
+        <div className="mb-4">
+          <h3 className="text-lg font-bold text-gray-900 mb-2">Bibliothèque de Contenus</h3>
+          <p className="text-sm text-gray-500">Glissez des structures complètes pour les importer.</p>
+        </div>
 
-      <div className="mt-6">
-        <h4 className="text-sm font-semibold text-black mb-3">Granules disponibles</h4>
-        <div className="space-y-2 max-h-96 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto space-y-4 pr-2">
           {granules.map((granule) => (
             <Granule key={granule.id} granule={granule} onDragStart={onDragStart} />
           ))}

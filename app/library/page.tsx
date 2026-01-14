@@ -1,13 +1,13 @@
 "use client";
 import React, { useState } from 'react';
-import { 
-  Search, 
-  Filter, 
-  BookOpen, 
-  Download, 
-  Eye, 
-  Calendar, 
-  User, 
+import {
+  Search,
+  Filter,
+  BookOpen,
+  Download,
+  Eye,
+  Calendar,
+  User,
   Tag,
   ChevronLeft,
   ChevronRight,
@@ -17,7 +17,9 @@ import {
   BookmarkCheck,
   TrendingUp,
   Grid3x3,
-  List
+  List,
+  Globe, // Ajout Globe
+  Users // Ajout Users
 } from 'lucide-react';
 import { i } from 'framer-motion/client';
 import { useRouter } from 'next/navigation';
@@ -194,8 +196,8 @@ const LibraryPage = () => {
   const totalPages = Math.ceil(courses.length / coursesPerPage);
 
   const toggleBookmark = (courseId) => {
-    setBookmarkedCourses(prev => 
-      prev.includes(courseId) 
+    setBookmarkedCourses(prev =>
+      prev.includes(courseId)
         ? prev.filter(id => id !== courseId)
         : [...prev, courseId]
     );
@@ -213,7 +215,7 @@ const LibraryPage = () => {
   };
 
   const getLevelColor = (level) => {
-    switch(level) {
+    switch (level) {
       case 'Débutant': return 'bg-green-100 text-green-700';
       case 'Intermédiaire': return 'bg-blue-100 text-blue-700';
       case 'Avancé': return 'bg-purple-100 text-purple-700';
@@ -237,13 +239,13 @@ const LibraryPage = () => {
             <BookOpen className="w-4 h-4" />
             <span className="text-sm font-semibold">Bibliothèque</span>
           </div>
-          
+
           <h1 className="text-4xl md:text-5xl font-bold mb-4">
             Consultez et exploitez des milliers de<br />documents gratuitement
           </h1>
-          
+
           <p className="text-lg text-white/90 max-w-3xl mx-auto mb-8">
-            Notre plateforme vous propose un catalogue riche, organisé et pratique. 
+            Notre plateforme vous propose un catalogue riche, organisé et pratique.
             Trouvez le contenu pédagogique parfait pour vos besoins.
           </p>
 
@@ -265,8 +267,9 @@ const LibraryPage = () => {
         </div>
       </section>
 
+
       {/* Barre de recherche et filtres */}
-      <section className="py-8 px-6 bg-white border-b border-gray-200 sticky top-0 z-40 shadow-sm">
+      <section className="py-8 px-6 bg-white border-b border-gray-200 shadow-sm">
         <div className="max-w-7xl mx-auto">
           <div className="flex flex-col md:flex-row gap-4 items-center">
             {/* Recherche */}
@@ -311,11 +314,10 @@ const LibraryPage = () => {
               <button
                 key={index}
                 onClick={() => setSelectedCategory(category.toLowerCase())}
-                className={`px-4 py-2 rounded-full font-medium whitespace-nowrap transition-all ${
-                  selectedCategory === category.toLowerCase()
-                    ? 'bg-[#99334C] text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
+                className={`px-4 py-2 rounded-full font-medium whitespace-nowrap transition-all ${selectedCategory === category.toLowerCase()
+                  ? 'bg-[#99334C] text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
               >
                 {category}
               </button>
@@ -336,7 +338,7 @@ const LibraryPage = () => {
                     <div className="absolute inset-0 flex items-center justify-center">
                       <BookOpen className="w-16 h-16 text-[#99334C] opacity-50" />
                     </div>
-                    
+
                     {/* Overlay avec actions au hover */}
                     <div className="absolute inset-0 bg-[#99334C]/90 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center gap-4">
                       <button
@@ -555,11 +557,10 @@ const LibraryPage = () => {
               <button
                 key={index}
                 onClick={() => setCurrentPage(index + 1)}
-                className={`w-10 h-10 rounded-lg font-semibold transition-all ${
-                  currentPage === index + 1
-                    ? 'bg-[#99334C] text-white'
-                    : 'border border-gray-300 text-gray-700 hover:bg-gray-50'
-                }`}
+                className={`w-10 h-10 rounded-lg font-semibold transition-all ${currentPage === index + 1
+                  ? 'bg-[#99334C] text-white'
+                  : 'border border-gray-300 text-gray-700 hover:bg-gray-50'
+                  }`}
               >
                 {index + 1}
               </button>
@@ -584,7 +585,14 @@ const LibraryPage = () => {
               <h2 className="text-3xl font-bold text-gray-900 mb-2">Cours populaires</h2>
               <p className="text-gray-600">Les plus consultés cette semaine</p>
             </div>
-            <TrendingUp className="w-8 h-8 text-[#99334C]" />
+
+            <button
+              onClick={() => router.push('/community')}
+              className="flex items-center gap-2 px-4 py-2 bg-[#99334C]/10 text-[#99334C] font-semibold rounded-lg hover:bg-[#99334C]/20 transition-all"
+            >
+              <Globe className="w-5 h-5" />
+              Découvrir la communauté
+            </button>
           </div>
 
           <div className="grid md:grid-cols-3 gap-6">

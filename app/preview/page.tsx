@@ -16,6 +16,9 @@ const PreviewPage = () => {
     const [isExporting, setIsExporting] = useState(false);
     const [showPublishMenu, setShowPublishMenu] = useState(false);
 
+    // State for granular loading
+    const [loadingProgress, setLoadingProgress] = useState<{ current: number; total: number } | null>(null);
+
     useEffect(() => {
         if (projectName) {
             loadProject();
@@ -25,12 +28,55 @@ const PreviewPage = () => {
     const loadProject = async () => {
         try {
             setIsLoading(true);
-            const projectStructure = await structureService.getProjectStructure(projectName!);
-            setStructure(projectStructure);
+
+            // 1. Fetch Parts List first (Fast)
+            const parts = await structureService.getParts(projectName!);
+
+            // Initialize progress
+            setLoadingProgress({ current: 0, total: parts.length });
+
+            // Use p-limit from service or simple Promise.all with manual throttling if needed.
+            // Since structureService.fillPartDetails is robust, we can map over parts.
+            // We want to update progress after EACH part returns.
+
+            const pLimit = (await import('p-limit')).default;
+            const limit = pLimit(3); // Fetch 3 parts details in parallel max
+
+            const loadedParts: Part[] = [];
+
+            const promises = parts.map(part => limit(async () => {
+                try {
+                    const filledPart = await structureService.fillPartDetails(projectName!, { ...part });
+                    loadedParts.push(filledPart);
+                } catch (e) {
+                    console.error(`Error loading part ${part.part_title}`, e);
+                    loadedParts.push(part); // Push empty part on error to keep structure
+                } finally {
+                    // Update progress
+                    setLoadingProgress(prev => prev ? { ...prev, current: prev.current + 1 } : null);
+                }
+            }));
+
+            await Promise.all(promises);
+
+            // Sort parts to ensure order is preserved despite async completion
+            loadedParts.sort((a, b) => {
+                // Assuming part_number exists or original index. 
+                // Using parts.indexOf(originalPart) strategy is safer if IDs match.
+                // Simple sort by part_id or rely on original list order:
+                return parts.findIndex(p => p.part_id === a.part_id) - parts.findIndex(p => p.part_id === b.part_id);
+            });
+
+            setStructure(loadedParts);
+
         } catch (err) {
             console.error(err);
         } finally {
-            setIsLoading(false);
+            // Small delay to let animation finish if needed
+            setTimeout(() => {
+                setIsLoading(false);
+                setLoadingProgress(null);
+            }, 600);
         }
     };
 
@@ -149,10 +195,11 @@ const PreviewPage = () => {
                     box-sizing: border-box;
                 }
                 body {
-                    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+                    font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
                     background-color: rgb(243, 244, 246);
                     padding: 48px;
                     color: rgb(17, 24, 39);
+                    line-height: 1.5;
                 }
                 .page {
                     background-color: rgb(255, 255, 255);
@@ -179,9 +226,9 @@ const PreviewPage = () => {
                 }
                 h1 {
                     font-size: 48px;
-                    font-weight: 900;
+                    font-weight: 700;
                     color: rgb(17, 24, 39);
-                    margin-bottom: 16px;
+                    margin-bottom: 24px;
                     letter-spacing: -0.025em;
                 }
                 .subtitle {
@@ -220,105 +267,108 @@ const PreviewPage = () => {
                 }
                 .part-header {
                     margin-bottom: 48px;
-                    border-bottom: 2px solid rgb(153, 51, 76);
+                    border-bottom: 1px solid rgb(243, 244, 246);
                     padding-bottom: 24px;
                 }
                 .part-label {
                     color: rgb(153, 51, 76);
+                    background-color: rgba(153, 51, 76, 0.1);
+                    padding: 4px 12px;
+                    border-radius: 9999px;
                     font-weight: 700;
-                    letter-spacing: 0.1em;
-                    text-transform: uppercase;
                     font-size: 14px;
+                    display: inline-block;
+                    margin-bottom: 16px;
                 }
                 h2 {
-                    font-size: 32px;
-                    font-weight: 800;
+                    font-size: 36px;
+                    font-weight: 700;
                     color: rgb(17, 24, 39);
                     margin-top: 8px;
                 }
                 .part-intro {
                     margin-bottom: 48px;
-                    font-size: 20px;
-                    color: rgb(55, 65, 81);
-                    line-height: 1.75;
+                    font-size: 18px;
+                    color: rgb(75, 85, 99);
+                    line-height: 1.8;
                     font-style: italic;
-                    border-left: 4px solid rgb(243, 244, 246);
+                    border-left: 4px solid rgba(153, 51, 76, 0.2);
                     padding-left: 24px;
                 }
                 h3 {
-                    font-size: 24px;
+                    font-size: 30px;
                     font-weight: 700;
-                    color: rgb(31, 41, 55);
+                    color: rgb(17, 24, 39);
                     margin-bottom: 32px;
                     margin-top: 48px;
                     display: flex;
                     align-items: center;
-                    gap: 16px;
+                    gap: 12px;
                 }
                 .chapter-number {
-                    width: 32px;
-                    height: 32px;
-                    border-radius: 8px;
-                    background-color: rgb(243, 244, 246);
-                    display: inline-flex;
-                    align-items: center;
-                    justify-content: center;
-                    font-size: 14px;
-                    font-weight: 700;
-                    color: rgb(107, 114, 128);
+                    color: rgb(153, 51, 76);
+                    opacity: 0.5;
+                    font-weight: 400;
                 }
                 .chapter-content {
-                    padding-left: 48px;
-                    border-left: 1px solid rgb(249, 250, 251);
+                    padding-left: 16px; /* Reduced indentation */
                 }
                 .paragraph {
                     margin-bottom: 40px;
                 }
                 h4 {
-                    font-size: 20px;
-                    font-weight: 600;
+                    font-size: 24px;
+                    font-weight: 700;
                     color: rgb(31, 41, 55);
                     margin-bottom: 24px;
-                    display: flex;
-                    align-items: center;
-                    gap: 12px;
-                }
-                .bullet {
-                    width: 8px;
-                    height: 8px;
-                    border-radius: 50%;
-                    background-color: rgb(153, 51, 76);
                 }
                 h5 {
-                    font-size: 12px;
+                    font-size: 14px;
                     text-transform: uppercase;
-                    letter-spacing: 0.1em;
-                    color: rgb(153, 51, 76);
+                    letter-spacing: 0.05em;
+                    color: rgb(107, 114, 128);
                     font-weight: 700;
                     margin-bottom: 12px;
+                    border-bottom: 1px solid rgb(243, 244, 246);
+                    display: inline-block;
+                    padding-bottom: 4px;
                 }
                 .notion-content {
-                    font-size: 16px;
-                    line-height: 1.75;
-                    color: rgb(31, 41, 55);
-                    margin-bottom: 24px;
+                    font-size: 18px; /* 1.125rem */
+                    line-height: 1.8;
+                    color: rgb(55, 65, 81); /* text-gray-700 */
+                    margin-bottom: 32px;
                 }
                 .notion-content p {
-                    margin-bottom: 12px;
+                    margin-bottom: 16px;
                 }
                 .notion-content strong {
                     font-weight: 600;
                     color: rgb(17, 24, 39);
                 }
-                .notion-content em {
-                    font-style: italic;
+                .notion-content h1, .notion-content h2, .notion-content h3 {
+                     margin-top: 24px;
+                     margin-bottom: 16px;
+                     font-weight: 700;
+                     color: rgb(17, 24, 39);
                 }
                 .notion-content ul, .notion-content ol {
                     margin-left: 24px;
-                    margin-bottom: 12px;
+                    margin-bottom: 16px;
                 }
                 .notion-content li {
                     margin-bottom: 8px;
+                }
+                .notion-content a {
+                    color: rgb(153, 51, 76);
+                    text-decoration: underline;
+                }
+                .notion-content blockquote {
+                    border-left: 4px solid rgb(229, 231, 235);
+                    padding-left: 16px;
+                    color: rgb(75, 85, 99);
+                    font-style: italic;
+                    margin-bottom: 16px;
                 }
             </style>
         `;
@@ -363,7 +413,7 @@ const PreviewPage = () => {
                 part.chapters?.forEach((chapter) => {
                     bodyContent += `
                         <h3>
-                            <span class="chapter-number">${chapter.chapter_number}</span>
+                            <span class="chapter-number">#</span>
                             ${chapter.chapter_title}
                         </h3>
                         <div class="chapter-content">
@@ -373,7 +423,6 @@ const PreviewPage = () => {
                         bodyContent += `
                             <div class="paragraph">
                                 <h4>
-                                    <span class="bullet"></span>
                                     ${para.para_name}
                                 </h4>
                         `;
@@ -443,9 +492,47 @@ const PreviewPage = () => {
     };
 
     if (isLoading) {
+        // Calcul du pourcentage
+        const progress = loadingProgress && loadingProgress.total > 0
+            ? Math.round((loadingProgress.current / loadingProgress.total) * 100)
+            : 0;
+
         return (
-            <div className="h-screen flex items-center justify-center bg-gray-50">
-                <Loader2 className="w-12 h-12 text-[#99334C] animate-spin" />
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-100/95 backdrop-blur-sm">
+                <div className="relative w-[210mm] h-[297mm] bg-white shadow-2xl rounded-sm overflow-hidden transform scale-[0.25] md:scale-[0.35] lg:scale-[0.45] transition-transform origin-center flex flex-col items-center justify-center text-center ring-1 ring-gray-200">
+
+                    {/* Contenu statique de la page de garde (Le "Dessous") */}
+                    <div className="w-full h-full flex flex-col items-center justify-center p-24">
+                        <div className="w-32 h-2 bg-[#99334C] mb-12"></div>
+                        <h1 className="text-7xl font-black text-gray-900 mb-8 tracking-tight">
+                            {projectName?.toUpperCase() || 'CHARGEMENT'}
+                        </h1>
+                        <p className="text-2xl text-gray-500 uppercase tracking-widest font-light">Document de Composition</p>
+
+                        <div className="mt-32 flex flex-col items-center animate-pulse">
+                            <div className="w-20 h-20 rounded-full bg-[#99334C] flex items-center justify-center text-white mb-6 shadow-lg shadow-[#99334C]/30">
+                                <FileText size={40} />
+                            </div>
+                            <p className="text-gray-400 font-medium">Génération en cours...</p>
+                        </div>
+                    </div>
+
+                    {/* Masque blanc qui "glisse" vers le haut (Le "Dessus") */}
+                    <div
+                        className="absolute inset-0 bg-white z-10 transition-all duration-700 ease-in-out border-b-4 border-[#99334C]"
+                        style={{ height: `${100 - progress}%` }}
+                    />
+
+                    {/* Indicateur de progression (au dessus de tout) */}
+                    <div className="absolute bottom-12 left-0 right-0 z-20 flex flex-col items-center gap-2">
+                        <p className="text-[#99334C] font-bold text-xl">{progress}%</p>
+                        <p className="text-gray-400 text-sm">
+                            {loadingProgress
+                                ? `Chargement de la partie ${loadingProgress.current} sur ${loadingProgress.total}`
+                                : 'Initialisation...'}
+                        </p>
+                    </div>
+                </div>
             </div>
         );
     }
@@ -549,8 +636,8 @@ const PreviewPage = () => {
                     {/* PAGE DE TITRE */}
                     <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-12 mb-8 min-h-[842px] flex flex-col items-center justify-center text-center page-break-after-always">
                         <div className="w-24 h-1 bg-[#99334C] mb-8"></div>
-                        <h1 className="text-6xl font-black text-gray-900 mb-4 tracking-tight">
-                            {projectName?.toUpperCase()}
+                        <h1 className="text-5xl font-bold text-gray-900 mb-6 tracking-tight">
+                            {projectName}
                         </h1>
                         <p className="text-xl text-gray-500 uppercase tracking-widest font-light">Document de Composition</p>
                         <div className="mt-20 flex flex-col items-center">
@@ -571,33 +658,30 @@ const PreviewPage = () => {
 
                     {structure.map((part) => (
                         <div key={part.part_id} className="bg-white rounded-2xl shadow-sm border border-gray-200 p-12 mb-8 min-h-[842px] page-break-before-always">
-                            <div className="mb-12 border-b-2 border-[#99334C] pb-6">
-                                <span className="text-[#99334C] font-bold tracking-widest uppercase text-sm">Partie {structure.indexOf(part) + 1}</span>
-                                <h2 className="text-4xl font-extrabold text-gray-900 mt-2">
+                            <div className="mb-12 border-b border-gray-100 pb-6">
+                                <span className="inline-block px-3 py-1 bg-[#99334C]/10 text-[#99334C] text-sm font-bold rounded-full mb-4">Partie {structure.indexOf(part) + 1}</span>
+                                <h2 className="text-4xl font-bold text-gray-900 mt-2">
                                     {part.part_title}
                                 </h2>
                             </div>
 
                             {part.part_intro && (
-                                <div className="mb-12 text-xl text-gray-700 leading-relaxed font-serif italic border-l-4 border-gray-100 pl-6"
+                                <div className="mb-12 text-lg text-gray-600 leading-relaxed italic border-l-4 border-[#99334C]/20 pl-6"
                                     dangerouslySetInnerHTML={{ __html: part.part_intro }} />
                             )}
 
                             <div className="space-y-12">
                                 {part.chapters?.map((chapter) => (
                                     <div key={chapter.chapter_id} className="chapter-section">
-                                        <h3 className="text-2xl font-bold text-gray-800 mb-8 mt-12 flex items-center gap-4">
-                                            <span className="w-8 h-8 rounded bg-gray-100 flex items-center justify-center text-sm font-bold text-gray-500">
-                                                {chapter.chapter_number}
-                                            </span>
+                                        <h3 className="text-3xl font-bold text-gray-900 mb-8 mt-12 flex items-center gap-3">
+                                            <span className="text-[#99334C] opacity-50">#</span>
                                             {chapter.chapter_title}
                                         </h3>
 
-                                        <div className="space-y-10 pl-12 border-l border-gray-50">
+                                        <div className="space-y-10 pl-4 lg:pl-8">
                                             {chapter.paragraphs?.map((para: any) => (
                                                 <div key={para.para_id} className="para-section">
-                                                    <h4 className="text-xl font-semibold text-gray-800 mb-6 flex items-center gap-3">
-                                                        <div className="w-2 h-2 rounded-full bg-[#99334C]"></div>
+                                                    <h4 className="text-2xl font-bold text-gray-800 mb-6">
                                                         {para.para_name}
                                                     </h4>
 
@@ -605,13 +689,13 @@ const PreviewPage = () => {
                                                         {para.notions?.map((notion: any) => (
                                                             <div key={notion.notion_id} className="mb-8">
                                                                 {notion.notion_name && (
-                                                                    <h5 className="text-xs uppercase tracking-widest text-[#99334C] font-bold mb-3">
+                                                                    <h5 className="text-sm uppercase tracking-wide text-gray-500 font-bold mb-3 border-b border-gray-100 pb-1 inline-block">
                                                                         {notion.notion_name}
                                                                     </h5>
                                                                 )}
                                                                 <div
-                                                                    className="text-gray-800 leading-relaxed"
-                                                                    style={{ fontSize: '16px', lineHeight: '1.75' }}
+                                                                    className="text-gray-700 leading-relaxed prose prose-lg max-w-none [&_p]:mb-4 [&_h1]:text-2xl [&_h1]:font-bold [&_h1]:mb-4 [&_h2]:text-xl [&_h2]:font-bold [&_h2]:mb-3 [&_ul]:list-disc [&_ul]:ml-6 [&_ol]:list-decimal [&_ol]:ml-6 [&_li]:mb-1 [&_blockquote]:border-l-4 [&_blockquote]:border-gray-200 [&_blockquote]:pl-4 [&_blockquote]:italic [&_blockquote]:text-gray-600 [&_a]:text-[#99334C] [&_a]:underline hover:[&_a]:text-[#7a283d]"
+                                                                    style={{ fontSize: '1.125rem', lineHeight: '1.8' }}
                                                                     dangerouslySetInnerHTML={{ __html: notion.notion_content }}
                                                                 />
                                                             </div>

@@ -3,12 +3,23 @@
 import React from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
+import { usePathname } from 'next/navigation';
 
 // ============= COMPOSANT: Footer =============
 
 
 
 const Footer = () => {
+  const pathname = usePathname();
+
+  // Masquer le footer sur les pages d'édition (edit-home, edit, etc.) si l'utilisateur le souhaite, 
+  // mais la demande spécifique était "page edit". On va inclure /edit et /edit-home par sécurité ou juste /edit.
+  // "dans la page edit" => probablement l'éditeur de cours (/edit?...)
+  // On va masquer pour tout ce qui commence par /edit
+  if (pathname?.startsWith('/edit')) {
+    return null;
+  }
+
   return (
     <footer className="bg-[#36454F] text-white pt-16 pb-8 px-6 md:px-12 font-sans">
       <div className="max-w-7xl mx-auto">
@@ -17,7 +28,7 @@ const Footer = () => {
           <div>
             <h2 className="text-3xl font-bold mb-4 tracking-tight">XCCM 2</h2>
             <p className="text-gray-300 max-w-md leading-relaxed">
-              Le système auteur nouvelle génération pour créer, structurer et diffuser 
+              Le système auteur nouvelle génération pour créer, structurer et diffuser
               vos connaissances avec une expérience utilisateur centrée sur l'humain.
             </p>
           </div>
@@ -28,9 +39,9 @@ const Footer = () => {
               Recevez les dernières nouveautés, mises à jour et offres directement dans votre boîte.
             </p>
             <form className="flex flex-col sm:flex-row gap-3">
-              <input 
-                type="email" 
-                placeholder="Votre E-mail" 
+              <input
+                type="email"
+                placeholder="Votre E-mail"
                 className="flex-grow bg-[#2A373E] border border-gray-600 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#99334C] transition-all"
               />
               <button className="bg-[#99334C] hover:bg-[#b03d59] text-white font-medium py-2 px-6 rounded-lg transition-colors duration-300">

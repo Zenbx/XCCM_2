@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState, useEffect } from 'react';
-import { ChevronRight, Search, Book, HelpCircle, FileText, Headphones, Menu, X } from 'lucide-react';
+import { ChevronRight, Search, Book, HelpCircle, FileText, Headphones, Menu, X, Send, Mail, Phone, MapPin, Clock } from 'lucide-react';
 
 const HelpCenter = () => {
   const [activeSection, setActiveSection] = useState('documentation');
@@ -9,6 +9,15 @@ const HelpCenter = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isMobileTocOpen, setIsMobileTocOpen] = useState(false);
+
+  // État du formulaire de contact
+  const [contactForm, setContactForm] = useState({
+    nom: '',
+    email: '',
+    sujet: '',
+    description: ''
+  });
+  const [formSubmitted, setFormSubmitted] = useState(false);
 
   // Structure du contenu
   const sections = {
@@ -54,6 +63,19 @@ const HelpCenter = () => {
         { id: 'api', title: 'Documentation API' }
       ]
     }
+  };
+
+  const handleContactSubmit = () => {
+    if (!contactForm.nom || !contactForm.email || !contactForm.sujet || !contactForm.description) {
+      alert('Veuillez remplir tous les champs');
+      return;
+    }
+    console.log('Formulaire de contact:', contactForm);
+    setFormSubmitted(true);
+    setTimeout(() => {
+      setFormSubmitted(false);
+      setContactForm({ nom: '', email: '', sujet: '', description: '' });
+    }, 3000);
   };
 
   // Contenu détaillé
@@ -282,29 +304,7 @@ Bonnes pratiques collaboratives
     support: {
       contact: {
         title: 'Nous contacter',
-        content: `Notre équipe support est là pour vous aider :
-
-Email : support@xccm2.com
-Délai de réponse : 24-48h ouvrées
-
-Formulaire de contact
-Utilisez le formulaire ci-dessous pour nous envoyer un message détaillé :
-
-[Votre nom]
-[Votre email]
-[Sujet]
-[Description du problème]
-
-Horaires d'assistance
-Lundi - Vendredi : 9h - 18h (GMT+1)
-Samedi : 10h - 14h
-Dimanche : Fermé
-
-Support prioritaire
-Les utilisateurs avec un compte Premium bénéficient d'un support prioritaire avec réponse sous 4h.
-
-Communauté
-Rejoignez notre forum communautaire pour échanger avec d'autres utilisateurs et trouver des réponses rapides : forum.xccm2.com`
+        isForm: true
       },
       'bug-report': {
         title: 'Signaler un bug',
@@ -513,7 +513,7 @@ Limites de taux
 
       {/* Sidebar Gauche */}
       <div className={`
-        fixed md:relative inset-y-0 left-0 z-50
+        fixed md:relative inset-y-0 left-0 z-40
         w-72 md:w-64 bg-white border-r border-gray-200 overflow-y-auto
         transform transition-transform duration-300 ease-in-out
         ${isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
@@ -552,11 +552,10 @@ Limites de taux
                 <button
                   key={key}
                   onClick={() => changeSection(key)}
-                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
-                    activeSection === key
-                      ? 'bg-[#99334C] text-white'
-                      : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
-                  }`}
+                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${activeSection === key
+                    ? 'bg-[#99334C] text-white'
+                    : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
+                    }`}
                 >
                   <SectionIcon size={18} />
                   <span className="font-medium">{section.title}</span>
@@ -592,6 +591,163 @@ Limites de taux
 
           {currentSection?.subsections.map((subsection) => {
             const subsectionContent = content[activeSection]?.[subsection.id];
+
+            // Cas spécial pour le formulaire de contact
+            if (subsectionContent?.isForm) {
+              return (
+                <section
+                  key={subsection.id}
+                  id={subsection.id}
+                  className="mb-12 md:mb-16 scroll-mt-24"
+                >
+                  <h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-6 pb-3 border-b border-gray-200">
+                    Nous contacter
+                  </h2>
+
+                  <div className="grid lg:grid-cols-2 gap-8">
+                    {/* Formulaire */}
+                    <div className="bg-gray-50 rounded-2xl p-6 md:p-8 border border-gray-200">
+                      <h3 className="text-xl font-bold text-gray-900 mb-6">Envoyez-nous un message</h3>
+
+                      {formSubmitted ? (
+                        <div className="bg-green-50 border border-green-200 rounded-xl p-6 text-center">
+                          <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <Send className="w-8 h-8 text-green-600" />
+                          </div>
+                          <h4 className="text-lg font-bold text-green-900 mb-2">Message envoyé !</h4>
+                          <p className="text-green-700">Nous vous répondrons dans les 24-48h.</p>
+                        </div>
+                      ) : (
+                        <div className="space-y-5">
+                          <div>
+                            <label className="block text-sm font-semibold text-gray-700 mb-2">
+                              Nom complet
+                            </label>
+                            <input
+                              type="text"
+                              value={contactForm.nom}
+                              onChange={(e) => setContactForm({ ...contactForm, nom: e.target.value })}
+                              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#99334C]/20 focus:border-[#99334C] transition-all"
+                              placeholder="Votre nom"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-sm font-semibold text-gray-700 mb-2">
+                              Email
+                            </label>
+                            <input
+                              type="email"
+                              value={contactForm.email}
+                              onChange={(e) => setContactForm({ ...contactForm, email: e.target.value })}
+                              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#99334C]/20 focus:border-[#99334C] transition-all"
+                              placeholder="votre@email.com"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-sm font-semibold text-gray-700 mb-2">
+                              Sujet
+                            </label>
+                            <input
+                              type="text"
+                              value={contactForm.sujet}
+                              onChange={(e) => setContactForm({ ...contactForm, sujet: e.target.value })}
+                              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#99334C]/20 focus:border-[#99334C] transition-all"
+                              placeholder="Objet de votre message"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-sm font-semibold text-gray-700 mb-2">
+                              Description du problème
+                            </label>
+                            <textarea
+                              value={contactForm.description}
+                              onChange={(e) => setContactForm({ ...contactForm, description: e.target.value })}
+                              rows={5}
+                              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#99334C]/20 focus:border-[#99334C] transition-all resize-none"
+                              placeholder="Décrivez votre problème en détail..."
+                            />
+                          </div>
+
+                          <button
+                            onClick={handleContactSubmit}
+                            className="w-full bg-[#99334C] text-white py-3 rounded-xl font-semibold hover:bg-[#7a283d] transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
+                          >
+                            <Send className="w-5 h-5" />
+                            Envoyer le message
+                          </button>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Informations de contact */}
+                    <div className="space-y-6">
+                      <div className="bg-gradient-to-br from-[#99334C] to-[#7a283d] rounded-2xl p-6 md:p-8 text-white">
+                        <h3 className="text-xl font-bold mb-6">Informations de contact</h3>
+
+                        <div className="space-y-6">
+                          <div className="flex items-start gap-4">
+                            <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center flex-shrink-0">
+                              <Mail className="w-6 h-6" />
+                            </div>
+                            <div>
+                              <p className="font-semibold mb-1">Email</p>
+                              <p className="text-white/90 text-sm">support@xccm2.com</p>
+                              <p className="text-white/90 text-sm">contact@xccm2.com</p>
+                            </div>
+                          </div>
+
+                          <div className="flex items-start gap-4">
+                            <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center flex-shrink-0">
+                              <Phone className="w-6 h-6" />
+                            </div>
+                            <div>
+                              <p className="font-semibold mb-1">Téléphone</p>
+                              <p className="text-white/90 text-sm">+237 6XX XXX XXX</p>
+                            </div>
+                          </div>
+
+                          <div className="flex items-start gap-4">
+                            <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center flex-shrink-0">
+                              <MapPin className="w-6 h-6" />
+                            </div>
+                            <div>
+                              <p className="font-semibold mb-1">Localisation</p>
+                              <p className="text-white/90 text-sm">Douala, Cameroun</p>
+                            </div>
+                          </div>
+
+                          <div className="flex items-start gap-4">
+                            <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center flex-shrink-0">
+                              <Clock className="w-6 h-6" />
+                            </div>
+                            <div>
+                              <p className="font-semibold mb-1">Horaires</p>
+                              <p className="text-white/90 text-sm">Lun-Ven : 9h - 18h</p>
+                              <p className="text-white/90 text-sm">Sam : 10h - 14h</p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="bg-blue-50 border border-blue-200 rounded-2xl p-6">
+                        <h4 className="text-lg font-bold text-blue-900 mb-3">Délai de réponse</h4>
+                        <p className="text-blue-800 text-sm mb-4">
+                          Notre équipe s'engage à vous répondre sous 24-48h ouvrées.
+                        </p>
+                        <div className="bg-white rounded-lg p-3 text-sm">
+                          <p className="text-gray-700"><strong>Support Premium :</strong> Réponse sous 4h</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </section>
+              );
+            }
+
+            // Contenu standard
             return (
               <section
                 key={subsection.id}
@@ -612,9 +768,9 @@ Limites de taux
         </div>
       </div>
 
-   {/* Sidebar Droite - TOC Mobile (drawer) */}
+      {/* Sidebar Droite - TOC */}
       <div className={`
-        fixed xl:relative inset-y-0 right-0 z-50
+        fixed xl:relative inset-y-0 right-0 z-40
         w-72 xl:w-64 bg-white border-l border-gray-200 overflow-y-auto
         transform transition-transform duration-300 ease-in-out
         ${isMobileTocOpen ? 'translate-x-0' : 'translate-x-full xl:translate-x-0'}
@@ -626,7 +782,7 @@ Limites de taux
             </h3>
             <button
               onClick={() => setIsMobileTocOpen(false)}
-              className="md:hidden p-1 hover:bg-gray-100 rounded"
+              className="xl:hidden p-1 hover:bg-gray-100 rounded"
             >
               <X size={18} />
             </button>
@@ -637,11 +793,10 @@ Limites de taux
                 <li key={subsection.id}>
                   <button
                     onClick={() => scrollToSection(subsection.id)}
-                    className={`w-full text-left text-sm py-2 px-3 rounded transition-colors flex items-center gap-2 ${
-                      activeSubSection === subsection.id
-                        ? 'text-[#99334C] font-medium bg-[#99334C]/10'
-                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                    }`}
+                    className={`w-full text-left text-sm py-2 px-3 rounded transition-colors flex items-center gap-2 ${activeSubSection === subsection.id
+                      ? 'text-[#99334C] font-medium bg-[#99334C]/10'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                      }`}
                   >
                     {activeSubSection === subsection.id && (
                       <ChevronRight size={14} className="flex-shrink-0" />

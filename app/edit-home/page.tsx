@@ -17,8 +17,12 @@ import {
   FolderOpen,
   Loader2,
   AlertCircle,
-  X // Pour fermer les modales
+  X,
+  BookTemplate, // Pour Modèles
+  Globe, // Pour Communauté
+  Users // Pour Créateurs
 } from 'lucide-react';
+import Link from 'next/link'; // Nécessaire pour les liens de navigations
 import { useRouter } from "next/navigation";
 import { projectService, Project } from '@/services/projectService';
 import { useAuth } from '@/context/AuthContext';
@@ -106,17 +110,31 @@ const EditHomePage = () => {
   const confirmDelete = async () => {
     if (!projectToDelete) return;
 
+    // Capture ID locally to prevent closure staleness
+    const idToDelete = projectToDelete.pr_id;
+    // Capture Name for API call
+    const nameToDelete = projectToDelete.pr_name;
+
     try {
       setIsDeleting(true);
-      await projectService.deleteProject(projectToDelete.pr_id);
+      await projectService.deleteProject(nameToDelete);
 
-      // Mise à jour de l'UI : on filtre la liste actuelle pour retirer l'ID supprimé
-      setProjects(prevProjects => prevProjects.filter(p => p.pr_id !== projectToDelete.pr_id));
+      // Mise à jour IMMÉDIATE de l'UI
+      setProjects(prevProjects => {
+        const updated = prevProjects.filter(p => p.pr_id !== idToDelete);
+        return updated;
+      });
 
       setShowDeleteModal(false);
       setProjectToDelete(null);
     } catch (err: any) {
+      console.error("Erreur suppression:", err);
       setError(err.message || 'Erreur lors de la suppression');
+      // En cas d'erreur de synchro (ex: déjà supprimé), on rafraichit la liste
+      if (err.message && err.message.includes('not found')) {
+        loadProjects(); // Fallback
+        setShowDeleteModal(false);
+      }
     } finally {
       setIsDeleting(false);
     }
@@ -191,13 +209,24 @@ const EditHomePage = () => {
           <p className="text-xl text-white/80 mb-8 max-w-2xl">
             Commencez à créer vos cours et compositions dès maintenant
           </p>
-          <button
-            onClick={() => setShowCreateModal(true)}
-            className="bg-white text-[#99334C] px-8 py-4 rounded-xl font-bold shadow-lg hover:shadow-xl transition-all flex items-center gap-3 hover:scale-105"
-          >
-            <Plus className="w-5 h-5" />
-            Créer une Nouvelle Composition
-          </button>
+
+          <div className="flex flex-wrap gap-4">
+            <button
+              onClick={() => setShowCreateModal(true)}
+              className="bg-white text-[#99334C] px-8 py-4 rounded-xl font-bold shadow-lg hover:shadow-xl transition-all flex items-center gap-3 hover:scale-105"
+            >
+              <Plus className="w-5 h-5" />
+              Créer une Nouvelle Composition
+            </button>
+
+            <Link
+              href="/templates"
+              className="bg-[#99334C]/30 backdrop-blur-md border border-white/30 text-white px-8 py-4 rounded-xl font-bold hover:bg-[#99334C]/50 transition-all flex items-center gap-3 hover:scale-105"
+            >
+              <BookTemplate className="w-5 h-5" />
+              Parcourir les Modèles
+            </Link>
+          </div>
         </div>
       </div>
 
@@ -237,6 +266,8 @@ const EditHomePage = () => {
           </div>
         </section>
 
+
+
         {/* Section Tableau */}
         <section>
           <div className="bg-white rounded-3xl shadow-lg border border-gray-100 overflow-hidden">
@@ -250,7 +281,7 @@ const EditHomePage = () => {
                     placeholder="Rechercher..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#99334C]/20 focus:border-[#99334C]"
+                    className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-xl text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#99334C]/20 focus:border-[#99334C]"
                   />
                 </div>
               </div>
@@ -389,7 +420,7 @@ const EditHomePage = () => {
               type="text"
               value={renameValue}
               onChange={(e) => setRenameValue(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#99334C] mb-6"
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl text-gray-700 placeholder-gray-400 focus:ring-2 focus:ring-[#99334C] mb-6"
               autoFocus
             />
             <div className="flex gap-3">
@@ -414,7 +445,7 @@ const EditHomePage = () => {
       {/* --- MODALE SUPPRESSION (Personnalisée) --- */}
       {showDeleteModal && projectToDelete && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border-l-4 border-red-500">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl">
             <h3 className="text-xl font-bold text-gray-900 mb-2">Confirmer la suppression</h3>
             <p className="text-gray-600 mb-6">
               Êtes-vous sûr de vouloir supprimer <span className="font-semibold text-gray-900">"{projectToDelete.pr_name}"</span> ?
