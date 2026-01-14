@@ -972,7 +972,6 @@ const XCCM2Editor = () => {
         selectedPartId={currentContext?.part?.part_id}
         onRename={handleRename}
         onReorder={handleReorder}
-        styles={projectData?.styles}
       />
 
       <div className="flex-1 flex flex-col">

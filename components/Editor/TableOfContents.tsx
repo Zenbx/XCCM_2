@@ -35,7 +35,6 @@ interface TableOfContentsProps {
   // Nouvelles fonctions pour renommage et réordonnancement
   onRename?: (type: 'part' | 'chapter' | 'paragraph' | 'notion', id: string, newTitle: string) => Promise<void>;
   onReorder?: (type: 'part' | 'chapter' | 'paragraph' | 'notion', parentId: string | null, items: any[]) => Promise<void>;
-  styles?: any;
 }
 
 const TableOfContents: React.FC<TableOfContentsProps> = ({
@@ -52,8 +51,7 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
   onCreateNotion,
   selectedNotionId,
   onRename,
-  onReorder,
-  styles
+  onReorder
 }) => {
   const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({});
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -68,11 +66,6 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
 
 
   const getIconColor = (type: 'part' | 'chapter' | 'paragraph' | 'notion') => {
-    if (styles) {
-      if (type === 'part' && styles.part?.title?.color) return styles.part.title.color;
-      if (type === 'chapter' && styles.chapter?.title?.color) return styles.chapter.title.color;
-      if (type === 'paragraph' && styles.paragraph?.title?.color) return styles.paragraph.title.color;
-    }
     switch (type) {
       case 'part': return '#99334C';
       case 'chapter': return '#DC3545';
@@ -245,12 +238,6 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
                 ) : (
                   <div
                     className={`text-sm font-semibold truncate flex-1 ${selectedPartId === part.part_id ? 'text-[#99334C]' : 'text-gray-800'}`}
-                    style={{
-                      color: (selectedPartId === part.part_id) ? undefined : styles?.part?.title?.color,
-                      fontFamily: styles?.part?.title?.fontFamily,
-                      fontWeight: (styles?.part?.title?.fontWeight === '700' || styles?.part?.title?.fontWeight === '800') ? 'bold' : undefined,
-                      fontStyle: styles?.part?.title?.fontStyle
-                    }}
                     onClick={(e) => {
                       e.stopPropagation();
                       onSelectPart?.({ projectName, partTitle: part.part_title, part });
@@ -317,12 +304,6 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
                         ) : (
                           <span
                             className="text-sm text-gray-700 truncate flex-1 font-medium cursor-pointer hover:underline"
-                            style={{
-                              color: styles?.chapter?.title?.color,
-                              fontFamily: styles?.chapter?.title?.fontFamily,
-                              fontWeight: (styles?.chapter?.title?.fontWeight === '700' || styles?.chapter?.title?.fontWeight === '800') ? 'bold' : undefined,
-                              fontStyle: styles?.chapter?.title?.fontStyle
-                            }}
                             onClick={() => onSelectChapter?.(projectName, part.part_title, chapter.chapter_title)}
                             onDoubleClick={(e) => startEditing(e, `chapter-${chapter.chapter_id}`, chapter.chapter_title)}
                           >
@@ -386,12 +367,6 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
                                 ) : (
                                   <span
                                     className="text-sm text-gray-600 truncate flex-1 cursor-pointer hover:underline"
-                                    style={{
-                                      color: styles?.paragraph?.title?.color,
-                                      fontFamily: styles?.paragraph?.title?.fontFamily,
-                                      fontWeight: (styles?.paragraph?.title?.fontWeight === '700' || styles?.paragraph?.title?.fontWeight === '800') ? 'bold' : undefined,
-                                      fontStyle: styles?.paragraph?.title?.fontStyle
-                                    }}
                                     onClick={() => onSelectParagraph?.(projectName, part.part_title, chapter.chapter_title, paragraph.para_name)}
                                     onDoubleClick={(e) => startEditing(e, `paragraph-${paragraph.para_id}`, paragraph.para_name)}
                                   >
