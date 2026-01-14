@@ -8,6 +8,14 @@ export interface Project {
   owner_id: string;
   created_at: string;
   updated_at: string;
+  description?: string;
+  category?: string;
+  level?: string;
+  tags?: string;
+  author?: string;
+  language?: string;
+  is_published?: boolean;
+  styles?: any;
 }
 
 export interface ProjectWithOwner extends Project {
@@ -142,11 +150,11 @@ class ProjectService {
   }
 
   /**
-   * Met à jour le nom d'un projet
+   * Met à jour un projet (nom, métadonnées, styles)
    * @param currentName - Le nom ACTUEL du projet (utilisé pour l'URL)
-   * @param data - Objet contenant le NOUVEAU nom { pr_name: string }
+   * @param data - Objet contenant les champs à modifier
    */
-  async updateProject(currentName: string, data: { pr_name: string }): Promise<Project> {
+  async updateProject(currentName: string, data: Partial<Project>): Promise<Project> {
     try {
       const token = this.getAuthToken();
 

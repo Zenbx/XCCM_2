@@ -9,7 +9,8 @@ import EditorToolbar from '@/components/Editor/EditorToolBar';
 import EditorArea from '@/components/Editor/EditorArea';
 import RightPanel from '@/components/Editor/RightPanel';
 import ChatBotOverlay from '@/components/Editor/ChatBotOverlay';
-import { projectService } from '@/services/projectService';
+import { projectService, Project } from '@/services/projectService';
+import { commentService } from '@/services/commentService';
 import { structureService, Part, Chapter, Paragraph, Notion } from '@/services/structureService';
 import ShareOverlay from '@/components/Editor/ShareOverlay';
 import pLimit from 'p-limit';
@@ -20,11 +21,9 @@ const XCCM2Editor = () => {
   const router = useRouter();
   const projectName = searchParams.get('projectName');
 
-  const [projectData, setProjectData] = useState<{
-    pr_id: string;
-    pr_name: string;
-    owner_id: string;
-  } | null>(null);
+  const [projectData, setProjectData] = useState<Project | null>(null);
+  const [comments, setComments] = useState<any[]>([]);
+  const [isFetchingComments, setIsFetchingComments] = useState(false);
   const [structure, setStructure] = useState<Part[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -97,11 +96,10 @@ const XCCM2Editor = () => {
       setError('');
 
       const project = await projectService.getProjectByName(projectName!);
-      setProjectData({
-        pr_id: project.pr_id,
-        pr_name: project.pr_name,
-        owner_id: project.owner_id
-      });
+      setProjectData(project);
+
+      // Charger aussi les commentaires si nécessaire (ou on le fera quand le panel s'ouvre)
+      fetchComments();
 
       // 1. Charger uniquement les parties (rapide)
       const parts = await structureService.getParts(project.pr_name);
@@ -137,6 +135,45 @@ const XCCM2Editor = () => {
       setError(err.message || 'Erreur lors du chargement du projet');
       console.error('Erreur chargement projet:', err);
       if (!isSilent) setIsLoading(false);
+    }
+  };
+
+  const fetchComments = async () => {
+    if (!projectName) return;
+    try {
+      setIsFetchingComments(true);
+      const data = await commentService.getComments(projectName);
+      setComments(data);
+    } catch (err) {
+      console.error("Erreur fetch comments:", err);
+    } finally {
+      setIsFetchingComments(false);
+    }
+  };
+
+  const handleAddComment = async (content: string) => {
+    if (!projectName) return;
+    try {
+      const newComment = await commentService.addComment(projectName, content);
+      setComments(prev => [newComment, ...prev]);
+    } catch (err: any) {
+      alert("Erreur lors de l'ajout du commentaire: " + err.message);
+    }
+  };
+
+  const handleUpdateProjectSettings = async (data: Partial<Project>) => {
+    if (!projectData || !projectName) return;
+    try {
+      const updated = await projectService.updateProject(projectName, data);
+      setProjectData(updated);
+
+      // Si le nom a changé, mettre à jour l'URL
+      if (data.pr_name && data.pr_name !== projectName) {
+        router.replace(`/edit?projectName=${encodeURIComponent(data.pr_name)}`);
+      }
+    } catch (err: any) {
+      console.error("Erreur update settings:", err);
+      alert("Erreur lors de la mise à jour des paramètres: " + err.message);
     }
   };
 
@@ -935,6 +972,7 @@ const XCCM2Editor = () => {
         selectedPartId={currentContext?.part?.part_id}
         onRename={handleRename}
         onReorder={handleReorder}
+        styles={projectData?.styles}
       />
 
       <div className="flex-1 flex flex-col">
@@ -1123,6 +1161,10 @@ const XCCM2Editor = () => {
           paraName: currentContext.paraName,
           notionName: currentContext.notionName
         } : undefined}
+        onUpdateProject={handleUpdateProjectSettings}
+        comments={comments}
+        onAddComment={handleAddComment}
+        isFetchingComments={isFetchingComments}
       />
 
 

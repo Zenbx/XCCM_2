@@ -1,11 +1,11 @@
 "use client";
 import React, { useState, useEffect, useRef } from 'react';
-import { 
-  BookOpen, 
-  Target, 
-  Users, 
-  Lightbulb, 
-  Shield, 
+import {
+  BookOpen,
+  Target,
+  Users,
+  Lightbulb,
+  Shield,
   Zap,
   Mail,
   Phone,
@@ -19,6 +19,7 @@ import {
   Award,
   TrendingUp
 } from 'lucide-react';
+import router from 'next/router';
 
 const AboutPage = () => {
   const [contactForm, setContactForm] = useState({
@@ -68,7 +69,7 @@ const AboutPage = () => {
       email: "nathan.nzieleu@gmail.com",
       github: "https://github.com/Natech23__"
     },
- 
+
     {
       name: "BISSECK CHALVI NATHANAEL",
       pseudo: "HinaSejaru124__",
@@ -228,11 +229,11 @@ const AboutPage = () => {
         </div>
 
         <div className="relative max-w-7xl mx-auto px-6 text-center">
-          
+
           <h1 className="text-5xl md:text-6xl font-bold mb-6">
             À propos de XCCM2
           </h1>
-          
+
           {/* Soulignement décoratif */}
           <div className="flex justify-center mb-8">
             <div className="h-1 w-32 bg-white/50 rounded-full relative">
@@ -241,7 +242,7 @@ const AboutPage = () => {
           </div>
 
           <p className="text-xl text-white/90 max-w-3xl mx-auto leading-relaxed">
-            Une plateforme éducative numérique conçue pour faciliter la création, 
+            Une plateforme éducative numérique conçue pour faciliter la création,
             l'organisation et la publication de contenus pédagogiques en ligne.
           </p>
         </div>
@@ -260,17 +261,17 @@ const AboutPage = () => {
           <div className="bg-gradient-to-br from-gray-50 to-white rounded-3xl p-8 md:p-12 shadow-lg border border-gray-100 animate-on-scroll">
             <div className="prose prose-lg max-w-none text-gray-700 leading-relaxed space-y-6">
               <p>
-                <span className="text-[#99334C] font-bold text-xl">XCCM 2</span> est une plateforme 
-                éducative numérique conçue pour faciliter la création, l'organisation et la publication 
-                de contenus pédagogiques en ligne. Elle s'adresse aux enseignants, formateurs et créateurs 
+                <span className="text-[#99334C] font-bold text-xl">XCCM 2</span> est une plateforme
+                éducative numérique conçue pour faciliter la création, l'organisation et la publication
+                de contenus pédagogiques en ligne. Elle s'adresse aux enseignants, formateurs et créateurs
                 de contenus souhaitant structurer leurs cours de manière claire, intuitive et accessible.
               </p>
 
               <p>
-                Pensée dans une logique de <strong>système auteur</strong>, la plateforme permet de concevoir 
-                des cours modulaires, organisés par parties, chapitres et notions, tout en offrant une 
-                expérience utilisateur fluide et cohérente. XCCM 2 met l'accent sur la <strong>simplicité 
-                d'utilisation</strong> afin de rendre la production de contenus pédagogiques accessible, 
+                Pensée dans une logique de <strong>système auteur</strong>, la plateforme permet de concevoir
+                des cours modulaires, organisés par parties, chapitres et notions, tout en offrant une
+                expérience utilisateur fluide et cohérente. XCCM 2 met l'accent sur la <strong>simplicité
+                  d'utilisation</strong> afin de rendre la production de contenus pédagogiques accessible,
                 même sans compétences techniques avancées.
               </p>
 
@@ -293,8 +294,8 @@ const AboutPage = () => {
 
               <div className="bg-[#99334C]/5 border-l-4 border-[#99334C] p-6 rounded-r-xl mt-8">
                 <p className="text-gray-700 italic">
-                  "Développé dans le cadre d'un projet d'<strong>Interaction Homme‑Machine (IHM)</strong>, 
-                  XCCM 2 place l'utilisateur au centre de la conception, en mettant l'accent sur l'ergonomie, 
+                  "Développé dans le cadre d'un projet d'<strong>Interaction Homme‑Machine (IHM)</strong>,
+                  XCCM 2 place l'utilisateur au centre de la conception, en mettant l'accent sur l'ergonomie,
                   la simplicité d'usage et la qualité de l'expérience utilisateur."
                 </p>
               </div>
@@ -323,7 +324,7 @@ const AboutPage = () => {
             {values.map((value, index) => {
               const IconComponent = value.icon;
               return (
-                <div key={index} className="bg-white rounded-2xl p-8 shadow-lg hover:shadow-xl transition-all border border-gray-100 group animate-on-scroll" style={{animationDelay: `${index * 0.1}s`}}>
+                <div key={index} className="bg-white rounded-2xl p-8 shadow-lg hover:shadow-xl transition-all border border-gray-100 group animate-on-scroll" style={{ animationDelay: `${index * 0.1}s` }}>
                   <div className="w-16 h-16 bg-gradient-to-br from-[#99334C] to-[#7a283d] rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                     <IconComponent className="w-8 h-8 text-white" />
                   </div>
@@ -341,12 +342,12 @@ const AboutPage = () => {
                   Notre ambition
                 </h3>
                 <p className="text-lg text-gray-700 leading-relaxed mb-6">
-                  À travers XCCM 2, l'ambition est de proposer une <strong>plateforme éducative moderne</strong> qui 
-                  valorise la structuration du savoir, favorise l'autonomie des auteurs et améliore l'expérience 
+                  À travers XCCM 2, l'ambition est de proposer une <strong>plateforme éducative moderne</strong> qui
+                  valorise la structuration du savoir, favorise l'autonomie des auteurs et améliore l'expérience
                   d'apprentissage des utilisateurs finaux.
                 </p>
                 <p className="text-lg text-gray-700 leading-relaxed">
-                  XCCM 2 se positionne ainsi comme un <strong>outil pédagogique fiable, évolutif et centré sur l'humain</strong>, 
+                  XCCM 2 se positionne ainsi comme un <strong>outil pédagogique fiable, évolutif et centré sur l'humain</strong>,
                   répondant aux besoins actuels de l'enseignement numérique.
                 </p>
               </div>
@@ -439,7 +440,7 @@ const AboutPage = () => {
             {/* Formulaire */}
             <div className="bg-white rounded-3xl p-8 shadow-xl border border-gray-100 animate-on-scroll">
               <h3 className="text-2xl font-bold text-gray-900 mb-6">Envoyez-nous un message</h3>
-              
+
               <div className="space-y-6">
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
@@ -448,7 +449,7 @@ const AboutPage = () => {
                   <input
                     type="text"
                     value={contactForm.nom}
-                    onChange={(e) => setContactForm({...contactForm, nom: e.target.value})}
+                    onChange={(e) => setContactForm({ ...contactForm, nom: e.target.value })}
                     className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#99334C]/20 focus:border-[#99334C] transition-all"
                     placeholder="Votre nom"
                   />
@@ -461,7 +462,7 @@ const AboutPage = () => {
                   <input
                     type="email"
                     value={contactForm.email}
-                    onChange={(e) => setContactForm({...contactForm, email: e.target.value})}
+                    onChange={(e) => setContactForm({ ...contactForm, email: e.target.value })}
                     className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#99334C]/20 focus:border-[#99334C] transition-all"
                     placeholder="votre@email.com"
                   />
@@ -474,7 +475,7 @@ const AboutPage = () => {
                   <input
                     type="text"
                     value={contactForm.sujet}
-                    onChange={(e) => setContactForm({...contactForm, sujet: e.target.value})}
+                    onChange={(e) => setContactForm({ ...contactForm, sujet: e.target.value })}
                     className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#99334C]/20 focus:border-[#99334C] transition-all"
                     placeholder="Objet de votre message"
                   />
@@ -486,7 +487,7 @@ const AboutPage = () => {
                   </label>
                   <textarea
                     value={contactForm.message}
-                    onChange={(e) => setContactForm({...contactForm, message: e.target.value})}
+                    onChange={(e) => setContactForm({ ...contactForm, message: e.target.value })}
                     rows={5}
                     className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#99334C]/20 focus:border-[#99334C] transition-all resize-none"
                     placeholder="Écrivez votre message ici..."
@@ -504,10 +505,10 @@ const AboutPage = () => {
             </div>
 
             {/* Informations de contact */}
-            <div className="space-y-6 animate-on-scroll" style={{animationDelay: '0.2s'}}>
+            <div className="space-y-6 animate-on-scroll" style={{ animationDelay: '0.2s' }}>
               <div className="bg-gradient-to-br from-[#99334C] to-[#7a283d] rounded-3xl p-8 text-white shadow-xl">
                 <h3 className="text-2xl font-bold mb-6">Informations de contact</h3>
-                
+
                 <div className="space-y-6">
                   <div className="flex items-start gap-4">
                     <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center flex-shrink-0">
@@ -598,7 +599,9 @@ const AboutPage = () => {
               <p className="text-xl text-white/90 mb-8">
                 Rejoignez XCCM 2 et créez des contenus pédagogiques exceptionnels
               </p>
-              <button className="bg-white text-[#99334C] px-8 py-4 rounded-xl font-bold shadow-lg hover:shadow-xl transition-all hover:scale-105">
+              <button
+                onClick={() => router.push('/login')}
+                className="bg-white text-[#99334C] px-8 py-4 rounded-xl font-bold shadow-lg hover:shadow-xl transition-all hover:scale-105">
                 Commencer maintenant
               </button>
             </div>

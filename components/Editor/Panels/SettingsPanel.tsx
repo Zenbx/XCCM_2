@@ -6,8 +6,8 @@ import { BookOpen, FileText, Palette, Settings as SettingsIcon, Globe } from 'lu
 // ============= COMPOSANT: SettingsPanel =============
 
 interface SettingsPanelProps {
-  project: { pr_name: string } | null;
-  onUpdateProject?: (newName: string) => void;
+  project: any | null;
+  onUpdateProject?: (data: any) => void;
 }
 
 interface StyleConfig {
@@ -129,19 +129,45 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ project, onUpdateProject 
     collaborativeMode: false
   });
 
+  const saveTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
+
   useEffect(() => {
     if (project) {
-      setName(project.pr_name);
-      // TODO: Charger les métadonnées et styles depuis l'API
-      // const projectData = await projectService.getProjectSettings(project.pr_name);
-      // setMetadata(projectData.metadata);
-      // setCourseStyles(projectData.styles || DEFAULT_STYLES);
+      setName(project.pr_name || '');
+      setMetadata({
+        description: (project as any).description || '',
+        category: (project as any).category || 'Informatique',
+        level: (project as any).level || 'Débutant',
+        tags: (project as any).tags || '',
+        author: (project as any).author || '',
+        language: (project as any).language || 'Français',
+        isPublished: (project as any).is_published || false
+      });
+      if ((project as any).styles) {
+        setCourseStyles((project as any).styles);
+      }
     }
   }, [project]);
 
+  const debouncedSave = (data: any) => {
+    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+    saveTimeoutRef.current = setTimeout(() => {
+      if (onUpdateProject) {
+        onUpdateProject(data);
+      }
+    }, 1000);
+  };
+
   const handleMetadataChange = (field: keyof CourseMetadata, value: any) => {
-    setMetadata(prev => ({ ...prev, [field]: value }));
-    // TODO: Auto-save après 2 secondes de debounce
+    const newMetadata = { ...metadata, [field]: value };
+    setMetadata(newMetadata);
+
+    // Map metadata to DB fields
+    const dbData: any = {};
+    if (field === 'isPublished') dbData.is_published = value;
+    else dbData[field] = value;
+
+    debouncedSave(dbData);
   };
 
   const handleStyleChange = (
@@ -159,14 +185,17 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ project, onUpdateProject 
       } else if (section === 'paragraph' && element === 'title') {
         updated.paragraph.title = { ...updated.paragraph.title, [property]: value };
       }
+
+      debouncedSave({ styles: updated });
       return updated;
     });
-    // TODO: Auto-save
   };
 
   const resetStyles = () => {
     setCourseStyles(DEFAULT_STYLES);
-    // TODO: Save to backend
+    if (onUpdateProject) {
+      onUpdateProject({ styles: DEFAULT_STYLES });
+    }
   };
 
   return (
@@ -185,7 +214,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ project, onUpdateProject 
             onChange={(e) => setName(e.target.value)}
             onBlur={() => {
               if (onUpdateProject && name !== project?.pr_name) {
-                onUpdateProject(name);
+                onUpdateProject({ pr_name: name });
               }
             }}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-[#99334C] focus:border-transparent outline-none transition-all"

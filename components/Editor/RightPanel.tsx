@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Cloud, MessageSquare, Info, Settings } from 'lucide-react';
-import Granule from '../Granule';
+import Granule from './Granule';
 import { i } from 'framer-motion/client';
 import ImportPanel from './Panels/ImportPanel';
 import CommentsPanel from './Panels/CommentsPanel';
@@ -14,7 +14,19 @@ import SettingsPanel from './Panels/SettingsPanel';
 
 
 
-const RightPanel = ({ activePanel, onToggle, granules, onDragStart, project, structure, currentContext }: any) => {
+const RightPanel = ({
+  activePanel,
+  onToggle,
+  granules,
+  onDragStart,
+  project,
+  structure,
+  currentContext,
+  onUpdateProject,
+  comments,
+  onAddComment,
+  isFetchingComments
+}: any) => {
   const panels = [
     { id: 'import', icon: Cloud, title: 'Importer des documents' },
     { id: 'comments', icon: MessageSquare, title: 'Commentaires' },
@@ -54,9 +66,15 @@ const RightPanel = ({ activePanel, onToggle, granules, onDragStart, project, str
           </div>
           <div className="p-6 flex-1 overflow-y-auto">
             {activePanel === 'import' && <ImportPanel granules={granules} onDragStart={onDragStart} />}
-            {activePanel === 'comments' && <CommentsPanel />}
+            {activePanel === 'comments' && (
+              <CommentsPanel
+                comments={comments}
+                onAddComment={onAddComment}
+                isFetching={isFetchingComments}
+              />
+            )}
             {activePanel === 'info' && <InfoPanel project={project} structure={structure} />}
-            {activePanel === 'settings' && <SettingsPanel project={project} />}
+            {activePanel === 'settings' && <SettingsPanel project={project} onUpdateProject={onUpdateProject} />}
           </div>
         </div>
       )}
