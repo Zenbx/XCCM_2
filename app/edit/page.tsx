@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { Loader2, AlertCircle, Save, X, Eye } from 'lucide-react';
+import { Loader2, AlertCircle, Save, X, Eye, Share2 } from 'lucide-react';
 import TableOfContents from '@/components/Editor/TableOfContents';
 import EditorToolbar from '@/components/Editor/EditorToolBar';
 import EditorArea from '@/components/Editor/EditorArea';
@@ -10,6 +10,9 @@ import RightPanel from '@/components/Editor/RightPanel';
 import ChatBotOverlay from '@/components/Editor/ChatBotOverlay';
 import { projectService } from '@/services/projectService';
 import { structureService, Part, Notion } from '@/services/structureService';
+import ShareOverlay from '@/components/Editor/ShareOverlay';
+import pLimit from 'p-limit';
+import { FaHome } from 'react-icons/fa';
 
 const XCCM2Editor = () => {
   const searchParams = useSearchParams();
@@ -33,7 +36,7 @@ const XCCM2Editor = () => {
   });
 
   const [currentContext, setCurrentContext] = useState<{
-    type: 'part' | 'notion'; // Ajout du type
+    type: 'part' | 'chapter' | 'paragraph' | 'notion'; // Support tous les types de granules
     projectName: string;
     partTitle: string;
     // Optionnels selon le type
@@ -72,7 +75,7 @@ const XCCM2Editor = () => {
   const [showChatBot, setShowChatBot] = useState(false);
 
   const [expandedItems, setExpandedItems] = useState<{ [key: string]: boolean }>({});
-
+  const [showShareOverlay, setShowShareOverlay] = useState(false);
   useEffect(() => {
     if (projectName) {
       loadProject();
@@ -85,9 +88,11 @@ const XCCM2Editor = () => {
     }
   }, [editorContent, currentContext]);
 
-  const loadProject = async () => {
+  /* import pLimit from 'p-limit'; // Put this at the top of file */
+
+  const loadProject = async (isSilent = false) => {
     try {
-      setIsLoading(true);
+      if (!isSilent) setIsLoading(true);
       setError('');
 
       const project = await projectService.getProjectByName(projectName!);
@@ -97,14 +102,40 @@ const XCCM2Editor = () => {
         owner_id: project.owner_id
       });
 
-      const projectStructure = await structureService.getProjectStructure(project.pr_name);
-      setStructure(projectStructure);
+      // 1. Charger uniquement les parties (rapide)
+      const parts = await structureService.getParts(project.pr_name);
+      setStructure(parts); // Affichage immédiat
+      if (!isSilent) setIsLoading(false); // L'UI est débloquée
+
+      // 2. Charger les détails en arrière-plan (Progressive Loading)
+      const limit = pLimit(3); // 3 parties en parallèle max pour ne pas ralentir l'UI
+
+      const updatePromise = parts.map(part => limit(async () => {
+        try {
+          // On récupère la partie complète
+          const updatedPart = await structureService.fillPartDetails(project.pr_name, { ...part });
+
+          // Mise à jour de l'état local pour rafraîchir l'affichage de CETTE partie
+          setStructure(prev => prev.map(p => p.part_id === updatedPart.part_id ? updatedPart : p));
+        } catch (err) {
+          console.error(`Erreur chargement détails partie ${part.part_title}:`, err);
+        }
+      }));
+
+      await Promise.all(updatePromise);
 
     } catch (err: any) {
+      // Gestion spécifique de l'erreur d'authentification
+      if (err.message && err.message.includes('Token invalide ou expiré')) {
+        alert('⚠️ Votre session a expiré.\n\nVeuillez vous reconnecter.');
+        // Redirection vers la page de connexion
+        window.location.href = '/login';
+        return;
+      }
+
       setError(err.message || 'Erreur lors du chargement du projet');
       console.error('Erreur chargement projet:', err);
-    } finally {
-      setIsLoading(false);
+      if (!isSilent) setIsLoading(false);
     }
   };
 
@@ -159,6 +190,44 @@ const XCCM2Editor = () => {
     setHasUnsavedChanges(false);
   }
 
+  // Handler pour sélectionner un chapitre (pour drop de paragraphes)
+  const handleSelectChapter = (projectName: string, partTitle: string, chapterTitle: string) => {
+    if (hasUnsavedChanges) {
+      handleSave(true);
+    }
+    setCurrentContext({
+      type: 'chapter',
+      projectName,
+      partTitle,
+      chapterTitle,
+      paraName: undefined,
+      notionName: undefined,
+      notion: null,
+      part: null
+    });
+    setEditorContent(''); // Pas de contenu éditable pour un chapitre
+    setHasUnsavedChanges(false);
+  };
+
+  // Handler pour sélectionner un paragraphe (pour drop de notions)
+  const handleSelectParagraph = (projectName: string, partTitle: string, chapterTitle: string, paraName: string) => {
+    if (hasUnsavedChanges) {
+      handleSave(true);
+    }
+    setCurrentContext({
+      type: 'paragraph',
+      projectName,
+      partTitle,
+      chapterTitle,
+      paraName,
+      notionName: undefined,
+      notion: null,
+      part: null
+    });
+    setEditorContent(''); // Pas de contenu éditable pour un paragraphe
+    setHasUnsavedChanges(false);
+  };
+
   const handleSave = async (isAuto = false) => {
     if (!currentContext) return;
 
@@ -204,6 +273,13 @@ const XCCM2Editor = () => {
       }
 
     } catch (err: any) {
+      // Gestion spécifique de l'erreur d'authentification
+      if (err.message && err.message.includes('Token invalide ou expiré')) {
+        alert('⚠️ Votre session a expiré.\n\nVeuillez vous reconnecter.');
+        window.location.href = '/login';
+        return;
+      }
+
       setError(err.message || 'Erreur lors de la sauvegarde');
       // Afficher erreur toast
       const errorMsg = document.createElement('div');
@@ -247,14 +323,197 @@ const XCCM2Editor = () => {
     e.dataTransfer.effectAllowed = 'copy';
   };
 
-  // Remplacé par handleDropNew qui est plus simple (le EditorArea gère la position)
-  const handleDropNew = (contentToAdd: string) => {
+  // Helper pour temporiser
+  const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+  // Remplacé par handleDropNew qui gère maintenant objets (structure) et texte
+  const handleDropNew = async (contentOrGranule: any) => {
+    // 1. Cas : Import de Structure (Objet)
+    if (typeof contentOrGranule === 'object' && contentOrGranule.type) {
+      if (!projectData) return;
+
+      try {
+        // ✅ REFRESH structure AVANT drop pour avoir les bons numéros
+        await loadProject();
+
+        // Initialisation du contexte avec la sélection actuelle pour les drops relatifs
+        const initialContext: any = {};
+        if (currentContext) {
+          // Copier tous les champs disponibles (pour supporter drop dans Chapter, Paragraph, etc.)
+          initialContext.partTitle = currentContext.partTitle;
+          if (currentContext.chapterTitle) {
+            initialContext.chapterTitle = currentContext.chapterTitle;
+          }
+          if (currentContext.paraName) {
+            initialContext.paraName = currentContext.paraName;
+          }
+        }
+
+        // Compteurs LOCAUX pour cette opération d'import
+        const counters = new Map<string, number>();
+
+        // Helper stateful pour avoir le prochain numéro et incrémenter
+        const getNextNumAndInc = (type: string, ctx: any) => {
+          let key = '';
+          let currentMax = 0;
+
+          if (type === 'part') {
+            key = 'root_parts';
+            if (!counters.has(key)) {
+              // Init depuis structure existante
+              currentMax = structure.length > 0 ? Math.max(...structure.map(p => p.part_number || 0)) : 0;
+              counters.set(key, currentMax);
+            }
+          } else if (type === 'chapter') {
+            key = `chapters_of_${ctx.partTitle}`;
+            if (!counters.has(key)) {
+              const part = structure.find(p => p.part_title === ctx.partTitle);
+              const chapters = part?.chapters || [];
+              currentMax = chapters.length > 0 ? Math.max(...chapters.map(c => c.chapter_number || 0)) : 0;
+              counters.set(key, currentMax);
+            }
+          } else if (type === 'paragraph') {
+            key = `paras_of_${ctx.chapterTitle}`;
+            if (!counters.has(key)) {
+              const part = structure.find(p => p.part_title === ctx.partTitle);
+              const chapter = part?.chapters?.find(c => c.chapter_title === ctx.chapterTitle);
+              const paras = chapter?.paragraphs || [];
+              currentMax = paras.length > 0 ? Math.max(...paras.map(p => p.para_number || 0)) : 0;
+              counters.set(key, currentMax);
+            }
+          } else if (type === 'notion') {
+            key = `notions_of_${ctx.paraName}`;
+            if (!counters.has(key)) {
+              const part = structure.find(p => p.part_title === ctx.partTitle);
+              const chapter = part?.chapters?.find(c => c.chapter_title === ctx.chapterTitle);
+              const para = chapter?.paragraphs?.find(p => p.para_name === ctx.paraName);
+              const notions = para?.notions || [];
+              currentMax = notions.length > 0 ? Math.max(...notions.map(n => n.notion_number || 0)) : 0;
+              counters.set(key, currentMax);
+            }
+          }
+
+          // Incrémente et retourne
+          const newVal = (counters.get(key) || 0) + 1;
+          counters.set(key, newVal);
+          return newVal;
+        };
+
+        // Fonction récursive d'import
+        const importRecursive = async (item: any, context: any) => {
+          let createdItem;
+
+          if (item.type === 'part') {
+            const nextNum = getNextNumAndInc('part', context);
+            const uniqueTitle = `${item.content} ${nextNum}`;
+
+            createdItem = await structureService.createPart(projectData.pr_name, {
+              part_title: uniqueTitle,
+              part_number: nextNum
+            });
+            // Contexte pour les enfants
+            context = { partTitle: createdItem.part_title, partId: createdItem.part_id };
+
+          } else if (item.type === 'chapter') {
+            if (!context.partTitle) throw new Error("Chapitre sans partie parente");
+            const nextNum = getNextNumAndInc('chapter', context);
+
+            createdItem = await structureService.createChapter(projectData.pr_name, context.partTitle, {
+              chapter_title: `${item.content} ${nextNum}`,
+              chapter_number: nextNum
+            });
+            context = { ...context, chapterTitle: createdItem.chapter_title };
+
+          } else if (item.type === 'paragraph') {
+            if (!context.chapterTitle) throw new Error("Impossible de créer un paragraphe : Aucun chapitre parent sélectionné.");
+            const nextNum = getNextNumAndInc('paragraph', context);
+
+            createdItem = await structureService.createParagraph(projectData.pr_name, context.partTitle, context.chapterTitle, {
+              para_name: `${item.content} ${nextNum}`,
+              para_number: nextNum
+            });
+            context = { ...context, paraName: createdItem.para_name };
+
+          } else if (item.type === 'notion') {
+            if (!context.paraName) throw new Error("Impossible de créer une notion : Aucun paragraphe parent sélectionné.");
+            const nextNum = getNextNumAndInc('notion', context);
+
+            createdItem = await structureService.createNotion(projectData.pr_name, context.partTitle, context.chapterTitle, context.paraName, {
+              notion_name: `${item.content} ${nextNum}`,
+              notion_number: nextNum,
+              notion_content: "<p>Contenu importé...</p>"
+            });
+
+            // SI c'est la première notion trouvée, on la sélectionne (User Request)
+            if (!firstNotionFound.current) {
+              firstNotionFound.current = {
+                notion: createdItem,
+                context: { ...context, notionName: createdItem.notion_name }
+              };
+            }
+          }
+
+          // Récursion sur les enfants
+          if (item.children && item.children.length > 0) {
+            for (let i = 0; i < item.children.length; i++) {
+              await delay(200); // Augmenté à 200ms pour plus de stabilité sur le backend
+              await importRecursive(item.children[i], { ...context });
+            }
+          }
+        };
+
+        // Ref pour stocker la première notion
+        const firstNotionFound = { current: null } as any;
+
+        setIsSaving(true);
+
+        // Lancer l'import avec le contexte initial fusionné
+        await importRecursive(contentOrGranule, { ...initialContext });
+
+        // Recharger la structure silencieusement (background)
+        await loadProject(true);
+
+        // Sélectionner la notion si trouvée
+        if (firstNotionFound.current) {
+          handleSelectNotion({
+            projectName: projectData.pr_name,
+            partTitle: firstNotionFound.current.context.partTitle,
+            chapterTitle: firstNotionFound.current.context.chapterTitle,
+            paraName: firstNotionFound.current.context.paraName,
+            notionName: firstNotionFound.current.context.notionName,
+            notion: firstNotionFound.current.notion
+          });
+
+          // Toast succès
+          const successMsg = document.createElement('div');
+          successMsg.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 flex items-center gap-2 animate-in slide-in-from-right';
+          successMsg.textContent = "Structure importée avec succès !";
+          document.body.appendChild(successMsg);
+          setTimeout(() => document.body.removeChild(successMsg), 3000);
+        }
+
+      } catch (err: any) {
+        console.error("Erreur import structure:", err);
+        if (err.message.includes("sans partie parente")) {
+          alert("⚠️ Impossible de créer ce chapitre orphelin.\n\nVeuillez d'abord cliquer sur une Partie ou une Notion existante dans l'éditeur pour indiquer où le placer.");
+        } else if (err.message.includes("Impossible de créer une notion")) {
+          alert("⚠️ Impossible de créer cette notion.\n\nVeuillez sélectionner un Paragraphe cible.");
+        } else {
+          setError("Erreur lors de l'import : " + err.message);
+        }
+      } finally {
+        setIsSaving(false);
+      }
+      return;
+    }
+
+    // 2. Cas : Drop de Contenu (Texte/Image string)
     if (editorRef.current) {
-      // Fallback si le drop précis n'a pas marché ou n'est pas supporté par le navigateur
-      // On ajoute à la fin ou là où était le curseur avant
-      editorRef.current.innerHTML += '\n' + contentToAdd;
-      setEditorContent(editorRef.current.innerHTML);
-      setHasUnsavedChanges(true);
+      if (typeof contentOrGranule === 'string') {
+        editorRef.current.innerHTML += '\n' + contentOrGranule;
+        setEditorContent(editorRef.current.innerHTML);
+        setHasUnsavedChanges(true);
+      }
     }
   };
 
@@ -574,16 +833,18 @@ const XCCM2Editor = () => {
         onCreateParagraph={handleCreateParagraph}
         onCreateNotion={handleCreateNotion}
         selectedNotionId={currentContext?.notion?.notion_id}
-        // Ajout des props pour la sélection de partie (à update aussi dans TableOfContents)
-        // @ts-ignore (on va update le composant juste après)
+        // Props pour sélection de granules parents (pour drop zones)
+        // @ts-ignore (TableOfContents sera mis à jour)
         onSelectPart={handleSelectPart}
+        onSelectChapter={handleSelectChapter}
+        onSelectParagraph={handleSelectParagraph}
         selectedPartId={currentContext?.part?.part_id}
       />
 
       <div className="flex-1 flex flex-col">
         <div className="bg-white border-b border-gray-200 flex items-center justify-between px-4 py-2">
           <div className="flex items-center gap-4">
-            <h1 className="text-lg font-semibold text-gray-900">{projectData?.pr_name}</h1>
+            <FaHome className="w-4 h-4" /><h1 className="text-lg font-semibold text-gray-900">{projectData?.pr_name}</h1>
             {currentContext ? (
               currentContext.type === 'notion' ? (
                 <div className="text-sm text-gray-600">
@@ -609,12 +870,34 @@ const XCCM2Editor = () => {
               <Eye className="w-4 h-4" />
               Aperçu
             </button>
-            {hasUnsavedChanges && (
+
+
+            {/* Bouton Partager - AVEC CHECK AUTH */}
+            <button
+              onClick={() => {
+                // Simulation Auth Check (à remplacer par le vrai user context si dispo)
+                const isLoggedIn = localStorage.getItem('user_session'); // Ou context user
+                if (!isLoggedIn) {
+                  alert("Veuillez vous connecter pour publier ou partager ce cours.");
+                  // router.push('/login'); 
+                  return;
+                }
+                setShowShareOverlay(true);
+              }}
+              className="px-4 py-2 border border-[#99334C] text-[#99334C] bg-white rounded-lg hover:bg-[#99334C]/5 transition-all flex items-center gap-2 font-medium"
+              title="Publier / Partager le projet"
+            >
+              <Share2 className="w-4 h-4" />
+              Publier
+            </button>
+
+            {/*hasUnsavedChanges && (
               <span className="text-sm text-orange-600 flex items-center gap-1">
                 <span className="w-2 h-2 bg-orange-600 rounded-full animate-pulse"></span>
                 Modifications non sauvegardées
               </span>
-            )}
+            )*/}
+
             <button
               onClick={() => handleSave(false)}
               disabled={!hasUnsavedChanges || isSaving}
@@ -653,8 +936,14 @@ const XCCM2Editor = () => {
             editorRef={editorRef}
             placeholder={
               currentContext.type === 'part'
-                ? "Rédigez l'introduction de cette partie..."
-                : "Commencez à rédaction votre notion ici..."
+                ? "📦 Glissez-déposez un Chapitre ici pour l'ajouter à cette Partie..."
+                : currentContext.type === 'chapter'
+                  ? "📄 Glissez-déposez un Paragraphe ici pour l'ajouter à ce Chapitre..."
+                  : currentContext.type === 'paragraph'
+                    ? "💡 Glissez-déposez une Notion ici pour créer une nouvelle notion..."
+                    : currentContext.type === 'notion'
+                      ? "✏️ Commencez à rédiger votre notion ici..."
+                      : "Sélectionnez un élément pour commencer..."
             }
           />
         ) : (
@@ -670,7 +959,41 @@ const XCCM2Editor = () => {
       <RightPanel
         activePanel={rightPanel}
         onToggle={toggleRightPanel}
-        granules={[]}
+        granules={[
+          {
+            id: 'p1',
+            type: 'part',
+            content: 'Partie 1: Fondamentaux',
+            icon: 'Folder',
+            children: [
+              {
+                id: 'c1',
+                type: 'chapter',
+                content: 'Chapitre 1: Introduction',
+                icon: 'Book',
+                children: [
+                  {
+                    id: 'pg1',
+                    type: 'paragraph',
+                    content: 'Paragraphe 1.1: Concepts',
+                    icon: 'FileText',
+                    children: [
+                      { id: 'n1', type: 'notion', content: 'Notion 1: Définition', icon: 'File' },
+                      { id: 'n2', type: 'notion', content: 'Notion 2: Exemples', icon: 'File' }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            id: 'p2',
+            type: 'part',
+            content: 'Partie 2: Avancé',
+            icon: 'Folder',
+            children: []
+          }
+        ]}
         onDragStart={handleDragStart}
         project={projectData}
         structure={structure}
@@ -682,6 +1005,8 @@ const XCCM2Editor = () => {
           notionName: currentContext.notionName
         } : undefined}
       />
+
+
 
       <ChatBotOverlay isOpen={showChatBot} onClose={() => setShowChatBot(false)} />
 
@@ -866,16 +1191,6 @@ const XCCM2Editor = () => {
       )}
 
 
-
-
-
-
-
-
-
-
-
-
       {/* MODALE NOTION */}
       {showNotionModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in">
@@ -938,7 +1253,15 @@ const XCCM2Editor = () => {
           </div>
         </div>
       )}
+
+      {/* Overlay de partage */}
+      <ShareOverlay
+        isOpen={showShareOverlay}
+        onClose={() => setShowShareOverlay(false)}
+        projectName={projectName}
+      />
     </div>
+
   );
 };
 
