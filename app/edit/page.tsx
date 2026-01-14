@@ -861,7 +861,7 @@ const XCCM2Editor = () => {
       await loadProject(true);
     } catch (err: any) {
       console.error("Erreur réordonnancement:", err);
-      alert("Erreur lors du réordonnancement. Certains éléments peuvent avoir gardé leur ancienne position.");
+      // alert("Erreur lors du réordonnancement. Certains éléments peuvent avoir gardé leur ancienne position.");
       await loadProject(true); // Recharger pour être synchro
     }
   };

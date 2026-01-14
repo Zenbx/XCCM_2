@@ -99,13 +99,18 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
     const newTitle = tempTitle.trim();
     if (newTitle && onRename) {
       isSubmitting.current = true;
+      const currentType = type;
+      const currentId = id;
+
+      // Désactiver l'input immédiatement pour un feedback rapide
+      cancelEditing();
+
       try {
-        await onRename(type, id, newTitle);
+        await onRename(currentType, currentId, newTitle);
       } catch (error) {
         console.error("Rename failed:", error);
       } finally {
         isSubmitting.current = false;
-        cancelEditing();
       }
     } else {
       cancelEditing();
