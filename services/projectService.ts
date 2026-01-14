@@ -15,9 +15,11 @@ export interface Project {
   author?: string;
   language?: string;
   is_published?: boolean;
+  public_url?: string; // URL du projet publié
   styles?: any;
 }
 
+// ... (autres interfaces)
 export interface ProjectWithOwner extends Project {
   owner: {
     user_id: string;
@@ -37,13 +39,8 @@ export interface ApiResponse<T> {
   data: T;
 }
 
-/**
- * Service pour gérer les appels API liés aux projets
- */
+
 class ProjectService {
-  /**
-   * Récupère le token d'authentification depuis les cookies
-   */
   private getAuthToken(): string | null {
     if (typeof window === 'undefined') return null;
     const value = `; ${document.cookie}`;
@@ -52,9 +49,54 @@ class ProjectService {
     return null;
   }
 
-  /**
-   * Récupère tous les projets de l'utilisateur connecté
-   */
+  async getPublishedProjects(): Promise<Project[]> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/documents`, { // Changement ici
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Erreur lors de la récupération des documents publiés');
+      }
+
+      const result: ApiResponse<{ documents: Project[] }> = await response.json(); // Changement ici
+      return result.data.documents; // Changement ici
+    } catch (error) {
+      console.error('Erreur getPublishedProjects:', error);
+      throw error;
+    }
+  }
+
+    async getPublishedProjectContent(projectName: string): Promise<any> {
+    try {
+      // D'abord, on récupère les métadonnées du projet pour trouver l'URL publique
+      const projectMeta = await this.getProjectByName(projectName); // Attention, cette route peut être protégée
+      const publicUrl = projectMeta.public_url;
+
+      if (!publicUrl) {
+        throw new Error("Ce projet n'a pas d'URL publique.");
+      }
+
+      // Ensuite, on fetch le contenu JSON depuis l'URL de Supabase
+      const response = await fetch(publicUrl);
+      if (!response.ok) {
+        throw new Error("Impossible de télécharger le contenu du projet depuis le stockage.");
+      }
+
+      return await response.json();
+
+    } catch (error) {
+        console.error('Erreur getPublishedProjectContent:', error);
+        throw error;
+    }
+  }
+
+
+  // ... (méthodes existantes: getAllProjects, getProjectByName, etc.)
   async getAllProjects(): Promise<Project[]> {
     try {
       const token = this.getAuthToken();
@@ -84,9 +126,6 @@ class ProjectService {
     }
   }
 
-  /**
-   * Récupère un projet spécifique par son nom
-   */
   async getProjectByName(projectName: string): Promise<ProjectWithOwner> {
     try {
       const token = this.getAuthToken();
@@ -116,9 +155,6 @@ class ProjectService {
     }
   }
 
-  /**
-   * Crée un nouveau projet
-   */
   async createProject(data: CreateProjectData): Promise<Project> {
     try {
       const token = this.getAuthToken();
@@ -149,11 +185,6 @@ class ProjectService {
     }
   }
 
-  /**
-   * Met à jour un projet (nom, métadonnées, styles)
-   * @param currentName - Le nom ACTUEL du projet (utilisé pour l'URL)
-   * @param data - Objet contenant les champs à modifier
-   */
   async updateProject(currentName: string, data: Partial<Project>): Promise<Project> {
     try {
       const token = this.getAuthToken();
@@ -184,10 +215,6 @@ class ProjectService {
     }
   }
 
-  /**
-   * Supprime un projet par son nom
-   * @param projectName - Le nom du projet à supprimer
-   */
   async deleteProject(projectName: string): Promise<void> {
     try {
       const token = this.getAuthToken();
@@ -212,6 +239,48 @@ class ProjectService {
       console.error('Erreur deleteProject:', error);
       throw error;
     }
+  }
+
+  /**
+   * Récupère la structure complète d'un projet pour l'export.
+   */
+  async exportProject(projectName: string): Promise<any> {
+    const token = this.getAuthToken();
+    if (!token) throw new Error('Non authentifié');
+
+    const response = await fetch(`${API_BASE_URL}/api/projects/${encodeURIComponent(projectName)}/export`, {
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+
+    if (!response.ok) {
+      throw new Error("Erreur lors de l'exportation du projet");
+    }
+    return response.json();
+  }
+
+  /**
+   * Publie un projet en envoyant son contenu JSON à l'API.
+   */
+  async publishProject(projectName: string, projectFile: File): Promise<{ publicURL: string }> {
+    const token = this.getAuthToken();
+    if (!token) throw new Error('Non authentifié');
+
+    const formData = new FormData();
+    formData.append('file', projectFile);
+
+    const response = await fetch(`${API_BASE_URL}/api/projects/${encodeURIComponent(projectName)}/publish`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}` },
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || "Erreur lors de la publication du projet");
+    }
+    
+    const result = await response.json();
+    return result.data; // L'API doit renvoyer { success: true, data: { publicURL: '...' } }
   }
 }
 

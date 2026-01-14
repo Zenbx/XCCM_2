@@ -88,7 +88,7 @@ const PreviewPage = () => {
 
             // Sort parts to ensure order is preserved despite async completion
             loadedParts.sort((a, b) => {
-                // Assuming part_number exists or original index. 
+                // Assuming part_number exists or original index.
                 // Using parts.indexOf(originalPart) strategy is safer if IDs match.
                 // Simple sort by part_id or rely on original list order:
                 return parts.findIndex(p => p.part_id === a.part_id) - parts.findIndex(p => p.part_id === b.part_id);
@@ -400,7 +400,7 @@ const PreviewPage = () => {
                     font-style: italic;
                     margin-bottom: 16px;
                 }
-                
+
                 /* TOC Styles */
                 .toc-page {
                     padding: 48px;

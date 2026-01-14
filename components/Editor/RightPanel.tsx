@@ -25,6 +25,7 @@ const RightPanel = ({
   onUpdateProject,
   comments,
   onAddComment,
+  onDeleteComment,
   isFetchingComments
 }: any) => {
   const panels = [
@@ -70,6 +71,7 @@ const RightPanel = ({
               <CommentsPanel
                 comments={comments}
                 onAddComment={onAddComment}
+                onDeleteComment={onDeleteComment}
                 isFetching={isFetchingComments}
               />
             )}

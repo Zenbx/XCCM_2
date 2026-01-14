@@ -165,6 +165,16 @@ const XCCM2Editor = () => {
     }
   };
 
+  const handleDeleteComment = async (commentId: string) => {
+    if (!projectName) return;
+    try {
+      await commentService.deleteComment(projectName, commentId);
+      setComments(prev => prev.filter(c => c.comment_id !== commentId));
+    } catch (err: any) {
+      alert("Erreur lors de la suppression du commentaire: " + err.message);
+    }
+  };
+
   const handleUpdateProjectSettings = async (data: Partial<Project>) => {
     if (!projectData || !projectName) return;
     try {
@@ -873,6 +883,85 @@ const XCCM2Editor = () => {
     }
   };
 
+  const handleDelete = async (type: string, id: string) => {
+    if (!projectData) return;
+    
+    // Confirmation avant suppression
+    const confirmMsg = type === 'part' 
+      ? 'Êtes-vous sûr de vouloir supprimer cette partie et tous ses enfants?' 
+      : type === 'chapter'
+      ? 'Êtes-vous sûr de vouloir supprimer ce chapitre et tous ses enfants?'
+      : type === 'paragraph'
+      ? 'Êtes-vous sûr de vouloir supprimer ce paragraphe et toutes ses notions?'
+      : 'Êtes-vous sûr de vouloir supprimer cette notion?';
+
+    if (!window.confirm(confirmMsg)) return;
+
+    try {
+      setError('');
+
+      // Trouver l'item et récupérer sa hiérarchie
+      let part: Part | undefined;
+      let chapter: Chapter | undefined;
+      let paragraph: Paragraph | undefined;
+
+      if (type === 'part') {
+        part = structure.find(p => p.part_id === id);
+        if (part) {
+          await structureService.deletePart(projectData.pr_name, part.part_title);
+        }
+      } else if (type === 'chapter') {
+        outer: for (const p of structure) {
+          chapter = p.chapters?.find(c => c.chapter_id === id);
+          if (chapter) { part = p; break outer; }
+        }
+        if (part && chapter) {
+          await structureService.deleteChapter(projectData.pr_name, part.part_title, chapter.chapter_title);
+        }
+      } else if (type === 'paragraph') {
+        outer: for (const p of structure) {
+          for (const c of p.chapters || []) {
+            paragraph = c.paragraphs?.find(pg => pg.para_id === id);
+            if (paragraph) { part = p; chapter = c; break outer; }
+          }
+        }
+        if (part && chapter && paragraph) {
+          await structureService.deleteParagraph(projectData.pr_name, part.part_title, chapter.chapter_title, paragraph.para_name);
+        }
+      } else if (type === 'notion') {
+        outer: for (const p of structure) {
+          for (const c of p.chapters || []) {
+            for (const pg of c.paragraphs || []) {
+              const notion = pg.notions?.find(n => n.notion_id === id);
+              if (notion) { part = p; chapter = c; paragraph = pg; break outer; }
+            }
+          }
+        }
+        if (part && chapter && paragraph) {
+          const notion = paragraph.notions?.find(n => n.notion_id === id);
+          if (notion) {
+            await structureService.deleteNotion(projectData.pr_name, part.part_title, chapter.chapter_title, paragraph.para_name, notion.notion_name);
+          }
+        }
+      }
+
+      // Rafraîchir la structure
+      await loadProject(true);
+
+      // Toast succès
+      const successMsg = document.createElement('div');
+      successMsg.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 flex items-center gap-2 animate-in slide-in-from-right';
+      successMsg.textContent = "Supprimé avec succès !";
+      document.body.appendChild(successMsg);
+      setTimeout(() => document.body.removeChild(successMsg), 3000);
+
+    } catch (err: any) {
+      console.error("Erreur suppression:", err);
+      setError("Erreur lors de la suppression : " + err.message);
+      alert("Erreur: " + err.message);
+    }
+  };
+
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       if (hasUnsavedChanges) {
@@ -989,6 +1078,7 @@ const XCCM2Editor = () => {
           selectedPartId={currentContext?.part?.part_id}
           onRename={handleRename}
           onReorder={handleReorder}
+          onDelete={handleDelete}
           language={language}
         />
 
@@ -1197,6 +1287,7 @@ const XCCM2Editor = () => {
           onUpdateProject={handleUpdateProjectSettings}
           comments={comments}
           onAddComment={handleAddComment}
+          onDeleteComment={handleDeleteComment}
           isFetchingComments={isFetchingComments}
         />
 

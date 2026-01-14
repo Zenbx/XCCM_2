@@ -5,6 +5,7 @@ import React, { useState, useRef } from 'react';
 import { ChevronDown, ChevronRight, Plus, Edit3, Trash2, Folder, FolderOpen, FileText, GripVertical } from 'lucide-react';
 import { Part, Chapter, Paragraph, Notion } from '@/services/structureService';
 import { Language, translations } from '@/services/locales';
+import ContextMenu from './ContextMenu';
 
 interface TableOfContentsProps {
   projectName: string;
@@ -38,6 +39,7 @@ interface TableOfContentsProps {
   // Nouvelles fonctions pour renommage et réordonnancement
   onRename?: (type: 'part' | 'chapter' | 'paragraph' | 'notion', id: string, newTitle: string) => Promise<void>;
   onReorder?: (type: 'part' | 'chapter' | 'paragraph' | 'notion', parentId: string | null, items: any[]) => Promise<void>;
+  onDelete?: (type: 'part' | 'chapter' | 'paragraph' | 'notion', id: string) => Promise<void>;
   language?: Language;
 }
 
@@ -58,6 +60,7 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
   selectedParagraphId,
   onRename,
   onReorder,
+  onDelete,
   language = 'fr'
 }) => {
   const t = translations[language].toc;
@@ -66,6 +69,16 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
   const [tempTitle, setTempTitle] = useState("");
   const [draggedItem, setDraggedItem] = useState<any>(null);
   const [dropTargetId, setDropTargetId] = useState<string | null>(null);
+  const [contextMenu, setContextMenu] = useState<{
+    isOpen: boolean;
+    x: number;
+    y: number;
+    type?: 'part' | 'chapter' | 'paragraph' | 'notion';
+    id?: string;
+    partTitle?: string;
+    chapterTitle?: string;
+    paraName?: string;
+  }>({ isOpen: false, x: 0, y: 0 });
   const isSubmitting = useRef(false);
 
   const toggleExpand = (id: string) => {
@@ -121,6 +134,31 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
   const handleKeyDown = (e: React.KeyboardEvent, type: 'part' | 'chapter' | 'paragraph' | 'notion', id: string) => {
     if (e.key === 'Enter') submitRename(type, id);
     if (e.key === 'Escape') cancelEditing();
+  };
+
+  const handleContextMenu = (e: React.MouseEvent, type: 'part' | 'chapter' | 'paragraph' | 'notion', id: string, extra: any = {}) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setContextMenu({
+      isOpen: true,
+      x: e.clientX,
+      y: e.clientY,
+      type,
+      id,
+      partTitle: extra.partTitle,
+      chapterTitle: extra.chapterTitle,
+      paraName: extra.paraName,
+    });
+  };
+
+  const handleContextMenuDelete = async () => {
+    if (!contextMenu.type || !contextMenu.id || !onDelete) return;
+    try {
+      await onDelete(contextMenu.type, contextMenu.id);
+    } catch (error) {
+      console.error("Delete failed:", error);
+      alert("Erreur lors de la suppression: " + (error instanceof Error ? error.message : "Erreur inconnue"));
+    }
   };
 
   const handleDragStartItem = (e: React.DragEvent, type: any, item: any, parentId: string | null) => {
@@ -217,6 +255,7 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
                 onDragOver={(e) => handleDragOverItem(e, 'part', null, part.part_id)}
                 onDragLeave={() => setDropTargetId(null)}
                 onDrop={(e) => handleDropItem(e, 'part', null, part.part_id)}
+                onContextMenu={(e) => handleContextMenu(e, 'part', part.part_id, { partTitle: part.part_title })}
               >
                 <button
                   onClick={() => toggleExpand(`part-${part.part_id}`)}
@@ -280,6 +319,7 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
                         onDragOver={(e) => handleDragOverItem(e, 'chapter', part.part_id, chapter.chapter_id)}
                         onDragLeave={() => setDropTargetId(null)}
                         onDrop={(e) => handleDropItem(e, 'chapter', part.part_id, chapter.chapter_id)}
+                        onContextMenu={(e) => handleContextMenu(e, 'chapter', chapter.chapter_id, { partTitle: part.part_title, chapterTitle: chapter.chapter_title })}
                       >
                         <span className="text-gray-300 opacity-0 group-hover:opacity-100 cursor-grab list-none">
                           <GripVertical size={14} />
@@ -343,6 +383,7 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
                                 onDragOver={(e) => handleDragOverItem(e, 'paragraph', chapter.chapter_id, paragraph.para_id)}
                                 onDragLeave={() => setDropTargetId(null)}
                                 onDrop={(e) => handleDropItem(e, 'paragraph', chapter.chapter_id, paragraph.para_id)}
+                                onContextMenu={(e) => handleContextMenu(e, 'paragraph', paragraph.para_id, { partTitle: part.part_title, chapterTitle: chapter.chapter_title, paraName: paragraph.para_name })}
                               >
                                 <span className="text-gray-300 opacity-0 group-hover:opacity-100 cursor-grab">
                                   <GripVertical size={14} />
@@ -415,6 +456,7 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
                                       onDragOver={(e) => handleDragOverItem(e, 'notion', paragraph.para_id, notion.notion_id)}
                                       onDragLeave={() => setDropTargetId(null)}
                                       onDrop={(e) => handleDropItem(e, 'notion', paragraph.para_id, notion.notion_id)}
+                                      onContextMenu={(e) => handleContextMenu(e, 'notion', notion.notion_id, { partTitle: part.part_title, chapterTitle: chapter.chapter_title, paraName: paragraph.para_name, notionName: notion.notion_name })}
                                     >
                                       <span className="text-gray-300 opacity-0 group-hover:opacity-100 cursor-grab">
                                         <GripVertical size={14} />
@@ -456,6 +498,56 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
           ))
         )}
       </div>
+
+      <ContextMenu
+        isOpen={contextMenu.isOpen}
+        x={contextMenu.x}
+        y={contextMenu.y}
+        onRename={() => {
+          if (contextMenu.id && contextMenu.type) {
+            let title = '';
+            if (contextMenu.type === 'part') {
+              const part = structure.find(p => p.part_id === contextMenu.id);
+              title = part?.part_title || '';
+            } else if (contextMenu.type === 'chapter') {
+              const part = structure.find(p => p.part_id === contextMenu.id);
+              // chercher dans la structure
+              for (const p of structure) {
+                const ch = p.chapters?.find(c => c.chapter_id === contextMenu.id);
+                if (ch) { title = ch.chapter_title; break; }
+              }
+            } else if (contextMenu.type === 'paragraph') {
+              for (const p of structure) {
+                for (const c of p.chapters || []) {
+                  const pg = c.paragraphs?.find(pg => pg.para_id === contextMenu.id);
+                  if (pg) { title = pg.para_name; break; }
+                }
+              }
+            } else if (contextMenu.type === 'notion') {
+              for (const p of structure) {
+                for (const c of p.chapters || []) {
+                  for (const pg of c.paragraphs || []) {
+                    const n = pg.notions?.find(n => n.notion_id === contextMenu.id);
+                    if (n) { title = n.notion_name; break; }
+                  }
+                }
+              }
+            }
+            startEditing({ stopPropagation: () => {} } as any, `${contextMenu.type}-${contextMenu.id}`, title);
+          }
+        }}
+        onAddChild={() => {
+          if (contextMenu.type === 'part' && onCreateChapter && contextMenu.partTitle) {
+            onCreateChapter(contextMenu.partTitle);
+          } else if (contextMenu.type === 'chapter' && onCreateParagraph && contextMenu.partTitle && contextMenu.chapterTitle) {
+            onCreateParagraph(contextMenu.partTitle, contextMenu.chapterTitle);
+          } else if (contextMenu.type === 'paragraph' && onCreateNotion && contextMenu.partTitle && contextMenu.chapterTitle && contextMenu.paraName) {
+            onCreateNotion(contextMenu.partTitle, contextMenu.chapterTitle, contextMenu.paraName);
+          }
+        }}
+        onDelete={handleContextMenuDelete}
+        onClose={() => setContextMenu({ ...contextMenu, isOpen: false })}
+      />
     </div>
   );
 };

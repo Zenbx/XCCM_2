@@ -66,6 +66,25 @@ class CommentService {
             throw error;
         }
     }
+
+    async deleteComment(projectName: string, commentId: string): Promise<void> {
+        try {
+            const token = this.getAuthToken();
+            if (!token) throw new Error('Non authentifié');
+
+            const response = await fetch(`${API_BASE_URL}/api/projects/${encodeURIComponent(projectName)}/comments/${commentId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (!response.ok) throw new Error('Erreur suppression commentaire');
+        } catch (error) {
+            console.error('deleteComment error:', error);
+            throw error;
+        }
+    }
 }
 
 export const commentService = new CommentService();

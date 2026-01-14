@@ -363,6 +363,91 @@ class StructureService {
     }
     return part;
   }
+
+  // ============= DELETE METHODS =============
+
+  async deletePart(projectName: string, partTitle: string): Promise<void> {
+    const response = await fetch(
+      `${API_BASE_URL}/api/projects/${encodeURIComponent(projectName)}/parts/${encodeURIComponent(partTitle)}`,
+      {
+        method: 'DELETE',
+        headers: getAuthHeaders(),
+      }
+    );
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        throw new Error('Token invalide ou expiré.');
+      }
+      const error = await response.json();
+      throw new Error(error.message || 'Erreur lors de la suppression de la partie');
+    }
+  }
+
+  async deleteChapter(projectName: string, partTitle: string, chapterTitle: string): Promise<void> {
+    const response = await fetch(
+      `${API_BASE_URL}/api/projects/${encodeURIComponent(projectName)}/parts/${encodeURIComponent(partTitle)}/chapters/${encodeURIComponent(chapterTitle)}`,
+      {
+        method: 'DELETE',
+        headers: getAuthHeaders(),
+      }
+    );
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        throw new Error('Token invalide ou expiré.');
+      }
+      const error = await response.json();
+      throw new Error(error.message || 'Erreur lors de la suppression du chapitre');
+    }
+  }
+
+  async deleteParagraph(
+    projectName: string,
+    partTitle: string,
+    chapterTitle: string,
+    paraName: string
+  ): Promise<void> {
+    const response = await fetch(
+      `${API_BASE_URL}/api/projects/${encodeURIComponent(projectName)}/parts/${encodeURIComponent(partTitle)}/chapters/${encodeURIComponent(chapterTitle)}/paragraphs/${encodeURIComponent(paraName)}`,
+      {
+        method: 'DELETE',
+        headers: getAuthHeaders(),
+      }
+    );
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        throw new Error('Token invalide ou expiré.');
+      }
+      const error = await response.json();
+      throw new Error(error.message || 'Erreur lors de la suppression du paragraphe');
+    }
+  }
+
+  async deleteNotion(
+    projectName: string,
+    partTitle: string,
+    chapterTitle: string,
+    paraName: string,
+    notionName: string
+  ): Promise<void> {
+    const response = await fetch(
+      `${API_BASE_URL}/api/projects/${encodeURIComponent(projectName)}/parts/${encodeURIComponent(partTitle)}/chapters/${encodeURIComponent(chapterTitle)}/paragraphs/${encodeURIComponent(paraName)}/notions/${encodeURIComponent(notionName)}`,
+      {
+        method: 'DELETE',
+        headers: getAuthHeaders(),
+      }
+    );
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        throw new Error('Token invalide ou expiré.');
+      }
+      const error = await response.json();
+      throw new Error(error.message || 'Erreur lors de la suppression de la notion');
+    }
+  }
 }
 
 export const structureService = new StructureService();

@@ -63,11 +63,11 @@ const AccountPage = () => {
   const handleCancel = () => {
     setIsEditing(false);
     setFormData({
-      nom: user?.lastname || '',
-      prenom: user?.firstname || '',
+      lastname: user?.lastname || '',
+      firstname: user?.firstname || '',
       email: user?.email || '',
-      profession: user?.occupation || '',
-      organisation: user?.org || '',
+      occupation: user?.occupation || '',
+      org: user?.org || '',
     });
     setError('');
   };
