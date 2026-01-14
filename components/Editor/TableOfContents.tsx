@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { ChevronDown, ChevronRight, Plus, Edit3, Trash2, Folder, FolderOpen, FileText, GripVertical } from 'lucide-react';
 import { Part, Chapter, Paragraph, Notion } from '@/services/structureService';
 
@@ -31,6 +31,10 @@ interface TableOfContentsProps {
   onCreateParagraph?: (partTitle: string, chapterTitle: string) => void;
   onCreateNotion?: (partTitle: string, chapterTitle: string, paraName: string) => void;
   selectedNotionId?: string;
+
+  // Nouvelles fonctions pour renommage et réordonnancement
+  onRename?: (type: 'part' | 'chapter' | 'paragraph' | 'notion', id: string, newTitle: string) => Promise<void>;
+  onReorder?: (type: 'part' | 'chapter' | 'paragraph' | 'notion', parentId: string | null, items: any[]) => Promise<void>;
 }
 
 const TableOfContents: React.FC<TableOfContentsProps> = ({
@@ -45,9 +49,16 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
   onCreateChapter,
   onCreateParagraph,
   onCreateNotion,
-  selectedNotionId
+  selectedNotionId,
+  onRename,
+  onReorder
 }) => {
   const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({});
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [tempTitle, setTempTitle] = useState("");
+  const [draggedItem, setDraggedItem] = useState<any>(null);
+  const [dropTargetId, setDropTargetId] = useState<string | null>(null);
+  const isSubmitting = useRef(false);
 
   const toggleExpand = (id: string) => {
     setExpandedItems(prev => ({ ...prev, [id]: !prev[id] }));
@@ -58,9 +69,94 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
     switch (type) {
       case 'part': return '#99334C';
       case 'chapter': return '#DC3545';
-      case 'paragraph': return '#D97706'; // Ambre plus foncé pour visibilité sur blanc
+      case 'paragraph': return '#D97706';
       case 'notion': return '#28A745';
       default: return '#000';
+    }
+  };
+
+  const startEditing = (e: React.MouseEvent, id: string, currentTitle: string) => {
+    e.stopPropagation();
+    setEditingId(id);
+    setTempTitle(currentTitle);
+  };
+
+  const cancelEditing = () => {
+    setEditingId(null);
+    setTempTitle("");
+  };
+
+  const submitRename = async (type: 'part' | 'chapter' | 'paragraph' | 'notion', id: string) => {
+    if (isSubmitting.current) return;
+
+    const newTitle = tempTitle.trim();
+    if (newTitle && onRename) {
+      isSubmitting.current = true;
+      try {
+        await onRename(type, id, newTitle);
+      } catch (error) {
+        console.error("Rename failed:", error);
+      } finally {
+        isSubmitting.current = false;
+        cancelEditing();
+      }
+    } else {
+      cancelEditing();
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent, type: 'part' | 'chapter' | 'paragraph' | 'notion', id: string) => {
+    if (e.key === 'Enter') submitRename(type, id);
+    if (e.key === 'Escape') cancelEditing();
+  };
+
+  const handleDragStartItem = (e: React.DragEvent, type: any, item: any, parentId: string | null) => {
+    e.dataTransfer.setData('reorderData', JSON.stringify({ type, id: item.id || item.part_id || item.chapter_id || item.para_id || item.notion_id, parentId }));
+    setDraggedItem({ type, item, parentId });
+  };
+
+  const handleDragOverItem = (e: React.DragEvent, type: any, parentId: string | null, targetId: string) => {
+    e.preventDefault();
+    if (draggedItem && draggedItem.type === type && draggedItem.parentId === parentId && draggedItem.id !== targetId) {
+      setDropTargetId(targetId);
+    }
+  };
+
+  const handleDropItem = async (e: React.DragEvent, type: any, parentId: string | null, targetId: string) => {
+    e.preventDefault();
+    setDropTargetId(null);
+    const data = e.dataTransfer.getData('reorderData');
+    if (!data) return;
+
+    const { type: dragType, id: dragId, parentId: dragParentId } = JSON.parse(data);
+
+    if (dragType === type && dragParentId === parentId && dragId !== targetId) {
+      // Calculer le nouvel ordre
+      let items: any[] = [];
+      if (type === 'part') items = [...structure];
+      else if (type === 'chapter') items = [...(structure.find(p => p.part_id === parentId)?.chapters || [])];
+      else if (type === 'paragraph') {
+        for (const p of structure) {
+          const c = p.chapters?.find(ch => ch.chapter_id === parentId);
+          if (c) { items = [...(c.paragraphs || [])]; break; }
+        }
+      } else if (type === 'notion') {
+        for (const p of structure) {
+          for (const c of p.chapters || []) {
+            const para = c.paragraphs?.find(pg => pg.para_id === parentId);
+            if (para) { items = [...(para.notions || [])]; break; }
+          }
+        }
+      }
+
+      const dragIndex = items.findIndex(i => (i.id || i.part_id || i.chapter_id || i.para_id || i.notion_id) === dragId);
+      const dropIndex = items.findIndex(i => (i.id || i.part_id || i.chapter_id || i.para_id || i.notion_id) === targetId);
+
+      if (dragIndex !== -1 && dropIndex !== -1) {
+        const [movedItem] = items.splice(dragIndex, 1);
+        items.splice(dropIndex, 0, movedItem);
+        if (onReorder) await onReorder(type, parentId, items);
+      }
     }
   };
 
@@ -100,8 +196,14 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
             <div key={part.part_id} className="relative group/part">
               {/* Partie */}
               <div
-                className={`flex items-center gap-2 py-2 px-2 hover:bg-gray-50 rounded-lg cursor-pointer transition-colors border border-transparent ${selectedPartId === part.part_id ? 'bg-[#99334C]/5 border-[#99334C]/10' : ''}`}
+                className={`flex items-center gap-2 py-2 px-2 hover:bg-gray-50 rounded-lg cursor-pointer transition-colors border border-transparent 
+                  ${selectedPartId === part.part_id ? 'bg-[#99334C]/5 border-[#99334C]/10' : ''}
+                  ${dropTargetId === part.part_id ? 'border-t-2 border-t-[#99334C] bg-gray-100' : ''}`}
                 draggable="true"
+                onDragStart={(e) => handleDragStartItem(e, 'part', part, null)}
+                onDragOver={(e) => handleDragOverItem(e, 'part', null, part.part_id)}
+                onDragLeave={() => setDropTargetId(null)}
+                onDrop={(e) => handleDropItem(e, 'part', null, part.part_id)}
               >
                 <button
                   onClick={() => toggleExpand(`part-${part.part_id}`)}
@@ -118,20 +220,27 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
                   <Folder size={18} className="stroke-[1.5px]" color={getIconColor('part')} fill="none" />
                 )}
 
-                {onSelectPart ? (
+                {editingId === `part-${part.part_id}` ? (
+                  <input
+                    autoFocus
+                    className="text-sm font-semibold flex-1 bg-white border border-[#99334C] rounded px-1 outline-none text-gray-700 placeholder-gray-400"
+                    value={tempTitle}
+                    onChange={(e) => setTempTitle(e.target.value)}
+                    onBlur={() => submitRename('part', part.part_id)}
+                    onKeyDown={(e) => handleKeyDown(e, 'part', part.part_id)}
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                ) : (
                   <div
                     className={`text-sm font-semibold truncate flex-1 ${selectedPartId === part.part_id ? 'text-[#99334C]' : 'text-gray-800'}`}
                     onClick={(e) => {
                       e.stopPropagation();
-                      onSelectPart({ projectName, partTitle: part.part_title, part });
+                      onSelectPart?.({ projectName, partTitle: part.part_title, part });
                     }}
+                    onDoubleClick={(e) => startEditing(e, `part-${part.part_id}`, part.part_title)}
                   >
                     {part.part_number}. {part.part_title}
                   </div>
-                ) : (
-                  <span className="text-sm font-semibold text-gray-800 truncate flex-1">
-                    {part.part_number}. {part.part_title}
-                  </span>
                 )}
 
                 {onCreateChapter && (
@@ -150,7 +259,15 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
                 <div className="pl-6 mt-1 space-y-1 relative before:absolute before:left-3 before:top-0 before:bottom-0 before:w-px before:bg-gray-100">
                   {part.chapters.map(chapter => (
                     <div key={chapter.chapter_id} className="relative group/chapter">
-                      <div className="flex items-center gap-2 py-1.5 px-2 hover:bg-gray-50 rounded-lg cursor-pointer draggable group" draggable="true">
+                      <div
+                        className={`flex items-center gap-2 py-1.5 px-2 hover:bg-gray-50 rounded-lg cursor-pointer draggable group 
+                        ${dropTargetId === chapter.chapter_id ? 'border-t-2 border-t-[#DC3545] bg-gray-100' : ''}`}
+                        draggable="true"
+                        onDragStart={(e) => handleDragStartItem(e, 'chapter', chapter, part.part_id)}
+                        onDragOver={(e) => handleDragOverItem(e, 'chapter', part.part_id, chapter.chapter_id)}
+                        onDragLeave={() => setDropTargetId(null)}
+                        onDrop={(e) => handleDropItem(e, 'chapter', part.part_id, chapter.chapter_id)}
+                      >
                         <span className="text-gray-300 opacity-0 group-hover:opacity-100 cursor-grab list-none">
                           <GripVertical size={14} />
                         </span>
@@ -169,12 +286,25 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
                           <Folder size={16} className="stroke-[1.5px]" color={getIconColor('chapter')} fill="none" />
                         )}
 
-                        <span
-                          className="text-sm text-gray-700 truncate flex-1 font-medium cursor-pointer hover:underline"
-                          onClick={() => onSelectChapter?.(projectName, part.part_title, chapter.chapter_title)}
-                        >
-                          {chapter.chapter_number}. {chapter.chapter_title}
-                        </span>
+                        {editingId === `chapter-${chapter.chapter_id}` ? (
+                          <input
+                            autoFocus
+                            className="text-sm font-medium flex-1 bg-white border border-[#DC3545] rounded px-1 outline-none text-gray-700 placeholder-gray-400"
+                            value={tempTitle}
+                            onChange={(e) => setTempTitle(e.target.value)}
+                            onBlur={() => submitRename('chapter', chapter.chapter_id)}
+                            onKeyDown={(e) => handleKeyDown(e, 'chapter', chapter.chapter_id)}
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                        ) : (
+                          <span
+                            className="text-sm text-gray-700 truncate flex-1 font-medium cursor-pointer hover:underline"
+                            onClick={() => onSelectChapter?.(projectName, part.part_title, chapter.chapter_title)}
+                            onDoubleClick={(e) => startEditing(e, `chapter-${chapter.chapter_id}`, chapter.chapter_title)}
+                          >
+                            {chapter.chapter_number}. {chapter.chapter_title}
+                          </span>
+                        )}
 
                         {onCreateParagraph && (
                           <button
@@ -192,7 +322,15 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
                         <div className="pl-6 mt-1 space-y-1 relative before:absolute before:left-3 before:top-0 before:bottom-0 before:w-px before:bg-gray-100">
                           {chapter.paragraphs.map(paragraph => (
                             <div key={paragraph.para_id} className="relative group/para">
-                              <div className="flex items-center gap-2 py-1.5 px-2 hover:bg-gray-50 rounded-lg cursor-pointer group" draggable="true">
+                              <div
+                                className={`flex items-center gap-2 py-1.5 px-2 hover:bg-gray-50 rounded-lg cursor-pointer group 
+                                ${dropTargetId === paragraph.para_id ? 'border-t-2 border-t-[#D97706] bg-gray-100' : ''}`}
+                                draggable="true"
+                                onDragStart={(e) => handleDragStartItem(e, 'paragraph', paragraph, chapter.chapter_id)}
+                                onDragOver={(e) => handleDragOverItem(e, 'paragraph', chapter.chapter_id, paragraph.para_id)}
+                                onDragLeave={() => setDropTargetId(null)}
+                                onDrop={(e) => handleDropItem(e, 'paragraph', chapter.chapter_id, paragraph.para_id)}
+                              >
                                 <span className="text-gray-300 opacity-0 group-hover:opacity-100 cursor-grab">
                                   <GripVertical size={14} />
                                 </span>
@@ -211,12 +349,25 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
                                   <Folder size={16} className="stroke-[1.5px]" color={getIconColor('paragraph')} fill="none" />
                                 )}
 
-                                <span
-                                  className="text-sm text-gray-600 truncate flex-1 cursor-pointer hover:underline"
-                                  onClick={() => onSelectParagraph?.(projectName, part.part_title, chapter.chapter_title, paragraph.para_name)}
-                                >
-                                  {paragraph.para_number}. {paragraph.para_name}
-                                </span>
+                                {editingId === `paragraph-${paragraph.para_id}` ? (
+                                  <input
+                                    autoFocus
+                                    className="text-sm flex-1 bg-white border border-[#D97706] rounded px-1 outline-none text-gray-700 placeholder-gray-400"
+                                    value={tempTitle}
+                                    onChange={(e) => setTempTitle(e.target.value)}
+                                    onBlur={() => submitRename('paragraph', paragraph.para_id)}
+                                    onKeyDown={(e) => handleKeyDown(e, 'paragraph', paragraph.para_id)}
+                                    onClick={(e) => e.stopPropagation()}
+                                  />
+                                ) : (
+                                  <span
+                                    className="text-sm text-gray-600 truncate flex-1 cursor-pointer hover:underline"
+                                    onClick={() => onSelectParagraph?.(projectName, part.part_title, chapter.chapter_title, paragraph.para_name)}
+                                    onDoubleClick={(e) => startEditing(e, `paragraph-${paragraph.para_id}`, paragraph.para_name)}
+                                  >
+                                    {paragraph.para_number}. {paragraph.para_name}
+                                  </span>
+                                )}
 
                                 {onCreateNotion && (
                                   <button
@@ -243,11 +394,14 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
                                         notionName: notion.notion_name,
                                         notion
                                       })}
-                                      className={`flex items-center gap-2 py-1.5 px-2 rounded-lg cursor-pointer w-full text-left transition-all group/notion group ${selectedNotionId === notion.notion_id
-                                        ? 'bg-[#99334C]/10 text-[#99334C]'
-                                        : 'text-gray-500 hover:text-gray-900 hover:bg-gray-50'
-                                        }`}
+                                      className={`flex items-center gap-2 py-1.5 px-2 rounded-lg cursor-pointer w-full text-left transition-all group/notion group 
+                                        ${selectedNotionId === notion.notion_id ? 'bg-[#99334C]/10 text-[#99334C]' : 'text-gray-500 hover:text-gray-900 hover:bg-gray-50'}
+                                        ${dropTargetId === notion.notion_id ? 'border-t-2 border-t-[#28A745] bg-gray-100' : ''}`}
                                       draggable="true"
+                                      onDragStart={(e) => handleDragStartItem(e, 'notion', notion, paragraph.para_id)}
+                                      onDragOver={(e) => handleDragOverItem(e, 'notion', paragraph.para_id, notion.notion_id)}
+                                      onDragLeave={() => setDropTargetId(null)}
+                                      onDrop={(e) => handleDropItem(e, 'notion', paragraph.para_id, notion.notion_id)}
                                     >
                                       <span className="text-gray-300 opacity-0 group-hover:opacity-100 cursor-grab">
                                         <GripVertical size={14} />
@@ -257,9 +411,22 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
                                         className="flex-shrink-0"
                                         color={selectedNotionId === notion.notion_id ? '#99334C' : getIconColor('notion')}
                                       />
-                                      <span className={`text-sm truncate ${selectedNotionId === notion.notion_id ? 'font-medium' : ''}`}>
-                                        {notion.notion_name}
-                                      </span>
+                                      {editingId === `notion-${notion.notion_id}` ? (
+                                        <input
+                                          autoFocus
+                                          className="text-sm flex-1 bg-white border border-[#28A745] rounded px-1 outline-none text-gray-700 placeholder-gray-400"
+                                          value={tempTitle}
+                                          onChange={(e) => setTempTitle(e.target.value)}
+                                          onBlur={() => submitRename('notion', notion.notion_id)}
+                                          onKeyDown={(e) => handleKeyDown(e, 'notion', notion.notion_id)}
+                                          onClick={(e) => e.stopPropagation()}
+                                        />
+                                      ) : (
+                                        <span className={`text-sm truncate ${selectedNotionId === notion.notion_id ? 'font-medium' : ''}`}
+                                          onDoubleClick={(e) => startEditing(e, `notion-${notion.notion_id}`, notion.notion_name)}>
+                                          {notion.notion_name}
+                                        </span>
+                                      )}
                                     </button>
                                   ))}
                                 </div>

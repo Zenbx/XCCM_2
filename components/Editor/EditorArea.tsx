@@ -12,6 +12,7 @@ interface EditorAreaProps {
   onDrop: (content: any) => void; // Modifié pour passer soit du contenu (string) soit un granule (objet)
   editorRef: React.RefObject<HTMLDivElement | null>;
   placeholder?: string;
+  isImporting?: boolean;
 }
 
 const EditorArea: React.FC<EditorAreaProps> = ({
@@ -20,7 +21,8 @@ const EditorArea: React.FC<EditorAreaProps> = ({
   onChange,
   onDrop,
   editorRef,
-  placeholder = "Sélectionnez une notion pour commencer à éditer..."
+  placeholder = "Sélectionnez une notion pour commencer à éditer...",
+  isImporting = false
 }) => {
   const isInitialLoad = useRef(true);
   const [internalPlaceholder, setInternalPlaceholder] = useState(placeholder);
@@ -140,6 +142,26 @@ const EditorArea: React.FC<EditorAreaProps> = ({
           data-placeholder={internalPlaceholder}
         />
       </div>
+
+      {/* Overlay de chargement localisé */}
+      {isImporting && (
+        <div className="absolute inset-0 z-40 bg-white/60 backdrop-blur-[2px] flex items-center justify-center p-8 transition-all animate-in fade-in">
+          <div className="bg-white shadow-xl rounded-2xl p-8 border border-gray-100 flex flex-col items-center text-center max-w-sm">
+            <div className="relative mb-6">
+              <div className="w-16 h-16 rounded-full border-4 border-[#99334C]/10 border-t-[#99334C] animate-spin"></div>
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="w-8 h-8 rounded-full bg-[#99334C]/10 flex items-center justify-center">
+                  <div className="w-2 h-2 bg-[#99334C] rounded-full animate-bounce"></div>
+                </div>
+              </div>
+            </div>
+            <h3 className="text-gray-900 font-bold text-lg mb-2">Mise à jour en cours</h3>
+            <p className="text-gray-500 text-sm leading-relaxed">
+              Le granule sera importé et ajouté à la table des matières...
+            </p>
+          </div>
+        </div>
+      )}
 
       <style jsx global>{`
         [contenteditable]:empty:before {

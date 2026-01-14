@@ -150,6 +150,31 @@ class StructureService {
     return result.data.chapters;
   }
 
+  async updateChapter(
+    projectName: string,
+    partTitle: string,
+    chapterTitle: string,
+    data: { chapter_title?: string; chapter_number?: number }
+  ): Promise<Chapter> {
+    const response = await fetch(
+      `${API_BASE_URL}/api/projects/${encodeURIComponent(projectName)}/parts/${encodeURIComponent(partTitle)}/chapters/${encodeURIComponent(chapterTitle)}`,
+      {
+        method: 'PATCH',
+        headers: getAuthHeaders(),
+        body: JSON.stringify(data),
+      }
+    );
+
+    if (!response.ok) {
+      if (response.status === 401) throw new Error('Token invalide ou expiré.');
+      const error = await response.json();
+      throw new Error(error.message || 'Erreur lors de la mise à jour du chapitre');
+    }
+
+    const result = await response.json();
+    return result.data.chapter;
+  }
+
   // ============= PARAGRAPHS =============
   async createParagraph(
     projectName: string,
@@ -197,6 +222,32 @@ class StructureService {
 
     const result = await response.json();
     return result.data.paragraphs;
+  }
+
+  async updateParagraph(
+    projectName: string,
+    partTitle: string,
+    chapterTitle: string,
+    paraName: string,
+    data: { para_name?: string; para_number?: number }
+  ): Promise<Paragraph> {
+    const response = await fetch(
+      `${API_BASE_URL}/api/projects/${encodeURIComponent(projectName)}/parts/${encodeURIComponent(partTitle)}/chapters/${encodeURIComponent(chapterTitle)}/paragraphs/${encodeURIComponent(paraName)}`,
+      {
+        method: 'PATCH',
+        headers: getAuthHeaders(),
+        body: JSON.stringify(data),
+      }
+    );
+
+    if (!response.ok) {
+      if (response.status === 401) throw new Error('Token invalide ou expiré.');
+      const error = await response.json();
+      throw new Error(error.message || 'Erreur lors de la mise à jour du paragraphe');
+    }
+
+    const result = await response.json();
+    return result.data.paragraph;
   }
 
   // ============= NOTIONS =============
@@ -260,7 +311,7 @@ class StructureService {
     chapterTitle: string,
     paraName: string,
     notionName: string,
-    data: { notion_content: string }
+    data: { notion_name?: string, notion_content?: string, notion_number?: number }
   ): Promise<Notion> {
     const response = await fetch(
       `${API_BASE_URL}/api/projects/${encodeURIComponent(projectName)}/parts/${encodeURIComponent(partTitle)}/chapters/${encodeURIComponent(chapterTitle)}/paragraphs/${encodeURIComponent(paraName)}/notions/${encodeURIComponent(notionName)}`,

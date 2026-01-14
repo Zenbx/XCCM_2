@@ -2,14 +2,15 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { Loader2, AlertCircle, Save, X, Eye, Share2 } from 'lucide-react';
+import { ChevronDown, ChevronRight, Plus, Eye, Share2, Save, Loader2, AlertCircle, Home, X } from 'lucide-react';
+import Link from 'next/link';
 import TableOfContents from '@/components/Editor/TableOfContents';
 import EditorToolbar from '@/components/Editor/EditorToolBar';
 import EditorArea from '@/components/Editor/EditorArea';
 import RightPanel from '@/components/Editor/RightPanel';
 import ChatBotOverlay from '@/components/Editor/ChatBotOverlay';
 import { projectService } from '@/services/projectService';
-import { structureService, Part, Notion } from '@/services/structureService';
+import { structureService, Part, Chapter, Paragraph, Notion } from '@/services/structureService';
 import ShareOverlay from '@/components/Editor/ShareOverlay';
 import pLimit from 'p-limit';
 import { FaHome } from 'react-icons/fa';
@@ -26,9 +27,9 @@ const XCCM2Editor = () => {
   } | null>(null);
   const [structure, setStructure] = useState<Part[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState('');
   const [isSaving, setIsSaving] = useState(false);
-
+  const [isImporting, setIsImporting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [rightPanel, setRightPanel] = useState<string | null>(null);
   const [textFormat, setTextFormat] = useState({
     font: 'Arial',
@@ -242,7 +243,7 @@ const XCCM2Editor = () => {
           currentContext.partTitle,
           currentContext.chapterTitle!,
           currentContext.paraName!,
-          currentContext.notionName,
+          currentContext.notionName!,
           { notion_content: editorContent }
         );
         // Mise à jour locale
@@ -333,8 +334,10 @@ const XCCM2Editor = () => {
       if (!projectData) return;
 
       try {
-        // ✅ REFRESH structure AVANT drop pour avoir les bons numéros
-        await loadProject();
+        setIsImporting(true); // Feedback immédiat (localisé)
+
+        // REFRESH structure AVANT drop pour avoir les bons numéros (SILENCIEUX)
+        await loadProject(true);
 
         // Initialisation du contexte avec la sélection actuelle pour les drops relatifs
         const initialContext: any = {};
@@ -351,6 +354,7 @@ const XCCM2Editor = () => {
 
         // Compteurs LOCAUX pour cette opération d'import
         const counters = new Map<string, number>();
+        const limit = pLimit(2); // Limite de parallélisme pour l'import
 
         // Helper stateful pour avoir le prochain numéro et incrémenter
         const getNextNumAndInc = (type: string, ctx: any) => {
@@ -407,10 +411,10 @@ const XCCM2Editor = () => {
             const nextNum = getNextNumAndInc('part', context);
             const uniqueTitle = `${item.content} ${nextNum}`;
 
-            createdItem = await structureService.createPart(projectData.pr_name, {
+            createdItem = await limit(() => structureService.createPart(projectData.pr_name, {
               part_title: uniqueTitle,
               part_number: nextNum
-            });
+            }));
             // Contexte pour les enfants
             context = { partTitle: createdItem.part_title, partId: createdItem.part_id };
 
@@ -418,31 +422,31 @@ const XCCM2Editor = () => {
             if (!context.partTitle) throw new Error("Chapitre sans partie parente");
             const nextNum = getNextNumAndInc('chapter', context);
 
-            createdItem = await structureService.createChapter(projectData.pr_name, context.partTitle, {
+            createdItem = await limit(() => structureService.createChapter(projectData.pr_name, context.partTitle, {
               chapter_title: `${item.content} ${nextNum}`,
               chapter_number: nextNum
-            });
+            }));
             context = { ...context, chapterTitle: createdItem.chapter_title };
 
           } else if (item.type === 'paragraph') {
             if (!context.chapterTitle) throw new Error("Impossible de créer un paragraphe : Aucun chapitre parent sélectionné.");
             const nextNum = getNextNumAndInc('paragraph', context);
 
-            createdItem = await structureService.createParagraph(projectData.pr_name, context.partTitle, context.chapterTitle, {
+            createdItem = await limit(() => structureService.createParagraph(projectData.pr_name, context.partTitle, context.chapterTitle, {
               para_name: `${item.content} ${nextNum}`,
               para_number: nextNum
-            });
+            }));
             context = { ...context, paraName: createdItem.para_name };
 
           } else if (item.type === 'notion') {
             if (!context.paraName) throw new Error("Impossible de créer une notion : Aucun paragraphe parent sélectionné.");
             const nextNum = getNextNumAndInc('notion', context);
 
-            createdItem = await structureService.createNotion(projectData.pr_name, context.partTitle, context.chapterTitle, context.paraName, {
+            createdItem = await limit(() => structureService.createNotion(projectData.pr_name, context.partTitle, context.chapterTitle, context.paraName, {
               notion_name: `${item.content} ${nextNum}`,
               notion_number: nextNum,
               notion_content: "<p>Contenu importé...</p>"
-            });
+            }));
 
             // SI c'est la première notion trouvée, on la sélectionne (User Request)
             if (!firstNotionFound.current) {
@@ -453,19 +457,14 @@ const XCCM2Editor = () => {
             }
           }
 
-          // Récursion sur les enfants
+          // Récursion sur les enfants (en parallèle via p-limit)
           if (item.children && item.children.length > 0) {
-            for (let i = 0; i < item.children.length; i++) {
-              await delay(200); // Augmenté à 200ms pour plus de stabilité sur le backend
-              await importRecursive(item.children[i], { ...context });
-            }
+            await Promise.all(item.children.map((child: any) => importRecursive(child, { ...context })));
           }
         };
 
         // Ref pour stocker la première notion
         const firstNotionFound = { current: null } as any;
-
-        setIsSaving(true);
 
         // Lancer l'import avec le contexte initial fusionné
         await importRecursive(contentOrGranule, { ...initialContext });
@@ -502,7 +501,7 @@ const XCCM2Editor = () => {
           setError("Erreur lors de l'import : " + err.message);
         }
       } finally {
-        setIsSaving(false);
+        setIsImporting(false);
       }
       return;
     }
@@ -735,6 +734,101 @@ const XCCM2Editor = () => {
     }
   };
 
+  const handleRename = async (type: string, id: string, newTitle: string) => {
+    if (!projectData) return;
+    try {
+      // Trouver l'item et son contexte dans la structure
+      let part: Part | undefined;
+      let chapter: Chapter | undefined;
+      let paragraph: Paragraph | undefined;
+      let notion: Notion | undefined;
+
+      if (type === 'part') {
+        part = structure.find(p => p.part_id === id);
+        if (part) {
+          await structureService.updatePart(projectData.pr_name, part.part_title, { part_title: newTitle });
+        }
+      } else if (type === 'chapter') {
+        outer: for (const p of structure) {
+          chapter = p.chapters?.find(c => c.chapter_id === id);
+          if (chapter) { part = p; break outer; }
+        }
+        if (part && chapter) {
+          await structureService.updateChapter(projectData.pr_name, part.part_title, chapter.chapter_title, { chapter_title: newTitle });
+        }
+      } else if (type === 'paragraph') {
+        outer: for (const p of structure) {
+          for (const c of p.chapters || []) {
+            paragraph = c.paragraphs?.find(pg => pg.para_id === id);
+            if (paragraph) { part = p; chapter = c; break outer; }
+          }
+        }
+        if (part && chapter && paragraph) {
+          await structureService.updateParagraph(projectData.pr_name, part.part_title, chapter.chapter_title, paragraph.para_name, { para_name: newTitle });
+        }
+      } else if (type === 'notion') {
+        outer: for (const p of structure) {
+          for (const c of p.chapters || []) {
+            for (const pg of c.paragraphs || []) {
+              notion = pg.notions?.find(n => n.notion_id === id);
+              if (notion) { part = p; chapter = c; paragraph = pg; break outer; }
+            }
+          }
+        }
+        if (part && chapter && paragraph && notion) {
+          await structureService.updateNotion(projectData.pr_name, part.part_title, chapter.chapter_title, paragraph.para_name, notion.notion_name, { notion_name: newTitle });
+        }
+      }
+
+      // Rafraîchir la structure
+      await loadProject(true);
+    } catch (err: any) {
+      console.error("Erreur renommage:", err);
+      alert("Erreur lors du renommage : " + err.message);
+    }
+  };
+
+  const handleReorder = async (type: string, parentId: string | null, items: any[]) => {
+    if (!projectData) return;
+    try {
+      // On met à jour chaque item avec sa nouvelle position
+      const limit = pLimit(3);
+      await Promise.all(items.map((item, index) => limit(async () => {
+        const newNumber = index + 1;
+        if (type === 'part') {
+          await structureService.updatePart(projectData.pr_name, item.part_title, { part_number: newNumber });
+        } else if (type === 'chapter') {
+          const part = structure.find(p => p.part_id === parentId);
+          if (part) await structureService.updateChapter(projectData.pr_name, part.part_title, item.chapter_title, { chapter_number: newNumber });
+        } else if (type === 'paragraph') {
+          let partTitle = "";
+          let chapterTitle = "";
+          outer: for (const p of structure) {
+            const c = p.chapters?.find(ch => ch.chapter_id === parentId);
+            if (c) { partTitle = p.part_title; chapterTitle = c.chapter_title; break outer; }
+          }
+          if (partTitle && chapterTitle) await structureService.updateParagraph(projectData.pr_name, partTitle, chapterTitle, item.para_name, { para_number: newNumber });
+        } else if (type === 'notion') {
+          let partT = "", chapT = "", paraN = "";
+          outer: for (const p of structure) {
+            for (const c of p.chapters || []) {
+              const para = c.paragraphs?.find(pg => pg.para_id === parentId);
+              if (para) { partT = p.part_title; chapT = c.chapter_title; paraN = para.para_name; break outer; }
+            }
+          }
+          if (partT && chapT && paraN) await structureService.updateNotion(projectData.pr_name, partT, chapT, paraN, item.notion_name, { notion_number: newNumber });
+        }
+      })));
+
+      // Rafraîchir
+      await loadProject(true);
+    } catch (err: any) {
+      console.error("Erreur réordonnancement:", err);
+      alert("Erreur lors du réordonnancement. Certains éléments peuvent avoir gardé leur ancienne position.");
+      await loadProject(true); // Recharger pour être synchro
+    }
+  };
+
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       if (hasUnsavedChanges) {
@@ -839,23 +933,47 @@ const XCCM2Editor = () => {
         onSelectChapter={handleSelectChapter}
         onSelectParagraph={handleSelectParagraph}
         selectedPartId={currentContext?.part?.part_id}
+        onRename={handleRename}
+        onReorder={handleReorder}
       />
 
       <div className="flex-1 flex flex-col">
         <div className="bg-white border-b border-gray-200 flex items-center justify-between px-4 py-2">
           <div className="flex items-center gap-4">
-            <FaHome className="w-4 h-4" /><h1 className="text-lg font-semibold text-gray-900">{projectData?.pr_name}</h1>
-            {currentContext ? (
-              currentContext.type === 'notion' ? (
-                <div className="text-sm text-gray-600">
-                  {currentContext.partTitle} / {currentContext.chapterTitle} / {currentContext.paraName} / <span className="font-semibold text-[#99334C]">{currentContext.notionName}</span>
-                </div>
-              ) : (
-                <div className="text-sm text-gray-600">
-                  Partie <span className="font-semibold text-[#99334C]">{currentContext.partTitle}</span> (Introduction)
-                </div>
-              )
-            ) : null}
+            <Link
+              href="/edit-home"
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-gray-600 hover:text-[#99334C]"
+              title="Retour à l'accueil"
+            >
+              <Home className="w-5 h-5" />
+            </Link>
+
+            <h1 className="text-lg font-bold text-gray-900 border-l pl-4 border-gray-200">
+              {projectData?.pr_name}
+            </h1>
+
+            {currentContext && (
+              <div className="flex items-center gap-2 text-sm text-gray-500 ml-4 bg-gray-50 px-3 py-1.5 rounded-full border border-gray-100">
+                {currentContext.type === 'notion' ? (
+                  <>
+                    <span className="hover:text-gray-700 transition-colors uppercase text-[10px] font-bold tracking-wider">{currentContext.partTitle}</span>
+                    <ChevronRight className="w-3 h-3 text-gray-300" />
+                    <span className="hover:text-gray-700 transition-colors uppercase text-[10px] font-bold tracking-wider">{currentContext.chapterTitle}</span>
+                    <ChevronRight className="w-3 h-3 text-gray-300" />
+                    <span className="hover:text-gray-700 transition-colors uppercase text-[10px] font-bold tracking-wider">{currentContext.paraName}</span>
+                    <ChevronRight className="w-3 h-3 text-gray-300" />
+                    <span className="font-bold text-[#99334C]">{currentContext.notionName}</span>
+                  </>
+                ) : (
+                  <>
+                    <span className="uppercase text-[10px] font-bold tracking-wider">Partie</span>
+                    <ChevronRight className="w-3 h-3 text-gray-300" />
+                    <span className="font-bold text-[#99334C]">{currentContext.partTitle}</span>
+                    <span className="ml-1 text-gray-400 font-normal">(Introduction)</span>
+                  </>
+                )}
+              </div>
+            )}
           </div>
           <div className="flex items-center gap-3">
 
@@ -934,6 +1052,7 @@ const XCCM2Editor = () => {
             onChange={setEditorContent}
             onDrop={handleDropNew} // Utilise la nouvelle méthode
             editorRef={editorRef}
+            isImporting={isImporting}
             placeholder={
               currentContext.type === 'part'
                 ? "📦 Glissez-déposez un Chapitre ici pour l'ajouter à cette Partie..."

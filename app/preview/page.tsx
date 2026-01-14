@@ -370,6 +370,38 @@ const PreviewPage = () => {
                     font-style: italic;
                     margin-bottom: 16px;
                 }
+                
+                /* TOC Styles */
+                .toc-page {
+                    padding: 48px;
+                }
+                .toc-title {
+                    font-size: 28px;
+                    font-weight: 700;
+                    color: rgb(153, 51, 76);
+                    margin-bottom: 32px;
+                    border-bottom: 2px solid rgba(153, 51, 76, 0.1);
+                    padding-bottom: 16px;
+                }
+                .toc-list {
+                    list-style: none;
+                }
+                .toc-item-part {
+                    font-size: 18px;
+                    font-weight: 700;
+                    margin-top: 24px;
+                    color: rgb(17, 24, 39);
+                }
+                .toc-item-chapter {
+                    font-size: 16px;
+                    margin-left: 24px;
+                    margin-top: 8px;
+                    color: rgb(75, 85, 99);
+                }
+                .toc-link {
+                    text-decoration: none;
+                    color: inherit;
+                }
             </style>
         `;
 
@@ -389,6 +421,27 @@ const PreviewPage = () => {
             </div>
         `;
 
+        // Table des matières
+        if (structure.length > 0) {
+            bodyContent += `
+                <div class="page toc-page">
+                    <h2 class="toc-title">Table des Matières</h2>
+                    <div class="toc-list">
+                        ${structure.map((part, pIdx) => `
+                            <div class="toc-item-part">
+                                <a href="#part-${pIdx}" class="toc-link">Partie ${pIdx + 1}: ${part.part_title}</a>
+                            </div>
+                            ${part.chapters?.map((chap, cIdx) => `
+                                <div class="toc-item-chapter">
+                                    <a href="#part-${pIdx}-chap-${cIdx}" class="toc-link">${chap.chapter_title}</a>
+                                </div>
+                            `).join('') || ''}
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
         // Contenu
         if (structure.length === 0) {
             bodyContent += `
@@ -398,7 +451,7 @@ const PreviewPage = () => {
             `;
         } else {
             structure.forEach((part, partIndex) => {
-                bodyContent += `<div class="page">`;
+                bodyContent += `<div class="page" id="part-${partIndex}">`;
                 bodyContent += `
                     <div class="part-header">
                         <span class="part-label">Partie ${partIndex + 1}</span>
@@ -410,9 +463,9 @@ const PreviewPage = () => {
                     bodyContent += `<div class="part-intro">${part.part_intro}</div>`;
                 }
 
-                part.chapters?.forEach((chapter) => {
+                part.chapters?.forEach((chapter, chapIndex) => {
                     bodyContent += `
-                        <h3>
+                        <h3 id="part-${partIndex}-chap-${chapIndex}">
                             <span class="chapter-number">#</span>
                             ${chapter.chapter_title}
                         </h3>
@@ -649,6 +702,39 @@ const PreviewPage = () => {
                         </div>
                     </div>
 
+                    {/* TABLE DES MATIERES */}
+                    {structure.length > 0 && (
+                        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-12 mb-8 min-h-[842px] page-break-after-always">
+                            <h2 className="text-3xl font-bold text-[#99334C] mb-10 border-b border-gray-100 pb-4">Table des Matières</h2>
+                            <div className="space-y-6">
+                                {structure.map((part, pIdx) => (
+                                    <div key={part.part_id} className="space-y-2">
+                                        <a
+                                            href={`#part-${pIdx}`}
+                                            className="text-lg font-bold text-gray-900 hover:text-[#99334C] transition-colors flex items-center gap-3"
+                                        >
+                                            <span className="w-8 h-8 rounded-lg bg-[#99334C]/10 flex items-center justify-center text-[#99334C] text-sm">
+                                                {pIdx + 1}
+                                            </span>
+                                            {part.part_title}
+                                        </a>
+                                        <div className="ml-11 space-y-2">
+                                            {part.chapters?.map((chap, cIdx) => (
+                                                <a
+                                                    key={chap.chapter_id}
+                                                    href={`#part-${pIdx}-chap-${cIdx}`}
+                                                    className="block text-gray-600 hover:text-[#99334C] transition-colors"
+                                                >
+                                                    {chap.chapter_title}
+                                                </a>
+                                            ))}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
                     {/* CONTENU */}
                     {structure.length === 0 && (
                         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-12 text-center text-gray-500 py-20 italic">
@@ -656,8 +742,8 @@ const PreviewPage = () => {
                         </div>
                     )}
 
-                    {structure.map((part) => (
-                        <div key={part.part_id} className="bg-white rounded-2xl shadow-sm border border-gray-200 p-12 mb-8 min-h-[842px] page-break-before-always">
+                    {structure.map((part, pIdx) => (
+                        <div key={part.part_id} id={`part-${pIdx}`} className="bg-white rounded-2xl shadow-sm border border-gray-200 p-12 mb-8 min-h-[842px] page-break-before-always">
                             <div className="mb-12 border-b border-gray-100 pb-6">
                                 <span className="inline-block px-3 py-1 bg-[#99334C]/10 text-[#99334C] text-sm font-bold rounded-full mb-4">Partie {structure.indexOf(part) + 1}</span>
                                 <h2 className="text-4xl font-bold text-gray-900 mt-2">
@@ -671,8 +757,8 @@ const PreviewPage = () => {
                             )}
 
                             <div className="space-y-12">
-                                {part.chapters?.map((chapter) => (
-                                    <div key={chapter.chapter_id} className="chapter-section">
+                                {part.chapters?.map((chapter, cIdx) => (
+                                    <div key={chapter.chapter_id} id={`part-${pIdx}-chap-${cIdx}`} className="chapter-section">
                                         <h3 className="text-3xl font-bold text-gray-900 mb-8 mt-12 flex items-center gap-3">
                                             <span className="text-[#99334C] opacity-50">#</span>
                                             {chapter.chapter_title}
