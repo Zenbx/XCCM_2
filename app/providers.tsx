@@ -2,13 +2,18 @@
 
 import { AuthProvider } from '@/context/AuthContext';
 import { LanguageProvider } from '@/context/LanguageContext';
+import { Toaster } from 'react-hot-toast';
+import { ReactNode } from 'react';
 
-export function Providers({ children }: { children: React.ReactNode }) {
+const Providers = ({ children }: { children: ReactNode }) => {
   return (
     <AuthProvider>
-      <LanguageProvider>{children}</LanguageProvider>
+      <LanguageProvider>
+        {children}
+        <Toaster position="top-right" />
+      </LanguageProvider>
     </AuthProvider>
   );
-}
+};
 
 export default Providers;

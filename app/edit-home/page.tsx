@@ -9,8 +9,8 @@ import {
   Download,
   Share2,
   Trash2,
-  Edit3, // Pour ouvrir l'éditeur
-  PenLine, // Nouveau : Pour renommer
+  Edit3,
+  PenLine,
   FileText,
   Calendar,
   User,
@@ -18,21 +18,33 @@ import {
   Loader2,
   AlertCircle,
   X,
-  BookTemplate, // Pour Modèles
-  Globe, // Pour Communauté
-  Users // Pour Créateurs
+  BookTemplate,
+  Globe,
+  Users,
+  ArrowRight,
+  Star,
+  CheckCircle,
+  TrendingUp,
+  GraduationCap,
+  Code,
+  Briefcase,
+  Calculator
 } from 'lucide-react';
-import Link from 'next/link'; // Nécessaire pour les liens de navigations
+import Link from 'next/link';
 import { useRouter } from "next/navigation";
 import { projectService, Project } from '@/services/projectService';
+import { structureService } from '@/services/structureService';
 import { useAuth } from '@/context/AuthContext';
+import toast from 'react-hot-toast';
+import { TEMPLATE_DATA, GENERIC_TEMPLATE } from '@/app/templates/TemplateData';
 
 const EditHomePage = () => {
   // --- États Globaux ---
   const [searchQuery, setSearchQuery] = useState('');
   const [projects, setProjects] = useState<Project[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState('');
+
+  const [filterType, setFilterType] = useState<'all' | 'owned' | 'accepted' | 'pending'>('all');
 
   // --- États Modale Création ---
   const [isCreating, setIsCreating] = useState(false);
@@ -50,16 +62,66 @@ const EditHomePage = () => {
   const [renameValue, setRenameValue] = useState('');
   const [isRenaming, setIsRenaming] = useState(false);
 
+  // --- États Templates ---
+  const [creatingTemplateId, setCreatingTemplateId] = useState<number | null>(null);
+
   const router = useRouter();
   const { user } = useAuth();
 
-  // Templates mockés
+  // Templates (Top 4)
   const templates = [
-    { id: 1, name: 'Template Vide', type: 'blank', preview: null },
-    { id: 2, name: 'Cours Académique', type: 'academic', preview: null },
-    { id: 3, name: 'Formation Pro', type: 'professional', preview: null },
-    { id: 4, name: 'Guide Personnel', type: 'personal', preview: null },
-    { id: 5, name: 'Documentation', type: 'documentation', preview: null },
+    {
+      id: 1,
+      name: "Cours Universitaire Standard",
+      description: "Structure complète pour un cours universitaire avec introduction, chapitres théoriques, exercices et conclusion.",
+      category: "Informatique",
+      icon: GraduationCap,
+      parts: 5,
+      chapters: 12,
+      difficulty: "Intermédiaire",
+      rating: 4.8,
+      downloads: 1240,
+      author: "XCCM2 Team"
+    },
+    {
+      id: 2,
+      name: "Tutoriel Pratique",
+      description: "Template pour créer des tutoriels step-by-step avec exercices pratiques et projets.",
+      category: "Informatique",
+      icon: Code,
+      parts: 3,
+      chapters: 8,
+      difficulty: "Débutant",
+      rating: 4.9,
+      downloads: 2100,
+      author: "XCCM2 Team"
+    },
+    {
+      id: 3,
+      name: "Formation Professionnelle",
+      description: "Structure adaptée pour des formations professionnelles avec études de cas et mises en situation.",
+      category: "Business",
+      icon: Briefcase,
+      parts: 4,
+      chapters: 10,
+      difficulty: "Intermédiaire",
+      rating: 4.7,
+      downloads: 890,
+      author: "XCCM2 Team"
+    },
+    {
+      id: 4,
+      name: "Cours de Mathématiques",
+      description: "Template spécialisé pour cours de maths avec théorèmes, démonstrations et exercices corrigés.",
+      category: "Mathématiques",
+      icon: Calculator,
+      parts: 6,
+      chapters: 15,
+      difficulty: "Avancé",
+      rating: 4.6,
+      downloads: 750,
+      author: "XCCM2 Team"
+    }
   ];
 
   useEffect(() => {
@@ -69,11 +131,10 @@ const EditHomePage = () => {
   const loadProjects = async () => {
     try {
       setIsLoading(true);
-      setError('');
       const projectsData = await projectService.getAllProjects();
       setProjects(projectsData);
     } catch (err: any) {
-      setError(err.message || 'Erreur lors du chargement des projets');
+      toast.error(err.message || 'Erreur lors du chargement des projets');
     } finally {
       setIsLoading(false);
     }
@@ -82,22 +143,81 @@ const EditHomePage = () => {
   // --- Logique de Création ---
   const handleCreateNew = async () => {
     if (!newProjectName.trim()) {
-      setError('Veuillez entrer un nom de projet');
+      toast.error('Veuillez entrer un nom de projet');
       return;
     }
     try {
       setIsCreating(true);
-      setError('');
       const newProject = await projectService.createProject({ pr_name: newProjectName });
-      // Mise à jour optimiste ou basée sur la réponse
       setProjects(prev => [newProject, ...prev]);
       setShowCreateModal(false);
       setNewProjectName('');
       router.push(`/edit?projectName=${encodeURIComponent(newProject.pr_name)}`);
     } catch (err: any) {
-      setError(err.message || 'Erreur création');
+      toast.error(err.message || 'Erreur création');
     } finally {
       setIsCreating(false);
+    }
+  };
+
+  // --- Logique de Création par Template ---
+  const handleUseTemplate = async (templateId: number, templateName: string) => {
+    if (creatingTemplateId) return;
+
+    try {
+      setCreatingTemplateId(templateId);
+      const timestamp = Date.now();
+      const newProjectName = `${templateName} ${timestamp}`;
+      const newProject = await projectService.createProject({ pr_name: newProjectName });
+
+      const structure = TEMPLATE_DATA[templateId] || GENERIC_TEMPLATE;
+
+      for (let i = 0; i < structure.parts.length; i++) {
+        const partData = structure.parts[i];
+        await structureService.createPart(newProject.pr_name, {
+          part_title: partData.title,
+          part_intro: partData.intro,
+          part_number: i + 1
+        });
+
+        if (partData.chapters) {
+          for (let j = 0; j < partData.chapters.length; j++) {
+            const chapData = partData.chapters[j];
+            await structureService.createChapter(newProject.pr_name, partData.title, {
+              chapter_title: chapData.title,
+              chapter_number: j + 1
+            });
+
+            if (chapData.paragraphs) {
+              for (let k = 0; k < chapData.paragraphs.length; k++) {
+                const paraData = chapData.paragraphs[k];
+                await structureService.createParagraph(newProject.pr_name, partData.title, chapData.title, {
+                  para_name: paraData.name,
+                  para_number: k + 1
+                });
+              }
+            }
+          }
+        }
+      }
+
+      toast.success('Projet créé avec succès !');
+      router.push(`/edit?projectName=${encodeURIComponent(newProject.pr_name)}`);
+
+    } catch (error: any) {
+      console.error("Error creating template project:", error);
+      toast.error("Erreur commande :" + (error.message || "Erreur inconnue"));
+    } finally {
+      setCreatingTemplateId(null);
+    }
+  };
+
+  const getDifficultyColor = (difficulty: string) => {
+    switch (difficulty) {
+      case 'Débutant': return 'bg-green-100 text-green-700';
+      case 'Intermédiaire': return 'bg-amber-100 text-amber-700';
+      case 'Avancé': return 'bg-red-100 text-red-700';
+      default: return 'bg-gray-100 text-gray-700';
     }
   };
 
@@ -109,30 +229,21 @@ const EditHomePage = () => {
 
   const confirmDelete = async () => {
     if (!projectToDelete) return;
-
-    // Capture ID locally to prevent closure staleness
     const idToDelete = projectToDelete.pr_id;
-    // Capture Name for API call
     const nameToDelete = projectToDelete.pr_name;
 
     try {
       setIsDeleting(true);
       await projectService.deleteProject(nameToDelete);
-
-      // Mise à jour IMMÉDIATE de l'UI
-      setProjects(prevProjects => {
-        const updated = prevProjects.filter(p => p.pr_id !== idToDelete);
-        return updated;
-      });
-
+      setProjects(prevProjects => prevProjects.filter(p => p.pr_id !== idToDelete));
       setShowDeleteModal(false);
       setProjectToDelete(null);
+      toast.success('Projet supprimé');
     } catch (err: any) {
       console.error("Erreur suppression:", err);
-      setError(err.message || 'Erreur lors de la suppression');
-      // En cas d'erreur de synchro (ex: déjà supprimé), on rafraichit la liste
+      toast.error(err.message || 'Erreur lors de la suppression');
       if (err.message && err.message.includes('not found')) {
-        loadProjects(); // Fallback
+        loadProjects();
         setShowDeleteModal(false);
       }
     } finally {
@@ -147,29 +258,24 @@ const EditHomePage = () => {
     setShowRenameModal(true);
   };
 
-  // Dans EditHomePage.tsx, fonction confirmRename
-
   const confirmRename = async () => {
-    if (!projectToRename || !renameValue.trim()) return;
-
+    if (!projectToRename || !renameValue.trim()) {
+      toast.error('Veuillez entrer un nom valide');
+      return;
+    }
     try {
       setIsRenaming(true);
-
-      // CORRECTION ICI : On passe le nom actuel (projectToRename.pr_name) comme premier argument
-      // car l'API est définie sur /api/projects/{pr_name}
       await projectService.updateProject(projectToRename.pr_name, { pr_name: renameValue });
-
-      // Mise à jour de l'UI locale
-      setProjects(prevProjects => prevProjects.map(p =>
+      setProjects(prev => prev.map(p =>
         p.pr_id === projectToRename.pr_id
           ? { ...p, pr_name: renameValue, updated_at: new Date().toISOString() }
           : p
       ));
-
       setShowRenameModal(false);
       setProjectToRename(null);
+      toast.success('Projet renommé');
     } catch (err: any) {
-      setError(err.message || 'Erreur lors du renommage');
+      toast.error(err.message || 'Erreur lors du renommage');
     } finally {
       setIsRenaming(false);
     }
@@ -187,9 +293,17 @@ const EditHomePage = () => {
     });
   };
 
-  const filteredProjects = projects.filter(project =>
-    project.pr_name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredProjects = projects.filter(project => {
+    const matchesSearch = project.pr_name.toLowerCase().includes(searchQuery.toLowerCase());
+    if (!matchesSearch) return false;
+    if (filterType === 'all') return true;
+    if (filterType === 'owned') return project.owner_id === user?.user_id;
+    if (filterType === 'accepted') return project.invitation_status === 'Accepted';
+    if (filterType === 'pending') return project.invitation_status === 'Pending';
+    return true;
+  });
+
+  const pendingCount = projects.filter(p => p.invitation_status === 'Pending').length;
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white relative">
@@ -218,55 +332,84 @@ const EditHomePage = () => {
               <Plus className="w-5 h-5" />
               Créer une Nouvelle Composition
             </button>
-
-            <Link
-              href="/templates"
-              className="bg-[#99334C]/30 backdrop-blur-md border border-white/30 text-white px-8 py-4 rounded-xl font-bold hover:bg-[#99334C]/50 transition-all flex items-center gap-3 hover:scale-105"
-            >
-              <BookTemplate className="w-5 h-5" />
-              Parcourir les Modèles
-            </Link>
+            {/* Removed "Parcourir les Modèles" button as requested */}
           </div>
         </div>
       </div>
 
       <div className="max-w-7xl mx-auto px-6 py-12">
-        {/* Message d'erreur global */}
-        {error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl flex items-center gap-3 animate-in fade-in slide-in-from-top-2">
-            <AlertCircle className="w-5 h-5 text-red-600" />
-            <p className="text-red-700">{error}</p>
-          </div>
-        )}
 
-        {/* Section Templates (identique à avant) */}
+        {/* Section Templates (Nouveau Design) */}
         <section className="mb-16">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-3xl font-bold text-gray-900">Créer avec un Template</h2>
+            <Link
+              href="/templates"
+              className="group flex items-center gap-2 text-[#99334C] font-semibold hover:text-[#7a283d] transition-colors"
+            >
+              Voir plus
+              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+            </Link>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
-            {templates.map((template) => (
-              <button
-                key={template.id}
-                onClick={() => setShowCreateModal(true)}
-                className="group relative aspect-[3/4] bg-white border-2 border-gray-200 rounded-2xl hover:border-[#99334C] hover:shadow-xl transition-all overflow-hidden"
-              >
-                <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
-                  {template.type === 'blank' ? (
-                    <Plus className="w-12 h-12 text-gray-300 group-hover:text-[#99334C] transition-colors" />
-                  ) : (
-                    <FileText className="w-12 h-12 text-gray-300 group-hover:text-[#99334C] transition-colors" />
-                  )}
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {templates.map((template) => {
+              const IconComponent = template.icon;
+              return (
+                <div
+                  key={template.id}
+                  className="bg-white border border-gray-200 rounded-2xl overflow-hidden hover:shadow-xl transition-all group flex flex-col"
+                >
+                  {/* Header */}
+                  <div className="bg-gradient-to-r from-[#99334C]/10 to-[#99334C]/5 p-5 border-b border-gray-100">
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="w-12 h-12 bg-[#99334C] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-md">
+                        <IconComponent className="w-6 h-6 text-white" />
+                      </div>
+                      <div className="flex items-center gap-1 bg-white px-2 py-1 rounded-full shadow-sm">
+                        <Star className="w-3 h-3 text-amber-500 fill-amber-500" />
+                        <span className="text-xs font-bold text-gray-700">{template.rating}</span>
+                      </div>
+                    </div>
+
+                    <h3 className="text-lg font-bold text-gray-900 mb-2 line-clamp-1" title={template.name}>{template.name}</h3>
+                    <div className="flex items-center gap-2">
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] uppercase tracking-wide font-bold ${getDifficultyColor(template.difficulty)}`}>
+                        {template.difficulty}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Body */}
+                  <div className="p-5 flex-1 flex flex-col">
+                    <p className="text-gray-600 text-sm mb-4 line-clamp-2 flex-1">{template.description}</p>
+
+                    {/* Stats Compact */}
+                    <div className="flex justify-between items-center mb-4 text-xs text-gray-500 bg-gray-50 p-2 rounded-lg">
+                      <span className="font-medium">{template.parts} Parties</span>
+                      <span className="w-1 h-1 bg-gray-300 rounded-full"></span>
+                      <span className="font-medium">{template.chapters} Chapitres</span>
+                    </div>
+
+                    {/* Actions */}
+                    <button
+                      onClick={() => handleUseTemplate(template.id, template.name)}
+                      disabled={creatingTemplateId !== null}
+                      className="w-full bg-white border-2 border-[#99334C] text-[#99334C] hover:bg-[#99334C] hover:text-white py-2.5 rounded-xl font-bold transition-all flex items-center justify-center gap-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed group-hover:shadow-md"
+                    >
+                      {creatingTemplateId === template.id ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Plus className="w-4 h-4" />
+                      )}
+                      {creatingTemplateId === template.id ? 'Création...' : 'Utiliser ce modèle'}
+                    </button>
+                  </div>
                 </div>
-                <div className="absolute bottom-0 left-0 right-0 bg-white/95 backdrop-blur-sm p-3 border-t border-gray-200">
-                  <p className="text-sm font-semibold text-gray-900 truncate">{template.name}</p>
-                </div>
-              </button>
-            ))}
+              );
+            })}
           </div>
         </section>
-
-
 
         {/* Section Tableau */}
         <section>
@@ -274,6 +417,54 @@ const EditHomePage = () => {
             <div className="p-6 border-b border-gray-200">
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <h2 className="text-2xl font-bold text-gray-900">Toutes mes compositions</h2>
+
+                {/* Filtres */}
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setFilterType('all')}
+                    className={`px-4 py-2 rounded-lg font-medium transition-all ${filterType === 'all'
+                      ? 'bg-[#99334C] text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                  >
+                    Tous
+                  </button>
+                  <button
+                    onClick={() => setFilterType('owned')}
+                    className={`px-4 py-2 rounded-lg font-medium transition-all ${filterType === 'owned'
+                      ? 'bg-[#99334C] text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                  >
+                    Mes Projets
+                  </button>
+                  <button
+                    onClick={() => setFilterType('accepted')}
+                    className={`px-4 py-2 rounded-lg font-medium transition-all ${filterType === 'accepted'
+                      ? 'bg-[#99334C] text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                  >
+                    Partagés
+                  </button>
+                  <div className="relative">
+                    <button
+                      onClick={() => setFilterType('pending')}
+                      className={`px-4 py-2 rounded-lg font-medium transition-all ${filterType === 'pending'
+                        ? 'bg-[#99334C] text-white'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        }`}
+                    >
+                      En attente
+                    </button>
+                    {pendingCount > 0 && (
+                      <span className="absolute -top-1 -right-1 w-5 h-5 flex items-center justify-center bg-red-500 text-white text-xs font-bold rounded-full border-2 border-white">
+                        {pendingCount}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
                 <div className="relative flex-1 min-w-[250px] max-w-md">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                   <input

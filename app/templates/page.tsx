@@ -44,6 +44,8 @@ interface Template {
   preview?: string;
 }
 
+import toast from 'react-hot-toast';
+
 const TemplatesPage = () => {
   const router = useRouter();
   const { user, isAuthenticated, isLoading: authLoading } = useAuth(); // Auth protection
@@ -212,7 +214,6 @@ const TemplatesPage = () => {
         return 'bg-gray-100 text-gray-700';
     }
   };
-
   const handleUseTemplate = async (templateId: number, templateName: string) => {
     if (creatingTemplateId) return; // Prevent double click
 
@@ -222,7 +223,8 @@ const TemplatesPage = () => {
       // 1. Create the project
       // Note: In a real app, we might ask for a specific name via a modal.
       // Here we append a timestamp to make it unique and identifiable.
-      const newProjectName = `${templateName} - ${new Date().toLocaleDateString('fr-FR')}`;
+      const timestamp = Date.now();
+      const newProjectName = `${templateName} ${timestamp}`;
       const newProject = await projectService.createProject({ pr_name: newProjectName });
 
       // 2. Get Structure Data
@@ -264,16 +266,19 @@ const TemplatesPage = () => {
         }
       }
 
+      toast.success('Projet créé avec succès !');
+
       // 4. Redirect to Editor
       router.push(`/edit?projectName=${encodeURIComponent(newProject.pr_name)}`);
 
     } catch (error: any) {
       console.error("Error creating template project:", error);
-      alert("Erreur lors de la création du projet : " + (error.message || "Erreur inconnue"));
+      toast.error("Erreur lors de la création du projet : " + (error.message || "Erreur inconnue"));
     } finally {
       setCreatingTemplateId(null);
     }
   };
+
 
   if (authLoading) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="animate-spin w-8 h-8 text-[#99334C]" /></div>;
 
@@ -339,8 +344,8 @@ const TemplatesPage = () => {
                     key={category.name}
                     onClick={() => setSelectedCategory(category.name)}
                     className={`flex items-center gap-2 px-4 py-2 rounded-xl font-semibold transition-all ${isActive
-                        ? 'bg-[#99334C] text-white shadow-lg'
-                        : 'bg-white text-gray-700 border border-gray-300 hover:border-[#99334C] hover:text-[#99334C]'
+                      ? 'bg-[#99334C] text-white shadow-lg'
+                      : 'bg-white text-gray-700 border border-gray-300 hover:border-[#99334C] hover:text-[#99334C]'
                       }`}
                   >
                     <IconComponent className="w-5 h-5" />
@@ -363,8 +368,8 @@ const TemplatesPage = () => {
                   key={level}
                   onClick={() => setSelectedDifficulty(level)}
                   className={`px-4 py-2 rounded-xl font-semibold transition-all ${selectedDifficulty === level
-                      ? 'bg-[#99334C] text-white shadow-lg'
-                      : 'bg-white text-gray-700 border border-gray-300 hover:border-[#99334C] hover:text-[#99334C]'
+                    ? 'bg-[#99334C] text-white shadow-lg'
+                    : 'bg-white text-gray-700 border border-gray-300 hover:border-[#99334C] hover:text-[#99334C]'
                     }`}
                 >
                   {level}

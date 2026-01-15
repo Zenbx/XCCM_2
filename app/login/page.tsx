@@ -5,6 +5,7 @@ import { ArrowLeft, Eye, EyeOff, Loader2 } from 'lucide-react';
 import { Facebook, Instagram, Twitter } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
+import toast from 'react-hot-toast';
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
@@ -12,9 +13,9 @@ const LoginPage = () => {
   const [rememberMe, setRememberMe] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
   const [mounted, setMounted] = useState(false);
-  
+  const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
+
   const router = useRouter();
   const { login } = useAuth();
 
@@ -22,22 +23,28 @@ const LoginPage = () => {
     setMounted(true);
   }, []);
 
+  const validate = () => {
+    const newErrors: { email?: string; password?: string } = {};
+    if (!email) newErrors.email = 'L\'email est requis';
+    else if (!/\S+@\S+\.\S+/.test(email)) newErrors.email = 'Email invalide';
+
+    if (!password) newErrors.password = 'Le mot de passe est requis';
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleSubmit = async () => {
-    // Validation
-    if (!email || !password) {
-      setError('Veuillez remplir tous les champs');
-      return;
-    }
+    if (!validate()) return;
 
     setIsLoading(true);
-    setError('');
 
     try {
-      await login(email, password, rememberMe);
-      // Redirection après succès
+      await login(email, password);
+      toast.success('Connexion réussie !');
       router.push('/edit-home');
     } catch (err: any) {
-      setError(err.message || 'Erreur lors de la connexion');
+      toast.error(err.message || 'Erreur lors de la connexion');
     } finally {
       setIsLoading(false);
     }
@@ -64,23 +71,20 @@ const LoginPage = () => {
       {/* Partie gauche avec image et overlay */}
       <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-gray-900">
         <div className="absolute inset-0">
-          <img 
-            src="/login-background.jpg" 
-            alt="Background" 
-            className={`w-full h-full object-cover transition-all duration-700 ease-out ${
-              mounted ? 'opacity-100 scale-100' : 'opacity-0 scale-105'
-            }`}
+          <img
+            src="/login-background.jpg"
+            alt="Background"
+            className={`w-full h-full object-cover transition-all duration-700 ease-out ${mounted ? 'opacity-100 scale-100' : 'opacity-0 scale-105'
+              }`}
           />
         </div>
 
-        <div className={`absolute inset-0 bg-gradient-to-r from-[#99334C]/95 via-[#99334C]/85 to-transparent transition-opacity duration-700 ease-out delay-150 ${
-          mounted ? 'opacity-100' : 'opacity-0'
-        }`} />
+        <div className={`absolute inset-0 bg-gradient-to-r from-[#99334C]/95 via-[#99334C]/85 to-transparent transition-opacity duration-700 ease-out delay-150 ${mounted ? 'opacity-100' : 'opacity-0'
+          }`} />
 
-        <div className={`relative z-10 flex flex-col justify-between p-12 text-white w-full transition-all duration-700 ease-out delay-300 ${
-          mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
-        }`}>
-          <button 
+        <div className={`relative z-10 flex flex-col justify-between p-12 text-white w-full transition-all duration-700 ease-out delay-300 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+          }`}>
+          <button
             onClick={() => router.push('/')}
             className="flex items-center gap-2 text-white/90 hover:text-white transition-colors w-fit"
           >
@@ -97,22 +101,22 @@ const LoginPage = () => {
             </p>
 
             <div className="flex gap-4">
-              <a 
-                href="#" 
+              <a
+                href="#"
                 className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center hover:bg-white/30 transition-all"
                 aria-label="Facebook"
               >
                 <Facebook className="w-5 h-5" />
               </a>
-              <a 
-                href="#" 
+              <a
+                href="#"
                 className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center hover:bg-white/30 transition-all"
                 aria-label="Instagram"
               >
                 <Instagram className="w-5 h-5" />
               </a>
-              <a 
-                href="#" 
+              <a
+                href="#"
                 className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center hover:bg-white/30 transition-all"
                 aria-label="Twitter"
               >
@@ -132,11 +136,10 @@ const LoginPage = () => {
 
       {/* Partie droite avec formulaire */}
       <div className="w-full lg:w-1/2 flex items-center justify-center p-6 bg-white">
-        <div className={`w-full max-w-md transition-all duration-700 ease-out delay-200 ${
-          mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
-        }`}>
+        <div className={`w-full max-w-md transition-all duration-700 ease-out delay-200 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+          }`}>
           <div className="lg:hidden mb-8">
-            <button 
+            <button
               onClick={() => router.push('/')}
               className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors mb-6"
             >
@@ -152,13 +155,6 @@ const LoginPage = () => {
             <p className="text-gray-600">Accédez à votre espace XCCM2</p>
           </div>
 
-          {/* Message d'erreur */}
-          {error && (
-            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl">
-              <p className="text-red-700 text-sm">{error}</p>
-            </div>
-          )}
-
           <div className="space-y-6">
             <div>
               <label htmlFor="email" className="block text-sm font-semibold text-gray-700 mb-2">
@@ -168,12 +164,16 @@ const LoginPage = () => {
                 type="email"
                 id="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  if (errors.email) setErrors(prev => ({ ...prev, email: '' }));
+                }}
                 onKeyPress={handleKeyPress}
                 disabled={isLoading}
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#99334C]/20 focus:border-[#99334C] transition-all text-gray-900 placeholder:text-gray-400 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-[#99334C]/20 focus:border-[#99334C] transition-all text-gray-900 placeholder:text-gray-400 disabled:bg-gray-100 disabled:cursor-not-allowed ${errors.email ? 'border-red-500' : 'border-gray-300'}`}
                 placeholder="exemple@email.com"
               />
+              {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
             </div>
 
             <div>
@@ -185,10 +185,13 @@ const LoginPage = () => {
                   type={showPassword ? "text" : "password"}
                   id="password"
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    if (errors.password) setErrors(prev => ({ ...prev, password: '' }));
+                  }}
                   onKeyPress={handleKeyPress}
                   disabled={isLoading}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#99334C]/20 focus:border-[#99334C] transition-all text-gray-900 placeholder:text-gray-400 pr-12 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-[#99334C]/20 focus:border-[#99334C] transition-all text-gray-900 placeholder:text-gray-400 pr-12 disabled:bg-gray-100 disabled:cursor-not-allowed ${errors.password ? 'border-red-500' : 'border-gray-300'}`}
                   placeholder="••••••••"
                 />
                 <button
@@ -200,6 +203,7 @@ const LoginPage = () => {
                   {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
               </div>
+              {errors.password && <p className="text-red-500 text-sm mt-1">{errors.password}</p>}
             </div>
 
             <div className="flex items-center">
@@ -272,8 +276,8 @@ const LoginPage = () => {
             </div>
 
             <div className="text-center">
-              <a 
-                href="#" 
+              <a
+                href="#"
                 className="text-sm text-[#99334C] hover:underline font-medium"
               >
                 Mot de Passe oublié ?

@@ -17,6 +17,8 @@ export interface Project {
   is_published?: boolean;
   public_url?: string; // URL du projet publié
   styles?: any;
+  user_role?: 'OWNER' | 'EDITOR' | 'VIEWER';
+  invitation_status?: 'Pending' | 'Accepted' | 'Declined' | null;
 }
 
 // ... (autres interfaces)
@@ -71,7 +73,7 @@ class ProjectService {
     }
   }
 
-    async getPublishedProjectContent(projectName: string): Promise<any> {
+  async getPublishedProjectContent(projectName: string): Promise<any> {
     try {
       // D'abord, on récupère les métadonnées du projet pour trouver l'URL publique
       const projectMeta = await this.getProjectByName(projectName); // Attention, cette route peut être protégée
@@ -90,8 +92,8 @@ class ProjectService {
       return await response.json();
 
     } catch (error) {
-        console.error('Erreur getPublishedProjectContent:', error);
-        throw error;
+      console.error('Erreur getPublishedProjectContent:', error);
+      throw error;
     }
   }
 
@@ -278,7 +280,7 @@ class ProjectService {
       const errorData = await response.json();
       throw new Error(errorData.message || "Erreur lors de la publication du projet");
     }
-    
+
     const result = await response.json();
     return result.data; // L'API doit renvoyer { success: true, data: { publicURL: '...' } }
   }

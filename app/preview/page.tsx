@@ -7,6 +7,7 @@ import { projectService } from '@/services/projectService';
 import { structureService, Part } from '@/services/structureService';
 import { publishService } from '@/services/publishService';
 import { exportService } from '@/services/exportService';
+import toast from 'react-hot-toast';
 
 const PreviewPage = () => {
     const searchParams = useSearchParams();
@@ -115,20 +116,21 @@ const PreviewPage = () => {
 
     const handlePublishOnline = async () => {
         if (!projectName) return;
-        
+
         setIsPublishing(true);
         setShowPublishMenu(false);
-        
+
         try {
             const result = await publishService.publishProject(projectName, publishFormat);
             setPublishSuccess({
                 doc_id: result.doc_id,
                 doc_name: result.doc_name
             });
+            toast.success("Publication réussie !");
             setShowFormatDialog(false);
         } catch (error) {
             console.error('Erreur lors de la publication:', error);
-            alert(`Erreur lors de la publication: ${error instanceof Error ? error.message : 'Erreur inconnue'}`);
+            toast.error(`Erreur lors de la publication: ${error instanceof Error ? error.message : 'Erreur inconnue'}`);
         } finally {
             setIsPublishing(false);
         }
@@ -136,15 +138,16 @@ const PreviewPage = () => {
 
     const handleExportProjectPDF = async () => {
         if (!projectName) return;
-        
+
         setIsExporting(true);
         setShowPublishMenu(false);
-        
+
         try {
             await exportService.exportAndDownload(projectName, 'pdf');
+            toast.success("Export PDF réussi !");
         } catch (error) {
             console.error('Erreur lors de l\'export PDF:', error);
-            alert(`Erreur lors de l\'export PDF: ${error instanceof Error ? error.message : 'Erreur inconnue'}`);
+            toast.error(`Erreur lors de l'export PDF: ${error instanceof Error ? error.message : 'Erreur inconnue'}`);
         } finally {
             setIsExporting(false);
         }
@@ -152,15 +155,16 @@ const PreviewPage = () => {
 
     const handleExportProjectDOCX = async () => {
         if (!projectName) return;
-        
+
         setIsExporting(true);
         setShowPublishMenu(false);
-        
+
         try {
             await exportService.exportAndDownload(projectName, 'docx');
+            toast.success("Export DOCX réussi !");
         } catch (error) {
             console.error('Erreur lors de l\'export DOCX:', error);
-            alert(`Erreur lors de l\'export DOCX: ${error instanceof Error ? error.message : 'Erreur inconnue'}`);
+            toast.error(`Erreur lors de l'export DOCX: ${error instanceof Error ? error.message : 'Erreur inconnue'}`);
         } finally {
             setIsExporting(false);
         }
@@ -263,10 +267,11 @@ const PreviewPage = () => {
 
             pdf.save(`${projectName || 'document'}.pdf`);
             document.body.removeChild(iframe);
+            toast.success("PDF généré avec succès !");
 
         } catch (error) {
             console.error('Erreur lors de l\'export PDF:', error);
-            alert('Une erreur est survenue lors de la génération du PDF. Veuillez réessayer.');
+            toast.error('Une erreur est survenue lors de la génération du PDF. Veuillez réessayer.');
         } finally {
             setIsExporting(false);
         }
@@ -713,7 +718,7 @@ const PreviewPage = () => {
                                 <p className="text-xs text-gray-500 mt-1">Choisissez comment diffuser votre cours</p>
                             </div>
                             <div className="p-2">
-                                <button 
+                                <button
                                     onClick={() => setShowFormatDialog(true)}
                                     disabled={isPublishing}
                                     className="w-full flex items-center gap-3 p-3 hover:bg-[#99334C]/5 rounded-lg transition-colors group text-left disabled:opacity-50"
@@ -785,14 +790,14 @@ const PreviewPage = () => {
                     <div className="bg-white rounded-xl shadow-2xl p-8 max-w-sm w-full mx-4">
                         <h2 className="text-2xl font-bold text-gray-900 mb-4">Choisir le format de publication</h2>
                         <p className="text-gray-600 text-sm mb-6">Sélectionnez le format dans lequel vous souhaitez publier votre document.</p>
-                        
+
                         <div className="space-y-3 mb-6">
                             <label className="flex items-center p-4 border-2 rounded-lg cursor-pointer transition-all"
-                                   style={{ borderColor: publishFormat === 'pdf' ? '#99334C' : '#e5e7eb', backgroundColor: publishFormat === 'pdf' ? '#99334c0a' : 'transparent' }}>
-                                <input 
-                                    type="radio" 
-                                    name="format" 
-                                    value="pdf" 
+                                style={{ borderColor: publishFormat === 'pdf' ? '#99334C' : '#e5e7eb', backgroundColor: publishFormat === 'pdf' ? '#99334c0a' : 'transparent' }}>
+                                <input
+                                    type="radio"
+                                    name="format"
+                                    value="pdf"
                                     checked={publishFormat === 'pdf'}
                                     onChange={(e) => setPublishFormat(e.target.value as 'pdf' | 'docx')}
                                     className="mr-3"
@@ -804,11 +809,11 @@ const PreviewPage = () => {
                             </label>
 
                             <label className="flex items-center p-4 border-2 rounded-lg cursor-pointer transition-all"
-                                   style={{ borderColor: publishFormat === 'docx' ? '#99334C' : '#e5e7eb', backgroundColor: publishFormat === 'docx' ? '#99334c0a' : 'transparent' }}>
-                                <input 
-                                    type="radio" 
-                                    name="format" 
-                                    value="docx" 
+                                style={{ borderColor: publishFormat === 'docx' ? '#99334C' : '#e5e7eb', backgroundColor: publishFormat === 'docx' ? '#99334c0a' : 'transparent' }}>
+                                <input
+                                    type="radio"
+                                    name="format"
+                                    value="docx"
                                     checked={publishFormat === 'docx'}
                                     onChange={(e) => setPublishFormat(e.target.value as 'pdf' | 'docx')}
                                     className="mr-3"
@@ -853,7 +858,7 @@ const PreviewPage = () => {
                         <p className="text-gray-600 text-center text-sm mb-6">
                             Votre document <strong>{publishSuccess.doc_name}</strong> a été publié avec succès. Vous pouvez maintenant le consulter dans votre bibliothèque.
                         </p>
-                        
+
                         <div className="flex gap-3">
                             <button
                                 onClick={() => {

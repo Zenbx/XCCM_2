@@ -4,17 +4,50 @@ import React, { useState, useEffect } from 'react';
 import { ArrowLeft, ArrowRight, Eye, EyeOff, Check, User, Mail, Briefcase, Building2, Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
+import toast from 'react-hot-toast';
 
 const RegisterPage = () => {
   const [currentStep, setCurrentStep] = useState(1);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
   const [mounted, setMounted] = useState(false);
 
   const router = useRouter();
   const { register } = useAuth();
+  // ...
+  const handleSubmit = async () => {
+    if (!validateStep2()) return;
+
+    setIsLoading(true);
+
+    try {
+      // Préparer les données pour l'API
+      const registerData = {
+        lastname: formData.lastname,
+        firstname: formData.firstname,
+        email: formData.email,
+        occupation: formData.occupation || undefined,
+        org: formData.org || undefined,
+        password: formData.password,
+        password_confirmation: formData.password_confirmation,
+      };
+
+      await register(registerData);
+
+      toast.success('Inscription réussie !');
+      // Redirection après succès
+      router.push('/edit-home');
+    } catch (err: any) {
+      toast.error(err.message || 'Erreur lors de l\'inscription');
+      // Retourner à l'étape 1 si erreur d'email déjà utilisé
+      if (err.message && err.message.includes('email')) {
+        setCurrentStep(1);
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
     setMounted(true);
@@ -37,7 +70,6 @@ const RegisterPage = () => {
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: '' }));
     }
-    setError('');
   };
 
   const validateStep1 = () => {
@@ -49,7 +81,7 @@ const RegisterPage = () => {
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
       newErrors.email = 'Email invalide';
     }
-    
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -64,7 +96,7 @@ const RegisterPage = () => {
     if (formData.password !== formData.password_confirmation) {
       newErrors.password_confirmation = 'Les mots de passe ne correspondent pas';
     }
-    
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -79,38 +111,7 @@ const RegisterPage = () => {
     setCurrentStep(1);
   };
 
-  const handleSubmit = async () => {
-    if (!validateStep2()) return;
 
-    setIsLoading(true);
-    setError('');
-
-    try {
-      // Préparer les données pour l'API
-      const registerData = {
-        lastname: formData.lastname,
-        firstname: formData.firstname,
-        email: formData.email,
-        occupation: formData.occupation || undefined,
-        org: formData.org  || undefined,
-        password: formData.password,
-        password_confirmation: formData.password_confirmation,
-      };
-
-      await register(registerData);
-      
-      // Redirection après succès
-      router.push('/edit-home');
-    } catch (err: any) {
-      setError(err.message || 'Erreur lors de l\'inscription');
-      // Retourner à l'étape 1 si erreur d'email déjà utilisé
-      if (err.message.includes('email')) {
-        setCurrentStep(1);
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const handleGoogleSignup = () => {
     console.log('Inscription avec Google');
@@ -137,23 +138,20 @@ const RegisterPage = () => {
       {/* Partie gauche avec image et overlay */}
       <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-gray-900">
         <div className="absolute inset-0">
-          <img 
-            src="/login-background.jpg" 
-            alt="Background" 
-            className={`w-full h-full object-cover transition-all duration-700 ease-out ${
-              mounted ? 'opacity-100 scale-100' : 'opacity-0 scale-105'
-            }`}
+          <img
+            src="/login-background.jpg"
+            alt="Background"
+            className={`w-full h-full object-cover transition-all duration-700 ease-out ${mounted ? 'opacity-100 scale-100' : 'opacity-0 scale-105'
+              }`}
           />
         </div>
 
-        <div className={`absolute inset-0 bg-gradient-to-r from-[#99334C]/95 via-[#99334C]/85 to-transparent transition-opacity duration-700 ease-out delay-150 ${
-          mounted ? 'opacity-100' : 'opacity-0'
-        }`} />
+        <div className={`absolute inset-0 bg-gradient-to-r from-[#99334C]/95 via-[#99334C]/85 to-transparent transition-opacity duration-700 ease-out delay-150 ${mounted ? 'opacity-100' : 'opacity-0'
+          }`} />
 
-        <div className={`relative z-10 flex flex-col justify-between p-12 text-white w-full transition-all duration-700 ease-out delay-300 ${
-          mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
-        }`}>
-          <button 
+        <div className={`relative z-10 flex flex-col justify-between p-12 text-white w-full transition-all duration-700 ease-out delay-300 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+          }`}>
+          <button
             onClick={() => router.push('/')}
             className="flex items-center gap-2 text-white/90 hover:text-white transition-colors w-fit"
           >
@@ -172,9 +170,8 @@ const RegisterPage = () => {
 
             <div className="space-y-4">
               <div className="flex items-center gap-4">
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold transition-all ${
-                  currentStep >= 1 ? 'bg-white text-[#99334C]' : 'bg-white/20 text-white'
-                }`}>
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold transition-all ${currentStep >= 1 ? 'bg-white text-[#99334C]' : 'bg-white/20 text-white'
+                  }`}>
                   {currentStep > 1 ? <Check className="w-6 h-6" /> : '1'}
                 </div>
                 <div>
@@ -183,9 +180,8 @@ const RegisterPage = () => {
                 </div>
               </div>
               <div className="flex items-center gap-4">
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold transition-all ${
-                  currentStep >= 2 ? 'bg-white text-[#99334C]' : 'bg-white/20 text-white'
-                }`}>
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold transition-all ${currentStep >= 2 ? 'bg-white text-[#99334C]' : 'bg-white/20 text-white'
+                  }`}>
                   2
                 </div>
                 <div>
@@ -207,11 +203,10 @@ const RegisterPage = () => {
 
       {/* Partie droite avec formulaire */}
       <div className="w-full lg:w-1/2 flex items-center justify-center p-6 bg-white">
-        <div className={`w-full max-w-md transition-all duration-700 ease-out delay-200 ${
-          mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
-        }`}>
+        <div className={`w-full max-w-md transition-all duration-700 ease-out delay-200 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+          }`}>
           <div className="lg:hidden mb-8">
-            <button 
+            <button
               onClick={() => router.push('/')}
               className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors mb-6"
             >
@@ -230,21 +225,15 @@ const RegisterPage = () => {
           {/* Barre de progression */}
           <div className="mb-8">
             <div className="flex gap-2">
-              <div className={`flex-1 h-2 rounded-full transition-all ${
-                currentStep >= 1 ? 'bg-[#99334C]' : 'bg-gray-200'
-              }`} />
-              <div className={`flex-1 h-2 rounded-full transition-all ${
-                currentStep >= 2 ? 'bg-[#99334C]' : 'bg-gray-200'
-              }`} />
+              <div className={`flex-1 h-2 rounded-full transition-all ${currentStep >= 1 ? 'bg-[#99334C]' : 'bg-gray-200'
+                }`} />
+              <div className={`flex-1 h-2 rounded-full transition-all ${currentStep >= 2 ? 'bg-[#99334C]' : 'bg-gray-200'
+                }`} />
             </div>
           </div>
 
           {/* Message d'erreur global */}
-          {error && (
-            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl">
-              <p className="text-red-700 text-sm">{error}</p>
-            </div>
-          )}
+
 
           {/* ÉTAPE 1 : Informations personnelles */}
           {currentStep === 1 && (
@@ -262,9 +251,8 @@ const RegisterPage = () => {
                     onChange={(e) => updateField('lastname', e.target.value)}
                     onKeyPress={handleKeyPress}
                     disabled={isLoading}
-                    className={`w-full pl-10 pr-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-[#99334C]/20 transition-all text-gray-900 placeholder:text-gray-400 disabled:bg-gray-100 disabled:cursor-not-allowed ${
-                      errors.lastname ? 'border-red-500' : 'border-gray-300 focus:border-[#99334C]'
-                    }`}
+                    className={`w-full pl-10 pr-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-[#99334C]/20 transition-all text-gray-900 placeholder:text-gray-400 disabled:bg-gray-100 disabled:cursor-not-allowed ${errors.lastname ? 'border-red-500' : 'border-gray-300 focus:border-[#99334C]'
+                      }`}
                     placeholder="Votre nom"
                   />
                 </div>
@@ -284,9 +272,8 @@ const RegisterPage = () => {
                     onChange={(e) => updateField('firstname', e.target.value)}
                     onKeyPress={handleKeyPress}
                     disabled={isLoading}
-                    className={`w-full pl-10 pr-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-[#99334C]/20 transition-all text-gray-900 placeholder:text-gray-400 disabled:bg-gray-100 disabled:cursor-not-allowed ${
-                      errors.firstname ? 'border-red-500' : 'border-gray-300 focus:border-[#99334C]'
-                    }`}
+                    className={`w-full pl-10 pr-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-[#99334C]/20 transition-all text-gray-900 placeholder:text-gray-400 disabled:bg-gray-100 disabled:cursor-not-allowed ${errors.firstname ? 'border-red-500' : 'border-gray-300 focus:border-[#99334C]'
+                      }`}
                     placeholder="Votre prénom"
                   />
                 </div>
@@ -306,9 +293,8 @@ const RegisterPage = () => {
                     onChange={(e) => updateField('email', e.target.value)}
                     onKeyPress={handleKeyPress}
                     disabled={isLoading}
-                    className={`w-full pl-10 pr-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-[#99334C]/20 transition-all text-gray-900 placeholder:text-gray-400 disabled:bg-gray-100 disabled:cursor-not-allowed ${
-                      errors.email ? 'border-red-500' : 'border-gray-300 focus:border-[#99334C]'
-                    }`}
+                    className={`w-full pl-10 pr-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-[#99334C]/20 transition-all text-gray-900 placeholder:text-gray-400 disabled:bg-gray-100 disabled:cursor-not-allowed ${errors.email ? 'border-red-500' : 'border-gray-300 focus:border-[#99334C]'
+                      }`}
                     placeholder="exemple@email.com"
                   />
                 </div>
@@ -418,9 +404,8 @@ const RegisterPage = () => {
                     onChange={(e) => updateField('password', e.target.value)}
                     onKeyPress={handleKeyPress}
                     disabled={isLoading}
-                    className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-[#99334C]/20 transition-all text-gray-900 placeholder:text-gray-400 pr-12 disabled:bg-gray-100 disabled:cursor-not-allowed ${
-                      errors.password ? 'border-red-500' : 'border-gray-300 focus:border-[#99334C]'
-                    }`}
+                    className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-[#99334C]/20 transition-all text-gray-900 placeholder:text-gray-400 pr-12 disabled:bg-gray-100 disabled:cursor-not-allowed ${errors.password ? 'border-red-500' : 'border-gray-300 focus:border-[#99334C]'
+                      }`}
                     placeholder="Minimum 8 caractères"
                   />
                   <button
@@ -447,9 +432,8 @@ const RegisterPage = () => {
                     onChange={(e) => updateField('password_confirmation', e.target.value)}
                     onKeyPress={handleKeyPress}
                     disabled={isLoading}
-                    className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-[#99334C]/20 transition-all text-gray-900 placeholder:text-gray-400 pr-12 disabled:bg-gray-100 disabled:cursor-not-allowed ${
-                      errors.password_confirmation ? 'border-red-500' : 'border-gray-300 focus:border-[#99334C]'
-                    }`}
+                    className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-[#99334C]/20 transition-all text-gray-900 placeholder:text-gray-400 pr-12 disabled:bg-gray-100 disabled:cursor-not-allowed ${errors.password_confirmation ? 'border-red-500' : 'border-gray-300 focus:border-[#99334C]'
+                      }`}
                     placeholder="Confirmez votre mot de passe"
                   />
                   <button

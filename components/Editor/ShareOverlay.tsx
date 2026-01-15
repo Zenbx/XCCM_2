@@ -21,7 +21,7 @@ const ShareOverlay: React.FC<ShareOverlayProps> = ({ isOpen, onClose, projectNam
     useEffect(() => {
         if (isOpen && projectName) {
             const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
-            setShareLink(`${baseUrl}/projects/${encodeURIComponent(projectName)}/view`);
+            setShareLink(`${baseUrl}/edit?projectName=${encodeURIComponent(projectName)}`);
         }
     }, [isOpen, projectName]);
 

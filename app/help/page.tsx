@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { ChevronRight, Search, Book, HelpCircle, FileText, Headphones, Menu, X, Send, Mail, Phone, MapPin, Clock } from 'lucide-react';
+import { toast } from 'react-hot-toast';
 import { useLanguage } from '@/context/LanguageContext';
 import { translations } from '@/services/locales';
 
@@ -70,13 +71,13 @@ const HelpCenter = () => {
       ]
     }
   };
-
   const handleContactSubmit = () => {
     if (!contactForm.nom || !contactForm.email || !contactForm.sujet || !contactForm.description) {
-      alert(t.help.contactForm.fillAll ?? 'Veuillez remplir tous les champs');
+      toast.error(t.help.contactForm.fillAll ?? 'Veuillez remplir tous les champs');
       return;
     }
     console.log('Formulaire de contact:', contactForm);
+    toast.success('Message envoyé avec succès !');
     setFormSubmitted(true);
     setTimeout(() => {
       setFormSubmitted(false);

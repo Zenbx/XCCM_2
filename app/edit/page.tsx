@@ -18,6 +18,7 @@ import { structureService, Part, Chapter, Paragraph, Notion } from '@/services/s
 import ShareOverlay from '@/components/Editor/ShareOverlay';
 import pLimit from 'p-limit';
 import { FaHome } from 'react-icons/fa';
+import toast from 'react-hot-toast';
 
 const XCCM2Editor = () => {
   const searchParams = useSearchParams();
@@ -140,14 +141,14 @@ const XCCM2Editor = () => {
     } catch (err: any) {
       // Gestion spécifique de l'erreur d'authentification
       if (err.message && err.message.includes('Token invalide ou expiré')) {
-        alert('⚠️ Votre session a expiré.\n\nVeuillez vous reconnecter.');
+        toast.error('⚠️ Votre session a expiré. Veuillez vous reconnecter.', { duration: 4000 });
         // Redirection vers la page de connexion
         window.location.href = '/login';
         return;
       }
 
-      setError(err.message || 'Erreur lors du chargement du projet');
       console.error('Erreur chargement projet:', err);
+      toast.error(err.message || 'Erreur lors du chargement du projet');
       if (!isSilent) setIsLoading(false);
     }
   };
@@ -171,7 +172,7 @@ const XCCM2Editor = () => {
       const newComment = await commentService.addComment(projectName, content);
       setComments(prev => [newComment, ...prev]);
     } catch (err: any) {
-      alert("Erreur lors de l'ajout du commentaire: " + err.message);
+      toast.error("Erreur lors de l'ajout du commentaire: " + err.message);
     }
   };
 
@@ -181,7 +182,7 @@ const XCCM2Editor = () => {
       await commentService.deleteComment(projectName, commentId);
       setComments(prev => prev.filter(c => c.comment_id !== commentId));
     } catch (err: any) {
-      alert("Erreur lors de la suppression du commentaire: " + err.message);
+      toast.error("Erreur lors de la suppression du commentaire: " + err.message);
     }
   };
 
@@ -197,7 +198,7 @@ const XCCM2Editor = () => {
       }
     } catch (err: any) {
       console.error("Erreur update settings:", err);
-      alert("Erreur lors de la mise à jour des paramètres: " + err.message);
+      toast.error("Erreur lors de la mise à jour des paramètres: " + err.message);
     }
   };
 
@@ -330,28 +331,19 @@ const XCCM2Editor = () => {
       setHasUnsavedChanges(false);
 
       if (!isAuto) {
-        const successMsg = document.createElement('div');
-        successMsg.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 flex items-center gap-2 animate-in slide-in-from-right';
-        successMsg.innerHTML = '<svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg> Sauvegardé !';
-        document.body.appendChild(successMsg);
-        setTimeout(() => document.body.removeChild(successMsg), 3000);
+        toast.success('Sauvegardé !');
       }
 
     } catch (err: any) {
       // Gestion spécifique de l'erreur d'authentification
       if (err.message && err.message.includes('Token invalide ou expiré')) {
-        alert('⚠️ Votre session a expiré.\n\nVeuillez vous reconnecter.');
+        toast.error('⚠️ Votre session a expiré. Veuillez vous reconnecter.');
         window.location.href = '/login';
         return;
       }
 
-      setError(err.message || 'Erreur lors de la sauvegarde');
       // Afficher erreur toast
-      const errorMsg = document.createElement('div');
-      errorMsg.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 flex items-center gap-2';
-      errorMsg.textContent = err.message || "Erreur de sauvegarde";
-      document.body.appendChild(errorMsg);
-      setTimeout(() => document.body.removeChild(errorMsg), 5000);
+      toast.error(err.message || "Erreur de sauvegarde");
     } finally {
       setIsSaving(false);
     }
@@ -548,21 +540,17 @@ const XCCM2Editor = () => {
           });
 
           // Toast succès
-          const successMsg = document.createElement('div');
-          successMsg.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 flex items-center gap-2 animate-in slide-in-from-right';
-          successMsg.textContent = "Structure importée avec succès !";
-          document.body.appendChild(successMsg);
-          setTimeout(() => document.body.removeChild(successMsg), 3000);
+          toast.success("Structure importée avec succès !");
         }
 
       } catch (err: any) {
         console.error("Erreur import structure:", err);
         if (err.message.includes("sans partie parente")) {
-          alert("⚠️ Impossible de créer ce chapitre orphelin.\n\nVeuillez d'abord cliquer sur une Partie ou une Notion existante dans l'éditeur pour indiquer où le placer.");
+          toast.error("Impossible de créer ce chapitre orphelin. Veuillez d'abord cliquer sur une Partie ou une Notion existante.");
         } else if (err.message.includes("Impossible de créer une notion")) {
-          alert("⚠️ Impossible de créer cette notion.\n\nVeuillez sélectionner un Paragraphe cible.");
+          toast.error("Impossible de créer cette notion. Veuillez sélectionner un Paragraphe cible.");
         } else {
-          setError("Erreur lors de l'import : " + err.message);
+          toast.error("Erreur lors de l'import : " + err.message);
         }
       } finally {
         setIsImporting(false);
@@ -659,7 +647,7 @@ const XCCM2Editor = () => {
 
       setShowPartModal(false);
     } catch (err: any) {
-      setError(err.message || 'Erreur lors de la création de la partie');
+      toast.error(err.message || 'Erreur lors de la création de la partie');
     } finally {
       setIsCreatingPart(false);
     }
@@ -696,7 +684,7 @@ const XCCM2Editor = () => {
 
       setShowChapterModal(false);
     } catch (err: any) {
-      setError(err.message || 'Erreur lors de la création du chapitre');
+      toast.error(err.message || 'Erreur lors de la création du chapitre');
     } finally {
       setIsCreatingChapter(false);
     }
@@ -737,7 +725,7 @@ const XCCM2Editor = () => {
 
       setShowParagraphModal(false);
     } catch (err: any) {
-      setError(err.message || 'Erreur lors de la création du paragraphe');
+      toast.error(err.message || 'Erreur lors de la création du paragraphe');
     } finally {
       setIsCreatingParagraph(false);
     }
@@ -792,7 +780,7 @@ const XCCM2Editor = () => {
       setShowNotionModal(false);
     } catch (err: any) {
       console.error('❌ Erreur création notion:', err);
-      setError(err.message || 'Erreur lors de la création de la notion');
+      toast.error(err.message || 'Erreur lors de la création de la notion');
     } finally {
       setIsCreatingNotion(false);
     }
@@ -852,134 +840,134 @@ const XCCM2Editor = () => {
     }
   };
 
-const handleReorder = async (
-  type: 'part' | 'chapter' | 'paragraph' | 'notion',
-  parentId: string | null,
-  items: any[]
-) => {
-  if (!projectData) return;
+  const handleReorder = async (
+    type: 'part' | 'chapter' | 'paragraph' | 'notion',
+    parentId: string | null,
+    items: any[]
+  ) => {
+    if (!projectData) return;
 
-  try {
-    setError('');
+    try {
+      setError('');
 
-    console.log(`🔃 Réordonnancement ${type}s`, { parentId, count: items.length });
+      console.log(`🔃 Réordonnancement ${type}s`, { parentId, count: items.length });
 
-    // Mettre à jour les numéros dans l'ordre
-    const limit = pLimit(3);
-    const updatePromises = items.map((item, index) => limit(async () => {
-      const newNumber = index + 1;
+      // Mettre à jour les numéros dans l'ordre
+      const limit = pLimit(3);
+      const updatePromises = items.map((item, index) => limit(async () => {
+        const newNumber = index + 1;
 
-      try {
-        if (type === 'part') {
-          const currentNumber = item.part_number;
-          if (currentNumber !== newNumber) {
-            await structureService.updatePart(
-              projectData.pr_name,
-              item.part_title,
-              { part_number: newNumber }
-            );
-          }
-        } else if (type === 'chapter') {
-          const currentNumber = item.chapter_number;
-          if (currentNumber !== newNumber) {
-            const part = structure.find(p => p.part_id === parentId);
-            if (part) {
-              await structureService.updateChapter(
+        try {
+          if (type === 'part') {
+            const currentNumber = item.part_number;
+            if (currentNumber !== newNumber) {
+              await structureService.updatePart(
                 projectData.pr_name,
-                part.part_title,
-                item.chapter_title,
-                { chapter_number: newNumber }
+                item.part_title,
+                { part_number: newNumber }
               );
             }
-          }
-        } else if (type === 'paragraph') {
-          const currentNumber = item.para_number;
-          if (currentNumber !== newNumber) {
-            let partTitle = "";
-            let chapterTitle = "";
-            outer: for (const p of structure) {
-              const c = p.chapters?.find(ch => ch.chapter_id === parentId);
-              if (c) {
-                partTitle = p.part_title;
-                chapterTitle = c.chapter_title;
-                break outer;
+          } else if (type === 'chapter') {
+            const currentNumber = item.chapter_number;
+            if (currentNumber !== newNumber) {
+              const part = structure.find(p => p.part_id === parentId);
+              if (part) {
+                await structureService.updateChapter(
+                  projectData.pr_name,
+                  part.part_title,
+                  item.chapter_title,
+                  { chapter_number: newNumber }
+                );
               }
             }
-            if (partTitle && chapterTitle) {
-              await structureService.updateParagraph(
-                projectData.pr_name,
-                partTitle,
-                chapterTitle,
-                item.para_name,
-                { para_number: newNumber }
-              );
-            }
-          }
-        } else if (type === 'notion') {
-          const currentNumber = item.notion_number;
-          if (currentNumber !== newNumber) {
-            let partT = "", chapT = "", paraN = "";
-            outer: for (const p of structure) {
-              for (const c of p.chapters || []) {
-                const para = c.paragraphs?.find(pg => pg.para_id === parentId);
-                if (para) {
-                  partT = p.part_title;
-                  chapT = c.chapter_title;
-                  paraN = para.para_name;
+          } else if (type === 'paragraph') {
+            const currentNumber = item.para_number;
+            if (currentNumber !== newNumber) {
+              let partTitle = "";
+              let chapterTitle = "";
+              outer: for (const p of structure) {
+                const c = p.chapters?.find(ch => ch.chapter_id === parentId);
+                if (c) {
+                  partTitle = p.part_title;
+                  chapterTitle = c.chapter_title;
                   break outer;
                 }
               }
+              if (partTitle && chapterTitle) {
+                await structureService.updateParagraph(
+                  projectData.pr_name,
+                  partTitle,
+                  chapterTitle,
+                  item.para_name,
+                  { para_number: newNumber }
+                );
+              }
             }
-            if (partT && chapT && paraN) {
-              await structureService.updateNotion(
-                projectData.pr_name,
-                partT,
-                chapT,
-                paraN,
-                item.notion_name,
-                { notion_number: newNumber }
-              );
+          } else if (type === 'notion') {
+            const currentNumber = item.notion_number;
+            if (currentNumber !== newNumber) {
+              let partT = "", chapT = "", paraN = "";
+              outer: for (const p of structure) {
+                for (const c of p.chapters || []) {
+                  const para = c.paragraphs?.find(pg => pg.para_id === parentId);
+                  if (para) {
+                    partT = p.part_title;
+                    chapT = c.chapter_title;
+                    paraN = para.para_name;
+                    break outer;
+                  }
+                }
+              }
+              if (partT && chapT && paraN) {
+                await structureService.updateNotion(
+                  projectData.pr_name,
+                  partT,
+                  chapT,
+                  paraN,
+                  item.notion_name,
+                  { notion_number: newNumber }
+                );
+              }
             }
           }
+        } catch (err) {
+          console.error(`Erreur update ${type} #${newNumber}:`, err);
+          throw err;
         }
-      } catch (err) {
-        console.error(`Erreur update ${type} #${newNumber}:`, err);
-        throw err;
-      }
-    }));
+      }));
 
-    await Promise.all(updatePromises);
+      await Promise.all(updatePromises);
 
-    // Recharger silencieusement
-    await loadProject(true);
+      // Recharger silencieusement
+      await loadProject(true);
 
-    // Toast succès
-    const successMsg = document.createElement('div');
-    successMsg.className = 'fixed top-4 right-4 bg-blue-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 flex items-center gap-2 animate-in slide-in-from-right';
-    successMsg.innerHTML = `<svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg> Ordre mis à jour`;
-    document.body.appendChild(successMsg);
-    setTimeout(() => document.body.removeChild(successMsg), 2000);
+      // Toast succès
+      const successMsg = document.createElement('div');
+      successMsg.className = 'fixed top-4 right-4 bg-blue-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 flex items-center gap-2 animate-in slide-in-from-right';
+      successMsg.innerHTML = `<svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg> Ordre mis à jour`;
+      document.body.appendChild(successMsg);
+      setTimeout(() => document.body.removeChild(successMsg), 2000);
 
-  } catch (err: any) {
-    console.error("❌ Erreur réordonnancement:", err);
-    setError(`Erreur réordonnancement: ${err.message}`);
+    } catch (err: any) {
+      console.error("❌ Erreur réordonnancement:", err);
+      setError(`Erreur réordonnancement: ${err.message}`);
 
-    // Recharger quand même pour être synchro
-    await loadProject(true);
-  }
-};
+      // Recharger quand même pour être synchro
+      await loadProject(true);
+    }
+  };
 
   const handleDelete = async (type: string, id: string) => {
     if (!projectData) return;
-    
+
     // Confirmation avant suppression
-    const confirmMsg = type === 'part' 
-      ? 'Êtes-vous sûr de vouloir supprimer cette partie et tous ses enfants?' 
+    const confirmMsg = type === 'part'
+      ? 'Êtes-vous sûr de vouloir supprimer cette partie et tous ses enfants?'
       : type === 'chapter'
-      ? 'Êtes-vous sûr de vouloir supprimer ce chapitre et tous ses enfants?'
-      : type === 'paragraph'
-      ? 'Êtes-vous sûr de vouloir supprimer ce paragraphe et toutes ses notions?'
-      : 'Êtes-vous sûr de vouloir supprimer cette notion?';
+        ? 'Êtes-vous sûr de vouloir supprimer ce chapitre et tous ses enfants?'
+        : type === 'paragraph'
+          ? 'Êtes-vous sûr de vouloir supprimer ce paragraphe et toutes ses notions?'
+          : 'Êtes-vous sûr de vouloir supprimer cette notion?';
 
     if (!window.confirm(confirmMsg)) return;
 
@@ -1091,50 +1079,50 @@ const handleReorder = async (
 
 
   const handleMoveGranule = async (
-  type: 'chapter' | 'paragraph' | 'notion',
-  itemId: string,
-  newParentId: string
-) => {
-  if (!projectData) return;
+    type: 'chapter' | 'paragraph' | 'notion',
+    itemId: string,
+    newParentId: string
+  ) => {
+    if (!projectData) return;
 
-  try {
-    setIsLoading(true);
-    setError('');
+    try {
+      setIsLoading(true);
+      setError('');
 
-    console.log(`🔄 Déplacement ${type} ${itemId} vers parent ${newParentId}`);
+      console.log(`🔄 Déplacement ${type} ${itemId} vers parent ${newParentId}`);
 
-    // Appel API pour déplacer le granule
-    await structureService.moveGranule(
-      projectData.pr_name,
-      type,
-      itemId,
-      newParentId
-    );
+      // Appel API pour déplacer le granule
+      await structureService.moveGranule(
+        projectData.pr_name,
+        type,
+        itemId,
+        newParentId
+      );
 
-    // Recharger la structure complète (silencieux)
-    await loadProject(true);
+      // Recharger la structure complète (silencieux)
+      await loadProject(true);
 
-    // Toast succès
-    const successMsg = document.createElement('div');
-    successMsg.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 flex items-center gap-2 animate-in slide-in-from-right';
-    successMsg.innerHTML = `<svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg> ${type.charAt(0).toUpperCase() + type.slice(1)} déplacé(e) avec succès`;
-    document.body.appendChild(successMsg);
-    setTimeout(() => document.body.removeChild(successMsg), 3000);
+      // Toast succès
+      const successMsg = document.createElement('div');
+      successMsg.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 flex items-center gap-2 animate-in slide-in-from-right';
+      successMsg.innerHTML = `<svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg> ${type.charAt(0).toUpperCase() + type.slice(1)} déplacé(e) avec succès`;
+      document.body.appendChild(successMsg);
+      setTimeout(() => document.body.removeChild(successMsg), 3000);
 
-  } catch (err: any) {
-    console.error('❌ Erreur déplacement:', err);
-    setError(`Erreur: ${err.message}`);
+    } catch (err: any) {
+      console.error('❌ Erreur déplacement:', err);
+      setError(`Erreur: ${err.message}`);
 
-    // Toast erreur
-    const errorMsg = document.createElement('div');
-    errorMsg.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 flex items-center gap-2';
-    errorMsg.textContent = `Erreur: ${err.message}`;
-    document.body.appendChild(errorMsg);
-    setTimeout(() => document.body.removeChild(errorMsg), 5000);
-  } finally {
-    setIsLoading(false);
-  }
-};
+      // Toast erreur
+      const errorMsg = document.createElement('div');
+      errorMsg.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 flex items-center gap-2';
+      errorMsg.textContent = `Erreur: ${err.message}`;
+      document.body.appendChild(errorMsg);
+      setTimeout(() => document.body.removeChild(errorMsg), 5000);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleInsertImage = () => {
     // Créer un input file invisible
@@ -1194,26 +1182,26 @@ const handleReorder = async (
       <meta name="viewport" content="width=1200, initial-scale=0.5" />
       <div className="flex h-screen bg-gray-50 overflow-hidden">
         <TableOfContents
-            projectName={projectData?.pr_name || ''}
-            structure={structure}
-            onSelectNotion={handleSelectNotion}
-            onSelectPart={handleSelectPart}
-            onSelectChapter={handleSelectChapter}
-            onSelectParagraph={handleSelectParagraph}
-            selectedPartId={currentContext?.part?.part_id}
-            selectedChapterId={currentContext?.chapterId}
-            selectedParagraphId={currentContext?.paraId}
-            selectedNotionId={currentContext?.notion?.notion_id}
-            onCreatePart={handleCreatePart}
-            onCreateChapter={handleCreateChapter}
-            onCreateParagraph={handleCreateParagraph}
-            onCreateNotion={handleCreateNotion}
-            onRename={handleRename}
-            onReorder={handleReorder}        // ✅ HANDLER DE RÉORDONNANCEMENT
-            onMove={handleMoveGranule}        // ✅ HANDLER DE DÉPLACEMENT
-            onDelete={handleDelete}
-            language={language}
-          />
+          projectName={projectData?.pr_name || ''}
+          structure={structure}
+          onSelectNotion={handleSelectNotion}
+          onSelectPart={handleSelectPart}
+          onSelectChapter={handleSelectChapter}
+          onSelectParagraph={handleSelectParagraph}
+          selectedPartId={currentContext?.part?.part_id}
+          selectedChapterId={currentContext?.chapterId}
+          selectedParagraphId={currentContext?.paraId}
+          selectedNotionId={currentContext?.notion?.notion_id}
+          onCreatePart={handleCreatePart}
+          onCreateChapter={handleCreateChapter}
+          onCreateParagraph={handleCreateParagraph}
+          onCreateNotion={handleCreateNotion}
+          onRename={handleRename}
+          onReorder={handleReorder}        // ✅ HANDLER DE RÉORDONNANCEMENT
+          onMove={handleMoveGranule}        // ✅ HANDLER DE DÉPLACEMENT
+          onDelete={handleDelete}
+          language={language}
+        />
 
         <div className="flex-1 flex flex-col">
           <div className="bg-white border-b border-gray-200 flex items-center justify-between px-4 py-2">

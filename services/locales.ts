@@ -1,6 +1,6 @@
 export type Language = 'fr' | 'en';
 
-export const translations = {
+export const translations: Record<Language, any> = {
     fr: {
         editor: {
             homeTitle: "Retour à l'accueil",
@@ -101,7 +101,7 @@ export const translations = {
                 subtitle: "Rejoignez des milliers d'utilisateurs qui créent déjà des contenus exceptionnels avec XCCM 2",
                 primary: "Commencer gratuitement",
                 demo: "Planifier une démo",
-                bullets: ["Gratuit pour commencer","Sans carte bancaire","Support 24/7"]
+                bullets: ["Gratuit pour commencer", "Sans carte bancaire", "Support 24/7"]
             },
             previewLabel: "Aperçu"
         },
@@ -169,6 +169,7 @@ export const translations = {
                 contactForm: { name: "Nom", email: "E-mail", subject: "Sujet", description: "Description", send: "Envoyer", formTitle: "Envoyez-nous un message", namePlaceholder: "Votre nom", emailPlaceholder: "votre@email.com", subjectPlaceholder: "Objet de votre message", descriptionPlaceholder: "Décrivez votre message ici...", success: "Message envoyé, merci !", fillAll: "Veuillez remplir tous les champs" }
             },
             cta: { title: "Prêt à révolutionner votre enseignement ?", subtitle: "Rejoignez XCCM 2 et créez des contenus pédagogiques exceptionnels", primary: "Commencer maintenant" }
+        },
     },
     en: {
         editor: {
@@ -270,7 +271,7 @@ export const translations = {
                 subtitle: "Join thousands of users already creating exceptional content with XCCM 2",
                 primary: "Start for free",
                 demo: "Schedule a demo",
-                bullets: ["Free to start","No card required","24/7 support"]
+                bullets: ["Free to start", "No card required", "24/7 support"]
             },
             previewLabel: "Preview"
         },
@@ -337,9 +338,7 @@ export const translations = {
                 },
                 contactForm: { name: "Name", email: "Email", subject: "Subject", description: "Description", send: "Send", formTitle: "Send us a message", namePlaceholder: "Your name", emailPlaceholder: "your@email.com", subjectPlaceholder: "Subject of your message", descriptionPlaceholder: "Describe your message here...", success: "Message sent, thanks!", fillAll: "Please fill in all fields" }
             },
-            cta: { title: "Ready to revolutionize your teaching?", subtitle: "Join XCCM 2 and create exceptional pedagogical content", primary: "Get started now" } 
+            cta: { title: "Ready to revolutionize your teaching?", subtitle: "Join XCCM 2 and create exceptional pedagogical content", primary: "Get started now" }
         }
     }
-},
-
 }

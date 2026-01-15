@@ -7,6 +7,7 @@ import {
   AlertCircle, FileText, List, ChevronDown, ChevronUp, Home, ArrowLeft,
   BookOpen, Copy, Check
 } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { documentService, Part, Chapter, Paragraph, Notion, DocumentWithStructure } from '@/services/documentService';
 
 const BookReaderPage = () => {
@@ -83,7 +84,6 @@ const BookReaderPage = () => {
   const toggleChapter = (chapterId: string) => {
     setExpandedChapters(prev => ({ ...prev, [chapterId]: !prev[chapterId] }));
   };
-
   const handleDownload = async () => {
     if (!docId) return;
     try {
@@ -96,9 +96,10 @@ const BookReaderPage = () => {
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+      toast.success("Téléchargement lancé !");
     } catch (err) {
       console.error('Erreur telechargement:', err);
-      alert('Erreur lors du telechargement');
+      toast.error('Erreur lors du téléchargement');
     } finally {
       setIsDownloading(false);
     }
@@ -108,6 +109,7 @@ const BookReaderPage = () => {
     const url = window.location.href;
     try {
       await navigator.clipboard.writeText(url);
+      toast.success("Lien copié dans le presse-papier !");
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
@@ -118,6 +120,7 @@ const BookReaderPage = () => {
       input.select();
       document.execCommand('copy');
       document.body.removeChild(input);
+      toast.success("Lien copié dans le presse-papier !");
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     }
@@ -327,11 +330,10 @@ const BookReaderPage = () => {
                     </button>
                     <button
                       onClick={() => scrollToSection(part.part_id)}
-                      className={`flex-1 text-left px-3 py-2 rounded-lg font-semibold text-sm transition-colors ${
-                        activeSection === part.part_id
-                          ? 'bg-[#99334C] text-white'
-                          : 'text-gray-900 hover:bg-gray-100'
-                      }`}
+                      className={`flex-1 text-left px-3 py-2 rounded-lg font-semibold text-sm transition-colors ${activeSection === part.part_id
+                        ? 'bg-[#99334C] text-white'
+                        : 'text-gray-900 hover:bg-gray-100'
+                        }`}
                     >
                       <span className="text-xs opacity-60 mr-2">Partie {partIndex + 1}</span>
                       <span className="line-clamp-1">{part.part_title}</span>
@@ -358,11 +360,10 @@ const BookReaderPage = () => {
                             )}
                             <button
                               onClick={() => scrollToSection(chapter.chapter_id)}
-                              className={`flex-1 text-left px-3 py-1.5 rounded-lg text-sm transition-colors ${
-                                activeSection === chapter.chapter_id
-                                  ? 'text-[#99334C] font-medium bg-[#99334C]/5'
-                                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                              }`}
+                              className={`flex-1 text-left px-3 py-1.5 rounded-lg text-sm transition-colors ${activeSection === chapter.chapter_id
+                                ? 'text-[#99334C] font-medium bg-[#99334C]/5'
+                                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                                }`}
                             >
                               <span className="line-clamp-1">{chapter.chapter_title}</span>
                             </button>
@@ -375,11 +376,10 @@ const BookReaderPage = () => {
                                 <button
                                   key={para.para_id}
                                   onClick={() => scrollToSection(para.para_id)}
-                                  className={`block w-full text-left px-3 py-1 text-xs transition-colors ${
-                                    activeSection === para.para_id
-                                      ? 'text-[#99334C] font-medium'
-                                      : 'text-gray-500 hover:text-gray-700'
-                                  }`}
+                                  className={`block w-full text-left px-3 py-1 text-xs transition-colors ${activeSection === para.para_id
+                                    ? 'text-[#99334C] font-medium'
+                                    : 'text-gray-500 hover:text-gray-700'
+                                    }`}
                                 >
                                   <span className="line-clamp-1">{para.para_name}</span>
                                 </button>
@@ -603,21 +603,6 @@ const BookReaderPage = () => {
         </main>
       </div>
 
-      {/* Print Styles */}
-      <style jsx global>{`
-        @media print {
-          body {
-            font-size: 12pt !important;
-          }
-          .print\\:hidden {
-            display: none !important;
-          }
-          article {
-            box-shadow: none !important;
-            border: none !important;
-          }
-        }
-      `}</style>
     </div>
   );
 };

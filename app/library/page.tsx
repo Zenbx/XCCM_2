@@ -6,11 +6,14 @@ import {
 import { useRouter } from 'next/navigation';
 import { documentService } from '@/services/documentService';
 
+import toast from 'react-hot-toast';
+
 const LibraryPage = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [selectedCategory, setSelectedCategory] = useState('all');
+  const [levelFilter, setLevelFilter] = useState('all'); // Nouveau filtre par niveau
   const [bookmarkedCourses, setBookmarkedCourses] = useState<string[]>([]);
   const router = useRouter();
 
@@ -44,7 +47,9 @@ const LibraryPage = () => {
       course.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       course.author?.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesCategory = selectedCategory === 'all' || course.category === selectedCategory;
-    return matchesSearch && matchesCategory;
+    const matchesLevel = levelFilter === 'all' || course.level === levelFilter;
+
+    return matchesSearch && matchesCategory && matchesLevel;
   });
 
   const categories = ["all", ...Array.from(new Set(courses.map(c => c.category).filter(Boolean)))];
@@ -80,19 +85,16 @@ const LibraryPage = () => {
       document.body.removeChild(link);
 
       // Toast de succes
-      const toast = document.createElement('div');
-      toast.className = 'fixed bottom-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 flex items-center gap-2 animate-in slide-in-from-bottom';
-      toast.innerHTML = '<svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg> Telechargement lance !';
-      document.body.appendChild(toast);
-      setTimeout(() => document.body.removeChild(toast), 3000);
+      toast.success('Téléchargement lancé !');
 
     } catch (err) {
       console.error('Erreur telechargement:', err);
-      alert('Erreur lors du telechargement: ' + (err instanceof Error ? err.message : 'Erreur inconnue'));
+      toast.error('Erreur lors du téléchargement: ' + (err instanceof Error ? err.message : 'Erreur inconnue'));
     } finally {
       setDownloadingId(null);
     }
   };
+
 
   const getLevelColor = (level: string | undefined) => {
     switch (level) {
@@ -112,29 +114,40 @@ const LibraryPage = () => {
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
       {/* Hero Section */}
-      <section className="relative py-16 px-6 bg-gradient-to-br from-[#99334C] to-[#7a283d] text-white overflow-hidden">
+      <section className="relative bg-gradient-to-br from-[#99334C] to-[#7a283d] text-white overflow-hidden py-20">
+        {/* Motif de fond */}
         <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-10 left-10 w-72 h-72 bg-white rounded-full blur-3xl"></div>
-          <div className="absolute bottom-10 right-10 w-96 h-96 bg-white rounded-full blur-3xl"></div>
+          <div className="absolute inset-0" style={{
+            backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)',
+            backgroundSize: '30px 30px'
+          }} />
         </div>
-        <div className="max-w-7xl mx-auto relative z-10">
-          <div className="flex items-center gap-4 mb-6">
-            <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center">
-              <BookOpen className="w-8 h-8" />
-            </div>
-            <div>
-              <h1 className="text-4xl font-bold">Bibliotheque</h1>
-              <p className="text-white/80">Explorez nos cours publies</p>
+
+        <div className="relative max-w-7xl mx-auto px-6 text-center">
+
+          <h1 className="text-5xl md:text-6xl font-bold mb-6">
+            Bibliothèque Universitaire
+          </h1>
+
+          {/* Soulignement décoratif */}
+          <div className="flex justify-center mb-8">
+            <div className="h-1 w-32 bg-white/50 rounded-full relative">
+              <div className="absolute inset-0 bg-white rounded-full animate-pulse"></div>
             </div>
           </div>
-          <div className="flex items-center gap-6 text-sm">
-            <div className="flex items-center gap-2">
+
+          <p className="text-xl text-white/90 max-w-3xl mx-auto leading-relaxed">
+            Explorez notre collection de cours, exercices et ressources pédagogiques.
+          </p>
+
+          <div className="flex items-center justify-center gap-6 text-sm mt-8 text-white/80">
+            <div className="flex items-center gap-2 bg-white/10 px-4 py-2 rounded-full backdrop-blur-sm">
               <FileText className="w-5 h-5" />
               <span>{courses.length} documents</span>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 bg-white/10 px-4 py-2 rounded-full backdrop-blur-sm">
               <Globe className="w-5 h-5" />
-              <span>Acces gratuit</span>
+              <span>Accès gratuit</span>
             </div>
           </div>
         </div>
@@ -143,61 +156,74 @@ const LibraryPage = () => {
       {/* Barre de recherche et filtres */}
       <section className="py-6 px-6 bg-white border-b border-gray-200 shadow-sm sticky top-0 z-40">
         <div className="max-w-7xl mx-auto">
-          <div className="flex flex-col lg:flex-row gap-4 items-center justify-between">
-            {/* Recherche */}
-            <div className="relative flex-1 max-w-xl w-full">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Rechercher un cours, un auteur..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#99334C]/20 focus:border-[#99334C] transition-all"
-              />
-              {searchQuery && (
-                <button
-                  onClick={() => setSearchQuery('')}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+          <div className="flex flex-col gap-4">
+            {/* Ligne du haut : Recherche + Type Affichage + Filtre Niveau */}
+            <div className="flex flex-col lg:flex-row gap-4 items-center justify-between">
+              {/* Recherche */}
+              <div className="relative flex-1 max-w-xl w-full">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Rechercher un cours, un auteur..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-xl text-gray-700 placeholder-gray-400 focus:ring-2 focus:ring-[#99334C]/20 focus:border-[#99334C] transition-all"
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+
+              <div className="flex items-center gap-4">
+                {/* Filtre Niveau */}
+                <select
+                  value={levelFilter}
+                  onChange={(e) => setLevelFilter(e.target.value)}
+                  className="px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#99334C]/20 focus:border-[#99334C] transition-all cursor-pointer hover:bg-gray-100"
                 >
-                  <X className="w-4 h-4" />
-                </button>
-              )}
+                  <option value="all">Tous les niveaux</option>
+                  <option value="Debutant">Débutant</option>
+                  <option value="Intermediaire">Intermédiaire</option>
+                  <option value="Avance">Avancé</option>
+                </select>
+
+                {/* Vue */}
+                <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1 h-[46px]">
+                  <button
+                    onClick={() => setViewMode('grid')}
+                    className={`p-2 rounded-lg transition-all h-full ${viewMode === 'grid' ? 'bg-white shadow-sm text-[#99334C]' : 'text-gray-500'}`}
+                  >
+                    <Grid3x3 className="w-5 h-5" />
+                  </button>
+                  <button
+                    onClick={() => setViewMode('list')}
+                    className={`p-2 rounded-lg transition-all h-full ${viewMode === 'list' ? 'bg-white shadow-sm text-[#99334C]' : 'text-gray-500'}`}
+                  >
+                    <List className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
             </div>
 
-            {/* Filtres */}
-            <div className="flex items-center gap-4">
-              {/* Categories */}
-              <div className="flex items-center gap-2 overflow-x-auto pb-2 lg:pb-0">
-                {categories.map((cat) => (
-                  <button
-                    key={cat}
-                    onClick={() => setSelectedCategory(cat)}
-                    className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all ${
-                      selectedCategory === cat
-                        ? 'bg-[#99334C] text-white'
-                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            {/* Ligne du bas : Catégories */}
+            <div className="flex items-center gap-2 overflow-x-auto pb-2 lg:pb-0 scrollbar-hide">
+              {categories.map((cat) => (
+                <button
+                  key={cat}
+                  onClick={() => setSelectedCategory(cat)}
+                  className={`px-5 py-2 rounded-full text-sm font-bold whitespace-nowrap transition-all border ${selectedCategory === cat
+                    ? 'bg-[#99334C] text-white border-[#99334C] shadow-md'
+                    : 'bg-white text-gray-600 border-gray-200 hover:border-[#99334C]/30 hover:bg-gray-50'
                     }`}
-                  >
-                    {cat === 'all' ? 'Tous' : cat}
-                  </button>
-                ))}
-              </div>
-
-              {/* Vue */}
-              <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
-                <button
-                  onClick={() => setViewMode('grid')}
-                  className={`p-2 rounded-lg transition-all ${viewMode === 'grid' ? 'bg-white shadow-sm' : ''}`}
                 >
-                  <Grid3x3 className="w-5 h-5" />
+                  {cat === 'all' ? 'Toutes les catégories' : cat}
                 </button>
-                <button
-                  onClick={() => setViewMode('list')}
-                  className={`p-2 rounded-lg transition-all ${viewMode === 'list' ? 'bg-white shadow-sm' : ''}`}
-                >
-                  <List className="w-5 h-5" />
-                </button>
-              </div>
+              ))}
             </div>
           </div>
         </div>
@@ -420,11 +446,10 @@ const LibraryPage = () => {
                     <button
                       key={page}
                       onClick={() => setCurrentPage(page)}
-                      className={`w-10 h-10 rounded-lg font-medium transition-all ${
-                        currentPage === page
-                          ? 'bg-[#99334C] text-white'
-                          : 'border border-gray-200 hover:bg-gray-50'
-                      }`}
+                      className={`w-10 h-10 rounded-lg font-medium transition-all ${currentPage === page
+                        ? 'bg-[#99334C] text-white'
+                        : 'border border-gray-200 hover:bg-gray-50'
+                        }`}
                     >
                       {page}
                     </button>

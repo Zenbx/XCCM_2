@@ -18,81 +18,7 @@ export interface Document {
   description?: string;
 }
 
-class DocumentService {
-  async getPublishedDocuments(): Promise<Document[]> {
-    try {
-      const response = await fetch(
-        `${API_BASE_URL}/api/documents`,
-        {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          }
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error('Erreur récupération documents');
-      }
-
-      const result = await response.json();
-      return result.data.documents || [];
-    } catch (error) {
-      console.error('getPublishedDocuments error:', error);
-      throw error;
-    }
-  }
-
-  async getDocumentById(docId: string): Promise<DocumentWithStructure> {
-    try {
-      const response = await fetch(
-        `${API_BASE_URL}/api/documents/${docId}`,
-        {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          }
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error('Document non trouvé');
-      }
-
-      const result = await response.json();
-      return result.data;
-    } catch (error) {
-      console.error('getDocumentById error:', error);
-      throw error;
-    }
-  }
-
-  async downloadDocument(docId: string): Promise<{ url: string; doc_name: string }> {
-    try {
-      const response = await fetch(
-        `${API_BASE_URL}/api/documents/${docId}/download`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          }
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error('Erreur lors du téléchargement');
-      }
-
-      const result = await response.json();
-      return result.data;
-    } catch (error) {
-      console.error('downloadDocument error:', error);
-      throw error;
-    }
-  }
-}
-
-// Types pour le document avec structure complète
+// Types pour le document avec structure complete
 export interface DocumentWithStructure {
   document: Document;
   project: {
@@ -104,7 +30,7 @@ export interface DocumentWithStructure {
     author?: string;
     language?: string;
     tags?: string[];
-    styles?: any;
+    styles?: Record<string, unknown>;
   };
   structure: Part[];
 }
@@ -136,6 +62,80 @@ export interface Notion {
   notion_name: string;
   notion_number: number;
   notion_content: string;
+}
+
+class DocumentService {
+  async getPublishedDocuments(): Promise<Document[]> {
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/api/documents`,
+        {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          }
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error('Erreur recuperation documents');
+      }
+
+      const result = await response.json();
+      return result.data.documents || [];
+    } catch (error) {
+      console.error('getPublishedDocuments error:', error);
+      throw error;
+    }
+  }
+
+  async getDocumentById(docId: string): Promise<DocumentWithStructure> {
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/api/documents/${docId}`,
+        {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          }
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error('Document non trouve');
+      }
+
+      const result = await response.json();
+      return result.data;
+    } catch (error) {
+      console.error('getDocumentById error:', error);
+      throw error;
+    }
+  }
+
+  async downloadDocument(docId: string): Promise<{ url: string; doc_name: string }> {
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/api/documents/${docId}/download`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          }
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error('Erreur lors du telechargement');
+      }
+
+      const result = await response.json();
+      return result.data;
+    } catch (error) {
+      console.error('downloadDocument error:', error);
+      throw error;
+    }
+  }
 }
 
 export const documentService = new DocumentService();
