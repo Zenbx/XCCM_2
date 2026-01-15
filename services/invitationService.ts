@@ -162,6 +162,27 @@ class InvitationService {
         const result = await response.json();
         return result.data;
     }
+
+    /**
+     * Récupérer toutes les invitations pour un projet
+     */
+    async getProjectInvitations(projectName: string) {
+        const response = await fetch(
+            `${API_BASE_URL}/api/projects/${encodeURIComponent(projectName)}/invitations`,
+            {
+                method: 'GET',
+                headers: getAuthHeaders(),
+            }
+        );
+
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.message || 'Erreur lors de la récupération des invitations');
+        }
+
+        const result = await response.json();
+        return result.data.invitations;
+    }
 }
 
 export const invitationService = new InvitationService();

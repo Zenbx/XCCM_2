@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { Loader2, AlertCircle, X, Link2, Copy, Check, Users, Mail, ChevronDown, Trash2, Crown, Share2 } from 'lucide-react';
+import { Loader2, AlertCircle, X, Link2, Copy, Check, Users, Mail, Share2 } from 'lucide-react';
 import { invitationService } from '@/services/invitationService';
 
 interface ShareOverlayProps {
@@ -17,13 +17,29 @@ const ShareOverlay: React.FC<ShareOverlayProps> = ({ isOpen, onClose, projectNam
     const [isSending, setIsSending] = useState(false);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
+    const [invitations, setInvitations] = useState<any[]>([]);
+    const [isLoadingInvitations, setIsLoadingInvitations] = useState(false);
 
     useEffect(() => {
         if (isOpen && projectName) {
             const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
             setShareLink(`${baseUrl}/edit?projectName=${encodeURIComponent(projectName)}`);
+            fetchInvitations();
         }
     }, [isOpen, projectName]);
+
+    const fetchInvitations = async () => {
+        if (!projectName) return;
+        try {
+            setIsLoadingInvitations(true);
+            const data = await invitationService.getProjectInvitations(projectName);
+            setInvitations(data);
+        } catch (err) {
+            console.error('Erreur fetch invitations:', err);
+        } finally {
+            setIsLoadingInvitations(false);
+        }
+    };
 
     const handleCopyLink = () => {
         navigator.clipboard.writeText(shareLink);
@@ -45,6 +61,7 @@ const ShareOverlay: React.FC<ShareOverlayProps> = ({ isOpen, onClose, projectNam
 
             setSuccess(`Invitation envoyée à ${inviteEmail}`);
             setInviteEmail('');
+            fetchInvitations(); // Rafraîchir la liste
 
             // Fermer le message après 3 secondes
             setTimeout(() => setSuccess(''), 3000);
@@ -111,7 +128,7 @@ const ShareOverlay: React.FC<ShareOverlayProps> = ({ isOpen, onClose, projectNam
                             Inviter un collaborateur
                         </label>
                         <p className="text-xs text-gray-500 mb-3">
-                            Un seul collaborateur est autorisé par projet. L'invité recevra un email avec un lien d'invitation.
+                            L'invité recevra un email avec un lien d'invitation. Il pourra contribuer une fois l'invitation acceptée.
                         </p>
                         <div className="flex gap-2">
                             <div className="flex-1 relative">
@@ -186,6 +203,49 @@ const ShareOverlay: React.FC<ShareOverlayProps> = ({ isOpen, onClose, projectNam
                         </div>
                     </div>
 
+                    {/* Liste des invités */}
+                    <div>
+                        <div className="flex items-center justify-between mb-4">
+                            <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                                <Users className="w-4 h-4" />
+                                Liste des collaborateurs
+                            </label>
+                            {isLoadingInvitations && <Loader2 className="w-4 h-4 animate-spin text-gray-400" />}
+                        </div>
+
+                        <div className="space-y-3">
+                            {invitations.length === 0 ? (
+                                <div className="text-center py-6 bg-gray-50 rounded-xl border border-dashed border-gray-200">
+                                    <p className="text-sm text-gray-500">Aucun collaborateur invité</p>
+                                </div>
+                            ) : (
+                                invitations.map((inv) => (
+                                    <div key={inv.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-200 transition-all hover:bg-white hover:shadow-sm">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-9 h-9 bg-white border border-gray-200 rounded-lg flex items-center justify-center text-xs font-bold text-gray-600">
+                                                {inv.guest_email.slice(0, 2).toUpperCase()}
+                                            </div>
+                                            <div>
+                                                <p className="text-sm font-medium text-gray-900">{inv.guest_email}</p>
+                                                <p className="text-xs text-gray-500 capitalize">{inv.role?.toLowerCase() || 'Editor'}</p>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-4">
+                                            <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${inv.status === 'Accepted' ? 'bg-green-100 text-green-700' :
+                                                    inv.status === 'Pending' ? 'bg-amber-100 text-amber-700' :
+                                                        'bg-gray-100 text-gray-700'
+                                                }`}>
+                                                {inv.status === 'Accepted' ? 'Accepté' :
+                                                    inv.status === 'Pending' ? 'En attente' :
+                                                        inv.status}
+                                            </span>
+                                        </div>
+                                    </div>
+                                ))
+                            )}
+                        </div>
+                    </div>
+
                     {/* Info supplémentaire */}
                     <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
                         <div className="flex gap-3">
@@ -197,7 +257,6 @@ const ShareOverlay: React.FC<ShareOverlayProps> = ({ isOpen, onClose, projectNam
                                 <p className="text-sm text-blue-700">
                                     Le collaborateur invité recevra un email avec un lien d'invitation.
                                     Il pourra <strong>accepter</strong> ou <strong>décliner</strong> l'invitation.
-                                    Un seul collaborateur peut être assigné à un projet.
                                 </p>
                             </div>
                         </div>
