@@ -142,8 +142,8 @@ const EditHomePage = () => {
 
   // --- Logique de Création ---
   const handleCreateNew = async () => {
-    if (!newProjectName.trim()) {
-      toast.error('Veuillez entrer un nom de projet');
+    if (newProjectName.trim().length < 3) {
+      toast.error('Le nom du projet doit contenir au moins 3 caractères');
       return;
     }
     try {
@@ -259,8 +259,8 @@ const EditHomePage = () => {
   };
 
   const confirmRename = async () => {
-    if (!projectToRename || !renameValue.trim()) {
-      toast.error('Veuillez entrer un nom valide');
+    if (!projectToRename || renameValue.trim().length < 3) {
+      toast.error('Le nom du projet doit contenir au moins 3 caractères');
       return;
     }
     try {
@@ -572,10 +572,13 @@ const EditHomePage = () => {
               type="text"
               value={newProjectName}
               onChange={(e) => setNewProjectName(e.target.value)}
-              placeholder="Nom du projet"
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl text-gray-700 placeholder-gray-400 focus:ring-2 focus:ring-[#99334C] mb-4"
+              placeholder="Ex: Ma Super Composition"
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-[#99334C] outline-none"
               autoFocus
             />
+            <p className="mt-2 text-xs text-gray-500 mb-6">
+              Minimum 3 caractères. Lettres, chiffres, espaces, points, tirets et underscores autorisés.
+            </p>
             <div className="flex gap-3">
               <button
                 onClick={() => setShowCreateModal(false)}
@@ -585,8 +588,8 @@ const EditHomePage = () => {
               </button>
               <button
                 onClick={handleCreateNew}
-                disabled={isCreating}
-                className="flex-1 px-4 py-3 bg-[#99334C] text-white rounded-xl hover:bg-[#7a283d] flex justify-center items-center gap-2"
+                disabled={isCreating || newProjectName.trim().length < 3}
+                className="flex-1 px-4 py-3 bg-[#99334C] text-white rounded-xl hover:bg-[#7a283d] disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center gap-2"
               >
                 {isCreating && <Loader2 className="w-4 h-4 animate-spin" />}
                 Créer
@@ -611,9 +614,12 @@ const EditHomePage = () => {
               type="text"
               value={renameValue}
               onChange={(e) => setRenameValue(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl text-gray-700 placeholder-gray-400 focus:ring-2 focus:ring-[#99334C] mb-6"
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-[#99334C] outline-none"
               autoFocus
             />
+            <p className="mt-2 text-xs text-gray-500 mb-6">
+              Minimum 3 caractères.
+            </p>
             <div className="flex gap-3">
               <button
                 onClick={() => setShowRenameModal(false)}
@@ -623,8 +629,8 @@ const EditHomePage = () => {
               </button>
               <button
                 onClick={confirmRename}
-                disabled={isRenaming}
-                className="flex-1 px-4 py-3 bg-[#99334C] text-white rounded-xl hover:bg-amber-700 flex justify-center items-center gap-2"
+                disabled={isRenaming || renameValue.trim().length < 3}
+                className="flex-1 px-4 py-3 bg-[#99334C] text-white rounded-xl hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center gap-2"
               >
                 {isRenaming ? 'Enregistrement...' : 'Sauvegarder'}
               </button>

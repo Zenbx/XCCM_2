@@ -1407,9 +1407,10 @@ const XCCM2Editor = () => {
                     value={partFormData.title}
                     onChange={(e) => setPartFormData(prev => ({ ...prev, title: e.target.value }))}
                     placeholder="Ex: Introduction"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#99334C] text-gray-900"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#99334C] text-gray-900 outline-none"
                     autoFocus
                   />
+                  <p className="mt-1 text-xs text-gray-500">Min. 3 caractères</p>
                 </div>
 
                 <div>
@@ -1467,9 +1468,10 @@ const XCCM2Editor = () => {
                     value={chapterFormData.title}
                     onChange={(e) => setChapterFormData(prev => ({ ...prev, title: e.target.value }))}
                     placeholder="Ex: Concepts fondamentaux"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#99334C] text-gray-900"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#99334C] text-gray-900 outline-none"
                     autoFocus
                   />
+                  <p className="mt-1 text-xs text-gray-500">Min. 3 caractères</p>
                 </div>
 
                 <div>
@@ -1527,9 +1529,10 @@ const XCCM2Editor = () => {
                     value={paragraphFormData.name}
                     onChange={(e) => setParagraphFormData(prev => ({ ...prev, name: e.target.value }))}
                     placeholder="Ex: Définitions"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#99334C] text-gray-900"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#99334C] text-gray-900 outline-none"
                     autoFocus
                   />
+                  <p className="mt-1 text-xs text-gray-500">Min. 3 caractères</p>
                 </div>
 
                 <div>
@@ -1592,9 +1595,10 @@ const XCCM2Editor = () => {
                     value={notionFormData.name}
                     onChange={(e) => setNotionFormData(prev => ({ ...prev, name: e.target.value }))}
                     placeholder="Ex: Théorème de Pythagore"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#99334C] text-gray-900"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#99334C] text-gray-900 outline-none"
                     autoFocus
                   />
+                  <p className="mt-1 text-xs text-gray-500">Min. 3 caractères</p>
                 </div>
 
                 <div>
