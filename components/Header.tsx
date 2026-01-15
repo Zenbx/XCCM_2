@@ -62,7 +62,7 @@ export default function Header() {
 
   return (
     <header className="w-full bg-white shadow-sm border-b border-gray-100 sticky top-0 z-50">
-      <nav className="mx-auto flex max-w-7xl items-center justify-between lg:justify-center px-6 py-3 relative min-h-[60px]">
+      <nav className="mx-auto flex max-w-7xl items-center justify-between lg:justify-center px-6 py-1.5 lg:py-3 relative min-h-[50px] lg:min-h-[60px]">
 
         {/* --- LOGO --- */}
         {/* En mobile : position statique. En Desktop : absolute left-6 pour garder ton design */}
@@ -73,7 +73,7 @@ export default function Header() {
               alt="XCCM2 Logo"
               width={180}
               height={60}
-              className="h-28 w-auto object-contain"
+              className="h-16 lg:h-28 w-auto object-contain"
               priority
             />
           </Link>
@@ -82,34 +82,34 @@ export default function Header() {
         {/* --- NAVIGATION DESKTOP (Cachée sur mobile) --- */}
         <ul className="hidden lg:flex items-center gap-10 relative">
           {!isLoading && LINKS.filter(link => !link.authOnly || isAuthenticated).map(link => {
-              const isActive = pathname === link.href;
-              return (
-                <li key={link.href} className="relative">
-                  <Link
-                    href={link.href}
-                    className={clsx(
-                      "relative flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors duration-300 rounded-lg group"
-                    )}
-                    style={{
-                      color: isActive ? COLORS.primary : COLORS.text,
-                    }}
-                  >
-                    {isActive && (
-                      <motion.div
-                        layoutId="nav-active-bg"
-                        className="absolute inset-0 rounded-lg"
-                        style={{ backgroundColor: "#99334C4D" }}
-                        transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
-                      />
-                    )}
-                    <span className="relative z-10 flex items-center gap-2 group-hover:text-[#99334C] transition-colors">
-                      {link.icon}
-                      {link.label}
-                    </span>
-                  </Link>
-                </li>
-              );
-            })}
+            const isActive = pathname === link.href;
+            return (
+              <li key={link.href} className="relative">
+                <Link
+                  href={link.href}
+                  className={clsx(
+                    "relative flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors duration-300 rounded-lg group"
+                  )}
+                  style={{
+                    color: isActive ? COLORS.primary : COLORS.text,
+                  }}
+                >
+                  {isActive && (
+                    <motion.div
+                      layoutId="nav-active-bg"
+                      className="absolute inset-0 rounded-lg"
+                      style={{ backgroundColor: "#99334C4D" }}
+                      transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                    />
+                  )}
+                  <span className="relative z-10 flex items-center gap-2 group-hover:text-[#99334C] transition-colors">
+                    {link.icon}
+                    {link.label}
+                  </span>
+                </Link>
+              </li>
+            );
+          })}
         </ul>
 
         {/* --- ACTIONS UTILISATEUR DESKTOP (Cachées sur mobile) --- */}
@@ -211,7 +211,7 @@ export default function Header() {
               </Link>
             </>
           )}
-        <LanguageToggle />
+          <LanguageToggle />
         </div>
 
         {/* --- BOUTON MENU MOBILE (Visible uniquement sur mobile) --- */}
@@ -295,16 +295,16 @@ export default function Header() {
                         <ShieldCheck size={16} /> {t.auth.admin}
                       </Link>
                       <Link href="/account" className="flex items-center gap-3 px-4 py-2 text-gray-600 hover:bg-gray-50 rounded-lg text-sm">
-                          <UserIcon size={16} /> {t.auth.account}
+                        <UserIcon size={16} /> {t.auth.account}
                       </Link>
                       <Link href="/settings" className="flex items-center gap-3 px-4 py-2 text-gray-600 hover:bg-gray-50 rounded-lg text-sm">
-                          <Settings size={16} /> {t.auth.settings}
+                        <Settings size={16} /> {t.auth.settings}
                       </Link>
                       <Link href="/analytics" className="flex items-center gap-3 px-4 py-2 text-gray-600 hover:bg-gray-50 rounded-lg text-sm">
-                          <BarChart2 size={16} /> {t.auth.analytics}
+                        <BarChart2 size={16} /> {t.auth.analytics}
                       </Link>
                       <button onClick={handleLogout} className="w-full flex items-center gap-3 px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg text-sm">
-                          <LogOut size={16} /> {t.auth.logout}
+                        <LogOut size={16} /> {t.auth.logout}
                       </button>
                     </div>
                   </div>
