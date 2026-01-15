@@ -7,54 +7,61 @@ import { useRouter } from 'next/navigation';
 import { documentService } from '@/services/documentService';
 
 import toast from 'react-hot-toast';
+import { useInView } from 'react-intersection-observer';
 
 const LibraryPage = () => {
+  const { ref, inView } = useInView();
+  const [hasMore, setHasMore] = useState(true);
+  const [page, setPage] = useState(1);
+
+  // States restaurés
   const [searchQuery, setSearchQuery] = useState('');
-  const [currentPage, setCurrentPage] = useState(1);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [selectedCategory, setSelectedCategory] = useState('all');
-  const [levelFilter, setLevelFilter] = useState('all'); // Nouveau filtre par niveau
+  const [levelFilter, setLevelFilter] = useState('all');
   const [bookmarkedCourses, setBookmarkedCourses] = useState<string[]>([]);
   const router = useRouter();
 
-  // States pour les donnees dynamiques
+  // States pour les données dynamiques
   const [courses, setCourses] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchPublishedDocuments = async () => {
-      setIsLoading(true);
+    const fetchDocuments = async () => {
+      if (page === 1) setIsLoading(true);
       setError(null);
       try {
-        const documents = await documentService.getPublishedDocuments();
-        setCourses(documents);
+        const { documents, hasMore: moreAvailable } = await documentService.getPublishedDocuments(page, 20);
+
+        setCourses(prev => page === 1 ? documents : [...prev, documents]);
+        setHasMore(moreAvailable);
       } catch (err: any) {
         setError(err.message || "Erreur lors de la recuperation des documents.");
-        console.error(err);
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchPublishedDocuments();
-  }, []);
+    fetchDocuments();
+  }, [page]);
 
-  // Liste prédéfinie de catégories pour le filtrage (plus robuste qu'une extraction purement dynamique)
+  // Infinite scroll trigger
+  useEffect(() => {
+    if (inView && hasMore && !isLoading) {
+      setPage(prev => prev + 1);
+    }
+  }, [inView, hasMore, isLoading]);
+
+  // Liste prédéfinie de catégories pour le filtrage
   const PREDEFINED_CATEGORIES = [
-    "Général",
-    "Informatique",
-    "Mathématiques",
-    "Physique",
-    "Linguistique",
-    "Sciences",
-    "Histoire",
-    "Économie",
-    "Droit"
+    "Général", "Informatique", "Mathématiques", "Physique", "Linguistique",
+    "Sciences", "Histoire", "Économie", "Droit"
   ];
 
-  // Filtrer les cours par categorie et recherche
+  // Filtrage local (pour la recherche instantanée sur les éléments chargés)
+  // Note: Idéalement, la recherche devrait aussi être faite côté serveur
   const filteredCourses = courses.filter(course => {
     const matchesSearch = course.doc_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       course.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -67,12 +74,8 @@ const LibraryPage = () => {
     return matchesSearch && matchesCategory && matchesLevel;
   });
 
-  // On combine les catégories prédéfinies avec celles trouvées dans les cours
   const dynamicCategories = Array.from(new Set(courses.map(c => c.category).filter(Boolean))) as string[];
   const categories = ["all", ...Array.from(new Set([...PREDEFINED_CATEGORIES, ...dynamicCategories]))];
-
-  const coursesPerPage = 6;
-  const totalPages = Math.ceil(filteredCourses.length / coursesPerPage);
 
   const handleViewCourse = (docId: string) => {
     router.push(`/book-reader?docId=${encodeURIComponent(docId)}`);
@@ -89,12 +92,7 @@ const LibraryPage = () => {
   const handleDownloadCourse = async (docId: string) => {
     try {
       setDownloadingId(docId);
-
-      // Appeler l'API pour obtenir l'URL et incrementer le compteur
       const { url, doc_name } = await documentService.downloadDocument(docId);
-
-      // Téléchargement robuste via Fetch + Blob
-      // Cela permet de s'assurer que l'attribut 'download' fonctionne et d'être cohérent avec les noms de fichiers
       const response = await fetch(url);
       if (!response.ok) throw new Error('Échec du téléchargement du fichier source');
 
@@ -103,15 +101,11 @@ const LibraryPage = () => {
 
       const link = document.createElement('a');
       link.href = blobUrl;
-      link.download = doc_name.endsWith('.pdf') || doc_name.endsWith('.docx') ? doc_name : `${doc_name}.pdf`; // Fallback extension
+      link.download = doc_name.endsWith('.pdf') || doc_name.endsWith('.docx') ? doc_name : `${doc_name}.pdf`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-
-      // Libérer l'URL du blob
       window.URL.revokeObjectURL(blobUrl);
-
-      // Toast de succes
       toast.success('Téléchargement terminé !');
 
     } catch (err) {
@@ -122,7 +116,6 @@ const LibraryPage = () => {
     }
   };
 
-
   const getLevelColor = (level: string | undefined) => {
     switch (level) {
       case 'Debutant': return 'bg-green-100 text-green-700';
@@ -132,45 +125,32 @@ const LibraryPage = () => {
     }
   };
 
-  const formatFileSize = (bytes: number) => {
-    if (!bytes) return 'N/A';
-    const mb = bytes / (1024 * 1024);
-    return mb > 1 ? `${mb.toFixed(1)} MB` : `${(bytes / 1024).toFixed(0)} KB`;
-  };
-
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
       {/* Hero Section */}
       <section className="relative bg-gradient-to-br from-[#99334C] to-[#7a283d] text-white overflow-hidden py-20">
-        {/* Motif de fond */}
         <div className="absolute inset-0 opacity-10">
           <div className="absolute inset-0" style={{
             backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)',
             backgroundSize: '30px 30px'
           }} />
         </div>
-
         <div className="relative max-w-7xl mx-auto px-6 text-center">
-
           <h1 className="text-5xl md:text-6xl font-bold mb-6">
             Bibliothèque Universitaire
           </h1>
-
-          {/* Soulignement décoratif */}
           <div className="flex justify-center mb-8">
             <div className="h-1 w-32 bg-white/50 rounded-full relative">
               <div className="absolute inset-0 bg-white rounded-full animate-pulse"></div>
             </div>
           </div>
-
           <p className="text-xl text-white/90 max-w-3xl mx-auto leading-relaxed">
             Explorez notre collection de cours, exercices et ressources pédagogiques.
           </p>
-
           <div className="flex items-center justify-center gap-6 text-sm mt-8 text-white/80">
             <div className="flex items-center gap-2 bg-white/10 px-4 py-2 rounded-full backdrop-blur-sm">
               <FileText className="w-5 h-5" />
-              <span>{courses.length} documents</span>
+              <span>{courses.length} documents chargés</span>
             </div>
             <div className="flex items-center gap-2 bg-white/10 px-4 py-2 rounded-full backdrop-blur-sm">
               <Globe className="w-5 h-5" />
@@ -184,9 +164,7 @@ const LibraryPage = () => {
       <section className="py-6 px-6 bg-white border-b border-gray-200 shadow-sm sticky top-0 z-40">
         <div className="max-w-7xl mx-auto">
           <div className="flex flex-col gap-4">
-            {/* Ligne du haut : Recherche + Type Affichage + Filtre Niveau */}
             <div className="flex flex-col lg:flex-row gap-4 items-center justify-between">
-              {/* Recherche */}
               <div className="relative flex-1 max-w-xl w-full">
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                 <input
@@ -207,7 +185,6 @@ const LibraryPage = () => {
               </div>
 
               <div className="flex items-center gap-4">
-                {/* Filtre Niveau */}
                 <select
                   value={levelFilter}
                   onChange={(e) => setLevelFilter(e.target.value)}
@@ -219,7 +196,6 @@ const LibraryPage = () => {
                   <option value="Avance">Avancé</option>
                 </select>
 
-                {/* Vue */}
                 <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1 h-[46px]">
                   <button
                     onClick={() => setViewMode('grid')}
@@ -237,7 +213,6 @@ const LibraryPage = () => {
               </div>
             </div>
 
-            {/* Ligne du bas : Catégories */}
             <div className="pt-2">
               <div className="flex items-center gap-2 mb-4">
                 <Filter className="w-5 h-5 text-gray-600" />
@@ -265,7 +240,7 @@ const LibraryPage = () => {
       {/* Grille de cours */}
       <section className="py-12 px-6">
         <div className="max-w-7xl mx-auto">
-          {isLoading ? (
+          {isLoading && courses.length === 0 ? (
             <div className="flex justify-center items-center h-64">
               <Loader2 className="w-12 h-12 text-[#99334C] animate-spin" />
             </div>
@@ -278,28 +253,26 @@ const LibraryPage = () => {
           ) : filteredCourses.length === 0 ? (
             <div className="text-center h-64 flex flex-col justify-center items-center">
               <BookOpen className="w-12 h-12 text-gray-400 mb-4" />
-              <h3 className="text-xl font-bold text-gray-700">Aucun cours trouve</h3>
+              <h3 className="text-xl font-bold text-gray-700">Aucun cours trouvé</h3>
               <p className="text-gray-500">
-                {searchQuery ? 'Essayez avec d\'autres mots-cles' : 'Revenez bientot pour de nouveaux contenus !'}
+                {searchQuery ? 'Essayez avec d\'autres mots-clés' : 'Revenez bientôt pour de nouveaux contenus !'}
               </p>
             </div>
           ) : (
             <>
-              {/* Resultats */}
+              {/* Résultats */}
               <div className="mb-6 text-sm text-gray-600">
-                {filteredCourses.length} resultat{filteredCourses.length > 1 ? 's' : ''}
+                {filteredCourses.length} résultat{filteredCourses.length > 1 ? 's' : ''} (Total chargé: {courses.length})
               </div>
 
               {viewMode === 'grid' ? (
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-                  {filteredCourses.slice((currentPage - 1) * coursesPerPage, currentPage * coursesPerPage).map((course) => (
+                  {filteredCourses.map((course) => (
                     <div key={course.doc_id} className="bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all border border-gray-100 group">
-                      {/* Image/Header */}
                       <div className="relative h-48 bg-gradient-to-br from-[#99334C]/20 to-[#99334C]/40 overflow-hidden">
                         <div className="absolute inset-0 flex items-center justify-center">
                           <BookOpen className="w-16 h-16 text-[#99334C] opacity-50" />
                         </div>
-                        {/* Hover overlay avec boutons */}
                         <div className="absolute inset-0 bg-[#99334C]/90 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center gap-4">
                           <button
                             onClick={() => handleViewCourse(course.doc_id)}
@@ -312,7 +285,7 @@ const LibraryPage = () => {
                             onClick={() => handleDownloadCourse(course.doc_id)}
                             disabled={downloadingId === course.doc_id}
                             className="p-3 bg-white/20 backdrop-blur-sm rounded-full hover:bg-white/30 transition-all disabled:opacity-50"
-                            title="Telecharger"
+                            title="Télécharger"
                           >
                             {downloadingId === course.doc_id ? (
                               <Loader2 className="w-6 h-6 text-white animate-spin" />
@@ -321,13 +294,11 @@ const LibraryPage = () => {
                             )}
                           </button>
                         </div>
-                        {/* Badge niveau */}
                         <div className="absolute top-3 left-3">
                           <span className={`px-3 py-1 rounded-full text-xs font-bold ${getLevelColor(course.level)}`}>
                             {course.level || 'N/A'}
                           </span>
                         </div>
-                        {/* Bookmark */}
                         <button
                           onClick={() => toggleBookmark(course.doc_id)}
                           className="absolute top-3 right-3 p-2 bg-white/90 rounded-full hover:bg-white transition-all"
@@ -340,10 +311,9 @@ const LibraryPage = () => {
                         </button>
                       </div>
 
-                      {/* Content */}
                       <div className="p-6">
                         <span className="inline-block px-3 py-1 bg-[#99334C]/10 text-[#99334C] text-xs font-bold rounded-full mb-3">
-                          {course.category || 'Non classe'}
+                          {course.category || 'Non classé'}
                         </span>
                         <h3 className="text-xl font-bold text-gray-900 mb-2 line-clamp-2 group-hover:text-[#99334C] transition-colors">
                           {course.doc_name}
@@ -352,7 +322,6 @@ const LibraryPage = () => {
                           {course.description || 'Aucune description disponible.'}
                         </p>
 
-                        {/* Stats */}
                         <div className="flex items-center gap-4 text-xs text-gray-500 mb-4">
                           <span className="flex items-center gap-1">
                             <FileText className="w-3 h-3" />
@@ -368,7 +337,6 @@ const LibraryPage = () => {
                           </span>
                         </div>
 
-                        {/* Footer */}
                         <div className="flex items-center justify-between pt-4 border-t border-gray-100">
                           <div className="flex items-center gap-2">
                             <div className="w-8 h-8 bg-[#99334C]/10 rounded-full flex items-center justify-center">
@@ -386,22 +354,19 @@ const LibraryPage = () => {
                   ))}
                 </div>
               ) : (
-                /* Liste View */
+                /* List View */
                 <div className="space-y-4">
-                  {filteredCourses.slice((currentPage - 1) * coursesPerPage, currentPage * coursesPerPage).map((course) => (
+                  {filteredCourses.map((course) => (
                     <div key={course.doc_id} className="bg-white rounded-xl shadow-md hover:shadow-lg transition-all border border-gray-100 p-6 flex gap-6">
-                      {/* Thumbnail */}
                       <div className="w-32 h-32 bg-gradient-to-br from-[#99334C]/20 to-[#99334C]/40 rounded-xl flex items-center justify-center flex-shrink-0">
                         <BookOpen className="w-10 h-10 text-[#99334C] opacity-60" />
                       </div>
-
-                      {/* Content */}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-start justify-between gap-4">
                           <div>
                             <div className="flex items-center gap-2 mb-2">
                               <span className="px-2 py-0.5 bg-[#99334C]/10 text-[#99334C] text-xs font-bold rounded-full">
-                                {course.category || 'Non classe'}
+                                {course.category || 'Non classé'}
                               </span>
                               <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${getLevelColor(course.level)}`}>
                                 {course.level || 'N/A'}
@@ -414,8 +379,6 @@ const LibraryPage = () => {
                               {course.description || 'Aucune description disponible.'}
                             </p>
                           </div>
-
-                          {/* Actions */}
                           <div className="flex items-center gap-2 flex-shrink-0">
                             <button
                               onClick={() => handleViewCourse(course.doc_id)}
@@ -428,7 +391,7 @@ const LibraryPage = () => {
                               onClick={() => handleDownloadCourse(course.doc_id)}
                               disabled={downloadingId === course.doc_id}
                               className="p-2 border border-gray-200 rounded-lg hover:bg-gray-50 transition-all disabled:opacity-50"
-                              title="Telecharger"
+                              title="Télécharger"
                             >
                               {downloadingId === course.doc_id ? (
                                 <Loader2 className="w-5 h-5 animate-spin" />
@@ -438,8 +401,6 @@ const LibraryPage = () => {
                             </button>
                           </div>
                         </div>
-
-                        {/* Meta */}
                         <div className="flex items-center gap-6 text-sm text-gray-500">
                           <span className="flex items-center gap-1">
                             <User className="w-4 h-4" />
@@ -455,7 +416,7 @@ const LibraryPage = () => {
                           </span>
                           <span className="flex items-center gap-1">
                             <Download className="w-4 h-4" />
-                            {course.downloaded || 0} telechargements
+                            {course.downloaded || 0} téléchargements
                           </span>
                         </div>
                       </div>
@@ -464,37 +425,16 @@ const LibraryPage = () => {
                 </div>
               )}
 
-              {/* Pagination */}
-              {totalPages > 1 && (
-                <div className="flex items-center justify-center gap-2 mt-12">
-                  <button
-                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                    disabled={currentPage === 1}
-                    className="p-2 border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <ChevronLeft className="w-5 h-5" />
-                  </button>
+              {/* Infinite Scroll Trigger & Loader */}
+              {hasMore && (
+                <div ref={ref} className="flex justify-center items-center py-8">
+                  {isLoading && <Loader2 className="w-8 h-8 text-[#99334C] animate-spin" />}
+                </div>
+              )}
 
-                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                    <button
-                      key={page}
-                      onClick={() => setCurrentPage(page)}
-                      className={`w-10 h-10 rounded-lg font-medium transition-all ${currentPage === page
-                        ? 'bg-[#99334C] text-white'
-                        : 'border border-gray-200 hover:bg-gray-50'
-                        }`}
-                    >
-                      {page}
-                    </button>
-                  ))}
-
-                  <button
-                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                    disabled={currentPage === totalPages}
-                    className="p-2 border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <ChevronRight className="w-5 h-5" />
-                  </button>
+              {!hasMore && courses.length > 0 && (
+                <div className="text-center py-8 text-gray-400 text-sm">
+                  Vous avez atteint la fin de la bibliothèque.
                 </div>
               )}
             </>

@@ -6,6 +6,134 @@ import { Part, Chapter, Paragraph, Notion } from '@/services/structureService';
 import { Language, translations } from '@/services/locales';
 import toast from 'react-hot-toast';
 import ContextMenu from './ContextMenu';
+import { useOptimisticUpdate } from '@/hooks/useOptimisticUpdate';
+
+// Helper pour mettre à jour l'arbre localement
+const updateTree = (
+  currentStructure: Part[],
+  type: 'part' | 'chapter' | 'paragraph' | 'notion',
+  parentId: string | null,
+  newChildren: any[]
+): Part[] => {
+  const newStructure = JSON.parse(JSON.stringify(currentStructure));
+
+  if (type === 'part') {
+    return newChildren;
+  }
+
+  if (type === 'chapter') {
+    const part = newStructure.find((p: Part) => p.part_id === parentId);
+    if (part) part.chapters = newChildren;
+    return newStructure;
+  }
+
+  if (type === 'paragraph') {
+    for (const part of newStructure) {
+      const chap = part.chapters?.find((c: Chapter) => c.chapter_id === parentId);
+      if (chap) {
+        chap.paragraphs = newChildren;
+        return newStructure;
+      }
+    }
+  }
+
+  if (type === 'notion') {
+    for (const part of newStructure) {
+      for (const chap of part.chapters || []) {
+        const para = chap.paragraphs?.find((p: Paragraph) => p.para_id === parentId);
+        if (para) {
+          para.notions = newChildren;
+          return newStructure;
+        }
+      }
+    }
+  }
+
+  return newStructure;
+};
+
+// Helper pour déplacer un élément (changement de parent)
+const moveInTree = (
+  currentStructure: Part[],
+  type: 'chapter' | 'paragraph' | 'notion',
+  itemId: string,
+  newParentId: string
+): Part[] => {
+  const newStructure = JSON.parse(JSON.stringify(currentStructure));
+  let itemToMove: any = null;
+
+  // 1. Trouver et retirer l'élément de son ancien emplacement
+  if (type === 'chapter') {
+    for (const part of newStructure) {
+      if (part.chapters) {
+        const idx = part.chapters.findIndex((c: Chapter) => c.chapter_id === itemId);
+        if (idx !== -1) {
+          [itemToMove] = part.chapters.splice(idx, 1);
+          break;
+        }
+      }
+    }
+  } else if (type === 'paragraph') {
+    outer: for (const part of newStructure) {
+      for (const chap of part.chapters || []) {
+        if (chap.paragraphs) {
+          const idx = chap.paragraphs.findIndex((p: Paragraph) => p.para_id === itemId);
+          if (idx !== -1) {
+            [itemToMove] = chap.paragraphs.splice(idx, 1);
+            break outer;
+          }
+        }
+      }
+    }
+  } else if (type === 'notion') {
+    outer: for (const part of newStructure) {
+      for (const chap of part.chapters || []) {
+        for (const para of chap.paragraphs || []) {
+          if (para.notions) {
+            const idx = para.notions.findIndex((n: Notion) => n.notion_id === itemId);
+            if (idx !== -1) {
+              [itemToMove] = para.notions.splice(idx, 1);
+              break outer;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  if (!itemToMove) return currentStructure;
+
+  // 2. Ajouter l'élément au nouveau parent
+  if (type === 'chapter') {
+    const part = newStructure.find((p: Part) => p.part_id === newParentId);
+    if (part) {
+      if (!part.chapters) part.chapters = [];
+      part.chapters.push(itemToMove);
+    }
+  } else if (type === 'paragraph') {
+    outerAdd: for (const part of newStructure) {
+      const chap = part.chapters?.find((c: Chapter) => c.chapter_id === newParentId);
+      if (chap) {
+        if (!chap.paragraphs) chap.paragraphs = [];
+        chap.paragraphs.push(itemToMove);
+        break outerAdd;
+      }
+    }
+  } else if (type === 'notion') {
+    outerAdd: for (const part of newStructure) {
+      for (const chap of part.chapters || []) {
+        const para = chap.paragraphs?.find((p: Paragraph) => p.para_id === newParentId);
+        if (para) {
+          if (!para.notions) para.notions = [];
+          para.notions.push(itemToMove);
+          break outerAdd;
+        }
+      }
+    }
+  }
+
+  return newStructure;
+};
 
 interface TableOfContentsProps {
   projectName: string;
@@ -65,6 +193,15 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
   const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({});
   const [editingId, setEditingId] = useState<string | null>(null);
   const [tempTitle, setTempTitle] = useState("");
+
+  const [optimisticStructure, setOptimisticStructure] = useState<Part[]>(structure);
+  const { execute } = useOptimisticUpdate<Part[]>();
+
+  // Sync avec les props (le serveur a toujours raison à la fin)
+  // Sauf si on est en train de draguer (optionnel, mais safest est react useEffect)
+  React.useEffect(() => {
+    setOptimisticStructure(structure);
+  }, [structure]);
 
   // Drag & Drop states
   const [draggedItem, setDraggedItem] = useState<{
@@ -251,17 +388,17 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
     if (targetId.endsWith('-end') && onReorder) {
       let items: any[] = [];
       if (dragType === 'part') {
-        items = [...structure];
+        items = [...optimisticStructure];
       } else if (dragType === 'chapter') {
-        const part = structure.find(p => p.part_id === targetParentId);
+        const part = optimisticStructure.find(p => p.part_id === targetParentId);
         items = [...(part?.chapters || [])];
       } else if (dragType === 'paragraph') {
-        for (const p of structure) {
+        for (const p of optimisticStructure) {
           const c = p.chapters?.find(ch => ch.chapter_id === targetParentId);
           if (c) { items = [...(c.paragraphs || [])]; break; }
         }
       } else if (dragType === 'notion') {
-        for (const p of structure) {
+        for (const p of optimisticStructure) {
           for (const c of p.chapters || []) {
             const para = c.paragraphs?.find(pg => pg.para_id === targetParentId);
             if (para) { items = [...(para.notions || [])]; break; }
@@ -275,7 +412,16 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
       if (dragIndex !== -1) {
         const [movedItem] = items.splice(dragIndex, 1);
         items.push(movedItem);
-        await onReorder(dragType, targetParentId, items);
+
+        // Optimistic update
+        const newStruct = updateTree(optimisticStructure, dragType, targetParentId, items);
+        execute(optimisticStructure, newStruct, {
+          onOptimisticUpdate: setOptimisticStructure,
+          onRollback: setOptimisticStructure,
+          apiCall: async () => await onReorder(dragType, targetParentId, items),
+          errorMessage: "Erreur lors du réordonnancement"
+        });
+
       } else if (dragParentId !== targetParentId && onMove) {
         await onMove(dragType as any, dragId, targetParentId!);
       }
@@ -286,17 +432,17 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
     if (dragType === targetType && dragParentId === targetParentId && dragId !== targetId && onReorder) {
       let items: any[] = [];
       if (dragType === 'part') {
-        items = [...structure];
+        items = [...optimisticStructure];
       } else if (dragType === 'chapter') {
-        const part = structure.find(p => p.part_id === targetParentId);
+        const part = optimisticStructure.find(p => p.part_id === targetParentId);
         items = [...(part?.chapters || [])];
       } else if (dragType === 'paragraph') {
-        for (const p of structure) {
+        for (const p of optimisticStructure) {
           const c = p.chapters?.find(ch => ch.chapter_id === targetParentId);
           if (c) { items = [...(c.paragraphs || [])]; break; }
         }
       } else if (dragType === 'notion') {
-        for (const p of structure) {
+        for (const p of optimisticStructure) {
           for (const c of p.chapters || []) {
             const para = c.paragraphs?.find(pg => pg.para_id === targetParentId);
             if (para) { items = [...(para.notions || [])]; break; }
@@ -311,19 +457,45 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
       if (dragIndex !== -1 && dropIndex !== -1) {
         const [movedItem] = items.splice(dragIndex, 1);
         items.splice(dropIndex, 0, movedItem);
-        await onReorder(dragType, targetParentId, items);
+
+        // Optimistic update
+        const newStruct = updateTree(optimisticStructure, dragType, targetParentId, items);
+        execute(optimisticStructure, newStruct, {
+          onOptimisticUpdate: setOptimisticStructure,
+          onRollback: setOptimisticStructure,
+          apiCall: async () => await onReorder(dragType, targetParentId, items),
+          errorMessage: "Erreur lors du réordonnancement"
+        });
       }
     }
     // Cas: Move into new parent
     else if (onMove) {
-      if (dragType === 'chapter' && targetType === 'part') {
-        await onMove('chapter', dragId, targetId);
-      } else if (dragType === 'paragraph' && targetType === 'chapter') {
-        await onMove('paragraph', dragId, targetId);
-      } else if (dragType === 'notion' && targetType === 'paragraph') {
-        await onMove('notion', dragId, targetId);
-      } else if (dragType !== 'part' && dragType === targetType && dragParentId !== targetParentId && targetParentId) {
-        await onMove(dragType, dragId, targetParentId);
+      if (
+        (dragType === 'chapter' && targetType === 'part') ||
+        (dragType === 'paragraph' && targetType === 'chapter') ||
+        (dragType === 'notion' && targetType === 'paragraph') ||
+        (dragType !== 'part' && dragType === targetType && dragParentId !== targetParentId && targetParentId)
+      ) {
+        // Determine effective target ID (may be targetId or targetParentId depending on context)
+        // Logic in original code:
+        // if chapter->part, targetId IS part_id (new parent)
+        // if para->chapter, targetId IS chapter_id (new parent)
+        // etc.
+        // But existing code checked types specifically.
+
+        let actualNewParentId = targetId;
+        if (dragType === targetType) {
+          actualNewParentId = targetParentId!;
+        }
+
+        // Move Optimiste
+        const newStruct = moveInTree(optimisticStructure, dragType as any, dragId, actualNewParentId);
+        execute(optimisticStructure, newStruct, {
+          onOptimisticUpdate: setOptimisticStructure,
+          onRollback: setOptimisticStructure,
+          apiCall: async () => await onMove(dragType as any, dragId, actualNewParentId),
+          errorMessage: "Erreur lors du déplacement"
+        });
       }
     }
   };
@@ -361,7 +533,7 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
 
       {/* Contenu */}
       <div className="p-3 flex-1 overflow-y-auto space-y-2">
-        {structure.length === 0 ? (
+        {optimisticStructure.length === 0 ? (
           <div className="text-center py-12 text-gray-400">
             <Folder size={48} className="mx-auto mb-3 opacity-20" />
             <p className="text-sm">Le projet est vide</p>
@@ -372,7 +544,7 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
             )}
           </div>
         ) : (
-          structure.map(part => (
+          optimisticStructure.map(part => (
             <div key={part.part_id} className="relative group/part">
               <div
                 className={`flex items-center gap-2 py-2 px-2 hover:bg-gray-50 rounded-lg cursor-pointer transition-colors border border-transparent

@@ -65,10 +65,10 @@ export interface Notion {
 }
 
 class DocumentService {
-  async getPublishedDocuments(): Promise<Document[]> {
+  async getPublishedDocuments(page: number = 1, limit: number = 20): Promise<{ documents: Document[], hasMore: boolean }> {
     try {
       const response = await fetch(
-        `${API_BASE_URL}/api/documents`,
+        `${API_BASE_URL}/api/documents?page=${page}&limit=${limit}`,
         {
           method: 'GET',
           headers: {
@@ -82,7 +82,10 @@ class DocumentService {
       }
 
       const result = await response.json();
-      return result.data.documents || [];
+      return {
+        documents: result.data.documents || [],
+        hasMore: result.data.hasMore
+      };
     } catch (error) {
       console.error('getPublishedDocuments error:', error);
       throw error;

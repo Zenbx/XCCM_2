@@ -401,10 +401,10 @@ const XCCM2Editor = () => {
       if (!projectData) return;
 
       try {
-        setIsImporting(true); // Feedback immédiat (localisé)
+        setIsImporting(true); // Feedback immédiat
 
-        // REFRESH structure AVANT drop pour avoir les bons numéros (SILENCIEUX)
-        await loadProject(true);
+        // OPTIMISATION: On ne recharge pas tout le projet au début.
+        // On suppose que la structure actuelle est à jour (grâce aux websockets).
 
         // Initialisation du contexte avec la sélection actuelle pour les drops relatifs
         const initialContext: any = {};
@@ -421,9 +421,8 @@ const XCCM2Editor = () => {
 
         // Compteurs LOCAUX pour cette opération d'import
         const counters = new Map<string, number>();
-        const limit = pLimit(2); // Limite de parallélisme pour l'import
+        const limit = pLimit(1); // On réduit la concurrence pour éviter les race conditions d'affichage
 
-        // Helper stateful pour avoir le prochain numéro et incrémenter
         const getNextNumAndInc = (type: string, ctx: any) => {
           let key = '';
           let currentMax = 0;
@@ -431,7 +430,6 @@ const XCCM2Editor = () => {
           if (type === 'part') {
             key = 'root_parts';
             if (!counters.has(key)) {
-              // Init depuis structure existante
               currentMax = structure.length > 0 ? Math.max(...structure.map(p => p.part_number || 0)) : 0;
               counters.set(key, currentMax);
             }
@@ -464,15 +462,13 @@ const XCCM2Editor = () => {
             }
           }
 
-          // Incrémente et retourne
           const newVal = (counters.get(key) || 0) + 1;
           counters.set(key, newVal);
           return newVal;
         };
 
-        // Fonction récursive d'import
         const importRecursive = async (item: any, context: any) => {
-          let createdItem;
+          let createdItem: any;
 
           if (item.type === 'part') {
             const nextNum = getNextNumAndInc('part', context);
@@ -482,7 +478,10 @@ const XCCM2Editor = () => {
               part_title: uniqueTitle,
               part_number: nextNum
             }));
-            // Contexte pour les enfants
+
+            // Mise à jour locale OPTIMISTE
+            setStructure(prev => [...prev, { ...createdItem, chapters: [] }]);
+
             context = { partTitle: createdItem.part_title, partId: createdItem.part_id };
 
           } else if (item.type === 'chapter') {
@@ -493,6 +492,18 @@ const XCCM2Editor = () => {
               chapter_title: `${item.content} ${nextNum}`,
               chapter_number: nextNum
             }));
+
+            // Mise à jour locale OPTIMISTE
+            setStructure(prev => {
+              const newSt = [...prev];
+              const p = newSt.find(x => x.part_title === context.partTitle);
+              if (p) {
+                if (!p.chapters) p.chapters = [];
+                p.chapters.push({ ...createdItem, paragraphs: [] });
+              }
+              return newSt;
+            });
+
             context = { ...context, chapterTitle: createdItem.chapter_title };
 
           } else if (item.type === 'paragraph') {
@@ -503,6 +514,19 @@ const XCCM2Editor = () => {
               para_name: `${item.content} ${nextNum}`,
               para_number: nextNum
             }));
+
+            // Mise à jour locale OPTIMISTE
+            setStructure(prev => {
+              const newSt = [...prev];
+              const p = newSt.find(x => x.part_title === context.partTitle);
+              const c = p?.chapters?.find(y => y.chapter_title === context.chapterTitle);
+              if (c) {
+                if (!c.paragraphs) c.paragraphs = [];
+                c.paragraphs.push({ ...createdItem, notions: [] });
+              }
+              return newSt;
+            });
+
             context = { ...context, paraName: createdItem.para_name };
 
           } else if (item.type === 'notion') {
@@ -515,7 +539,21 @@ const XCCM2Editor = () => {
               notion_content: "<p>Contenu importé...</p>"
             }));
 
-            // SI c'est la première notion trouvée, on la sélectionne (User Request)
+            // Mise à jour locale OPTIMISTE
+            setStructure(prev => {
+              const newSt = [...prev];
+              const p = newSt.find(x => x.part_title === context.partTitle);
+              const c = p?.chapters?.find(y => y.chapter_title === context.chapterTitle);
+              const para = c?.paragraphs?.find(z => z.para_name === context.paraName);
+              if (para) {
+                if (!para.notions) para.notions = [];
+                para.notions.push(createdItem);
+                // Auto-expand
+                setExpandedItems(ex => ({ ...ex, [`paragraph-${para.para_id}`]: true }));
+              }
+              return newSt;
+            });
+
             if (!firstNotionFound.current) {
               firstNotionFound.current = {
                 notion: createdItem,
@@ -524,22 +562,20 @@ const XCCM2Editor = () => {
             }
           }
 
-          // Récursion sur les enfants (en parallèle via p-limit)
           if (item.children && item.children.length > 0) {
             await Promise.all(item.children.map((child: any) => importRecursive(child, { ...context })));
           }
         };
 
-        // Ref pour stocker la première notion
         const firstNotionFound = { current: null } as any;
 
-        // Lancer l'import avec le contexte initial fusionné
+        // Lancer l'import
         await importRecursive(contentOrGranule, { ...initialContext });
 
-        // Recharger la structure silencieusement (background)
-        await loadProject(true);
+        // On ne recharge PLUS tout le projet à la fin pour éviter le lag.
+        // L'état local est déjà à jour via les updates optimistes.
+        // En arrière-plan, les websockets assureront la consistance si nécessaire.
 
-        // Sélectionner la notion si trouvée
         if (firstNotionFound.current) {
           handleSelectNotion({
             projectName: projectData.pr_name,
@@ -549,17 +585,15 @@ const XCCM2Editor = () => {
             notionName: firstNotionFound.current.context.notionName,
             notion: firstNotionFound.current.notion
           });
-
-          // Toast succès
           toast.success("Structure importée avec succès !");
         }
 
       } catch (err: any) {
         console.error("Erreur import structure:", err);
         if (err.message.includes("sans partie parente")) {
-          toast.error("Impossible de créer ce chapitre orphelin. Veuillez d'abord cliquer sur une Partie ou une Notion existante.");
+          toast.error("Impossible de créer ce chapitre orphelin.");
         } else if (err.message.includes("Impossible de créer une notion")) {
-          toast.error("Impossible de créer cette notion. Veuillez sélectionner un Paragraphe cible.");
+          toast.error("Impossible de créer cette notion. Sélectionnez un Paragraphe cible.");
         } else {
           toast.error("Erreur lors de l'import : " + err.message);
         }
@@ -949,8 +983,8 @@ const XCCM2Editor = () => {
 
       await Promise.all(updatePromises);
 
-      // Recharger silencieusement
-      await loadProject(true);
+      // Recharger silencieusement - DÉSACTIVÉ POUR PERF
+      // await loadProject(true);
 
       // Toast succès
       const successMsg = document.createElement('div');
@@ -963,7 +997,7 @@ const XCCM2Editor = () => {
       console.error("❌ Erreur réordonnancement:", err);
       setError(`Erreur réordonnancement: ${err.message}`);
 
-      // Recharger quand même pour être synchro
+      // Recharger quand même pour être synchro en cas d'erreur
       await loadProject(true);
     }
   };
@@ -1097,7 +1131,7 @@ const XCCM2Editor = () => {
     if (!projectData) return;
 
     try {
-      setIsLoading(true);
+      // setIsLoading(true); // DÉSACTIVÉ POUR UI NON BLOQUANTE
       setError('');
 
       console.log(`🔄 Déplacement ${type} ${itemId} vers parent ${newParentId}`);
@@ -1110,8 +1144,8 @@ const XCCM2Editor = () => {
         newParentId
       );
 
-      // Recharger la structure complète (silencieux)
-      await loadProject(true);
+      // Recharger la structure complète (silencieux) - DÉSACTIVÉ
+      // await loadProject(true);
 
       // Toast succès
       const successMsg = document.createElement('div');
@@ -1130,8 +1164,11 @@ const XCCM2Editor = () => {
       errorMsg.textContent = `Erreur: ${err.message}`;
       document.body.appendChild(errorMsg);
       setTimeout(() => document.body.removeChild(errorMsg), 5000);
+
+      // Rollback reload
+      await loadProject(true);
     } finally {
-      setIsLoading(false);
+      // setIsLoading(false);
     }
   };
 
@@ -1397,7 +1434,18 @@ const XCCM2Editor = () => {
 
 
 
-        <ChatBotOverlay isOpen={showChatBot} onClose={() => setShowChatBot(false)} />
+        <ChatBotOverlay
+          isOpen={showChatBot}
+          onClose={() => setShowChatBot(false)}
+          currentContext={currentContext ? {
+            projectName: projectData?.pr_name || '',
+            partTitle: currentContext.partTitle,
+            chapterTitle: currentContext.chapterTitle || '',
+            paraName: currentContext.paraName || '',
+            notionName: currentContext.notionName || ''
+          } : null}
+          editorContent={editorContent}
+        />
 
         {/* MODALE PARTIE */}
         {showPartModal && (

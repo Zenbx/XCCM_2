@@ -1,5 +1,6 @@
 "use client";
 
+import { AlignLeft, AlignCenter, AlignRight, Trash2, X } from 'lucide-react';
 import React, { useRef, useEffect, useState } from 'react';
 
 interface EditorAreaProps {
@@ -9,7 +10,7 @@ interface EditorAreaProps {
     fontSize: string;
   };
   onChange: (content: string) => void;
-  onDrop: (content: any) => void; // Modifié pour passer soit du contenu (string) soit un granule (objet)
+  onDrop: (content: any) => void;
   editorRef: React.RefObject<HTMLDivElement | null>;
   placeholder?: string;
   isImporting?: boolean;
@@ -29,21 +30,143 @@ const EditorArea: React.FC<EditorAreaProps> = ({
   const isInitialLoad = useRef(true);
   const [internalPlaceholder, setInternalPlaceholder] = useState(placeholder);
 
-  // Mettre à jour le placeholder si la prop change
+  // États pour la gestion des images
+  const [selectedImage, setSelectedImage] = useState<HTMLImageElement | null>(null);
+  const [toolbarPosition, setToolbarPosition] = useState({ top: 0, left: 0 });
+
   useEffect(() => {
     setInternalPlaceholder(placeholder);
   }, [placeholder]);
 
-  // Initialiser le contenu
   useEffect(() => {
     if (editorRef.current) {
       if (editorRef.current.innerHTML !== content) {
-        // On ne met à jour que si le contenu est différent pour éviter de perdre la position du curseur
-        // lors des petites mises à jour, sauf si c'est un changement de contexte (géré par le parent)
         editorRef.current.innerHTML = content;
       }
     }
   }, [content, editorRef]);
+
+  // Gestionnaire de copier-coller pour les images
+  const handlePaste = (e: React.ClipboardEvent) => {
+    const items = e.clipboardData.items;
+
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type.indexOf('image') !== -1) {
+        e.preventDefault();
+        const blob = items[i].getAsFile();
+        if (!blob) continue;
+
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          if (event.target?.result) {
+            const img = `<img src="${event.target.result}" style="max-width: 100%; height: auto; display: block; margin: 0 auto;" />`;
+            document.execCommand('insertHTML', false, img);
+            handleInput(); // Notifier le changement
+          }
+        };
+        reader.readAsDataURL(blob);
+        return; // On arrête après avoir traité une image
+      }
+    }
+  };
+
+  // Gestion du clic pour sélectionner/désélectionner une image
+  const handleEditorClick = (e: React.MouseEvent) => {
+    const target = e.target as HTMLElement;
+
+    // Si on clique sur une image
+    if (target.tagName === 'IMG') {
+      e.stopPropagation(); // Empêcher la perte de focus immédiate
+      const img = target as HTMLImageElement;
+      setSelectedImage(img);
+
+      // Calculer la position de la toolbar
+      const rect = img.getBoundingClientRect();
+      // Centrer au-dessus de l'image
+      setToolbarPosition({
+        top: Math.max(10, rect.top - 60), // 60px au-dessus, min 10px du haut
+        left: Math.max(10, rect.left + (rect.width / 2) - 150) // Centré horizontalement (-150px largeur approx / 2)
+      });
+
+      // Ajouter une outline visuelle à l'image
+      // On enlève d'abord l'outline des autres
+      const allImages = editorRef.current?.getElementsByTagName('img');
+      if (allImages) {
+        for (let i = 0; i < allImages.length; i++) {
+          allImages[i].style.outline = 'none';
+        }
+      }
+      img.style.outline = '3px solid #99334C';
+
+    } else {
+      // Si on clique ailleurs, on désélectionne
+      if (selectedImage) {
+        selectedImage.style.outline = 'none';
+        setSelectedImage(null);
+      }
+
+      // Focus l'éditeur si on clique dans la zone vide
+      if (target === e.currentTarget && editorRef.current) {
+        editorRef.current.focus();
+      }
+    }
+  };
+
+  // Mise à jour de la taille de l'image sélectionnée
+  const updateImageSize = (size: string) => {
+    if (selectedImage) {
+      selectedImage.style.width = size;
+      selectedImage.style.height = 'auto'; // Garder le ratio
+      handleInput();
+
+      // Recalculer la position de la toolbar
+      setTimeout(() => {
+        const rect = selectedImage.getBoundingClientRect();
+        setToolbarPosition({
+          top: Math.max(10, rect.top - 60),
+          left: Math.max(10, rect.left + (rect.width / 2) - 150)
+        });
+      }, 50);
+    }
+  };
+
+  // Mise à jour de l'alignement de l'image
+  const updateImageAlign = (align: 'left' | 'center' | 'right') => {
+    if (selectedImage) {
+      if (align === 'center') {
+        selectedImage.style.display = 'block';
+        selectedImage.style.margin = '0 auto';
+        selectedImage.style.float = 'none';
+      } else if (align === 'left') {
+        selectedImage.style.display = 'block';
+        selectedImage.style.float = 'left';
+        selectedImage.style.margin = '0 1rem 1rem 0';
+      } else if (align === 'right') {
+        selectedImage.style.display = 'block';
+        selectedImage.style.float = 'right';
+        selectedImage.style.margin = '0 0 1rem 1rem';
+      }
+      handleInput();
+
+      // Recalculer position
+      setTimeout(() => {
+        const rect = selectedImage.getBoundingClientRect();
+        setToolbarPosition({
+          top: Math.max(10, rect.top - 60),
+          left: Math.max(10, rect.left + (rect.width / 2) - 150)
+        });
+      }, 50);
+    }
+  };
+
+  // Suppression de l'image
+  const deleteSelectedImage = () => {
+    if (selectedImage) {
+      selectedImage.remove();
+      setSelectedImage(null);
+      handleInput();
+    }
+  };
 
   const handleInput = () => {
     if (editorRef.current) {
@@ -73,7 +196,6 @@ const EditorArea: React.FC<EditorAreaProps> = ({
       try {
         const granule = JSON.parse(granuleData);
 
-        // Si c'est un granule de structure (Partie, Chapitre...), on délègue au parent pour l'import
         if (['part', 'chapter', 'paragraph', 'notion'].includes(granule.type)) {
           onDrop(granule);
           return;
@@ -81,27 +203,22 @@ const EditorArea: React.FC<EditorAreaProps> = ({
 
         const contentToAdd = granule.content || granule.granule_content || '';
 
-        // Insertion intelligente à la position de la souris
         if (document.caretRangeFromPoint) {
           const range = document.caretRangeFromPoint(e.clientX, e.clientY);
           if (range && editorRef.current?.contains(range.startContainer)) {
             const textNode = document.createTextNode(contentToAdd);
             range.insertNode(textNode);
-            // Nettoyage : placer le curseur après
             range.setStartAfter(textNode);
             range.setEndAfter(textNode);
             const sel = window.getSelection();
             sel?.removeAllRanges();
             sel?.addRange(range);
 
-            // Déclencher la mise à jour
             handleInput();
             return;
           }
         }
 
-        // Fallback: Si on ne peut pas déterminer la position, on appelle le handler parent
-        // qui gérera l'ajout (souvent à la fin ou à la position du curseur actuel)
         onDrop(contentToAdd);
 
       } catch (err) {
@@ -141,29 +258,44 @@ const EditorArea: React.FC<EditorAreaProps> = ({
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
+          onPaste={handlePaste}
+          onClick={handleEditorClick}
           data-placeholder={internalPlaceholder}
         />
+
+        {/* Toolbar Image */}
+        {selectedImage && (
+          <div
+            className="fixed bg-white shadow-xl border border-gray-200 rounded-lg p-2 flex gap-2 items-center z-50 animate-in fade-in zoom-in-95 duration-200"
+            style={{
+              top: toolbarPosition.top,
+              left: toolbarPosition.left,
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center gap-1 border-r border-gray-200 pr-2">
+              <button onClick={() => updateImageSize('25%')} className="p-1.5 hover:bg-gray-100 rounded text-xs font-medium text-gray-700" title="Petit">25%</button>
+              <button onClick={() => updateImageSize('50%')} className="p-1.5 hover:bg-gray-100 rounded text-xs font-medium text-gray-700" title="Moyen">50%</button>
+              <button onClick={() => updateImageSize('75%')} className="p-1.5 hover:bg-gray-100 rounded text-xs font-medium text-gray-700" title="Grand">75%</button>
+              <button onClick={() => updateImageSize('100%')} className="p-1.5 hover:bg-gray-100 rounded text-xs font-medium text-gray-700" title="Plein">100%</button>
+            </div>
+
+            <div className="flex items-center gap-1 border-r border-gray-200 pr-2">
+              <button onClick={() => updateImageAlign('left')} className="p-1.5 text-gray-700 hover:bg-gray-100 rounded" title="Aligner à gauche"><AlignLeft size={16} /></button>
+              <button onClick={() => updateImageAlign('center')} className="p-1.5 text-gray-700 hover:bg-gray-100 rounded" title="Centrer"><AlignCenter size={16} /></button>
+              <button onClick={() => updateImageAlign('right')} className="p-1.5 text-gray-700 hover:bg-gray-100 rounded" title="Aligner à droite"><AlignRight size={16} /></button>
+            </div>
+
+            <button onClick={deleteSelectedImage} className="p-1.5 hover:bg-red-50 text-red-600 rounded" title="Supprimer">
+              <Trash2 size={16} />
+            </button>
+            <button onClick={() => setSelectedImage(null)} className="p-1.5 hover:bg-gray-100 text-gray-400 rounded">
+              <X size={16} />
+            </button>
+          </div>
+        )}
       </div>
 
-      {/* Overlay de chargement localisé */}
-      {isImporting && (
-        <div className="absolute inset-0 z-40 bg-white/60 backdrop-blur-[2px] flex items-center justify-center p-8 transition-all animate-in fade-in">
-          <div className="bg-white shadow-xl rounded-2xl p-8 border border-gray-100 flex flex-col items-center text-center max-w-sm">
-            <div className="relative mb-6">
-              <div className="w-16 h-16 rounded-full border-4 border-[#99334C]/10 border-t-[#99334C] animate-spin"></div>
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="w-8 h-8 rounded-full bg-[#99334C]/10 flex items-center justify-center">
-                  <div className="w-2 h-2 bg-[#99334C] rounded-full animate-bounce"></div>
-                </div>
-              </div>
-            </div>
-            <h3 className="text-gray-900 font-bold text-lg mb-2">Mise à jour en cours</h3>
-            <p className="text-gray-500 text-sm leading-relaxed">
-              Le granule sera importé et ajouté à la table des matières...
-            </p>
-          </div>
-        </div>
-      )}
 
       <style jsx global>{`
         [contenteditable]:empty:before {
