@@ -41,18 +41,36 @@ const LibraryPage = () => {
     fetchPublishedDocuments();
   }, []);
 
+  // Liste prédéfinie de catégories pour le filtrage (plus robuste qu'une extraction purement dynamique)
+  const PREDEFINED_CATEGORIES = [
+    "Général",
+    "Informatique",
+    "Mathématiques",
+    "Physique",
+    "Linguistique",
+    "Sciences",
+    "Histoire",
+    "Économie",
+    "Droit"
+  ];
+
   // Filtrer les cours par categorie et recherche
   const filteredCourses = courses.filter(course => {
     const matchesSearch = course.doc_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       course.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       course.author?.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = selectedCategory === 'all' || course.category === selectedCategory;
+
+    const courseCategory = course.category || 'Général';
+    const matchesCategory = selectedCategory === 'all' || courseCategory === selectedCategory;
     const matchesLevel = levelFilter === 'all' || course.level === levelFilter;
 
     return matchesSearch && matchesCategory && matchesLevel;
   });
 
-  const categories = ["all", ...Array.from(new Set(courses.map(c => c.category).filter(Boolean)))];
+  // On combine les catégories prédéfinies avec celles trouvées dans les cours
+  const dynamicCategories = Array.from(new Set(courses.map(c => c.category).filter(Boolean))) as string[];
+  const categories = ["all", ...Array.from(new Set([...PREDEFINED_CATEGORIES, ...dynamicCategories]))];
+
   const coursesPerPage = 6;
   const totalPages = Math.ceil(filteredCourses.length / coursesPerPage);
 
@@ -211,19 +229,25 @@ const LibraryPage = () => {
             </div>
 
             {/* Ligne du bas : Catégories */}
-            <div className="flex items-center gap-2 overflow-x-auto pb-2 lg:pb-0 scrollbar-hide">
-              {categories.map((cat) => (
-                <button
-                  key={cat}
-                  onClick={() => setSelectedCategory(cat)}
-                  className={`px-5 py-2 rounded-full text-sm font-bold whitespace-nowrap transition-all border ${selectedCategory === cat
-                    ? 'bg-[#99334C] text-white border-[#99334C] shadow-md'
-                    : 'bg-white text-gray-600 border-gray-200 hover:border-[#99334C]/30 hover:bg-gray-50'
-                    }`}
-                >
-                  {cat === 'all' ? 'Toutes les catégories' : cat}
-                </button>
-              ))}
+            <div className="pt-2">
+              <div className="flex items-center gap-2 mb-4">
+                <Filter className="w-5 h-5 text-gray-600" />
+                <span className="font-bold text-gray-700">Filtrer par catégories</span>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {categories.map((cat) => (
+                  <button
+                    key={cat}
+                    onClick={() => setSelectedCategory(cat)}
+                    className={`px-5 py-2 rounded-xl text-sm font-bold whitespace-nowrap transition-all border ${selectedCategory === cat
+                      ? 'bg-[#99334C] text-white border-[#99334C] shadow-md'
+                      : 'bg-white text-gray-600 border-gray-200 hover:border-[#99334C]/30 hover:bg-[#99334C]/5'
+                      }`}
+                  >
+                    {cat === 'all' ? 'Toutes les catégories' : cat}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         </div>

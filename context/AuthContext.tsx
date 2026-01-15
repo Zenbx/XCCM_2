@@ -48,9 +48,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const userData = await authService.getCurrentUser();
       setUser(userData);
     } catch (error) {
-      console.error('Auth check error:', error);
       setUser(null);
-      // Pas besoin de clearAuth ici, getCurrentUser le fait déjà en cas de 401
     } finally {
       setIsLoading(false);
     }
@@ -84,12 +82,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await checkAuth();
   };
 
-  // Protection de route simplifiée (le middleware est le principal garde)
+  // Protection de route simplifiée (le middleware est le principal garde, mais la protection client-side est aussi active ici)
+  // AJOUTER ICI LES ROUTES PUBLIQUES SUPPLÉMENTAIRES
   useEffect(() => {
-    if (!isLoading && !isAuthenticated && !['/login', '/register', '/'].includes(pathname)) {
-       router.push('/login');
+    const publicRoutes = ['/', '/login', '/register', '/library', '/help', '/about', '/book-reader'];
+    const isPublicRoute = publicRoutes.some(route => pathname === route || pathname.startsWith(route + '/'));
+
+    if (!isLoading && !isAuthenticated && !isPublicRoute) {
+      router.push('/login');
     }
-  }, [isLoading, isAuthenticated, pathname]);
+  }, [isLoading, isAuthenticated, pathname, router]);
 
 
   return (

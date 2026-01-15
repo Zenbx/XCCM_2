@@ -1,6 +1,6 @@
 // services/commentService.ts
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '';
+const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001').trim();
 
 export interface Comment {
     comment_id: string;

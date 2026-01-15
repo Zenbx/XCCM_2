@@ -17,3 +17,12 @@ export interface LoginResponse {
     user: User;
   };
 }
+export interface RegisterData {
+  email: string;
+  password: string;
+  password_confirmation: string;
+  firstname: string;
+  lastname: string;
+  occupation?: string;
+  org?: string;
+}

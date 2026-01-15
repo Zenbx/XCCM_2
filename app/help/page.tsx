@@ -27,53 +27,53 @@ const HelpCenter = () => {
   const t = translations[language] ?? translations.fr;
 
   // Structure du contenu (généré depuis les traductions)
-  const sections = {
+  const sections: Record<string, any> = {
     documentation: {
-      title: t.help.sections.documentation.title,
+      title: t.help?.sections?.documentation?.title || 'Documentation',
       icon: Book,
       subsections: [
-        { id: 'intro', title: t.help.sections.documentation.subsections.intro },
-        { id: 'fonctionnalites', title: t.help.sections.documentation.subsections.fonctionnalites },
-        { id: 'interface', title: t.help.sections.documentation.subsections.interface },
-        { id: 'organisation', title: t.help.sections.documentation.subsections.organisation },
-        { id: 'publication', title: t.help.sections.documentation.subsections.publication }
+        { id: 'intro', title: t.help?.sections?.documentation?.subsections?.intro || 'Introduction' },
+        { id: 'fonctionnalites', title: t.help?.sections?.documentation?.subsections?.fonctionnalites || 'Fonctionnalités' },
+        { id: 'interface', title: t.help?.sections?.documentation?.subsections?.interface || 'Interface' },
+        { id: 'organisation', title: t.help?.sections?.documentation?.subsections?.organisation || 'Organisation' },
+        { id: 'publication', title: t.help?.sections?.documentation?.subsections?.publication || 'Publication' }
       ]
     },
     faq: {
-      title: t.help.sections.faq.title,
+      title: t.help?.sections?.faq?.title || 'FAQ',
       icon: HelpCircle,
       subsections: [
-        { id: 'compte', title: t.help.sections.faq.subsections.compte },
-        { id: 'creation', title: t.help.sections.faq.subsections.creation },
-        { id: 'problemes', title: t.help.sections.faq.subsections.problemes },
-        { id: 'securite', title: t.help.sections.faq.subsections.securite }
+        { id: 'compte', title: t.help?.sections?.faq?.subsections?.compte || 'Compte' },
+        { id: 'creation', title: t.help?.sections?.faq?.subsections?.creation || 'Création' },
+        { id: 'problemes', title: t.help?.sections?.faq?.subsections?.problemes || 'Problèmes' },
+        { id: 'securite', title: t.help?.sections?.faq?.subsections?.securite || 'Sécurité' }
       ]
     },
     guide: {
-      title: t.help.sections.guide.title,
+      title: t.help?.sections?.guide?.title || 'Guide Auteurs',
       icon: FileText,
       subsections: [
-        { id: 'premier-cours', title: t.help.sections.guide.subsections['premier-cours'] },
-        { id: 'structuration', title: t.help.sections.guide.subsections.structuration },
-        { id: 'bonnes-pratiques', title: t.help.sections.guide.subsections['bonnes-pratiques'] },
-        { id: 'multimedia', title: t.help.sections.guide.subsections.multimedia },
-        { id: 'collaboration', title: t.help.sections.guide.subsections.collaboration }
+        { id: 'premier-cours', title: t.help?.sections?.guide?.subsections?.['premier-cours'] || 'Premier cours' },
+        { id: 'structuration', title: t.help?.sections?.guide?.subsections?.structuration || 'Structuration' },
+        { id: 'bonnes-pratiques', title: t.help?.sections?.guide?.subsections?.['bonnes-pratiques'] || 'Bonnes pratiques' },
+        { id: 'multimedia', title: t.help?.sections?.guide?.subsections?.multimedia || 'Multimédia' },
+        { id: 'collaboration', title: t.help?.sections?.guide?.subsections?.collaboration || 'Collaboration' }
       ]
     },
     support: {
-      title: t.help.sections.support.title,
+      title: t.help?.sections?.support?.title || 'Support Technique',
       icon: Headphones,
       subsections: [
-        { id: 'contact', title: t.help.sections.support.subsections.contact },
-        { id: 'bug-report', title: t.help.sections.support.subsections['bug-report'] },
-        { id: 'compatibilite', title: t.help.sections.support.subsections.compatibilite },
-        { id: 'api', title: t.help.sections.support.subsections.api }
+        { id: 'contact', title: t.help?.sections?.support?.subsections?.contact || 'Contact' },
+        { id: 'bug-report', title: t.help?.sections?.support?.subsections?.['bug-report'] || 'Bug' },
+        { id: 'compatibilite', title: t.help?.sections?.support?.subsections?.compatibilite || 'Compatibilité' },
+        { id: 'api', title: t.help?.sections?.support?.subsections?.api || 'API' }
       ]
     }
   };
   const handleContactSubmit = () => {
     if (!contactForm.nom || !contactForm.email || !contactForm.sujet || !contactForm.description) {
-      toast.error(t.help.contactForm.fillAll ?? 'Veuillez remplir tous les champs');
+      toast.error(t.help?.contactForm?.fillAll ?? 'Veuillez remplir tous les champs');
       return;
     }
     console.log('Formulaire de contact:', contactForm);
@@ -86,7 +86,7 @@ const HelpCenter = () => {
   };
 
   // Contenu détaillé
-  const content = {
+  const content: Record<string, any> = {
     documentation: {
       intro: {
         title: 'Introduction à XCCM 2',
@@ -465,14 +465,14 @@ Limites de taux
     }
   }, []);
 
-  const scrollToSection = (subsectionId) => {
+  const scrollToSection = (subsectionId: string) => {
     const element = document.getElementById(subsectionId);
     element?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     setActiveSubSection(subsectionId);
     setIsMobileTocOpen(false);
   };
 
-  const changeSection = (sectionKey) => {
+  const changeSection = (sectionKey: string) => {
     setActiveSection(sectionKey);
     window.scrollTo({ top: 0, behavior: 'smooth' });
     const firstSubsection = sections[sectionKey].subsections[0].id;
@@ -596,7 +596,7 @@ Limites de taux
             </p>
           </div>
 
-          {currentSection?.subsections.map((subsection) => {
+          {currentSection?.subsections.map((subsection: any) => {
             const subsectionContent = content[activeSection]?.[subsection.id];
 
             // Cas spécial pour le formulaire de contact
@@ -796,7 +796,7 @@ Limites de taux
           </div>
           <nav>
             <ul className="space-y-2">
-              {currentSection?.subsections.map((subsection) => (
+              {currentSection?.subsections.map((subsection: any) => (
                 <li key={subsection.id}>
                   <button
                     onClick={() => scrollToSection(subsection.id)}

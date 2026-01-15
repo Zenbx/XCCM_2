@@ -92,6 +92,8 @@ const RegisterPage = () => {
       newErrors.password = 'Le mot de passe est requis';
     } else if (formData.password.length < 8) {
       newErrors.password = 'Minimum 8 caractères';
+    } else if (!/[a-z]/.test(formData.password) || !/[A-Z]/.test(formData.password) || !/[0-9]/.test(formData.password)) {
+      newErrors.password = 'Le mot de passe doit contenir une majuscule, une minuscule et un chiffre';
     }
     if (formData.password !== formData.password_confirmation) {
       newErrors.password_confirmation = 'Les mots de passe ne correspondent pas';
@@ -406,7 +408,7 @@ const RegisterPage = () => {
                     disabled={isLoading}
                     className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-[#99334C]/20 transition-all text-gray-900 placeholder:text-gray-400 pr-12 disabled:bg-gray-100 disabled:cursor-not-allowed ${errors.password ? 'border-red-500' : 'border-gray-300 focus:border-[#99334C]'
                       }`}
-                    placeholder="Minimum 8 caractères"
+                    placeholder="Min. 8 car. (Maj, Min, Chiffre)"
                   />
                   <button
                     type="button"
@@ -450,17 +452,21 @@ const RegisterPage = () => {
 
               <div className="space-y-2">
                 <p className="text-sm font-medium text-gray-700">Votre mot de passe doit contenir :</p>
-                <div className="space-y-1">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2">
                   <div className={`flex items-center gap-2 text-sm ${formData.password.length >= 8 ? 'text-green-600' : 'text-gray-400'}`}>
-                    <Check className="w-4 h-4" />
+                    <Check className="w-4 h-4 flex-shrink-0" />
                     <span>Au moins 8 caractères</span>
                   </div>
                   <div className={`flex items-center gap-2 text-sm ${/[A-Z]/.test(formData.password) ? 'text-green-600' : 'text-gray-400'}`}>
-                    <Check className="w-4 h-4" />
+                    <Check className="w-4 h-4 flex-shrink-0" />
                     <span>Une lettre majuscule</span>
                   </div>
+                  <div className={`flex items-center gap-2 text-sm ${/[a-z]/.test(formData.password) ? 'text-green-600' : 'text-gray-400'}`}>
+                    <Check className="w-4 h-4 flex-shrink-0" />
+                    <span>Une lettre minuscule</span>
+                  </div>
                   <div className={`flex items-center gap-2 text-sm ${/[0-9]/.test(formData.password) ? 'text-green-600' : 'text-gray-400'}`}>
-                    <Check className="w-4 h-4" />
+                    <Check className="w-4 h-4 flex-shrink-0" />
                     <span>Un chiffre</span>
                   </div>
                 </div>

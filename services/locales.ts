@@ -123,52 +123,52 @@ export const translations: Record<Language, any> = {
             ],
             team: { title: "Notre équipe", subtitle: "Des passionnés d'éducation et de technologie réunis pour créer la meilleure expérience" },
             contact: { name: "Nom", email: "E-mail", subject: "Sujet", message: "Message", send: "Envoyer", sectionLabel: "Contactez-nous", heading: "Nous contacter", subtitle: "Une question ? Une suggestion ? N'hésitez pas à nous écrire", formTitle: "Envoyez-nous un message", namePlaceholder: "Votre nom", emailPlaceholder: "votre@email.com", subjectPlaceholder: "Objet de votre message", messagePlaceholder: "Écrivez votre message ici...", infoTitle: "Informations de contact", hoursTitle: "Horaires d'ouverture" },
-            help: {
-                title: "Centre d'aide",
-                searchPlaceholder: "Rechercher...",
-                sections: {
-                    documentation: {
-                        title: "Documentation",
-                        subsections: {
-                            intro: "Introduction à XCCM 2",
-                            fonctionnalites: "Fonctionnalités principales",
-                            interface: "Interface utilisateur",
-                            organisation: "Organisation des cours",
-                            publication: "Publication et partage"
-                        }
-                    },
-                    faq: {
-                        title: "FAQ",
-                        subsections: {
-                            compte: "Gestion du compte",
-                            creation: "Création de contenu",
-                            problemes: "Problèmes courants",
-                            securite: "Sécurité et confidentialité"
-                        }
-                    },
-                    guide: {
-                        title: "Guide Auteurs",
-                        subsections: {
-                            'premier-cours': "Créer votre premier cours",
-                            structuration: "Structurer vos contenus",
-                            'bonnes-pratiques': "Bonnes pratiques pédagogiques",
-                            multimedia: "Ajouter du multimédia",
-                            collaboration: "Travailler en équipe"
-                        }
-                    },
-                    support: {
-                        title: "Support Technique",
-                        subsections: {
-                            contact: "Nous contacter",
-                            'bug-report': "Signaler un bug",
-                            compatibilite: "Compatibilité navigateurs",
-                            api: "Documentation API"
-                        }
+            cta: { title: "Prêt à révolutionner votre enseignement ?", subtitle: "Rejoignez XCCM 2 et créez des contenus pédagogiques exceptionnels", primary: "Commencer maintenant" }
+        },
+        help: {
+            title: "Centre d'aide",
+            searchPlaceholder: "Rechercher...",
+            sections: {
+                documentation: {
+                    title: "Documentation",
+                    subsections: {
+                        intro: "Introduction à XCCM 2",
+                        fonctionnalites: "Fonctionnalités principales",
+                        interface: "Interface utilisateur",
+                        organisation: "Organisation des cours",
+                        publication: "Publication et partage"
                     }
                 },
-                contactForm: { name: "Nom", email: "E-mail", subject: "Sujet", description: "Description", send: "Envoyer", formTitle: "Envoyez-nous un message", namePlaceholder: "Votre nom", emailPlaceholder: "votre@email.com", subjectPlaceholder: "Objet de votre message", descriptionPlaceholder: "Décrivez votre message ici...", success: "Message envoyé, merci !", fillAll: "Veuillez remplir tous les champs" }
+                faq: {
+                    title: "FAQ",
+                    subsections: {
+                        compte: "Gestion du compte",
+                        creation: "Création de contenu",
+                        problemes: "Problèmes courants",
+                        securite: "Sécurité et confidentialité"
+                    }
+                },
+                guide: {
+                    title: "Guide Auteurs",
+                    subsections: {
+                        'premier-cours': "Créer votre premier cours",
+                        structuration: "Structurer vos contenus",
+                        'bonnes-pratiques': "Bonnes pratiques pédagogiques",
+                        multimedia: "Ajouter du multimédia",
+                        collaboration: "Travailler en équipe"
+                    }
+                },
+                support: {
+                    title: "Support Technique",
+                    subsections: {
+                        contact: "Nous contacter",
+                        'bug-report': "Signaler un bug",
+                        compatibilite: "Compatibilité navigateurs",
+                        api: "Documentation API"
+                    }
+                }
             },
-            cta: { title: "Prêt à révolutionner votre enseignement ?", subtitle: "Rejoignez XCCM 2 et créez des contenus pédagogiques exceptionnels", primary: "Commencer maintenant" }
+            contactForm: { name: "Nom", email: "E-mail", subject: "Sujet", description: "Description", send: "Envoyer", formTitle: "Envoyez-nous un message", namePlaceholder: "Votre nom", emailPlaceholder: "votre@email.com", subjectPlaceholder: "Objet de votre message", descriptionPlaceholder: "Décrivez votre message ici...", success: "Message envoyé, merci !", fillAll: "Veuillez remplir tous les champs" }
         },
     },
     en: {
@@ -293,52 +293,52 @@ export const translations: Record<Language, any> = {
             ],
             team: { title: "Our team", subtitle: "Passionate people in education and technology united to build the best experience" },
             contact: { name: "Name", email: "Email", subject: "Subject", message: "Message", send: "Send", sectionLabel: "Contact us", heading: "Get in touch", subtitle: "Have a question or suggestion? Please write to us.", formTitle: "Send us a message", namePlaceholder: "Your name", emailPlaceholder: "your@email.com", subjectPlaceholder: "Subject of your message", messagePlaceholder: "Write your message here...", infoTitle: "Contact information", hoursTitle: "Opening hours" },
-            help: {
-                title: "Help Center",
-                searchPlaceholder: "Search...",
-                sections: {
-                    documentation: {
-                        title: "Documentation",
-                        subsections: {
-                            intro: "Introduction to XCCM 2",
-                            fonctionnalites: "Main features",
-                            interface: "User interface",
-                            organisation: "Course organization",
-                            publication: "Publication and sharing"
-                        }
-                    },
-                    faq: {
-                        title: "FAQ",
-                        subsections: {
-                            compte: "Account management",
-                            creation: "Content creation",
-                            problemes: "Common issues",
-                            securite: "Security & privacy"
-                        }
-                    },
-                    guide: {
-                        title: "Author Guide",
-                        subsections: {
-                            'premier-cours': "Create your first course",
-                            structuration: "Structure your content",
-                            'bonnes-pratiques': "Best pedagogical practices",
-                            multimedia: "Add multimedia",
-                            collaboration: "Work as a team"
-                        }
-                    },
-                    support: {
-                        title: "Technical Support",
-                        subsections: {
-                            contact: "Contact us",
-                            'bug-report': "Report a bug",
-                            compatibilite: "Browser compatibility",
-                            api: "API documentation"
-                        }
+            cta: { title: "Ready to revolutionize your teaching?", subtitle: "Join XCCM 2 and create exceptional pedagogical content", primary: "Get started now" }
+        },
+        help: {
+            title: "Help Center",
+            searchPlaceholder: "Search...",
+            sections: {
+                documentation: {
+                    title: "Documentation",
+                    subsections: {
+                        intro: "Introduction to XCCM 2",
+                        fonctionnalites: "Main features",
+                        interface: "User interface",
+                        organisation: "Course organization",
+                        publication: "Publication and sharing"
                     }
                 },
-                contactForm: { name: "Name", email: "Email", subject: "Subject", description: "Description", send: "Send", formTitle: "Send us a message", namePlaceholder: "Your name", emailPlaceholder: "your@email.com", subjectPlaceholder: "Subject of your message", descriptionPlaceholder: "Describe your message here...", success: "Message sent, thanks!", fillAll: "Please fill in all fields" }
+                faq: {
+                    title: "FAQ",
+                    subsections: {
+                        compte: "Account management",
+                        creation: "Content creation",
+                        problemes: "Common issues",
+                        securite: "Security & privacy"
+                    }
+                },
+                guide: {
+                    title: "Author Guide",
+                    subsections: {
+                        'premier-cours': "Create your first course",
+                        structuration: "Structure your content",
+                        'bonnes-pratiques': "Best pedagogical practices",
+                        multimedia: "Add multimedia",
+                        collaboration: "Work as a team"
+                    }
+                },
+                support: {
+                    title: "Technical Support",
+                    subsections: {
+                        contact: "Contact us",
+                        'bug-report': "Report a bug",
+                        compatibilite: "Browser compatibility",
+                        api: "API documentation"
+                    }
+                }
             },
-            cta: { title: "Ready to revolutionize your teaching?", subtitle: "Join XCCM 2 and create exceptional pedagogical content", primary: "Get started now" }
+            contactForm: { name: "Name", email: "Email", subject: "Subject", description: "Description", send: "Send", formTitle: "Send us a message", namePlaceholder: "Your name", emailPlaceholder: "your@email.com", subjectPlaceholder: "Subject of your message", descriptionPlaceholder: "Describe your message here...", success: "Message sent, thanks!", fillAll: "Please fill in all fields" }
         }
     }
 }

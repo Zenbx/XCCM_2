@@ -2,7 +2,7 @@
  * Service pour gérer les templates de projets
  */
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '';
+const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001').trim();
 
 export interface Template {
     template_id: string;

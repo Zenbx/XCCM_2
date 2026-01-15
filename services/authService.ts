@@ -2,7 +2,7 @@
 import { User, LoginResponse, RegisterData } from '@/types/auth';
 import { setCookie, getCookie, deleteCookie } from '@/lib/cookies';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001').trim();
 
 class AuthService {
   async login(email: string, password: string): Promise<User> {
@@ -44,10 +44,10 @@ class AuthService {
     return data.data.user;
   }
 
-  async getCurrentUser(): Promise<User> {
+  async getCurrentUser(): Promise<User | null> {
     const token = this.getAuthToken();
     if (!token) {
-      throw new Error('Non authentifié');
+      return null;
     }
 
     try {
@@ -68,7 +68,7 @@ class AuthService {
       if (!data.data.user) {
         throw new Error("Format de réponse utilisateur invalide");
       }
-      
+
       // Mettre à jour le user en session storage
       sessionStorage.setItem('user', JSON.stringify(data.data.user));
 
