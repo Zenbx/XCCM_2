@@ -14,8 +14,9 @@ import { commentService } from '@/services/commentService';
 import { Language, translations } from '@/services/locales';
 import { useLanguage } from '@/context/LanguageContext';
 import LanguageToggle from '@/components/LanguageToggle';
-import { structureService, Part, Chapter, Paragraph, Notion } from '@/services/structureService';
+import { structureService, Part, Chapter, Paragraph, Notion, getProjectStructureOptimized } from '@/services/structureService';
 import ShareOverlay from '@/components/Editor/ShareOverlay';
+import { useRealtimeSync } from '@/hooks/useRealtimeSync';
 import pLimit from 'p-limit';
 import { FaHome } from 'react-icons/fa';
 import toast from 'react-hot-toast';
@@ -91,22 +92,34 @@ const XCCM2Editor = () => {
       (currentContext?.type === 'paragraph')
     );
   }, [currentContext?.type]);
+
+  // Ref pour accéder à loadProject dans le callback stable
+  const loadProjectRef = useRef<((silent?: boolean) => Promise<void>) | null>(null);
+
   useEffect(() => {
     if (projectName) {
       loadProject();
     }
   }, [projectName]);
 
-  // Polling pour la collaboration (pseudo temps réel)
-  useEffect(() => {
-    if (!projectName) return;
+  // Handler stable pour le temps réel
+  const handleStructureChange = React.useCallback((event: string, data: any) => {
+    console.log('📡 Received realtime event:', event, data);
+    if (event === 'NOTION_UPDATED' || event === 'STRUCTURE_CHANGED') {
+      // Reload silencieusement la structure via le ref
+      if (loadProjectRef.current) {
+        loadProjectRef.current(true);
+        toast.success('📡 Mise à jour collaborative', { duration: 2000 });
+      }
+    }
+  }, []);
 
-    const intervalId = setInterval(() => {
-      loadProject(true); // silent reload
-    }, 30000);
-
-    return () => clearInterval(intervalId);
-  }, [projectName]);
+  // ⚡ Real-time sync via WebSockets
+  useRealtimeSync({
+    projectName: projectName || '',
+    enabled: !!projectName,
+    onStructureChange: handleStructureChange
+  });
 
   useEffect(() => {
     if (currentContext && editorContent !== currentContext.notion?.notion_content) {
@@ -124,30 +137,14 @@ const XCCM2Editor = () => {
       const project = await projectService.getProjectByName(projectName!);
       setProjectData(project);
 
-      // Charger aussi les commentaires si nécessaire (ou on le fera quand le panel s'ouvre)
+      // Charger les commentaires
       fetchComments();
 
-      // 1. Charger uniquement les parties (rapide)
-      const parts = await structureService.getParts(project.pr_name);
-      setStructure(parts); // Affichage immédiat
-      if (!isSilent) setIsLoading(false); // L'UI est débloquée
+      // ⚡ Chargement optimisé en 1 seul appel (au lieu de N+1)
+      const parts = await getProjectStructureOptimized(project.pr_name);
+      setStructure(parts);
 
-      // 2. Charger les détails en arrière-plan (Progressive Loading)
-      const limit = pLimit(3); // 3 parties en parallèle max pour ne pas ralentir l'UI
-
-      const updatePromise = parts.map(part => limit(async () => {
-        try {
-          // On récupère la partie complète
-          const updatedPart = await structureService.fillPartDetails(project.pr_name, { ...part });
-
-          // Mise à jour de l'état local pour rafraîchir l'affichage de CETTE partie
-          setStructure(prev => prev.map(p => p.part_id === updatedPart.part_id ? updatedPart : p));
-        } catch (err) {
-          console.error(`Erreur chargement détails partie ${part.part_title}:`, err);
-        }
-      }));
-
-      await Promise.all(updatePromise);
+      if (!isSilent) setIsLoading(false);
 
     } catch (err: any) {
       // Gestion spécifique de l'erreur d'authentification
@@ -163,6 +160,9 @@ const XCCM2Editor = () => {
       if (!isSilent) setIsLoading(false);
     }
   };
+
+  // Assigner loadProject au ref pour le callback temps réel
+  loadProjectRef.current = loadProject;
 
   const fetchComments = async () => {
     if (!projectName) return;
