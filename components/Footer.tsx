@@ -6,6 +6,9 @@ import { useAuth } from '@/context/AuthContext';
 import { usePathname } from 'next/navigation';
 import { useLanguage } from '@/context/LanguageContext';
 import { translations } from '@/services/locales';
+import { mailingService } from '@/services/mailingService';
+import toast from 'react-hot-toast';
+import { Loader2 } from 'lucide-react';
 
 // ============= COMPOSANT: Footer =============
 
@@ -14,6 +17,9 @@ import { translations } from '@/services/locales';
 const Footer = () => {
   const pathname = usePathname();
   const { language } = useLanguage();
+  const { user } = useAuth();
+  const [email, setEmail] = React.useState('');
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
 
   const t = translations[language] ?? translations.fr;
   console.log('[Footer] render language=', language, 'title=', t.footer?.title);
@@ -43,14 +49,53 @@ const Footer = () => {
             <p className="text-sm text-gray-400 mb-4">
               {t.footer.newsletter.desc}
             </p>
-            <form className="flex flex-col sm:flex-row gap-3">
+            <form
+              className="flex flex-col sm:flex-row gap-3"
+              onSubmit={async (e) => {
+                e.preventDefault();
+                if (!email) return;
+
+                if (!user) {
+                  toast.error("Vous devez être connecté pour vous abonner à la newsletter", {
+                    icon: '🔒',
+                    duration: 4000
+                  });
+                  return;
+                }
+
+                setIsSubmitting(true);
+                try {
+                  await mailingService.subscribeNewsletter(email);
+                  toast.success(t.help.contactForm.success || 'Abonnement réussi !');
+                  setEmail('');
+                } catch (err: any) {
+                  toast.error(err.message || "Erreur lors de l'abonnement");
+                } finally {
+                  setIsSubmitting(false);
+                }
+              }}
+            >
               <input
                 type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 placeholder={t.footer.newsletter.emailPlaceholder}
                 className="flex-grow bg-[#2A373E] border border-gray-600 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#99334C] transition-all"
               />
-              <button className="bg-[#99334C] hover:bg-[#b03d59] text-white font-medium py-2 px-6 rounded-lg transition-colors duration-300">
-                {t.footer.newsletter.subscribe}
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="bg-[#99334C] hover:bg-[#b03d59] text-white font-medium py-2 px-6 rounded-lg transition-colors duration-300 flex items-center justify-center gap-2 min-w-[140px]"
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Envoi...
+                  </>
+                ) : (
+                  t.footer.newsletter.subscribe
+                )}
               </button>
             </form>
           </div>

@@ -93,17 +93,26 @@ const LibraryPage = () => {
       // Appeler l'API pour obtenir l'URL et incrementer le compteur
       const { url, doc_name } = await documentService.downloadDocument(docId);
 
-      // Telecharger le fichier
+      // Téléchargement robuste via Fetch + Blob
+      // Cela permet de s'assurer que l'attribut 'download' fonctionne et d'être cohérent avec les noms de fichiers
+      const response = await fetch(url);
+      if (!response.ok) throw new Error('Échec du téléchargement du fichier source');
+
+      const blob = await response.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+
       const link = document.createElement('a');
-      link.href = url;
-      link.download = doc_name;
-      link.target = '_blank';
+      link.href = blobUrl;
+      link.download = doc_name.endsWith('.pdf') || doc_name.endsWith('.docx') ? doc_name : `${doc_name}.pdf`; // Fallback extension
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
 
+      // Libérer l'URL du blob
+      window.URL.revokeObjectURL(blobUrl);
+
       // Toast de succes
-      toast.success('Téléchargement lancé !');
+      toast.success('Téléchargement terminé !');
 
     } catch (err) {
       console.error('Erreur telechargement:', err);

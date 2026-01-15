@@ -4,7 +4,10 @@ import React, { useState, useEffect } from 'react';
 import { ChevronRight, Search, Book, HelpCircle, FileText, Headphones, Menu, X, Send, Mail, Phone, MapPin, Clock } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { useLanguage } from '@/context/LanguageContext';
+import { useAuth } from '@/context/AuthContext';
 import { translations } from '@/services/locales';
+import { mailingService } from '@/services/mailingService';
+import { Loader2 } from 'lucide-react';
 
 const HelpCenter = () => {
   const [activeSection, setActiveSection] = useState('documentation');
@@ -21,9 +24,11 @@ const HelpCenter = () => {
     description: ''
   });
   const [formSubmitted, setFormSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Language + translations alias
   const { language } = useLanguage();
+  const { user } = useAuth();
   const t = translations[language] ?? translations.fr;
 
   // Structure du contenu (généré depuis les traductions)
@@ -71,18 +76,39 @@ const HelpCenter = () => {
       ]
     }
   };
-  const handleContactSubmit = () => {
+  const handleContactSubmit = async () => {
+    if (!user) {
+      toast.error("Vous devez être connecté pour contacter le support technique", {
+        icon: '🔒',
+        duration: 4000
+      });
+      return;
+    }
+
     if (!contactForm.nom || !contactForm.email || !contactForm.sujet || !contactForm.description) {
       toast.error(t.help?.contactForm?.fillAll ?? 'Veuillez remplir tous les champs');
       return;
     }
-    console.log('Formulaire de contact:', contactForm);
-    toast.success('Message envoyé avec succès !');
-    setFormSubmitted(true);
-    setTimeout(() => {
-      setFormSubmitted(false);
+
+    setIsSubmitting(true);
+    try {
+      await mailingService.sendContact({
+        name: contactForm.nom,
+        email: contactForm.email,
+        subject: contactForm.sujet,
+        message: contactForm.description
+      });
+      toast.success(t.help?.contactForm?.success || 'Message envoyé avec succès !');
+      setFormSubmitted(true);
       setContactForm({ nom: '', email: '', sujet: '', description: '' });
-    }, 3000);
+      setTimeout(() => {
+        setFormSubmitted(false);
+      }, 5000);
+    } catch (err: any) {
+      toast.error(err.message || "Erreur lors de l'envoi du message");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   // Contenu détaillé
@@ -680,10 +706,20 @@ Limites de taux
 
                           <button
                             onClick={handleContactSubmit}
-                            className="w-full bg-[#99334C] text-white py-3 rounded-xl font-semibold hover:bg-[#7a283d] transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
+                            disabled={isSubmitting}
+                            className="w-full bg-[#99334C] text-white py-3 rounded-xl font-semibold hover:bg-[#7a283d] transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2 disabled:opacity-50"
                           >
-                            <Send className="w-5 h-5" />
-                            {t.help.contactForm.send}
+                            {isSubmitting ? (
+                              <>
+                                <Loader2 className="w-5 h-5 animate-spin" />
+                                Envoi...
+                              </>
+                            ) : (
+                              <>
+                                <Send className="w-5 h-5" />
+                                {t.help.contactForm.send}
+                              </>
+                            )}
                           </button>
                         </div>
                       )}

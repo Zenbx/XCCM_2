@@ -21,7 +21,11 @@ import {
 } from 'lucide-react';
 import router from 'next/router';
 import { useLanguage } from '@/context/LanguageContext';
+import { useAuth } from '@/context/AuthContext';
 import { translations } from '@/services/locales';
+import { mailingService } from '@/services/mailingService';
+import toast from 'react-hot-toast';
+import { Loader2 } from 'lucide-react';
 
 const AboutPage = () => {
   const [contactForm, setContactForm] = useState({
@@ -30,8 +34,10 @@ const AboutPage = () => {
     sujet: '',
     message: ''
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { language } = useLanguage();
+  const { user } = useAuth();
   const t = translations[language] ?? translations.fr;
 
   // Gestion des animations au scroll
@@ -56,9 +62,40 @@ const AboutPage = () => {
     return () => observer.disconnect();
   }, []);
 
-  const handleContactSubmit = () => {
-    console.log('Contact form:', contactForm);
-    // TODO: Appel API pour envoyer le message
+  const handleContactSubmit = async () => {
+    if (!user) {
+      toast.error("Vous devez être connecté pour nous contacter par formulaire", {
+        icon: '🔒',
+        duration: 4000
+      });
+      return;
+    }
+
+    if (!contactForm.nom || !contactForm.email || !contactForm.sujet || !contactForm.message) {
+      toast.error("Veuillez remplir tous les champs");
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      await mailingService.sendContact({
+        name: contactForm.nom,
+        email: contactForm.email,
+        subject: contactForm.sujet,
+        message: contactForm.message
+      });
+      toast.success(t.help.contactForm.success || "Votre message a été envoyé avec succès !");
+      setContactForm({
+        nom: '',
+        email: '',
+        sujet: '',
+        message: ''
+      });
+    } catch (err: any) {
+      toast.error(err.message || "Erreur lors de l'envoi du message");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const teamMembers = [
@@ -273,7 +310,7 @@ const AboutPage = () => {
               </p>
 
               <div className="grid md:grid-cols-2 gap-6 mt-8">
-                {t.about.features.map((feature, index) => {
+                {t.about.features.map((feature: any, index: number) => {
                   const IconComponent = features[index]?.icon || BookOpen;
                   return (
                     <div key={index} className="flex gap-4 p-4 bg-white rounded-xl border border-gray-200 hover:border-[#99334C]/50 transition-all">
@@ -318,7 +355,7 @@ const AboutPage = () => {
           </div>
 
           <div className="grid md:grid-cols-2 gap-8 mb-12">
-            {t.about.values.map((value, index) => {
+            {t.about.values.map((value: any, index: number) => {
               const IconComponent = values[index]?.icon || Lightbulb;
               return (
                 <div key={index} className="bg-white rounded-2xl p-8 shadow-lg hover:shadow-xl transition-all border border-gray-100 group animate-on-scroll" style={{ animationDelay: `${index * 0.1}s` }}>
@@ -478,8 +515,8 @@ const AboutPage = () => {
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
                     {t.about.contact.message}
-                    </label>
-                    <textarea
+                  </label>
+                  <textarea
                     value={contactForm.message}
                     onChange={(e) => setContactForm({ ...contactForm, message: e.target.value })}
                     rows={5}
@@ -490,10 +527,20 @@ const AboutPage = () => {
 
                 <button
                   onClick={handleContactSubmit}
-                  className="w-full bg-[#99334C] text-white py-3 rounded-xl font-semibold hover:bg-[#7a283d] transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
+                  disabled={isSubmitting}
+                  className="w-full bg-[#99334C] text-white py-3 rounded-xl font-semibold hover:bg-[#7a283d] transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2 disabled:opacity-50"
                 >
-                  <Send className="w-5 h-5" />
-                  {t.about.contact.send}
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      Envoi...
+                    </>
+                  ) : (
+                    <>
+                      <Send className="w-5 h-5" />
+                      {t.about.contact.send}
+                    </>
+                  )}
                 </button>
               </div>
             </div>
@@ -573,10 +620,10 @@ const AboutPage = () => {
             </div>
           </div>
         </div>
-      </section>
+      </section >
 
       {/* Call to Action Final */}
-      <section className="py-16 px-6">
+      < section className="py-16 px-6" >
         <div className="max-w-5xl mx-auto">
           <div className="bg-gradient-to-br from-[#99334C] to-[#7a283d] rounded-[40px] p-12 text-center text-white relative overflow-hidden animate-on-scroll">
             <div className="absolute inset-0 opacity-10">
@@ -601,8 +648,8 @@ const AboutPage = () => {
             </div>
           </div>
         </div>
-      </section>
-    </div>
+      </section >
+    </div >
   );
 };
 
