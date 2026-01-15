@@ -83,6 +83,13 @@ const XCCM2Editor = () => {
 
   const [expandedItems, setExpandedItems] = useState<{ [key: string]: boolean }>({});
   const [showShareOverlay, setShowShareOverlay] = useState(false);
+  const isToolbarDisabled = React.useMemo(() => {
+    // Désactiver si Chapter ou Paragraph est sélectionné (mais pas Notion)
+    return (
+      (currentContext?.type === 'chapter') ||
+      (currentContext?.type === 'paragraph')
+    );
+  }, [currentContext?.type]);
   useEffect(() => {
     if (projectName) {
       loadProject();
@@ -845,46 +852,122 @@ const XCCM2Editor = () => {
     }
   };
 
-  const handleReorder = async (type: string, parentId: string | null, items: any[]) => {
-    if (!projectData) return;
-    try {
-      // On met à jour chaque item avec sa nouvelle position
-      const limit = pLimit(3);
-      await Promise.all(items.map((item, index) => limit(async () => {
-        const newNumber = index + 1;
+const handleReorder = async (
+  type: 'part' | 'chapter' | 'paragraph' | 'notion',
+  parentId: string | null,
+  items: any[]
+) => {
+  if (!projectData) return;
+
+  try {
+    setError('');
+
+    console.log(`🔃 Réordonnancement ${type}s`, { parentId, count: items.length });
+
+    // Mettre à jour les numéros dans l'ordre
+    const limit = pLimit(3);
+    const updatePromises = items.map((item, index) => limit(async () => {
+      const newNumber = index + 1;
+
+      try {
         if (type === 'part') {
-          await structureService.updatePart(projectData.pr_name, item.part_title, { part_number: newNumber });
-        } else if (type === 'chapter') {
-          const part = structure.find(p => p.part_id === parentId);
-          if (part) await structureService.updateChapter(projectData.pr_name, part.part_title, item.chapter_title, { chapter_number: newNumber });
-        } else if (type === 'paragraph') {
-          let partTitle = "";
-          let chapterTitle = "";
-          outer: for (const p of structure) {
-            const c = p.chapters?.find(ch => ch.chapter_id === parentId);
-            if (c) { partTitle = p.part_title; chapterTitle = c.chapter_title; break outer; }
+          const currentNumber = item.part_number;
+          if (currentNumber !== newNumber) {
+            await structureService.updatePart(
+              projectData.pr_name,
+              item.part_title,
+              { part_number: newNumber }
+            );
           }
-          if (partTitle && chapterTitle) await structureService.updateParagraph(projectData.pr_name, partTitle, chapterTitle, item.para_name, { para_number: newNumber });
-        } else if (type === 'notion') {
-          let partT = "", chapT = "", paraN = "";
-          outer: for (const p of structure) {
-            for (const c of p.chapters || []) {
-              const para = c.paragraphs?.find(pg => pg.para_id === parentId);
-              if (para) { partT = p.part_title; chapT = c.chapter_title; paraN = para.para_name; break outer; }
+        } else if (type === 'chapter') {
+          const currentNumber = item.chapter_number;
+          if (currentNumber !== newNumber) {
+            const part = structure.find(p => p.part_id === parentId);
+            if (part) {
+              await structureService.updateChapter(
+                projectData.pr_name,
+                part.part_title,
+                item.chapter_title,
+                { chapter_number: newNumber }
+              );
             }
           }
-          if (partT && chapT && paraN) await structureService.updateNotion(projectData.pr_name, partT, chapT, paraN, item.notion_name, { notion_number: newNumber });
+        } else if (type === 'paragraph') {
+          const currentNumber = item.para_number;
+          if (currentNumber !== newNumber) {
+            let partTitle = "";
+            let chapterTitle = "";
+            outer: for (const p of structure) {
+              const c = p.chapters?.find(ch => ch.chapter_id === parentId);
+              if (c) {
+                partTitle = p.part_title;
+                chapterTitle = c.chapter_title;
+                break outer;
+              }
+            }
+            if (partTitle && chapterTitle) {
+              await structureService.updateParagraph(
+                projectData.pr_name,
+                partTitle,
+                chapterTitle,
+                item.para_name,
+                { para_number: newNumber }
+              );
+            }
+          }
+        } else if (type === 'notion') {
+          const currentNumber = item.notion_number;
+          if (currentNumber !== newNumber) {
+            let partT = "", chapT = "", paraN = "";
+            outer: for (const p of structure) {
+              for (const c of p.chapters || []) {
+                const para = c.paragraphs?.find(pg => pg.para_id === parentId);
+                if (para) {
+                  partT = p.part_title;
+                  chapT = c.chapter_title;
+                  paraN = para.para_name;
+                  break outer;
+                }
+              }
+            }
+            if (partT && chapT && paraN) {
+              await structureService.updateNotion(
+                projectData.pr_name,
+                partT,
+                chapT,
+                paraN,
+                item.notion_name,
+                { notion_number: newNumber }
+              );
+            }
+          }
         }
-      })));
+      } catch (err) {
+        console.error(`Erreur update ${type} #${newNumber}:`, err);
+        throw err;
+      }
+    }));
 
-      // Rafraîchir
-      await loadProject(true);
-    } catch (err: any) {
-      console.error("Erreur réordonnancement:", err);
-      // alert("Erreur lors du réordonnancement. Certains éléments peuvent avoir gardé leur ancienne position.");
-      await loadProject(true); // Recharger pour être synchro
-    }
-  };
+    await Promise.all(updatePromises);
+
+    // Recharger silencieusement
+    await loadProject(true);
+
+    // Toast succès
+    const successMsg = document.createElement('div');
+    successMsg.className = 'fixed top-4 right-4 bg-blue-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 flex items-center gap-2 animate-in slide-in-from-right';
+    successMsg.innerHTML = `<svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg> Ordre mis à jour`;
+    document.body.appendChild(successMsg);
+    setTimeout(() => document.body.removeChild(successMsg), 2000);
+
+  } catch (err: any) {
+    console.error("❌ Erreur réordonnancement:", err);
+    setError(`Erreur réordonnancement: ${err.message}`);
+
+    // Recharger quand même pour être synchro
+    await loadProject(true);
+  }
+};
 
   const handleDelete = async (type: string, id: string) => {
     if (!projectData) return;
@@ -1006,6 +1089,53 @@ const XCCM2Editor = () => {
     );
   }
 
+
+  const handleMoveGranule = async (
+  type: 'chapter' | 'paragraph' | 'notion',
+  itemId: string,
+  newParentId: string
+) => {
+  if (!projectData) return;
+
+  try {
+    setIsLoading(true);
+    setError('');
+
+    console.log(`🔄 Déplacement ${type} ${itemId} vers parent ${newParentId}`);
+
+    // Appel API pour déplacer le granule
+    await structureService.moveGranule(
+      projectData.pr_name,
+      type,
+      itemId,
+      newParentId
+    );
+
+    // Recharger la structure complète (silencieux)
+    await loadProject(true);
+
+    // Toast succès
+    const successMsg = document.createElement('div');
+    successMsg.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 flex items-center gap-2 animate-in slide-in-from-right';
+    successMsg.innerHTML = `<svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg> ${type.charAt(0).toUpperCase() + type.slice(1)} déplacé(e) avec succès`;
+    document.body.appendChild(successMsg);
+    setTimeout(() => document.body.removeChild(successMsg), 3000);
+
+  } catch (err: any) {
+    console.error('❌ Erreur déplacement:', err);
+    setError(`Erreur: ${err.message}`);
+
+    // Toast erreur
+    const errorMsg = document.createElement('div');
+    errorMsg.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 flex items-center gap-2';
+    errorMsg.textContent = `Erreur: ${err.message}`;
+    document.body.appendChild(errorMsg);
+    setTimeout(() => document.body.removeChild(errorMsg), 5000);
+  } finally {
+    setIsLoading(false);
+  }
+};
+
   const handleInsertImage = () => {
     // Créer un input file invisible
     const input = document.createElement('input');
@@ -1064,26 +1194,26 @@ const XCCM2Editor = () => {
       <meta name="viewport" content="width=1200, initial-scale=0.5" />
       <div className="flex h-screen bg-gray-50 overflow-hidden">
         <TableOfContents
-          projectName={projectData?.pr_name || ''}
-          structure={structure}
-          onSelectNotion={handleSelectNotion}
-          onCreatePart={handleCreatePart}
-          onCreateChapter={handleCreateChapter}
-          onCreateParagraph={handleCreateParagraph}
-          onCreateNotion={handleCreateNotion}
-          selectedNotionId={currentContext?.notion?.notion_id}
-          selectedChapterId={currentContext?.chapterId}
-          selectedParagraphId={currentContext?.paraId}
-          // Props pour sélection de granules parents (pour drop zones)
-          onSelectPart={handleSelectPart}
-          onSelectChapter={handleSelectChapter}
-          onSelectParagraph={handleSelectParagraph}
-          selectedPartId={currentContext?.part?.part_id}
-          onRename={handleRename}
-          onReorder={handleReorder}
-          onDelete={handleDelete}
-          language={language}
-        />
+            projectName={projectData?.pr_name || ''}
+            structure={structure}
+            onSelectNotion={handleSelectNotion}
+            onSelectPart={handleSelectPart}
+            onSelectChapter={handleSelectChapter}
+            onSelectParagraph={handleSelectParagraph}
+            selectedPartId={currentContext?.part?.part_id}
+            selectedChapterId={currentContext?.chapterId}
+            selectedParagraphId={currentContext?.paraId}
+            selectedNotionId={currentContext?.notion?.notion_id}
+            onCreatePart={handleCreatePart}
+            onCreateChapter={handleCreateChapter}
+            onCreateParagraph={handleCreateParagraph}
+            onCreateNotion={handleCreateNotion}
+            onRename={handleRename}
+            onReorder={handleReorder}        // ✅ HANDLER DE RÉORDONNANCEMENT
+            onMove={handleMoveGranule}        // ✅ HANDLER DE DÉPLACEMENT
+            onDelete={handleDelete}
+            language={language}
+          />
 
         <div className="flex-1 flex flex-col">
           <div className="bg-white border-b border-gray-200 flex items-center justify-between px-4 py-2">
@@ -1177,6 +1307,7 @@ const XCCM2Editor = () => {
             onFontSizeChange={handleFontSizeChange}
             onChatToggle={() => setShowChatBot(!showChatBot)}
             onInsertImage={handleInsertImage}
+            disabled={isToolbarDisabled}  // ✅ AJOUT DE LA PROP disabled
           />
 
           {currentContext ? (

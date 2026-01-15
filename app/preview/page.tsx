@@ -2,9 +2,11 @@
 
 import React, { useEffect, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { ArrowLeft, Loader2, Share2, Download, FileText, File, Printer, ChevronDown } from 'lucide-react';
+import { ArrowLeft, Loader2, Share2, Download, FileText, File, Printer, ChevronDown, Check, X } from 'lucide-react';
 import { projectService } from '@/services/projectService';
 import { structureService, Part } from '@/services/structureService';
+import { publishService } from '@/services/publishService';
+import { exportService } from '@/services/exportService';
 
 const PreviewPage = () => {
     const searchParams = useSearchParams();
@@ -16,6 +18,10 @@ const PreviewPage = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [isExporting, setIsExporting] = useState(false);
     const [showPublishMenu, setShowPublishMenu] = useState(false);
+    const [showFormatDialog, setShowFormatDialog] = useState(false);
+    const [publishFormat, setPublishFormat] = useState<'pdf' | 'docx'>('pdf');
+    const [isPublishing, setIsPublishing] = useState(false);
+    const [publishSuccess, setPublishSuccess] = useState<{ doc_id: string; doc_name: string } | null>(null);
 
     // State for granular loading
     const [loadingProgress, setLoadingProgress] = useState<{ current: number; total: number } | null>(null);
@@ -104,6 +110,59 @@ const PreviewPage = () => {
                 setIsLoading(false);
                 setLoadingProgress(null);
             }, 600);
+        }
+    };
+
+    const handlePublishOnline = async () => {
+        if (!projectName) return;
+        
+        setIsPublishing(true);
+        setShowPublishMenu(false);
+        
+        try {
+            const result = await publishService.publishProject(projectName, publishFormat);
+            setPublishSuccess({
+                doc_id: result.doc_id,
+                doc_name: result.doc_name
+            });
+            setShowFormatDialog(false);
+        } catch (error) {
+            console.error('Erreur lors de la publication:', error);
+            alert(`Erreur lors de la publication: ${error instanceof Error ? error.message : 'Erreur inconnue'}`);
+        } finally {
+            setIsPublishing(false);
+        }
+    };
+
+    const handleExportProjectPDF = async () => {
+        if (!projectName) return;
+        
+        setIsExporting(true);
+        setShowPublishMenu(false);
+        
+        try {
+            await exportService.exportAndDownload(projectName, 'pdf');
+        } catch (error) {
+            console.error('Erreur lors de l\'export PDF:', error);
+            alert(`Erreur lors de l\'export PDF: ${error instanceof Error ? error.message : 'Erreur inconnue'}`);
+        } finally {
+            setIsExporting(false);
+        }
+    };
+
+    const handleExportProjectDOCX = async () => {
+        if (!projectName) return;
+        
+        setIsExporting(true);
+        setShowPublishMenu(false);
+        
+        try {
+            await exportService.exportAndDownload(projectName, 'docx');
+        } catch (error) {
+            console.error('Erreur lors de l\'export DOCX:', error);
+            alert(`Erreur lors de l\'export DOCX: ${error instanceof Error ? error.message : 'Erreur inconnue'}`);
+        } finally {
+            setIsExporting(false);
         }
     };
 
@@ -653,20 +712,25 @@ const PreviewPage = () => {
                                 <h3 className="font-semibold text-gray-900">Options de publication</h3>
                                 <p className="text-xs text-gray-500 mt-1">Choisissez comment diffuser votre cours</p>
                             </div>
-
                             <div className="p-2">
-                                <button className="w-full flex items-center gap-3 p-3 hover:bg-[#99334C]/5 rounded-lg transition-colors group text-left">
+                                <button 
+                                    onClick={() => setShowFormatDialog(true)}
+                                    disabled={isPublishing}
+                                    className="w-full flex items-center gap-3 p-3 hover:bg-[#99334C]/5 rounded-lg transition-colors group text-left disabled:opacity-50"
+                                >
                                     <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-colors">
-                                        <Share2 size={18} />
+                                        {isPublishing ? <Loader2 size={18} className="animate-spin" /> : <Share2 size={18} />}
                                     </div>
                                     <div>
-                                        <div className="font-medium text-gray-800">Publier en ligne</div>
+                                        <div className="font-medium text-gray-800">
+                                            {isPublishing ? 'Publication...' : 'Publier en ligne'}
+                                        </div>
                                         <div className="text-xs text-gray-500">Rendre accessible via lien public</div>
                                     </div>
                                 </button>
 
                                 <button
-                                    onClick={handleExportPDF}
+                                    onClick={handleExportProjectPDF}
                                     disabled={isExporting}
                                     className="w-full flex items-center gap-3 p-3 hover:bg-[#99334C]/5 rounded-lg transition-colors group text-left disabled:opacity-50"
                                 >
@@ -682,14 +746,17 @@ const PreviewPage = () => {
                                 </button>
 
                                 <button
-                                    onClick={handleExportWord}
-                                    className="w-full flex items-center gap-3 p-3 hover:bg-[#99334C]/5 rounded-lg transition-colors group text-left"
+                                    onClick={handleExportProjectDOCX}
+                                    disabled={isExporting}
+                                    className="w-full flex items-center gap-3 p-3 hover:bg-[#99334C]/5 rounded-lg transition-colors group text-left disabled:opacity-50"
                                 >
                                     <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-800 group-hover:bg-blue-800 group-hover:text-white transition-colors">
-                                        <File size={18} />
+                                        {isExporting ? <Loader2 size={18} className="animate-spin" /> : <File size={18} />}
                                     </div>
                                     <div>
-                                        <div className="font-medium text-gray-800">Exporter en Word</div>
+                                        <div className="font-medium text-gray-800">
+                                            {isExporting ? 'Génération...' : 'Exporter en DOCX'}
+                                        </div>
                                         <div className="text-xs text-gray-500">Format éditable .docx</div>
                                     </div>
                                 </button>
@@ -711,6 +778,105 @@ const PreviewPage = () => {
                     )}
                 </div>
             </div>
+
+            {/* Format Selection Dialog */}
+            {showFormatDialog && (
+                <div className="fixed inset-0 z-40 bg-black/50 flex items-center justify-center">
+                    <div className="bg-white rounded-xl shadow-2xl p-8 max-w-sm w-full mx-4">
+                        <h2 className="text-2xl font-bold text-gray-900 mb-4">Choisir le format de publication</h2>
+                        <p className="text-gray-600 text-sm mb-6">Sélectionnez le format dans lequel vous souhaitez publier votre document.</p>
+                        
+                        <div className="space-y-3 mb-6">
+                            <label className="flex items-center p-4 border-2 rounded-lg cursor-pointer transition-all"
+                                   style={{ borderColor: publishFormat === 'pdf' ? '#99334C' : '#e5e7eb', backgroundColor: publishFormat === 'pdf' ? '#99334c0a' : 'transparent' }}>
+                                <input 
+                                    type="radio" 
+                                    name="format" 
+                                    value="pdf" 
+                                    checked={publishFormat === 'pdf'}
+                                    onChange={(e) => setPublishFormat(e.target.value as 'pdf' | 'docx')}
+                                    className="mr-3"
+                                />
+                                <div>
+                                    <div className="font-medium text-gray-900">PDF</div>
+                                    <div className="text-xs text-gray-600">Format universel, lecture seule</div>
+                                </div>
+                            </label>
+
+                            <label className="flex items-center p-4 border-2 rounded-lg cursor-pointer transition-all"
+                                   style={{ borderColor: publishFormat === 'docx' ? '#99334C' : '#e5e7eb', backgroundColor: publishFormat === 'docx' ? '#99334c0a' : 'transparent' }}>
+                                <input 
+                                    type="radio" 
+                                    name="format" 
+                                    value="docx" 
+                                    checked={publishFormat === 'docx'}
+                                    onChange={(e) => setPublishFormat(e.target.value as 'pdf' | 'docx')}
+                                    className="mr-3"
+                                />
+                                <div>
+                                    <div className="font-medium text-gray-900">DOCX</div>
+                                    <div className="text-xs text-gray-600">Format Word, éditable</div>
+                                </div>
+                            </label>
+                        </div>
+
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => setShowFormatDialog(false)}
+                                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+                            >
+                                Annuler
+                            </button>
+                            <button
+                                onClick={handlePublishOnline}
+                                disabled={isPublishing}
+                                className="flex-1 px-4 py-2 bg-gradient-to-r from-[#99334C] to-[#DC3545] text-white rounded-lg hover:shadow-lg transition-all font-medium disabled:opacity-50 flex items-center justify-center gap-2"
+                            >
+                                {isPublishing && <Loader2 size={16} className="animate-spin" />}
+                                Publier
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Publish Success Dialog */}
+            {publishSuccess && (
+                <div className="fixed inset-0 z-40 bg-black/50 flex items-center justify-center">
+                    <div className="bg-white rounded-xl shadow-2xl p-8 max-w-sm w-full mx-4">
+                        <div className="flex justify-center mb-4">
+                            <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+                                <Check size={24} className="text-green-600" />
+                            </div>
+                        </div>
+                        <h2 className="text-2xl font-bold text-gray-900 mb-2 text-center">Publication réussie!</h2>
+                        <p className="text-gray-600 text-center text-sm mb-6">
+                            Votre document <strong>{publishSuccess.doc_name}</strong> a été publié avec succès. Vous pouvez maintenant le consulter dans votre bibliothèque.
+                        </p>
+                        
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => {
+                                    setPublishSuccess(null);
+                                    setShowPublishMenu(false);
+                                }}
+                                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+                            >
+                                Fermer
+                            </button>
+                            <button
+                                onClick={() => {
+                                    router.push('/library');
+                                }}
+                                className="flex-1 px-4 py-2 bg-gradient-to-r from-[#99334C] to-[#DC3545] text-white rounded-lg hover:shadow-lg transition-all font-medium"
+                            >
+                                Voir la bibliothèque
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
 
             {/* Content Area */}
             <div className="max-w-5xl mx-auto py-12 px-4 sm:px-8 min-h-[calc(100vh-80px)]">

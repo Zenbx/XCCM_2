@@ -27,6 +27,7 @@ interface EditorToolbarProps {
     font: string;
     fontSize: string;
   };
+  disabled?: boolean;
 }
 
 const EditorToolbar: React.FC<EditorToolbarProps> = ({
@@ -35,10 +36,21 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
   onFontSizeChange,
   onChatToggle,
   onInsertImage,
-  textFormat
+  textFormat,
+  disabled = false,
 }) => {
   return (
-    <div className="bg-white border-b border-gray-200 p-2 flex items-center gap-1">
+    <div className={`bg-white border-b border-gray-200 p-2 flex items-center gap-1 ${
+      disabled ? 'opacity-40 pointer-events-none select-none' : ''
+    }`}>
+
+        {disabled && (
+        <div className="absolute inset-0 bg-gray-100/30 backdrop-blur-[1px] flex items-center justify-center z-10">
+          <span className="text-xs font-medium text-gray-500 bg-white px-3 py-1 rounded-full shadow-sm border border-gray-200">
+            📝 Sélectionnez une Partie ou une Notion pour éditer
+          </span>
+        </div>
+      )}
       {/* Police */}
       <select
         className="px-2 py-1 border border-gray-300 rounded text-sm bg-white text-black"

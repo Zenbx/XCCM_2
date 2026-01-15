@@ -448,6 +448,35 @@ class StructureService {
       throw new Error(error.message || 'Erreur lors de la suppression de la notion');
     }
   }
+
+  // ============= MOVE GRANULE (change parent) =============
+  async moveGranule(
+    projectName: string,
+    type: 'chapter' | 'paragraph' | 'notion',
+    itemId: string,
+    newParentId: string,
+    newNumber?: number
+  ): Promise<any> {
+    const response = await fetch(
+      `${API_BASE_URL}/api/projects/${encodeURIComponent(projectName)}/move`,
+      {
+        method: 'PATCH',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ type, itemId, newParentId, newNumber }),
+      }
+    );
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        throw new Error('Token invalide ou expiré.');
+      }
+      const error = await response.json();
+      throw new Error(error.message || 'Erreur lors du déplacement');
+    }
+
+    const result = await response.json();
+    return result.data;
+  }
 }
 
 export const structureService = new StructureService();
