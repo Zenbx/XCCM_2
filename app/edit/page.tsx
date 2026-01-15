@@ -97,6 +97,17 @@ const XCCM2Editor = () => {
     }
   }, [projectName]);
 
+  // Polling pour la collaboration (pseudo temps réel)
+  useEffect(() => {
+    if (!projectName) return;
+
+    const intervalId = setInterval(() => {
+      loadProject(true); // silent reload
+    }, 30000);
+
+    return () => clearInterval(intervalId);
+  }, [projectName]);
+
   useEffect(() => {
     if (currentContext && editorContent !== currentContext.notion?.notion_content) {
       setHasUnsavedChanges(true);
@@ -852,8 +863,8 @@ const XCCM2Editor = () => {
 
       console.log(`🔃 Réordonnancement ${type}s`, { parentId, count: items.length });
 
-      // Mettre à jour les numéros dans l'ordre
-      const limit = pLimit(3);
+      // Mettre à jour les numéros dans l'ordre (pLimit 1 pour éviter les race conditions)
+      const limit = pLimit(1);
       const updatePromises = items.map((item, index) => limit(async () => {
         const newNumber = index + 1;
 
