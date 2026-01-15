@@ -33,6 +33,7 @@ export interface ProjectWithOwner extends Project {
 
 export interface CreateProjectData {
   pr_name: string;
+  overwrite?: boolean;
 }
 
 export interface ApiResponse<T> {

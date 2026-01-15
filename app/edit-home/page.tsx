@@ -62,7 +62,8 @@ const EditHomePage = () => {
   const [renameValue, setRenameValue] = useState('');
   const [isRenaming, setIsRenaming] = useState(false);
 
-  // --- États Templates ---
+  // --- États Modale Écrasement ---
+  const [showOverwriteModal, setShowOverwriteModal] = useState(false);
   const [creatingTemplateId, setCreatingTemplateId] = useState<number | null>(null);
 
   const router = useRouter();
@@ -141,20 +142,34 @@ const EditHomePage = () => {
   };
 
   // --- Logique de Création ---
-  const handleCreateNew = async () => {
+  const handleCreateNew = async (overwrite: boolean = false) => {
     if (newProjectName.trim().length < 3) {
       toast.error('Le nom du projet doit contenir au moins 3 caractères');
       return;
     }
     try {
       setIsCreating(true);
-      const newProject = await projectService.createProject({ pr_name: newProjectName });
+      const newProject = await projectService.createProject({
+        pr_name: newProjectName,
+        overwrite
+      });
+
+      if (overwrite) {
+        setProjects(prev => prev.filter(p => p.pr_name !== newProjectName));
+      }
+
       setProjects(prev => [newProject, ...prev]);
       setShowCreateModal(false);
+      setShowOverwriteModal(false);
       setNewProjectName('');
       router.push(`/edit?projectName=${encodeURIComponent(newProject.pr_name)}`);
     } catch (err: any) {
-      toast.error(err.message || 'Erreur création');
+      if (err.message && err.message.includes('409') || err.message.includes('déjà')) {
+        setShowCreateModal(false);
+        setShowOverwriteModal(true);
+      } else {
+        toast.error(err.message || 'Erreur création');
+      }
     } finally {
       setIsCreating(false);
     }
@@ -587,7 +602,7 @@ const EditHomePage = () => {
                 Annuler
               </button>
               <button
-                onClick={handleCreateNew}
+                onClick={() => handleCreateNew(false)}
                 disabled={isCreating || newProjectName.trim().length < 3}
                 className="flex-1 px-4 py-3 bg-[#99334C] text-white rounded-xl hover:bg-[#7a283d] disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center gap-2"
               >
@@ -669,6 +684,41 @@ const EditHomePage = () => {
                     <Trash2 className="w-4 h-4" /> Supprimer
                   </>
                 )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* --- MODALE ÉCRASEMENT --- */}
+      {showOverwriteModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl animate-in zoom-in">
+            <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <AlertCircle className="w-8 h-8 text-amber-600" />
+            </div>
+            <h3 className="text-xl font-bold text-gray-900 text-center mb-2">Projet existant</h3>
+            <p className="text-gray-600 text-center mb-6">
+              Un projet nommé <span className="font-semibold text-gray-900">"{newProjectName}"</span> existe déjà.
+              Voulez-vous le remplacer ? Cette action supprimera tout le contenu du projet actuel.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setShowOverwriteModal(false);
+                  setShowCreateModal(true);
+                }}
+                className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 font-medium"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={() => handleCreateNew(true)}
+                disabled={isCreating}
+                className="flex-1 px-4 py-3 bg-amber-600 text-white rounded-xl hover:bg-amber-700 font-medium flex justify-center items-center gap-2"
+              >
+                {isCreating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                Remplacer
               </button>
             </div>
           </div>

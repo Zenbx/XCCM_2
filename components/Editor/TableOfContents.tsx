@@ -608,16 +608,6 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
         </div>
       </div>
 
-      {onCreatePart && (
-        <button
-          onClick={onCreatePart}
-          className="m-3 flex items-center justify-center gap-2 p-3 rounded-lg border-2 border-dashed border-gray-200 text-gray-500 hover:border-[#99334C] hover:text-[#99334C] hover:bg-[#99334C]/5 transition-all"
-        >
-          <Plus size={20} />
-          <span className="font-medium">Ajouter une partie</span>
-        </button>
-      )}
-
       <ContextMenu
         isOpen={contextMenu.isOpen}
         x={contextMenu.x}
