@@ -40,7 +40,7 @@ const XCCM2Editor = () => {
   const [error, setError] = useState<string | null>(null);
   const [rightPanel, setRightPanel] = useState<string | null>(null);
   const [textFormat, setTextFormat] = useState({
-    font: 'Arial',
+    font: 'Calibri',
     fontSize: '11'
   });
 
@@ -88,6 +88,7 @@ const XCCM2Editor = () => {
   const [expandedItems, setExpandedItems] = useState<{ [key: string]: boolean }>({});
   const [showShareOverlay, setShowShareOverlay] = useState(false);
   const [showCommandPalette, setShowCommandPalette] = useState(false);
+  const [tiptapEditor, setTiptapEditor] = useState<any>(null);
 
   // Resizing states
   const [sidebarWidth, setSidebarWidth] = useState(320);
@@ -419,25 +420,39 @@ const XCCM2Editor = () => {
 
 
   const applyFormat = (command: string) => {
-    document.execCommand(command, false);
-    editorRef.current?.focus();
+    if (!tiptapEditor) return;
+
+    const chain = tiptapEditor.chain().focus();
+
+    switch (command) {
+      case 'bold': chain.toggleBold().run(); break;
+      case 'italic': chain.toggleItalic().run(); break;
+      case 'underline': chain.toggleUnderline().run(); break;
+      case 'strikethrough': chain.toggleStrike().run(); break;
+      case 'justifyLeft': chain.setTextAlign('left').run(); break;
+      case 'justifyCenter': chain.setTextAlign('center').run(); break;
+      case 'justifyRight': chain.setTextAlign('right').run(); break;
+      case 'justifyFull': chain.setTextAlign('justify').run(); break;
+      case 'insertUnorderedList': chain.toggleBulletList().run(); break;
+      case 'insertOrderedList': chain.toggleOrderedList().run(); break;
+      default: console.warn('Command not implemented for Tiptap:', command);
+    }
   };
 
   const handleFontChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setTextFormat(prev => ({ ...prev, font: e.target.value }));
-    document.execCommand('fontName', false, e.target.value);
-    editorRef.current?.focus();
+    const font = e.target.value;
+    setTextFormat(prev => ({ ...prev, font }));
+    if (tiptapEditor) {
+      tiptapEditor.chain().focus().setFontFamily(font).run();
+    }
   };
 
   const handleFontSizeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setTextFormat(prev => ({ ...prev, fontSize: e.target.value }));
-    const sizeMap: { [key: string]: string } = {
-      '8': '1', '9': '1', '10': '2', '11': '2', '12': '3',
-      '14': '4', '16': '4', '18': '5', '20': '5', '24': '6',
-      '28': '6', '32': '7', '36': '7'
-    };
-    document.execCommand('fontSize', false, sizeMap[e.target.value]);
-    editorRef.current?.focus();
+    const fontSize = e.target.value;
+    setTextFormat(prev => ({ ...prev, fontSize }));
+    if (tiptapEditor) {
+      tiptapEditor.chain().focus().setFontSize(fontSize).run();
+    }
   };
 
   const handleDragStart = (e: React.DragEvent, granule: any) => {
@@ -1227,7 +1242,11 @@ const XCCM2Editor = () => {
   };
 
   const handleInsertImage = () => {
-    // Créer un input file invisible
+    if (!tiptapEditor) {
+      toast.error("L'éditeur n'est pas prêt");
+      return;
+    }
+
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = 'image/*';
@@ -1237,33 +1256,11 @@ const XCCM2Editor = () => {
       const file = target.files?.[0];
 
       if (file) {
-        // Créer une URL locale pour l'image
         const reader = new FileReader();
         reader.onload = (event) => {
           const imageUrl = event.target?.result as string;
-
-          // Insérer l'image dans l'éditeur
-          if (editorRef.current) {
-            const img = document.createElement('img');
-            img.src = imageUrl;
-            img.style.maxWidth = '100%';
-            img.style.height = 'auto';
-            img.style.margin = '10px 0';
-
-            // Insérer à la position du curseur ou à la fin
-            const selection = window.getSelection();
-            if (selection && selection.rangeCount > 0) {
-              const range = selection.getRangeAt(0);
-              range.insertNode(img);
-              range.collapse(false);
-            } else {
-              editorRef.current.appendChild(img);
-            }
-
-            // Mettre à jour le contenu
-            setEditorContent(editorRef.current.innerHTML);
-            setHasUnsavedChanges(true);
-          }
+          tiptapEditor.chain().focus().setImage({ src: imageUrl }).run();
+          setHasUnsavedChanges(true);
         };
         reader.readAsDataURL(file);
       }
@@ -1469,6 +1466,7 @@ const XCCM2Editor = () => {
               content={editorContent}
               textFormat={textFormat}
               onChange={setEditorContent}
+              onEditorReady={setTiptapEditor} // Passer l'instance de l'éditeur au parent
               onDrop={handleDropNew} // Utilise la nouvelle méthode
               editorRef={editorRef}
               isImporting={isImporting}

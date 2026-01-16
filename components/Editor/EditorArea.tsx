@@ -6,6 +6,7 @@ import { SlashMenu } from './SlashMenu';
 import { FloatingToolbar } from './FloatingToolbar';
 import { AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
+import TiptapEditor from './TiptapEditor'; // ✅ Import de Tiptap
 
 interface EditorAreaProps {
   content: string;
@@ -14,6 +15,7 @@ interface EditorAreaProps {
     fontSize: string;
   };
   onChange: (content: string) => void;
+  onEditorReady?: (editor: any) => void;
   onDrop: (content: any) => void;
   editorRef: React.RefObject<HTMLDivElement | null>;
   placeholder?: string;
@@ -40,7 +42,8 @@ const EditorArea: React.FC<EditorAreaProps> = ({
   onAddChapter,
   onAddNotion,
   onOpenChat,
-  onSave
+  onSave,
+  onEditorReady
 }) => {
   const isInitialLoad = useRef(true);
   const [internalPlaceholder, setInternalPlaceholder] = useState(placeholder);
@@ -65,17 +68,15 @@ const EditorArea: React.FC<EditorAreaProps> = ({
     strikethrough: false
   });
 
+  // Instance de l'éditeur Tiptap pour les commandes externes
+  const [tiptapInstance, setTiptapInstance] = useState<any>(null);
+
   useEffect(() => {
     setInternalPlaceholder(placeholder);
   }, [placeholder]);
 
-  useEffect(() => {
-    if (editorRef.current) {
-      if (editorRef.current.innerHTML !== content) {
-        editorRef.current.innerHTML = content;
-      }
-    }
-  }, [content, editorRef]);
+  // Tiptap gère sa propre synchronisation via onUpdate, 
+  // on n'a plus besoin du useEffect qui injecte innerHTML
 
   // --- Gestion des Raccourcis Clavier Globaux ---
   useEffect(() => {
@@ -100,40 +101,7 @@ const EditorArea: React.FC<EditorAreaProps> = ({
     return () => window.removeEventListener('keydown', handleGlobalShortcuts);
   }, [readOnly, onSave]);
 
-  // --- Détection de la Sélection pour Floating Toolbar ---
-  const handleSelectionChange = useCallback(() => {
-    if (readOnly || showSlashMenu) return;
-
-    const selection = window.getSelection();
-    if (!selection || selection.isCollapsed || !editorRef.current?.contains(selection.anchorNode)) {
-      setShowFloatingToolbar(false);
-      return;
-    }
-
-    const range = selection.getRangeAt(0);
-    const rect = range.getBoundingClientRect();
-
-    if (rect.width > 0) {
-      setFloatingToolbarPosition({
-        top: rect.top,
-        left: rect.left + rect.width / 2
-      });
-      setShowFloatingToolbar(true);
-
-      // Vérifier les formats actifs
-      setActiveFormats({
-        bold: document.queryCommandState('bold'),
-        italic: document.queryCommandState('italic'),
-        underline: document.queryCommandState('underline'),
-        strikethrough: document.queryCommandState('strikethrough')
-      });
-    }
-  }, [readOnly, showSlashMenu, editorRef]);
-
-  useEffect(() => {
-    document.addEventListener('selectionchange', handleSelectionChange);
-    return () => document.removeEventListener('selectionchange', handleSelectionChange);
-  }, [handleSelectionChange]);
+  // Tiptap gère désormais la sélection via handleSelectionUpdate
 
   // Gestionnaire de copier-coller pour les images
   const handlePaste = (e: React.ClipboardEvent) => {
@@ -149,8 +117,8 @@ const EditorArea: React.FC<EditorAreaProps> = ({
         reader.onload = (event) => {
           if (event.target?.result) {
             const img = `<img src="${event.target.result}" style="max-width: 100%; height: auto; display: block; margin: 0 auto;" />`;
-            document.execCommand('insertHTML', false, img);
-            handleInput(); // Notifier le changement
+            tiptapInstance?.chain().focus().insertContent(img).run();
+            handleTiptapUpdate(tiptapInstance?.getHTML() || '');
           }
         };
         reader.readAsDataURL(blob);
@@ -159,184 +127,117 @@ const EditorArea: React.FC<EditorAreaProps> = ({
     }
   };
 
-  // Gestion du clic pour sélectionner/désélectionner une image
-  const handleEditorClick = (e: React.MouseEvent) => {
-    const target = e.target as HTMLElement;
-
-    // Si on clique sur une image
-    if (target.tagName === 'IMG') {
-      e.stopPropagation(); // Empêcher la perte de focus immédiate
-      const img = target as HTMLImageElement;
-      setSelectedImage(img);
-
-      // Calculer la position de la toolbar
-      const rect = img.getBoundingClientRect();
-      // Centrer au-dessus de l'image
-      setToolbarPosition({
-        top: Math.max(10, rect.top - 60), // 60px au-dessus, min 10px du haut
-        left: Math.max(10, rect.left + (rect.width / 2) - 150) // Centré horizontalement (-150px largeur approx / 2)
-      });
-
-      // Ajouter une outline visuelle à l'image
-      // On enlève d'abord l'outline des autres
-      const allImages = editorRef.current?.getElementsByTagName('img');
-      if (allImages) {
-        for (let i = 0; i < allImages.length; i++) {
-          allImages[i].style.outline = 'none';
-        }
-      }
-      img.style.outline = '3px solid #99334C';
-
-    } else {
-      // Si on clique ailleurs, on désélectionne
-      if (selectedImage) {
-        selectedImage.style.outline = 'none';
-        setSelectedImage(null);
-      }
-
-      // Focus l'éditeur si on clique dans la zone vide de l'éditeur lui-même
-      if (target === e.currentTarget && editorRef.current) {
-        editorRef.current.focus();
-
-        // Si on clique tout en bas de la zone (sous le contenu existant)
-        // on s'assure que le curseur est placé à la fin
-        const selection = window.getSelection();
-        if (selection) {
-          const range = document.createRange();
-          range.selectNodeContents(editorRef.current);
-          range.collapse(false);
-          selection.removeAllRanges();
-          selection.addRange(range);
-        }
-      }
-    }
-  };
+  // Tiptap gère désormais la sélection et le focus
 
   // Mise à jour de la taille de l'image sélectionnée
   const updateImageSize = (size: string) => {
-    if (selectedImage) {
-      selectedImage.style.width = size;
-      selectedImage.style.height = 'auto'; // Garder le ratio
-      handleInput();
+    if (selectedImage && tiptapInstance) {
+      // On passe par Tiptap pour la mise à jour des attributs, ce qui déclenchera handleSelectionUpdate
+      const currentStyle = selectedImage.getAttribute('style') || '';
+      // On remplace ou ajoute width
+      let newStyle = currentStyle.replace(/width:[^;]+;?/, '').trim();
+      newStyle += ` width: ${size}; height: auto;`;
 
-      // Recalculer la position de la toolbar
-      setTimeout(() => {
-        const rect = selectedImage.getBoundingClientRect();
-        setToolbarPosition({
-          top: Math.max(10, rect.top - 60),
-          left: Math.max(10, rect.left + (rect.width / 2) - 150)
-        });
-      }, 50);
+      tiptapInstance.chain().focus().updateAttributes('image', { style: newStyle }).run();
+      handleTiptapUpdate(tiptapInstance.getHTML());
     }
   };
 
   // Mise à jour de l'alignement de l'image
   const updateImageAlign = (align: 'left' | 'center' | 'right') => {
-    if (selectedImage) {
-      if (align === 'center') {
-        selectedImage.style.display = 'block';
-        selectedImage.style.margin = '0 auto';
-        selectedImage.style.float = 'none';
-      } else if (align === 'left') {
-        selectedImage.style.display = 'block';
-        selectedImage.style.float = 'left';
-        selectedImage.style.margin = '0 1rem 1rem 0';
-      } else if (align === 'right') {
-        selectedImage.style.display = 'block';
-        selectedImage.style.float = 'right';
-        selectedImage.style.margin = '0 0 1rem 1rem';
-      }
-      handleInput();
+    if (selectedImage && tiptapInstance) {
+      const currentStyle = selectedImage.getAttribute('style') || '';
+      let newStyle = currentStyle
+        .replace(/display:[^;]+;?/, '')
+        .replace(/margin:[^;]+;?/, '')
+        .replace(/float:[^;]+;?/, '')
+        .trim();
 
-      // Recalculer position
-      setTimeout(() => {
-        const rect = selectedImage.getBoundingClientRect();
-        setToolbarPosition({
-          top: Math.max(10, rect.top - 60),
-          left: Math.max(10, rect.left + (rect.width / 2) - 150)
-        });
-      }, 50);
+      if (align === 'center') {
+        newStyle += ' display: block; margin: 0 auto; float: none;';
+      } else if (align === 'left') {
+        newStyle += ' display: block; float: left; margin: 0 1rem 1rem 0;';
+      } else if (align === 'right') {
+        newStyle += ' display: block; float: right; margin: 0 0 1rem 1rem;';
+      }
+
+      tiptapInstance.chain().focus().updateAttributes('image', { style: newStyle }).run();
+      handleTiptapUpdate(tiptapInstance.getHTML());
     }
   };
 
   // Suppression de l'image
   const deleteSelectedImage = () => {
     if (selectedImage) {
-      selectedImage.remove();
-      setSelectedImage(null);
-      handleInput();
-    }
-  };
-
-  const handleInput = (e?: React.FormEvent) => {
-    if (editorRef.current) {
-      onChange(editorRef.current.innerHTML);
-    }
-
-    // Gestion du Slash Menu
-    const selection = window.getSelection();
-    if (selection && selection.rangeCount > 0) {
-      const range = selection.getRangeAt(0);
-      const text = range.startContainer.textContent || "";
-      const offset = range.startOffset;
-
-      // Détection du '/'
-      if (text[offset - 1] === '/') {
-        const rect = range.getBoundingClientRect();
-        setSlashMenuPosition({ top: rect.top, left: rect.left });
-        setShowSlashMenu(true);
-        setSlashFilter("");
-        slashTriggerIndex.current = offset - 1;
-      } else if (showSlashMenu) {
-        // Mise à jour du filtre
-        const filterText = text.slice(slashTriggerIndex.current + 1, offset);
-        if (filterText.includes(" ") || offset < slashTriggerIndex.current) {
-          setShowSlashMenu(false);
-        } else {
-          setSlashFilter(filterText);
-        }
+      // Supprimer via Tiptap si possible
+      if (tiptapInstance) {
+        tiptapInstance.commands.deleteSelection();
+      } else {
+        selectedImage.remove();
       }
+      setSelectedImage(null);
+      handleTiptapUpdate(tiptapInstance?.getHTML() || '');
     }
   };
+
+  // Tiptap gère désormais les changements via handleTiptapUpdate
 
   const handleSlashSelect = (command: any) => {
-    // Supprimer le texte '/' et le filtre
-    const selection = window.getSelection();
-    if (selection && selection.rangeCount > 0) {
-      const range = selection.getRangeAt(0);
-      range.setStart(range.startContainer, slashTriggerIndex.current);
-      range.deleteContents();
-    }
+    if (!tiptapInstance) return;
 
-    // Exécuter l'action
-    if (command.id === 'image') {
-      onInsertImage();
-    } else if (command.id === 'ai') {
-      if (onOpenChat) onOpenChat();
-    } else if (command.id === 'part') {
-      if (onAddPart) onAddPart();
-    } else if (command.id === 'chapter') {
-      if (onAddChapter) onAddChapter();
-    } else if (command.id === 'notion') {
-      if (onAddNotion) onAddNotion();
-    } else if (command.id === 'note') {
-      const html = `<div style="background:#e3f2fd; padding:15px; border-left: 4px solid #2196f3; margin:20px 0; border-radius: 4px; color: #0d47a1;">
-          <strong>Note :</strong> Tapez votre remarque ici...
-      </div><p><br></p>`;
-      document.execCommand('insertHTML', false, html);
-    } else if (command.id === 'capture') {
-      const html = `<div style="background:#f9f9f9; padding:30px; text-align:center; margin:20px 0; border: 2px dashed #99334C; border-radius: 12px; cursor: default;" contenteditable="false">
-          <div style="color:#99334C; font-weight: bold; margin-bottom: 8px;">[ ZONE DE CAPTURE D'ÉCRAN ]</div>
-          <div style="color:#666; font-size: 13px;">Collez votre image ici (Ctrl+V) ou glissez-la</div>
-      </div><p><br></p>`;
-      document.execCommand('insertHTML', false, html);
-    } else {
-      command.action();
-    }
+    // Supprimer le texte '/' et le filtre via Tiptap
+    const { selection } = tiptapInstance.state;
+    tiptapInstance.chain()
+      .focus()
+      .deleteRange({ from: slashTriggerIndex.current, to: selection.from })
+      .run();
+
+    // Attendre un tick pour s'assurer que le contenu est mis à jour
+    setTimeout(() => {
+      // Exécuter l'action
+      if (command.id === 'image') {
+        onInsertImage();
+      } else if (command.id === 'part' && onAddPart) {
+        onAddPart();
+      } else if (command.id === 'chapter' && onAddChapter) {
+        onAddChapter();
+      } else if (command.id === 'notion' && onAddNotion) {
+        onAddNotion();
+      } else if (command.id === 'chat' || command.id === 'ai') {
+        onOpenChat?.();
+      } else if (command.id === 'save' && onSave) {
+        onSave();
+      } else if (command.id === 'note') {
+        (tiptapInstance as any).chain().focus().setNoteBlock().run();
+      } else if (command.id === 'capture') {
+        (tiptapInstance as any).chain().focus().setCaptureZoneBlock().run();
+      } else if (command.id === 'math') {
+        (tiptapInstance as any).chain().focus().setMathBlock().run();
+      } else if (command.id === 'quiz') {
+        (tiptapInstance as any).chain().focus().setQuizBlock().run();
+      } else if (command.id === 'hint') {
+        (tiptapInstance as any).chain().focus().setDiscoveryHint().run();
+      } else if (command.id === 'code') {
+        (tiptapInstance as any).chain().focus().setCoderunnerBlock().run();
+      } else if (command.id === 'h1') {
+        tiptapInstance.chain().focus().toggleHeading({ level: 1 }).run();
+      } else if (command.id === 'h2') {
+        tiptapInstance.chain().focus().toggleHeading({ level: 2 }).run();
+      } else if (command.id === 'ul') {
+        tiptapInstance.chain().focus().toggleBulletList().run();
+      } else if (command.id === 'ol') {
+        tiptapInstance.chain().focus().toggleOrderedList().run();
+      } else {
+        command.action?.();
+      }
+
+      setShowSlashMenu(false);
+      tiptapInstance?.commands.focus();
+    }, 10);
 
     setShowSlashMenu(false);
-    editorRef.current?.focus();
-    handleInput();
+    tiptapInstance?.commands.focus();
+    handleTiptapUpdate(tiptapInstance?.getHTML() || '');
   };
 
   const onInsertImage = () => {
@@ -350,8 +251,8 @@ const EditorArea: React.FC<EditorAreaProps> = ({
         reader.onload = (event) => {
           if (event.target?.result) {
             const img = `<img src="${event.target.result}" style="max-width: 100%; height: auto; display: block; margin: 20px auto; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);" />`;
-            document.execCommand('insertHTML', false, img);
-            handleInput();
+            tiptapInstance?.chain().focus().insertContent(img).run();
+            handleTiptapUpdate(tiptapInstance?.getHTML() || '');
           }
         };
         reader.readAsDataURL(file);
@@ -389,20 +290,11 @@ const EditorArea: React.FC<EditorAreaProps> = ({
 
         const contentToAdd = granule.content || granule.granule_content || '';
 
-        if (document.caretRangeFromPoint) {
-          const range = document.caretRangeFromPoint(e.clientX, e.clientY);
-          if (range && editorRef.current?.contains(range.startContainer)) {
-            const textNode = document.createTextNode(contentToAdd);
-            range.insertNode(textNode);
-            range.setStartAfter(textNode);
-            range.setEndAfter(textNode);
-            const sel = window.getSelection();
-            sel?.removeAllRanges();
-            sel?.addRange(range);
-
-            handleInput();
-            return;
-          }
+        if (tiptapInstance) {
+          tiptapInstance.commands.focus();
+          tiptapInstance.commands.insertContent(contentToAdd);
+          handleTiptapUpdate(tiptapInstance.getHTML());
+          return;
         }
 
         onDrop(contentToAdd);
@@ -411,6 +303,83 @@ const EditorArea: React.FC<EditorAreaProps> = ({
         console.error("Erreur lors du drop:", err);
       }
     }
+  };
+
+  // Nouvelle gestion Tiptap
+  const handleTiptapUpdate = (html: string) => {
+    onChange(html);
+
+    if (tiptapInstance) {
+      const { selection } = tiptapInstance.state;
+      const { $from } = selection;
+      const textBefore = $from.parent.textContent.slice(0, $from.parentOffset);
+
+      // Détection du '/'
+      if (textBefore.endsWith('/')) {
+        const coords = tiptapInstance.view.coordsAtPos($from.pos);
+        setSlashMenuPosition({ top: coords.top, left: coords.left });
+        setShowSlashMenu(true);
+        setSlashFilter("");
+        slashTriggerIndex.current = $from.pos - 1;
+      } else if (showSlashMenu) {
+        // Mise à jour du filtre
+        const filterText = textBefore.slice(textBefore.lastIndexOf('/') + 1);
+        if (filterText.includes(" ")) {
+          setShowSlashMenu(false);
+        } else {
+          setSlashFilter(filterText);
+        }
+      }
+    }
+  };
+
+  const handleSelectionUpdate = (editor: any) => {
+    setTiptapInstance(editor);
+    onEditorReady?.(editor);
+
+    const { selection } = editor.state;
+    // Détection de sélection d'image (NodeSelection)
+    if (selection.node && selection.node.type.name === 'image') {
+      const { view } = editor;
+      const coords = view.coordsAtPos(selection.from);
+
+      // Essayer de récupérer le nœud DOM pour avoir la largeur exacte pour le centrage
+      const domNode = view.nodeDOM(selection.from);
+      const rect = domNode instanceof HTMLElement ? domNode.getBoundingClientRect() : null;
+
+      setSelectedImage(domNode instanceof HTMLElement ? (domNode.querySelector('img') || domNode as any) : null);
+
+      setToolbarPosition({
+        top: coords.top - 60,
+        left: rect ? rect.left + (rect.width / 2) - 150 : coords.left - 150
+      });
+    } else {
+      setSelectedImage(null);
+    }
+
+    if (readOnly || showSlashMenu || selection.empty || (selection.node && selection.node.type.name === 'image')) {
+      setShowFloatingToolbar(false);
+      return;
+    }
+
+    // Calculer position via Tiptap coordsAtPos (plus stable que le DOM direct)
+    const { view } = editor;
+    const fromCoords = view.coordsAtPos(selection.from);
+    const toCoords = view.coordsAtPos(selection.to);
+
+    setFloatingToolbarPosition({
+      top: fromCoords.top,
+      left: (fromCoords.left + toCoords.left) / 2
+    });
+    setShowFloatingToolbar(true);
+
+    // États des formats via Tiptap
+    setActiveFormats({
+      bold: editor.isActive('bold'),
+      italic: editor.isActive('italic'),
+      underline: editor.isActive('underline'),
+      strikethrough: editor.isActive('strike')
+    });
   };
 
   // Gestionnaire pour s'assurer qu'on peut cliquer et focuser facilement
@@ -424,16 +393,8 @@ const EditorArea: React.FC<EditorAreaProps> = ({
     if (editorRef.current && !editorRef.current.contains(target) && !isInteractive) {
       // Un petit setTimeout aide souvent à assurer que le focus est bien pris après les évènements de clic par défaut
       setTimeout(() => {
-        if (editorRef.current) {
-          editorRef.current.focus();
-          const selection = window.getSelection();
-          if (selection) {
-            const range = document.createRange();
-            range.selectNodeContents(editorRef.current);
-            range.collapse(false);
-            selection.removeAllRanges();
-            selection.addRange(range);
-          }
+        if (tiptapInstance) {
+          tiptapInstance.commands.focus('end');
         }
       }, 0);
     }
@@ -447,59 +408,39 @@ const EditorArea: React.FC<EditorAreaProps> = ({
       <div
         className="max-w-4xl mx-auto bg-white shadow-sm transition-all min-h-[800px]"
       >
-        <div
-          ref={editorRef}
-          contentEditable={!readOnly}
-          suppressContentEditableWarning
-          className={`w-full h-full min-h-[800px] p-10 focus:outline-none text-black prose prose-lg max-w-none ${readOnly ? 'bg-gray-50/50 cursor-not-allowed opacity-80 transition-all duration-300' : 'bg-white transition-all duration-300'}`}
-          style={{
-            fontFamily: textFormat.font,
-            // fontSize géré via execCommand pour des raisons de sélection, 
-            // mais on peut mettre un défaut ici
-            lineHeight: '1.6'
-          }}
-          onInput={handleInput}
-          onDragOver={handleDragOver}
-          onDragLeave={handleDragLeave}
-          onDrop={handleDrop}
-          onPaste={handlePaste}
-          onClick={handleEditorClick}
-          onKeyDown={(e) => {
-            if (showSlashMenu && (e.key === 'ArrowUp' || e.key === 'ArrowDown' || e.key === 'Enter')) {
-              e.preventDefault(); // On laisse le SlashMenu gérer ces touches
-              return;
-            }
-
-            // --- Désactivation auto du style après Espace ---
-            // Si l'utilisateur a activé le gras/italique/souligné
-            if (e.key === ' ') {
-              const activeBold = document.queryCommandState('bold');
-              const activeItalic = document.queryCommandState('italic');
-              const activeUnderline = document.queryCommandState('underline');
-
-              if (activeBold || activeItalic || activeUnderline) {
-                // On utilise un court délai pour laisser l'espace s'insérer, 
-                // puis on désactive la commande pour la suite de la saisie
-                setTimeout(() => {
-                  if (activeBold) document.execCommand('bold', false);
-                  if (activeItalic) document.execCommand('italic', false);
-                  if (activeUnderline) document.execCommand('underline', false);
-                  handleInput(); // Notifier le changement d'état
-                }, 0);
-              }
-            }
-          }}
-          data-placeholder={internalPlaceholder}
-        />
+        <div className="w-full h-full p-10">
+          <TiptapEditor
+            content={content}
+            onChange={handleTiptapUpdate}
+            placeholder={internalPlaceholder}
+            readOnly={readOnly}
+            textFormat={textFormat}
+            onSelectionChange={handleSelectionUpdate}
+            onReady={(editor) => {
+              setTiptapInstance(editor);
+              onEditorReady?.(editor);
+            }}
+            className="prose prose-lg max-w-none text-black"
+          />
+        </div>
 
         {/* Floating Toolbar Selection */}
         <FloatingToolbar
           isVisible={showFloatingToolbar}
           position={floatingToolbarPosition}
-          onFormat={(cmd, val) => {
-            document.execCommand(cmd, false, val);
-            handleInput();
-            handleSelectionChange(); // Rafraîchir l'état
+          onFormat={(cmd) => {
+            if (!tiptapInstance) return;
+
+            const chain = tiptapInstance.chain().focus();
+
+            switch (cmd) {
+              case 'bold': chain.toggleBold().run(); break;
+              case 'italic': chain.toggleItalic().run(); break;
+              case 'underline': chain.toggleUnderline().run(); break; // Nécessitera extension Underline plus tard
+              case 'strikethrough': chain.toggleStrike().run(); break;
+            }
+
+            handleTiptapUpdate(tiptapInstance.getHTML());
           }}
           activeFormats={activeFormats}
         />
@@ -578,7 +519,7 @@ const EditorArea: React.FC<EditorAreaProps> = ({
             margin-bottom: 0.25rem !important;
         }
       `}</style>
-    </div>
+    </div >
   );
 };
 

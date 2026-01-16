@@ -8,6 +8,9 @@ import { structureService, Part } from '@/services/structureService';
 import { publishService } from '@/services/publishService';
 import { exportService } from '@/services/exportService';
 import toast from 'react-hot-toast';
+import { renderBlockContent } from '@/utils/block-renderer';
+import * as katex from 'katex';
+import 'katex/dist/katex.min.css';
 
 const PreviewPage = () => {
     const searchParams = useSearchParams();
@@ -498,6 +501,47 @@ const PreviewPage = () => {
                     text-decoration: none;
                     color: inherit;
                 }
+
+                /* Pedagogical Blocks Styling */
+                .note-block {
+                    background: #fdf2f4;
+                    border-left: 4px solid #99334C;
+                    padding: 1.5rem;
+                    margin: 1.5rem 0;
+                    border-radius: 0 8px 8px 0;
+                }
+                .note-block-header {
+                    font-weight: bold;
+                    color: #99334C;
+                    font-size: 0.8rem;
+                    text-transform: uppercase;
+                    margin-bottom: 0.5rem;
+                }
+                .math-block {
+                    display: flex;
+                    justify-content: center;
+                    margin: 2rem 0;
+                    padding: 1rem;
+                    background: #f8fafc;
+                    border-radius: 8px;
+                }
+                .discovery-hint {
+                    border: 1px solid #e2e8f0;
+                    border-radius: 8px;
+                    margin: 1.5rem 0;
+                    overflow: hidden;
+                }
+                .discovery-hint-header {
+                    background: #f8fafc;
+                    padding: 0.75rem 1rem;
+                    font-weight: bold;
+                    color: #475569;
+                    font-size: 0.9rem;
+                    border-bottom: 1px solid #e2e8f0;
+                }
+                .discovery-hint-content {
+                    padding: 1rem;
+                }
             </style>
         `;
 
@@ -580,7 +624,7 @@ const PreviewPage = () => {
                             if (notion.notion_name) {
                                 bodyContent += `<h5>${notion.notion_name}</h5>`;
                             }
-                            bodyContent += `<div class="notion-content">${notion.notion_content}</div>`;
+                            bodyContent += `<div class="notion-content">${renderBlockContent(notion.notion_content)}</div>`;
                         });
 
                         bodyContent += `</div>`;
@@ -1013,7 +1057,7 @@ const PreviewPage = () => {
                                                                 <div
                                                                     className="text-gray-700 leading-relaxed prose prose-lg max-w-none [&_p]:mb-4 [&_h1]:text-2xl [&_h1]:font-bold [&_h1]:mb-4 [&_h2]:text-xl [&_h2]:font-bold [&_h2]:mb-3 [&_ul]:list-disc [&_ul]:ml-6 [&_ol]:list-decimal [&_ol]:ml-6 [&_li]:mb-1 [&_blockquote]:border-l-4 [&_blockquote]:border-gray-200 [&_blockquote]:pl-4 [&_blockquote]:italic [&_blockquote]:text-gray-600 [&_a]:text-[#99334C] [&_a]:underline hover:[&_a]:text-[#7a283d]"
                                                                     style={{ fontSize: '1.125rem', lineHeight: '1.8' }}
-                                                                    dangerouslySetInnerHTML={{ __html: notion.notion_content }}
+                                                                    dangerouslySetInnerHTML={{ __html: renderBlockContent(notion.notion_content) }}
                                                                 />
                                                             </div>
                                                         ))}

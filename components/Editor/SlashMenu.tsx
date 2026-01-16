@@ -16,7 +16,11 @@ import {
     PlusCircle,
     Hash,
     Maximize,
-    Info
+    Info,
+    Sigma,
+    HelpCircle,
+    Eye,
+    Code
 } from 'lucide-react';
 
 interface SlashCommand {
@@ -50,7 +54,7 @@ export const SlashMenu: React.FC<SlashMenuProps> = ({
             label: 'Titre 1',
             description: 'Grand titre de section',
             icon: <Heading1 size={18} />,
-            action: () => document.execCommand('formatBlock', false, 'H1'),
+            action: () => { },
             category: 'Formatage'
         },
         {
@@ -58,7 +62,7 @@ export const SlashMenu: React.FC<SlashMenuProps> = ({
             label: 'Titre 2',
             description: 'Sous-titre moyen',
             icon: <Heading2 size={18} />,
-            action: () => document.execCommand('formatBlock', false, 'H2'),
+            action: () => { },
             category: 'Formatage'
         },
         {
@@ -66,7 +70,7 @@ export const SlashMenu: React.FC<SlashMenuProps> = ({
             label: 'Liste à puces',
             description: 'Liste non-ordonnée simple',
             icon: <List size={18} />,
-            action: () => document.execCommand('insertUnorderedList'),
+            action: () => { },
             category: 'Formatage'
         },
         {
@@ -74,7 +78,7 @@ export const SlashMenu: React.FC<SlashMenuProps> = ({
             label: 'Liste numérotée',
             description: 'Liste ordonnée séquentielle',
             icon: <ListOrdered size={18} />,
-            action: () => document.execCommand('insertOrderedList'),
+            action: () => { },
             category: 'Formatage'
         },
         {
@@ -132,6 +136,38 @@ export const SlashMenu: React.FC<SlashMenuProps> = ({
             icon: <Info size={18} />,
             action: () => { }, // Sera géré par le parent
             category: 'Design'
+        },
+        {
+            id: 'math',
+            label: 'Mathématiques',
+            description: 'Formule LaTeX (KaTeX)',
+            icon: <Sigma size={18} />,
+            action: () => { }, // Sera géré par le parent
+            category: 'Pédagogie'
+        },
+        {
+            id: 'quiz',
+            label: 'Quiz Rapide',
+            description: 'Question à choix multiples',
+            icon: <HelpCircle size={18} />,
+            action: () => { }, // Sera géré par le parent
+            category: 'Pédagogie'
+        },
+        {
+            id: 'hint',
+            label: 'Indice / Découverte',
+            description: 'Bloc pliable pour révéler des infos',
+            icon: <Eye size={18} />,
+            action: () => { }, // Sera géré par le parent
+            category: 'Pédagogie'
+        },
+        {
+            id: 'code',
+            label: 'Code Interactif',
+            description: 'Bloc de code avec exécution',
+            icon: <Code size={18} />,
+            action: () => { }, // Sera géré par le parent
+            category: 'Pédagogie'
         }
     ];
 
@@ -185,10 +221,12 @@ export const SlashMenu: React.FC<SlashMenuProps> = ({
             initial={{ opacity: 0, y: 10, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
-            className="fixed z-[999] bg-white rounded-xl shadow-2xl border border-gray-100 overflow-hidden w-72 max-h-96 flex flex-col"
+            className="fixed z-[999] bg-white rounded-xl shadow-2xl border border-gray-100 overflow-hidden w-72 max-h-[384px] flex flex-col"
             style={{
-                top: position.top + 25,
-                left: position.left,
+                top: position.top + 400 > (typeof window !== 'undefined' ? window.innerHeight : 1000)
+                    ? Math.max(10, position.top - 400)
+                    : position.top + 25,
+                left: Math.min(position.left, (typeof window !== 'undefined' ? window.innerWidth : 1200) - 300),
             }}
         >
             <div className="p-2 bg-gray-50/50 border-b border-gray-100">
