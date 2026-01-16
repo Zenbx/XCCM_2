@@ -17,87 +17,38 @@ import Link from 'next/link';
 const CommunityPage = () => {
     const [activeTab, setActiveTab] = useState('tendance');
 
-    // Mock Data for Community Feed
-    const posts = [
-        {
-            id: 1,
-            title: "Introduction à l'Intelligence Artificielle",
-            author: "Dr. Sophie Martin",
-            authorRole: "Professeur CS",
-            timeAgo: "2h",
-            likes: 1240,
-            comments: 45,
-            views: "12k",
-            category: "Informatique",
-            image: "https://images.unsplash.com/photo-1677442136019-21780ecad995?auto=format&fit=crop&q=80&w=800",
-            description: "Un cours complet pour comprendre les réseaux de neurones et le Deep Learning."
-        },
-        {
-            id: 2,
-            title: "Guide de Survie - Droit Constitutionnel",
-            author: "Thomas Durand",
-            authorRole: "Étudiant L3",
-            timeAgo: "4h",
-            likes: 856,
-            comments: 23,
-            views: "5.4k",
-            category: "Droit",
-            image: "https://images.unsplash.com/photo-1589829085413-56de8ae18c73?auto=format&fit=crop&q=80&w=800",
-            description: "Fiches de révision synthétiques pour les partiels de janvier."
-        },
-        {
-            id: 3,
-            title: "Physique Quantique pour les Nuls",
-            author: "Marie Curie 2.0",
-            authorRole: "Chercheuse",
-            timeAgo: "1j",
-            likes: 3400,
-            comments: 156,
-            views: "45k",
-            category: "Sciences",
-            image: "https://images.unsplash.com/photo-1635070041078-e363dbe005cb?auto=format&fit=crop&q=80&w=800",
-            description: "La mécanique quantique expliquée simplement avec des schémas interactifs."
-        },
-        {
-            id: 4,
-            title: "Histoire de l'Art Moderne",
-            author: "Lucas Arts",
-            authorRole: "Passionné",
-            timeAgo: "3j",
-            likes: 567,
-            comments: 12,
-            views: "3.2k",
-            category: "Arts",
-            image: "https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?auto=format&fit=crop&q=80&w=800",
-            description: "Une exploration visuelle des mouvements artistiques du 20ème siècle."
-        },
-        {
-            id: 5,
-            title: "Recettes de Cuisine Moléculaire",
-            author: "Chef Philippe",
-            authorRole: "Gastronome",
-            timeAgo: "5j",
-            likes: 2100,
-            comments: 89,
-            views: "18k",
-            category: "Loisirs",
-            image: "https://images.unsplash.com/photo-1514326640560-7d063ef2aed5?auto=format&fit=crop&q=80&w=800",
-            description: "Quand la science rencontre la cuisine. Techniques et astuces."
-        },
-        {
-            id: 6,
-            title: "Business Plan Start-up",
-            author: "Elon M.",
-            authorRole: "Entrepreneur",
-            timeAgo: "1sem",
-            likes: 15000,
-            comments: 450,
-            views: "1M",
-            category: "Business",
-            image: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&q=80&w=800",
-            description: "Le template ultime pour lever des fonds en 2026."
-        }
-    ];
+    const [posts, setPosts] = useState<any[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+
+    React.useEffect(() => {
+        const fetchFeed = async () => {
+            try {
+                const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/community/feed`);
+                const data = await response.json();
+                if (data.success) {
+                    setPosts(data.data);
+                }
+            } catch (error) {
+                console.error("Error loading community feed", error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        fetchFeed();
+    }, []);
+
+    // Helper to format date
+    const formatTimeAgo = (dateStr: string) => {
+        const date = new Date(dateStr);
+        const now = new Date();
+        const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+
+        if (diffInSeconds < 60) return "À l'instant";
+        if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)} min`;
+        if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)} h`;
+        if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)} j`;
+        return date.toLocaleDateString();
+    };
 
     return (
         <div className="min-h-screen bg-gray-50">
@@ -116,8 +67,8 @@ const CommunityPage = () => {
                                     key={tab}
                                     onClick={() => setActiveTab(tab)}
                                     className={`flex-1 md:flex-none px-6 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === tab
-                                            ? 'bg-white text-[#99334C] shadow-sm'
-                                            : 'text-gray-600 hover:text-gray-900'
+                                        ? 'bg-white text-[#99334C] shadow-sm'
+                                        : 'text-gray-600 hover:text-gray-900'
                                         }`}
                                 >
                                     {tab.charAt(0).toUpperCase() + tab.slice(1)}
@@ -159,7 +110,7 @@ const CommunityPage = () => {
                                                     </div>
                                                     <div>
                                                         <p className="text-sm font-semibold text-gray-900">{post.author}</p>
-                                                        <p className="text-xs text-gray-500">{post.authorRole} • {post.timeAgo}</p>
+                                                        <p className="text-xs text-gray-500">{post.authorRole} • {formatTimeAgo(post.timeAgo || post.updated_at)}</p>
                                                     </div>
                                                 </div>
 

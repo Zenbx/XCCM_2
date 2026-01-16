@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, ArrowRight, Eye, EyeOff, Check, User, Mail, Briefcase, Building2, Loader2 } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Eye, EyeOff, Check, User, Mail, Briefcase, Building2, Loader2, Camera } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import toast from 'react-hot-toast';
@@ -31,6 +31,7 @@ const RegisterPage = () => {
         org: formData.org || undefined,
         password: formData.password,
         password_confirmation: formData.password_confirmation,
+        profile_picture: formData.profile_picture || undefined,
       };
 
       await register(registerData);
@@ -61,7 +62,22 @@ const RegisterPage = () => {
     org: '',
     password: '',
     password_confirmation: '',
+    profile_picture: null as File | null,
   });
+
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error("L'image ne doit pas dépasser 5 Mo");
+        return;
+      }
+      setFormData(prev => ({ ...prev, profile_picture: file }));
+      setPreviewUrl(URL.createObjectURL(file));
+    }
+  };
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -240,6 +256,29 @@ const RegisterPage = () => {
           {/* ÉTAPE 1 : Informations personnelles */}
           {currentStep === 1 && (
             <div className="space-y-6">
+              {/* Photo de profil */}
+              <div className="flex flex-col items-center justify-center mb-6">
+                <div className="relative group cursor-pointer">
+                  <div className={`w-24 h-24 rounded-full flex items-center justify-center overflow-hidden border-2 ${previewUrl ? 'border-[#99334C]' : 'border-gray-300 bg-gray-100'}`}>
+                    {previewUrl ? (
+                      <img src={previewUrl} alt="Aperçu" className="w-full h-full object-cover" />
+                    ) : (
+                      <User className="w-10 h-10 text-gray-400" />
+                    )}
+                    <label htmlFor="profile-upload" className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-full cursor-pointer">
+                      <Camera className="w-8 h-8 text-white" />
+                    </label>
+                  </div>
+                  <input
+                    type="file"
+                    id="profile-upload"
+                    accept="image/*"
+                    onChange={handleFileChange}
+                    className="hidden"
+                  />
+                  <p className="text-xs text-gray-500 text-center mt-2">Photo de profil (optionnel)</p>
+                </div>
+              </div>
               <div>
                 <label htmlFor="nom" className="block text-sm font-semibold text-gray-700 mb-2">
                   Nom

@@ -5,16 +5,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { authService } from '@/services/authService';
 
-interface User {
-  user_id: string;
-  email: string;
-  firstname: string;
-  lastname: string;
-  occupation?: string;
-  org?: string;
-  created_at: string;
-  role: string; // Ajout du champ role
-}
+import { User } from '@/types/auth';
 
 interface AuthContextType {
   user: User | null;

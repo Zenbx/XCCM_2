@@ -35,8 +35,25 @@ const BookReaderPage = () => {
   useEffect(() => {
     if (docId) {
       fetchDocument();
+      recordView();
     }
   }, [docId]);
+
+  const recordView = async () => {
+    try {
+      const token = localStorage.getItem('auth_token');
+      if (!token) return;
+
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/documents/${docId}/view`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+    } catch (error) {
+      console.error("Error recording view", error);
+    }
+  };
 
   const fetchDocument = async () => {
     setIsLoading(true);

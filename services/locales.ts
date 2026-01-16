@@ -7,7 +7,7 @@ export const translations: Record<Language, any> = {
             saving: "Sauvegarde en cours...",
             saved: "Sauvegardé !",
             saveError: "Erreur lors de la sauvegarde",
-            notionPlaceholder: "✏️ Commencez à rédiger votre notion ici...",
+            notionPlaceholder: "✏️ Commencez à rédiger votre notion ici... (Tapez '/' pour les commandes)",
             partPlaceholder: "📦 Glissez-déposez un Chapitre ici pour l'ajouter à cette Partie...",
             chapterPlaceholder: "📄 Glissez-déposez un Paragraphe ici pour l'ajouter à ce Chapitre...",
             paragraphPlaceholder: "💡 Glissez-déposez une Notion ici pour créer une nouvelle notion...",
@@ -38,6 +38,7 @@ export const translations: Record<Language, any> = {
                 about: "À propos",
                 edit: "Éditer",
                 library: "Bibliothèque",
+                community: "Communauté",
                 help: "Aide"
             },
             menu: "Menu"
@@ -177,7 +178,7 @@ export const translations: Record<Language, any> = {
             saving: "Saving...",
             saved: "Saved!",
             saveError: "Save failed",
-            notionPlaceholder: "✏️ Start writing your notion here...",
+            notionPlaceholder: "✏️ Start writing your notion here... (Type '/' for commands)",
             partPlaceholder: "📦 Drag and drop a Chapter here to add it to this Part...",
             chapterPlaceholder: "📄 Drag and drop a Paragraph here to add it to this Chapter...",
             paragraphPlaceholder: "💡 Drag and drop a Notion here to create a new notion...",
@@ -208,6 +209,7 @@ export const translations: Record<Language, any> = {
                 about: "About",
                 edit: "Edit",
                 library: "Library",
+                community: "Community",
                 help: "Help"
             },
             menu: "Menu"

@@ -23,6 +23,7 @@ const PreviewPage = () => {
     const [publishFormat, setPublishFormat] = useState<'pdf' | 'docx'>('pdf');
     const [isPublishing, setIsPublishing] = useState(false);
     const [publishSuccess, setPublishSuccess] = useState<{ doc_id: string; doc_name: string } | null>(null);
+    const [snapshotName, setSnapshotName] = useState('');
 
     // State for granular loading
     const [loadingProgress, setLoadingProgress] = useState<{ current: number; total: number } | null>(null);
@@ -52,6 +53,7 @@ const PreviewPage = () => {
     useEffect(() => {
         if (projectName) {
             loadProject();
+            setSnapshotName(projectName);
         }
     }, [projectName]);
 
@@ -121,7 +123,7 @@ const PreviewPage = () => {
         setShowPublishMenu(false);
 
         try {
-            const result = await publishService.publishProject(projectName, publishFormat);
+            const result = await publishService.publishProject(projectName, publishFormat, snapshotName);
             setPublishSuccess({
                 doc_id: result.doc_id,
                 doc_name: result.doc_name
@@ -823,6 +825,22 @@ const PreviewPage = () => {
                                     <div className="text-xs text-gray-600">Format Word, éditable</div>
                                 </div>
                             </label>
+                        </div>
+
+                        <div className="mb-6">
+                            <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                Nom du Snapshot (Version)
+                            </label>
+                            <input
+                                type="text"
+                                value={snapshotName}
+                                onChange={(e) => setSnapshotName(e.target.value)}
+                                placeholder="ex: Version Bêta 1.0"
+                                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-700 focus:ring-2 focus:ring-[#99334C]/20 focus:border-[#99334C] transition-all"
+                            />
+                            <p className="text-[10px] text-gray-400 mt-1 italic">
+                                Ce nom sera affiché dans la bibliothèque.
+                            </p>
                         </div>
 
                         <div className="flex gap-3">

@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { ChevronDown, ChevronRight, Plus, Eye, Share2, Save, Loader2, AlertCircle, Home, X } from 'lucide-react';
+import { ChevronDown, ChevronRight, Plus, Eye, Share2, Save, Loader2, AlertCircle, Home, X, Bot, Command } from 'lucide-react';
 import Link from 'next/link';
 import TableOfContents from '@/components/Editor/TableOfContents';
 import EditorToolbar from '@/components/Editor/EditorToolBar';
@@ -20,6 +20,8 @@ import { useRealtimeSync } from '@/hooks/useRealtimeSync';
 import pLimit from 'p-limit';
 import { FaHome } from 'react-icons/fa';
 import toast from 'react-hot-toast';
+import { CommandPalette } from '@/components/Editor/CommandPalette';
+import { EditorSkeleton, TOCSkeleton } from '@/components/UI/SkeletonScreens';
 
 const XCCM2Editor = () => {
   const searchParams = useSearchParams();
@@ -85,6 +87,12 @@ const XCCM2Editor = () => {
 
   const [expandedItems, setExpandedItems] = useState<{ [key: string]: boolean }>({});
   const [showShareOverlay, setShowShareOverlay] = useState(false);
+  const [showCommandPalette, setShowCommandPalette] = useState(false);
+
+  // Resizing states
+  const [sidebarWidth, setSidebarWidth] = useState(320);
+  const [isResizing, setIsResizing] = useState(false);
+
   const isToolbarDisabled = React.useMemo(() => {
     // Désactiver si Chapter ou Paragraph est sélectionné (mais pas Notion)
     return (
@@ -126,6 +134,39 @@ const XCCM2Editor = () => {
       setHasUnsavedChanges(true);
     }
   }, [editorContent, currentContext]);
+
+  // Handle Resizing
+  const startResizing = React.useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsResizing(true);
+  }, []);
+
+  const stopResizing = React.useCallback(() => {
+    setIsResizing(false);
+  }, []);
+
+  const resize = React.useCallback((e: MouseEvent) => {
+    if (isResizing) {
+      const newWidth = e.clientX;
+      if (newWidth >= 220 && newWidth <= 600) {
+        setSidebarWidth(newWidth);
+      }
+    }
+  }, [isResizing]);
+
+  useEffect(() => {
+    if (isResizing) {
+      window.addEventListener('mousemove', resize);
+      window.addEventListener('mouseup', stopResizing);
+    } else {
+      window.removeEventListener('mousemove', resize);
+      window.removeEventListener('mouseup', stopResizing);
+    }
+    return () => {
+      window.removeEventListener('mousemove', resize);
+      window.removeEventListener('mouseup', stopResizing);
+    };
+  }, [isResizing, resize, stopResizing]);
 
   /* import pLimit from 'p-limit'; // Put this at the top of file */
 
@@ -363,6 +404,19 @@ const XCCM2Editor = () => {
   const toggleRightPanel = (panelName: string) => {
     setRightPanel(rightPanel === panelName ? null : panelName);
   };
+
+  // Shortcut for Command Palette
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        setShowCommandPalette(true);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
 
   const applyFormat = (command: string) => {
     document.execCommand(command, false);
@@ -1217,6 +1271,61 @@ const XCCM2Editor = () => {
 
     input.click();
   };
+  // --- Command Palette Configuration (Placé ici pour éviter zone morte TDZ) ---
+  const commands = [
+    {
+      id: 'save',
+      label: 'Sauvegarder',
+      description: 'Enregistrer les modifications actuelles',
+      icon: <Save size={18} />,
+      category: 'Projet',
+      shortcut: 'Ctrl+S',
+      action: () => handleSave(false)
+    },
+    {
+      id: 'preview',
+      label: 'Aperçu',
+      description: 'Voir le rendu final du document',
+      icon: <Eye size={18} />,
+      category: 'Projet',
+      action: () => {
+        const prName = searchParams.get('projectName');
+        if (prName) router.push(`/document/${prName}`);
+      }
+    },
+    {
+      id: 'share',
+      label: 'Partager',
+      description: 'Inviter des collaborateurs email',
+      icon: <Share2 size={18} />,
+      category: 'Projet',
+      action: () => setShowShareOverlay(true)
+    },
+    {
+      id: 'add-part',
+      label: 'Nouvelle Partie',
+      description: 'Créer une nouvelle section racine',
+      icon: <Plus size={18} />,
+      category: 'Structure',
+      action: handleCreatePart
+    },
+    {
+      id: 'ai-chat',
+      label: 'Assistant IA',
+      description: 'Ouvrir le ChatBot pédagogique',
+      icon: <Bot size={18} />,
+      category: 'Outils',
+      action: () => setShowChatBot(true)
+    },
+    {
+      id: 'home',
+      label: 'Retour Dashboard',
+      description: 'Quitter l\'éditeur',
+      icon: <Home size={18} />,
+      category: 'Navigation',
+      action: () => router.push('/edit-home')
+    }
+  ];
 
   return (
     <>
@@ -1249,6 +1358,13 @@ const XCCM2Editor = () => {
           onMove={handleMoveGranule}        // ✅ HANDLER DE DÉPLACEMENT
           onDelete={handleDelete}
           language={language}
+          width={sidebarWidth}
+        />
+
+        {/* Resizer Handle */}
+        <div
+          className="w-1.5 h-full cursor-col-resize hover:bg-[#99334C]/20 active:bg-[#99334C]/40 transition-colors z-20 flex-shrink-0 -ml-0.5"
+          onMouseDown={startResizing}
         />
 
         <div className="flex-1 flex flex-col">
@@ -1267,7 +1383,7 @@ const XCCM2Editor = () => {
               </h1>
 
               {currentContext && (
-                <div className="flex items-center gap-2 text-sm text-gray-500 ml-4 bg-gray-50 px-3 py-1.5 rounded-full border border-gray-100">
+                <div className="flex items-center gap-2 text-[11px] text-gray-400 ml-5 pl-5 border-l border-gray-100 max-w-xl truncate">
                   {currentContext.type === 'notion' ? (
                     <>
                       <span className="hover:text-gray-700 transition-colors uppercase text-[10px] font-bold tracking-wider">{currentContext.partTitle}</span>
@@ -1346,7 +1462,9 @@ const XCCM2Editor = () => {
             disabled={isToolbarDisabled}  // ✅ AJOUT DE LA PROP disabled
           />
 
-          {currentContext ? (
+          {isImporting ? (
+            <EditorSkeleton />
+          ) : currentContext ? (
             <EditorArea
               content={editorContent}
               textFormat={textFormat}
@@ -1355,6 +1473,17 @@ const XCCM2Editor = () => {
               editorRef={editorRef}
               isImporting={isImporting}
               readOnly={currentContext.type === 'chapter' || currentContext.type === 'paragraph'}
+              onAddPart={handleCreatePart}
+              onAddChapter={() => handleCreateChapter(currentContext.partTitle)}
+              onAddNotion={() => {
+                if (currentContext.type === 'paragraph') {
+                  handleCreateNotion(currentContext.partTitle, currentContext.chapterTitle || '', currentContext.paraName || '');
+                } else {
+                  toast.error("Veuillez d'abord sélectionner un paragraphe");
+                }
+              }}
+              onOpenChat={() => setShowChatBot(true)}
+              onSave={() => handleSave(false)}
               placeholder={
                 currentContext.type === 'part'
                   ? t.editor.partPlaceholder
@@ -1700,6 +1829,11 @@ const XCCM2Editor = () => {
           isOpen={showShareOverlay}
           onClose={() => setShowShareOverlay(false)}
           projectName={projectName}
+        />
+        <CommandPalette
+          isOpen={showCommandPalette}
+          onClose={() => setShowCommandPalette(false)}
+          commands={commands}
         />
       </div>
     </>

@@ -1,7 +1,11 @@
 "use client";
 
-import { AlignLeft, AlignCenter, AlignRight, Trash2, X } from 'lucide-react';
-import React, { useRef, useEffect, useState } from 'react';
+import { AlignLeft, AlignCenter, AlignRight, Trash2, X, Command } from 'lucide-react';
+import React, { useRef, useEffect, useState, useCallback } from 'react';
+import { SlashMenu } from './SlashMenu';
+import { FloatingToolbar } from './FloatingToolbar';
+import { AnimatePresence } from 'framer-motion';
+import toast from 'react-hot-toast';
 
 interface EditorAreaProps {
   content: string;
@@ -15,6 +19,12 @@ interface EditorAreaProps {
   placeholder?: string;
   isImporting?: boolean;
   readOnly?: boolean;
+  // Nouvelles props pour les commandes structurelles
+  onAddPart?: () => void;
+  onAddChapter?: () => void;
+  onAddNotion?: () => void;
+  onOpenChat?: () => void;
+  onSave?: () => void;
 }
 
 const EditorArea: React.FC<EditorAreaProps> = ({
@@ -25,7 +35,12 @@ const EditorArea: React.FC<EditorAreaProps> = ({
   editorRef,
   placeholder = "Sélectionnez une notion pour commencer à éditer...",
   isImporting = false,
-  readOnly = false
+  readOnly = false,
+  onAddPart,
+  onAddChapter,
+  onAddNotion,
+  onOpenChat,
+  onSave
 }) => {
   const isInitialLoad = useRef(true);
   const [internalPlaceholder, setInternalPlaceholder] = useState(placeholder);
@@ -33,6 +48,22 @@ const EditorArea: React.FC<EditorAreaProps> = ({
   // États pour la gestion des images
   const [selectedImage, setSelectedImage] = useState<HTMLImageElement | null>(null);
   const [toolbarPosition, setToolbarPosition] = useState({ top: 0, left: 0 });
+
+  // --- États Slash Menu (/) ---
+  const [showSlashMenu, setShowSlashMenu] = useState(false);
+  const [slashMenuPosition, setSlashMenuPosition] = useState({ top: 0, left: 0 });
+  const [slashFilter, setSlashFilter] = useState("");
+  const slashTriggerIndex = useRef<number>(-1);
+
+  // --- États Floating Toolbar ---
+  const [showFloatingToolbar, setShowFloatingToolbar] = useState(false);
+  const [floatingToolbarPosition, setFloatingToolbarPosition] = useState({ top: 0, left: 0 });
+  const [activeFormats, setActiveFormats] = useState({
+    bold: false,
+    italic: false,
+    underline: false,
+    strikethrough: false
+  });
 
   useEffect(() => {
     setInternalPlaceholder(placeholder);
@@ -45,6 +76,64 @@ const EditorArea: React.FC<EditorAreaProps> = ({
       }
     }
   }, [content, editorRef]);
+
+  // --- Gestion des Raccourcis Clavier Globaux ---
+  useEffect(() => {
+    const handleGlobalShortcuts = (e: KeyboardEvent) => {
+      if (readOnly) return;
+
+      // Ctrl+S : Sauvegarder
+      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        e.preventDefault();
+        if (onSave) onSave();
+        else toast.success("Contenu prêt à être sauvegardé automatiquement");
+      }
+
+      // Ctrl+K : Palette de commande (placeholder pour l'instant)
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        toast("Command Palette (Ctrl+K) bientôt disponible !", { icon: 'ℹ️' });
+      }
+    };
+
+    window.addEventListener('keydown', handleGlobalShortcuts);
+    return () => window.removeEventListener('keydown', handleGlobalShortcuts);
+  }, [readOnly, onSave]);
+
+  // --- Détection de la Sélection pour Floating Toolbar ---
+  const handleSelectionChange = useCallback(() => {
+    if (readOnly || showSlashMenu) return;
+
+    const selection = window.getSelection();
+    if (!selection || selection.isCollapsed || !editorRef.current?.contains(selection.anchorNode)) {
+      setShowFloatingToolbar(false);
+      return;
+    }
+
+    const range = selection.getRangeAt(0);
+    const rect = range.getBoundingClientRect();
+
+    if (rect.width > 0) {
+      setFloatingToolbarPosition({
+        top: rect.top,
+        left: rect.left + rect.width / 2
+      });
+      setShowFloatingToolbar(true);
+
+      // Vérifier les formats actifs
+      setActiveFormats({
+        bold: document.queryCommandState('bold'),
+        italic: document.queryCommandState('italic'),
+        underline: document.queryCommandState('underline'),
+        strikethrough: document.queryCommandState('strikethrough')
+      });
+    }
+  }, [readOnly, showSlashMenu, editorRef]);
+
+  useEffect(() => {
+    document.addEventListener('selectionchange', handleSelectionChange);
+    return () => document.removeEventListener('selectionchange', handleSelectionChange);
+  }, [handleSelectionChange]);
 
   // Gestionnaire de copier-coller pour les images
   const handlePaste = (e: React.ClipboardEvent) => {
@@ -105,9 +194,20 @@ const EditorArea: React.FC<EditorAreaProps> = ({
         setSelectedImage(null);
       }
 
-      // Focus l'éditeur si on clique dans la zone vide
+      // Focus l'éditeur si on clique dans la zone vide de l'éditeur lui-même
       if (target === e.currentTarget && editorRef.current) {
         editorRef.current.focus();
+
+        // Si on clique tout en bas de la zone (sous le contenu existant)
+        // on s'assure que le curseur est placé à la fin
+        const selection = window.getSelection();
+        if (selection) {
+          const range = document.createRange();
+          range.selectNodeContents(editorRef.current);
+          range.collapse(false);
+          selection.removeAllRanges();
+          selection.addRange(range);
+        }
       }
     }
   };
@@ -168,10 +268,96 @@ const EditorArea: React.FC<EditorAreaProps> = ({
     }
   };
 
-  const handleInput = () => {
+  const handleInput = (e?: React.FormEvent) => {
     if (editorRef.current) {
       onChange(editorRef.current.innerHTML);
     }
+
+    // Gestion du Slash Menu
+    const selection = window.getSelection();
+    if (selection && selection.rangeCount > 0) {
+      const range = selection.getRangeAt(0);
+      const text = range.startContainer.textContent || "";
+      const offset = range.startOffset;
+
+      // Détection du '/'
+      if (text[offset - 1] === '/') {
+        const rect = range.getBoundingClientRect();
+        setSlashMenuPosition({ top: rect.top, left: rect.left });
+        setShowSlashMenu(true);
+        setSlashFilter("");
+        slashTriggerIndex.current = offset - 1;
+      } else if (showSlashMenu) {
+        // Mise à jour du filtre
+        const filterText = text.slice(slashTriggerIndex.current + 1, offset);
+        if (filterText.includes(" ") || offset < slashTriggerIndex.current) {
+          setShowSlashMenu(false);
+        } else {
+          setSlashFilter(filterText);
+        }
+      }
+    }
+  };
+
+  const handleSlashSelect = (command: any) => {
+    // Supprimer le texte '/' et le filtre
+    const selection = window.getSelection();
+    if (selection && selection.rangeCount > 0) {
+      const range = selection.getRangeAt(0);
+      range.setStart(range.startContainer, slashTriggerIndex.current);
+      range.deleteContents();
+    }
+
+    // Exécuter l'action
+    if (command.id === 'image') {
+      onInsertImage();
+    } else if (command.id === 'ai') {
+      if (onOpenChat) onOpenChat();
+    } else if (command.id === 'part') {
+      if (onAddPart) onAddPart();
+    } else if (command.id === 'chapter') {
+      if (onAddChapter) onAddChapter();
+    } else if (command.id === 'notion') {
+      if (onAddNotion) onAddNotion();
+    } else if (command.id === 'note') {
+      const html = `<div style="background:#e3f2fd; padding:15px; border-left: 4px solid #2196f3; margin:20px 0; border-radius: 4px; color: #0d47a1;">
+          <strong>Note :</strong> Tapez votre remarque ici...
+      </div><p><br></p>`;
+      document.execCommand('insertHTML', false, html);
+    } else if (command.id === 'capture') {
+      const html = `<div style="background:#f9f9f9; padding:30px; text-align:center; margin:20px 0; border: 2px dashed #99334C; border-radius: 12px; cursor: default;" contenteditable="false">
+          <div style="color:#99334C; font-weight: bold; margin-bottom: 8px;">[ ZONE DE CAPTURE D'ÉCRAN ]</div>
+          <div style="color:#666; font-size: 13px;">Collez votre image ici (Ctrl+V) ou glissez-la</div>
+      </div><p><br></p>`;
+      document.execCommand('insertHTML', false, html);
+    } else {
+      command.action();
+    }
+
+    setShowSlashMenu(false);
+    editorRef.current?.focus();
+    handleInput();
+  };
+
+  const onInsertImage = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.onchange = (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          if (event.target?.result) {
+            const img = `<img src="${event.target.result}" style="max-width: 100%; height: auto; display: block; margin: 20px auto; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);" />`;
+            document.execCommand('insertHTML', false, img);
+            handleInput();
+          }
+        };
+        reader.readAsDataURL(file);
+      }
+    };
+    input.click();
   };
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -229,11 +415,29 @@ const EditorArea: React.FC<EditorAreaProps> = ({
 
   // Gestionnaire pour s'assurer qu'on peut cliquer et focuser facilement
   const handleClick = (e: React.MouseEvent) => {
-    if (e.target === e.currentTarget && editorRef.current) {
-      // Si on clique dans la zone grise mais pas dans l'éditeur, on focus l'éditeur
-      editorRef.current.focus();
+    const target = e.target as HTMLElement;
+
+    // Si on clique sur le fond gris ou à côté du papier blanc
+    // On focuse la fin du document, mais seulement si on ne clique pas sur un élément interactif
+    const isInteractive = target.closest('button, a, input, [role="button"]');
+
+    if (editorRef.current && !editorRef.current.contains(target) && !isInteractive) {
+      // Un petit setTimeout aide souvent à assurer que le focus est bien pris après les évènements de clic par défaut
+      setTimeout(() => {
+        if (editorRef.current) {
+          editorRef.current.focus();
+          const selection = window.getSelection();
+          if (selection) {
+            const range = document.createRange();
+            range.selectNodeContents(editorRef.current);
+            range.collapse(false);
+            selection.removeAllRanges();
+            selection.addRange(range);
+          }
+        }
+      }, 0);
     }
-  }
+  };
 
   return (
     <div
@@ -260,8 +464,57 @@ const EditorArea: React.FC<EditorAreaProps> = ({
           onDrop={handleDrop}
           onPaste={handlePaste}
           onClick={handleEditorClick}
+          onKeyDown={(e) => {
+            if (showSlashMenu && (e.key === 'ArrowUp' || e.key === 'ArrowDown' || e.key === 'Enter')) {
+              e.preventDefault(); // On laisse le SlashMenu gérer ces touches
+              return;
+            }
+
+            // --- Désactivation auto du style après Espace ---
+            // Si l'utilisateur a activé le gras/italique/souligné
+            if (e.key === ' ') {
+              const activeBold = document.queryCommandState('bold');
+              const activeItalic = document.queryCommandState('italic');
+              const activeUnderline = document.queryCommandState('underline');
+
+              if (activeBold || activeItalic || activeUnderline) {
+                // On utilise un court délai pour laisser l'espace s'insérer, 
+                // puis on désactive la commande pour la suite de la saisie
+                setTimeout(() => {
+                  if (activeBold) document.execCommand('bold', false);
+                  if (activeItalic) document.execCommand('italic', false);
+                  if (activeUnderline) document.execCommand('underline', false);
+                  handleInput(); // Notifier le changement d'état
+                }, 0);
+              }
+            }
+          }}
           data-placeholder={internalPlaceholder}
         />
+
+        {/* Floating Toolbar Selection */}
+        <FloatingToolbar
+          isVisible={showFloatingToolbar}
+          position={floatingToolbarPosition}
+          onFormat={(cmd, val) => {
+            document.execCommand(cmd, false, val);
+            handleInput();
+            handleSelectionChange(); // Rafraîchir l'état
+          }}
+          activeFormats={activeFormats}
+        />
+
+        {/* Slash Menu (/) */}
+        <AnimatePresence>
+          {showSlashMenu && (
+            <SlashMenu
+              position={slashMenuPosition}
+              filter={slashFilter}
+              onClose={() => setShowSlashMenu(false)}
+              onSelect={handleSlashSelect}
+            />
+          )}
+        </AnimatePresence>
 
         {/* Toolbar Image */}
         {selectedImage && (

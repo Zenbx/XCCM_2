@@ -166,6 +166,7 @@ interface TableOfContentsProps {
   onMove?: (type: 'chapter' | 'paragraph' | 'notion', itemId: string, newParentId: string) => Promise<void>;
   onDelete?: (type: 'part' | 'chapter' | 'paragraph' | 'notion', id: string) => Promise<void>;
   language?: Language;
+  width?: number; // ✅ Nouvelle prop pour la largeur dynamique
 }
 
 const TableOfContents: React.FC<TableOfContentsProps> = ({
@@ -187,7 +188,8 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
   onReorder,
   onMove,
   onDelete,
-  language = 'fr'
+  language = 'fr',
+  width = 320 // ✅ Valeur par défaut
 }) => {
   const t = (translations[language] ?? translations.fr).toc;
   const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({});
@@ -516,7 +518,10 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
   };
 
   return (
-    <div className="w-72 lg:w-80 xl:w-96 bg-white border-r border-gray-200 overflow-y-auto flex flex-col h-full select-none">
+    <div
+      className="bg-white border-r border-gray-200 overflow-y-auto flex flex-col h-full select-none"
+      style={{ width: `${width}px` }}
+    >
       {/* Header */}
       <div className="p-4 border-b border-gray-100 flex items-center justify-between sticky top-0 z-10 bg-white/95 backdrop-blur-sm">
         <h2 className="text-gray-800 font-bold text-sm uppercase tracking-wider">{t.title}</h2>

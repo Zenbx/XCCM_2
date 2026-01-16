@@ -26,10 +26,27 @@ class AuthService {
   }
 
   async register(userData: RegisterData): Promise<User> {
+    let body;
+    const headers: HeadersInit = {};
+
+    if (userData.profile_picture) {
+      const formData = new FormData();
+      Object.entries(userData).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          formData.append(key, value);
+        }
+      });
+      body = formData;
+      // Content-Type header is automatically set by browser with boundary for FormData
+    } else {
+      headers['Content-Type'] = 'application/json';
+      body = JSON.stringify(userData);
+    }
+
     const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(userData),
+      headers,
+      body,
     });
 
     const data: LoginResponse = await response.json();

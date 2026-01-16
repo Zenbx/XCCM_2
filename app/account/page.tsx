@@ -2,11 +2,11 @@
 
 import React, { useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { 
-  User, 
-  Mail, 
-  Briefcase, 
-  Building2, 
+import {
+  User,
+  Mail,
+  Briefcase,
+  Building2,
   Calendar,
   Edit3,
   Save,
@@ -20,6 +20,7 @@ import {
   Octagon
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { getCookie } from '@/lib/cookies';
 
 const AccountPage = () => {
   const { user, isLoading, refreshUser } = useAuth();
@@ -37,23 +38,81 @@ const AccountPage = () => {
     org: user?.org || '',
   });
 
-  // Données mockées pour les statistiques (à remplacer par l'API)
-  const stats = {
-    coursCreated: 12,
-    coursViews: 3450,
-    coursDownloads: 890,
-    memberSince: user?.created_at ? new Date(user.created_at).toLocaleDateString('fr-FR', { 
-      month: 'long', 
-      year: 'numeric' 
-    }) : 'Récemment',
+  const [newProfilePicture, setNewProfilePicture] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
+  // Synchroniser le formulaire quand les données utilisateur arrivent
+  React.useEffect(() => {
+    if (user && !isEditing) {
+      setFormData({
+        firstname: user.firstname || '',
+        lastname: user.lastname || '',
+        email: user.email || '',
+        occupation: user.occupation || '',
+        org: user.org || '',
+      });
+    }
+  }, [user, isEditing]);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        setError("L'image ne doit pas dépasser 5 Mo");
+        return;
+      }
+      setNewProfilePicture(file);
+      setPreviewUrl(URL.createObjectURL(file));
+    }
   };
 
-  const recentActivity = [
-    { id: 1, action: 'Cours créé', title: 'Introduction au Réseaux', date: '2 jours', type: 'create' },
-    { id: 2, action: 'Cours modifié', title: 'Programmation Python', date: '5 jours', type: 'edit' },
-    { id: 3, action: 'Cours publié', title: 'Design UX/UI', date: '1 semaine', type: 'publish' },
-  ];
+  // State pour les statistiques
+  const [stats, setStats] = useState({
+    coursCreated: 0,
+    coursViews: 0,
+    coursDownloads: 0,
+    recentActivities: [] as any[],
+    memberSince: user?.created_at ? new Date(user.created_at).toLocaleDateString('fr-FR', {
+      month: 'long',
+      year: 'numeric'
+    }) : 'Récemment',
+  });
 
+  // Fetch stats on mount
+  React.useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const token = localStorage.getItem('auth_token');
+        if (!token) return;
+
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/user/stats`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'x-user-id': user?.user_id || '' // Assuming auth context provides this or token handles it on backend
+          }
+        });
+        const data = await response.json();
+        if (data.success) {
+          setStats(prev => ({
+            ...prev,
+            coursCreated: data.data.totalCoursesCreated,
+            coursViews: data.data.totalViewsOnPublishedCourses,
+            coursDownloads: data.data.totalDownloadsOnPublishedCourses,
+            recentActivities: data.data.recentActivities || [],
+          }));
+        }
+      } catch (error) {
+        console.error("Error loading stats", error);
+      }
+    };
+    if (user) fetchStats();
+  }, [user]);
+
+  // Mock activity (could be replaced by API if needed, but keeping simple for now)
+
+
+  /* ... handlers ... */
+  // (Handlers kept as is)
   const handleEdit = () => {
     setIsEditing(true);
     setError('');
@@ -69,6 +128,8 @@ const AccountPage = () => {
       occupation: user?.occupation || '',
       org: user?.org || '',
     });
+    setNewProfilePicture(null);
+    setPreviewUrl(null);
     setError('');
   };
 
@@ -78,29 +139,50 @@ const AccountPage = () => {
     setSuccess('');
 
     try {
-      // TODO: Appel API pour mettre à jour le profil
+      const token = getCookie('auth_token');
+      if (!token) throw new Error("Non authentifié");
+
+      const updateData = new FormData();
+      updateData.append('firstname', formData.firstname);
+      updateData.append('lastname', formData.lastname);
+      // updateData.append('email', formData.email); // Email update restricted for now
+      updateData.append('occupation', formData.occupation);
+      updateData.append('org', formData.org);
+
+      if (newProfilePicture) {
+        updateData.append('profile_picture', newProfilePicture);
+      }
+
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/user/profile`, {
         method: 'PUT',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
-          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+          // Content-Type is auto-set for FormData
         },
-        body: JSON.stringify(formData),
+        body: updateData,
       });
 
-      if (!response.ok) {
-        throw new Error('Erreur lors de la mise à jour');
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.message || 'Erreur lors de la mise à jour');
       }
 
       await refreshUser();
       setIsEditing(false);
       setSuccess('Profil mis à jour avec succès !');
-      
+
       setTimeout(() => setSuccess(''), 3000);
     } catch (err: any) {
       setError(err.message || 'Erreur lors de la mise à jour du profil');
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handlePublicProfile = () => {
+    if (user?.user_id) {
+      router.push(`/profile/${user.user_id}`);
     }
   };
 
@@ -124,9 +206,18 @@ const AccountPage = () => {
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white py-12 px-6">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">Mon Compte</h1>
-          <p className="text-gray-600">Gérez vos informations personnelles et votre activité</p>
+        <div className="mb-8 flex justify-between items-end">
+          <div>
+            <h1 className="text-4xl font-bold text-gray-900 mb-2">Mon Compte</h1>
+            <p className="text-gray-600">Gérez vos informations personnelles et votre activité</p>
+          </div>
+          <button
+            onClick={handlePublicProfile}
+            className="px-4 py-2 text-[#99334C] border border-[#99334C] rounded-xl hover:bg-[#99334C] hover:text-white transition-all flex items-center gap-2 font-semibold"
+          >
+            <Eye className="w-4 h-4" />
+            Voir mon profil public
+          </button>
         </div>
 
         {/* Messages */}
@@ -147,19 +238,44 @@ const AccountPage = () => {
           <div className="lg:col-span-2 space-y-6">
             {/* Carte Profil */}
             <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+
               {/* Header de la carte */}
               <div className="bg-gradient-to-r from-[#99334C] to-[#7a283d] p-6 text-white">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
-                    <div className="w-20 h-20 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center text-3xl font-bold">
-                      {user.firstname?.[0]}{user.lastname?.[0]}
+                    <div className="relative group">
+                      <div className="w-20 h-20 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center text-3xl font-bold overflow-hidden border-2 border-white/50">
+                        {(previewUrl || user.profile_picture) ? (
+                          <img
+                            src={previewUrl || `${process.env.NEXT_PUBLIC_API_URL}${user.profile_picture}`}
+                            alt="Profile"
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <span>{user.firstname?.[0]}{user.lastname?.[0]}</span>
+                        )}
+                      </div>
+
+                      {isEditing && (
+                        <label htmlFor="profile-update" className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-full cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity">
+                          <Edit3 className="w-6 h-6 text-white" />
+                        </label>
+                      )}
+                      <input
+                        type="file"
+                        id="profile-update"
+                        accept="image/*"
+                        onChange={handleFileChange}
+                        className="hidden"
+                        disabled={!isEditing}
+                      />
                     </div>
                     <div>
                       <h2 className="text-2xl font-bold">{user.firstname} {user.lastname}</h2>
                       <p className="text-white/80">{user.email}</p>
                     </div>
                   </div>
-                  
+
                   {!isEditing && (
                     <button
                       onClick={handleEdit}
@@ -187,8 +303,8 @@ const AccountPage = () => {
                           <input
                             type="text"
                             value={formData.lastname}
-                            onChange={(e) => setFormData({...formData, lastname: e.target.value})}
-                            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#99334C]/20 focus:border-[#99334C] transition-all"
+                            onChange={(e) => setFormData({ ...formData, lastname: e.target.value })}
+                            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#99334C]/20 focus:border-[#99334C] transition-all"
                           />
                         </div>
                       </div>
@@ -202,8 +318,8 @@ const AccountPage = () => {
                           <input
                             type="text"
                             value={formData.firstname}
-                            onChange={(e) => setFormData({...formData, firstname: e.target.value})}
-                            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#99334C]/20 focus:border-[#99334C] transition-all"
+                            onChange={(e) => setFormData({ ...formData, firstname: e.target.value })}
+                            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#99334C]/20 focus:border-[#99334C] transition-all"
                           />
                         </div>
                       </div>
@@ -218,8 +334,8 @@ const AccountPage = () => {
                         <input
                           type="email"
                           value={formData.email}
-                          onChange={(e) => setFormData({...formData, email: e.target.value})}
-                          className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#99334C]/20 focus:border-[#99334C] transition-all"
+                          onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                          className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#99334C]/20 focus:border-[#99334C] transition-all"
                         />
                       </div>
                     </div>
@@ -233,8 +349,8 @@ const AccountPage = () => {
                         <input
                           type="text"
                           value={formData.occupation}
-                          onChange={(e) => setFormData({...formData, occupation: e.target.value})}
-                          className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#99334C]/20 focus:border-[#99334C] transition-all"
+                          onChange={(e) => setFormData({ ...formData, occupation: e.target.value })}
+                          className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#99334C]/20 focus:border-[#99334C] transition-all"
                           placeholder="Enseignant, Formateur..."
                         />
                       </div>
@@ -249,8 +365,8 @@ const AccountPage = () => {
                         <input
                           type="text"
                           value={formData.org}
-                          onChange={(e) => setFormData({...formData, org: e.target.value})}
-                          className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#99334C]/20 focus:border-[#99334C] transition-all"
+                          onChange={(e) => setFormData({ ...formData, org: e.target.value })}
+                          className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#99334C]/20 focus:border-[#99334C] transition-all"
                           placeholder="Nom de votre établissement"
                         />
                       </div>
@@ -345,23 +461,30 @@ const AccountPage = () => {
               </h3>
 
               <div className="space-y-4">
-                {recentActivity.map((activity) => (
-                  <div key={activity.id} className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-all">
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                      activity.type === 'create' ? 'bg-green-100' :
-                      activity.type === 'edit' ? 'bg-blue-100' : 'bg-purple-100'
-                    }`}>
-                      {activity.type === 'create' && <BookOpen className="w-5 h-5 text-green-600" />}
-                      {activity.type === 'edit' && <Edit3 className="w-5 h-5 text-blue-600" />}
-                      {activity.type === 'publish' && <TrendingUp className="w-5 h-5 text-purple-600" />}
+                {stats.recentActivities && stats.recentActivities.length > 0 ? (
+                  stats.recentActivities.map((activity, index) => (
+                    <div key={index} className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-all">
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center ${activity.type === 'project' ? 'bg-blue-100' :
+                        activity.type === 'comment' ? 'bg-green-100' :
+                          activity.type === 'like' ? 'bg-red-100' : 'bg-purple-100'
+                        }`}>
+                        {activity.type === 'project' && <Briefcase className="w-5 h-5 text-blue-600" />}
+                        {activity.type === 'comment' && <Mail className="w-5 h-5 text-green-600" />}
+                        {activity.type === 'like' && <Eye className="w-5 h-5 text-red-600" />}
+                        {activity.type === 'invitation' && <Mail className="w-5 h-5 text-purple-600" />}
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm font-bold text-gray-900">{activity.title}</p>
+                        <p className="text-xs text-gray-500">{activity.description}</p>
+                      </div>
+                      <div className="text-xs text-gray-400 whitespace-nowrap">
+                        {new Date(activity.timestamp).toLocaleDateString()}
+                      </div>
                     </div>
-                    <div className="flex-1">
-                      <p className="font-semibold text-gray-900">{activity.title}</p>
-                      <p className="text-sm text-gray-500">{activity.action}</p>
-                    </div>
-                    <span className="text-sm text-gray-500">Il y a {activity.date}</span>
-                  </div>
-                ))}
+                  ))
+                ) : (
+                  <p className="text-gray-500 text-center py-4">Aucune activité récente.</p>
+                )}
               </div>
             </div>
           </div>
@@ -401,6 +524,7 @@ const AccountPage = () => {
                 </div>
               </div>
             </div>
+
 
             {/* Badge */}
             <div className="bg-gradient-to-br from-[#99334C] to-[#7a283d] rounded-2xl shadow-lg p-6 text-white">

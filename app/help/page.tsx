@@ -26,6 +26,34 @@ const HelpCenter = () => {
   const [formSubmitted, setFormSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Search Logic state
+  const [searchResults, setSearchResults] = useState<any[] | null>(null);
+
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setSearchResults(null);
+      return;
+    }
+
+    const query = searchQuery.toLowerCase();
+    const results: any[] = [];
+
+    Object.entries(content).forEach(([sectionKey, sectionContent]) => {
+      Object.entries(sectionContent).forEach(([subKey, subContent]: [string, any]) => {
+        if (subContent.title?.toLowerCase().includes(query) || subContent.content?.toLowerCase().includes(query)) {
+          results.push({
+            section: sectionKey,
+            subsection: subKey,
+            title: subContent.title,
+            snippet: subContent.content?.substring(0, 150) + "..."
+          });
+        }
+      });
+    });
+
+    setSearchResults(results);
+  }, [searchQuery]);
+
   // Language + translations alias
   const { language } = useLanguage();
   const { user } = useAuth();
@@ -604,23 +632,60 @@ Limites de taux
         </div>
       </div>
 
-      {/* Contenu principal */}
       <div className="flex-1 overflow-y-auto bg-white">
         <div className="max-w-4xl mx-auto p-4 md:p-8 pb-24">
-          <div className="mb-8 md:mb-12">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 md:p-3 bg-[#99334C] rounded-lg">
-                <Icon size={20} className="text-white md:w-6 md:h-6" />
+
+          {/* Search Results View */}
+          {searchResults ? (
+            <div className="mb-12">
+              <div className="flex items-center gap-3 mb-8">
+                <Search className="w-8 h-8 text-[#99334C]" />
+                <h1 className="text-3xl font-bold text-gray-900">Résultats de recherche</h1>
               </div>
-              <h1 className="text-2xl md:text-4xl font-bold text-gray-900">{currentSection?.title}</h1>
+
+              {searchResults.length === 0 ? (
+                <p className="text-gray-600">Aucun résultat trouvé pour "{searchQuery}".</p>
+              ) : (
+                <div className="space-y-6">
+                  {searchResults.map((result, idx) => (
+                    <div
+                      key={idx}
+                      onClick={() => {
+                        setSearchQuery(''); // Clear search to show content
+                        changeSection(result.section);
+                        setTimeout(() => scrollToSection(result.subsection), 100);
+                      }}
+                      className="p-6 bg-gray-50 rounded-xl border border-gray-200 hover:border-[#99334C] cursor-pointer transition-all group"
+                    >
+                      <div className="flex items-center gap-2 mb-2 text-xs font-bold text-[#99334C] uppercase tracking-wide">
+                        <span>{sections[result.section]?.title}</span>
+                        <ChevronRight size={12} />
+                        <span>{result.title}</span>
+                      </div>
+                      <h3 className="text-xl font-bold text-gray-900 mb-2 group-hover:text-[#99334C] transition-colors">{result.title}</h3>
+                      <p className="text-gray-600 text-sm line-clamp-2">{result.snippet}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
-            <p className="text-gray-600 text-sm md:text-lg">
-              {activeSection === 'documentation' && 'Découvrez toutes les fonctionnalités de XCCM 2'}
-              {activeSection === 'faq' && 'Réponses aux questions fréquemment posées'}
-              {activeSection === 'guide' && 'Apprenez à créer des cours de qualité'}
-              {activeSection === 'support' && 'Obtenez de l\'aide technique'}
-            </p>
-          </div>
+          ) : (
+            /* Normal View */
+            <div className="mb-8 md:mb-12">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 md:p-3 bg-[#99334C] rounded-lg">
+                  <Icon size={20} className="text-white md:w-6 md:h-6" />
+                </div>
+                <h1 className="text-2xl md:text-4xl font-bold text-gray-900">{currentSection?.title}</h1>
+              </div>
+              <p className="text-gray-600 text-sm md:text-lg">
+                {activeSection === 'documentation' && 'Découvrez toutes les fonctionnalités de XCCM 2'}
+                {activeSection === 'faq' && 'Réponses aux questions fréquemment posées'}
+                {activeSection === 'guide' && 'Apprenez à créer des cours de qualité'}
+                {activeSection === 'support' && 'Obtenez de l\'aide technique'}
+              </p>
+            </div>
+          )}
 
           {currentSection?.subsections.map((subsection: any) => {
             const subsectionContent = content[activeSection]?.[subsection.id];
@@ -863,6 +928,7 @@ Limites de taux
         <FileText size={24} />
       </button>
     </div>
+
   );
 };
 

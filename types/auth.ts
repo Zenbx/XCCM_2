@@ -5,6 +5,7 @@ export interface User {
   lastname: string;
   occupation?: string;
   org?: string;
+  profile_picture?: string;
   created_at: string;
   role: string; // Rôle de l'utilisateur ('admin', 'user', etc.)
 }
@@ -25,4 +26,5 @@ export interface RegisterData {
   lastname: string;
   occupation?: string;
   org?: string;
+  profile_picture?: File;
 }

@@ -4,7 +4,9 @@ import {
   Search, Filter, BookOpen, Download, Eye, Calendar, User, Tag, ChevronLeft, ChevronRight, Star, Clock, Bookmark, BookmarkCheck, TrendingUp, Grid3x3, List, Globe, Users, Loader2, AlertCircle, FileText, X
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { documentService } from '@/services/documentService';
+import { ArrowRight } from 'lucide-react';
 
 import toast from 'react-hot-toast';
 import { useInView } from 'react-intersection-observer';
@@ -156,6 +158,13 @@ const LibraryPage = () => {
               <Globe className="w-5 h-5" />
               <span>Accès gratuit</span>
             </div>
+            <Link
+              href="/community"
+              className="flex items-center gap-2 bg-white text-[#99334C] px-4 py-2 rounded-full font-bold hover:bg-white/90 transition-all shadow-lg"
+            >
+              <Users className="w-5 h-5" />
+              <span>Communauté</span>
+            </Link>
           </div>
         </div>
       </section>
@@ -424,23 +433,94 @@ const LibraryPage = () => {
                   ))}
                 </div>
               )}
-
-              {/* Infinite Scroll Trigger & Loader */}
-              {hasMore && (
-                <div ref={ref} className="flex justify-center items-center py-8">
-                  {isLoading && <Loader2 className="w-8 h-8 text-[#99334C] animate-spin" />}
-                </div>
-              )}
-
-              {!hasMore && courses.length > 0 && (
-                <div className="text-center py-8 text-gray-400 text-sm">
-                  Vous avez atteint la fin de la bibliothèque.
-                </div>
-              )}
             </>
           )}
         </div>
       </section>
+
+      {/* Top Creators Section */}
+      <section className="py-12 px-6 bg-gray-50 border-t border-gray-200">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex items-center justify-between mb-8">
+            <h2 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
+              <Star className="w-8 h-8 text-[#99334C]" />
+              Top Créateurs
+            </h2>
+            <Link
+              href="/creators"
+              className="text-[#99334C] font-bold hover:underline flex items-center gap-2"
+            >
+              Voir tout <ArrowRight className="w-4 h-4" />
+            </Link>
+            <div className="text-sm text-gray-500">
+              Les auteurs les plus actifs de la communauté
+            </div>
+          </div>
+
+          <TopCreatorsList />
+        </div>
+      </section>
+
+    </div>
+  );
+};
+
+const TopCreatorsList = () => {
+  const [creators, setCreators] = React.useState<any[]>([]);
+  const [isLoading, setIsLoading] = React.useState(true);
+  const router = useRouter();
+
+  React.useEffect(() => {
+    const fetchCreators = async () => {
+      try {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/creators/top`);
+        const data = await response.json();
+        if (data.success) {
+          setCreators(data.data);
+        }
+      } catch (error) {
+        console.error("Error loading creators", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchCreators();
+  }, []);
+
+  if (isLoading) return <div className="flex justify-center p-8"><Loader2 className="w-8 h-8 text-[#99334C] animate-spin" /></div>;
+
+  return (
+    <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+      {creators.map((creator, index) => (
+        <div
+          key={creator.id}
+          onClick={() => router.push(`/profile/${creator.id}`)}
+          className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-all cursor-pointer flex items-center gap-4 group"
+        >
+          <div className="relative">
+            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center text-xl font-bold text-gray-600 group-hover:bg-[#99334C] group-hover:text-white transition-colors">
+              {creator.name.split(' ').map((n: any) => n[0]).join('')}
+            </div>
+            <div className="absolute -top-2 -right-2 w-6 h-6 bg-yellow-400 rounded-full flex items-center justify-center text-xs font-bold shadow-sm">
+              #{index + 1}
+            </div>
+          </div>
+          <div className="flex-1 min-w-0">
+            <h3 className="font-bold text-gray-900 truncate group-hover:text-[#99334C] transition-colors">{creator.name}</h3>
+            <p className="text-xs text-gray-500 truncate">{creator.role}</p>
+            <div className="flex items-center gap-3 mt-2 text-xs font-medium text-gray-400">
+              <span className="flex items-center gap-1">
+                <Eye className="w-3 h-3" />
+                {creator.stats.views}
+              </span>
+              <span className="flex items-center gap-1">
+                <Star className="w-3 h-3" />
+                {creator.stats.likes}
+              </span>
+            </div>
+          </div>
+        </div>
+      ))}
     </div>
   );
 };

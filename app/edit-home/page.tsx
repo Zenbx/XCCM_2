@@ -122,6 +122,19 @@ const EditHomePage = () => {
       rating: 4.6,
       downloads: 750,
       author: "XCCM2 Team"
+    },
+    {
+      id: 5,
+      name: "Guide Utilisateur XCCM2",
+      description: "Structure officielle pour documenter le flux utilisateur de l'application. Idéal pour vos captures d'écran.",
+      category: "Documentation",
+      icon: BookTemplate,
+      parts: 3,
+      chapters: 7,
+      difficulty: "Débutant",
+      rating: 5.0,
+      downloads: 1,
+      author: "Moi"
     }
   ];
 
@@ -206,10 +219,28 @@ const EditHomePage = () => {
             if (chapData.paragraphs) {
               for (let k = 0; k < chapData.paragraphs.length; k++) {
                 const paraData = chapData.paragraphs[k];
-                await structureService.createParagraph(newProject.pr_name, partData.title, chapData.title, {
+                const newPara = await structureService.createParagraph(newProject.pr_name, partData.title, chapData.title, {
                   para_name: paraData.name,
                   para_number: k + 1
                 });
+
+                // --- Création des Notions si définies dans le template ---
+                if (paraData.notions) {
+                  for (let l = 0; l < paraData.notions.length; l++) {
+                    const notionData = paraData.notions[l];
+                    await structureService.createNotion(
+                      newProject.pr_name,
+                      partData.title,
+                      chapData.title,
+                      newPara.para_name, // Utiliser le vrai nom créé
+                      {
+                        notion_name: notionData.name,
+                        notion_number: l + 1,
+                        notion_content: notionData.content || ''
+                      }
+                    );
+                  }
+                }
               }
             }
           }

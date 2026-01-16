@@ -123,8 +123,16 @@ export default function Header() {
                 onBlur={handleMenuBlur}
                 className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 transition-all"
               >
-                <div className="w-8 h-8 rounded-full bg-[#99334C] text-white flex items-center justify-center font-semibold">
-                  {user.firstname?.[0]}{user.lastname?.[0]}
+                <div className="w-8 h-8 rounded-full bg-[#99334C] text-white flex items-center justify-center font-semibold overflow-hidden">
+                  {user.profile_picture ? (
+                    <img
+                      src={`${process.env.NEXT_PUBLIC_API_URL}${user.profile_picture}`}
+                      alt="Profile"
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <span>{user.firstname?.[0]}{user.lastname?.[0]}</span>
+                  )}
                 </div>
                 <span className="text-sm font-medium text-gray-700 block">
                   {user.firstname} {user.lastname}
@@ -281,8 +289,16 @@ export default function Header() {
                 {isAuthenticated && user ? (
                   <div className="flex flex-col gap-4">
                     <div className="flex items-center gap-3 px-2">
-                      <div className="w-10 h-10 rounded-full bg-[#99334C] text-white flex items-center justify-center font-bold">
-                        {user.firstname?.[0]}{user.lastname?.[0]}
+                      <div className="w-10 h-10 rounded-full bg-[#99334C] text-white flex items-center justify-center font-bold overflow-hidden">
+                        {user.profile_picture ? (
+                          <img
+                            src={`${process.env.NEXT_PUBLIC_API_URL}${user.profile_picture}`}
+                            alt="Profile"
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <span>{user.firstname?.[0]}{user.lastname?.[0]}</span>
+                        )}
                       </div>
                       <div className="flex flex-col">
                         <span className="font-semibold text-gray-800">{user.firstname} {user.lastname}</span>
