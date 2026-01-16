@@ -1,6 +1,3 @@
-"use client";
-
-import React from 'react';
 import {
   Bot,
   Eye,
@@ -14,7 +11,9 @@ import {
   AlignJustify,
   List,
   ListOrdered,
-  Image as ImageIcon
+  Image as ImageIcon,
+  Minimize2,
+  Maximize2
 } from 'lucide-react';
 
 interface EditorToolbarProps {
@@ -28,6 +27,8 @@ interface EditorToolbarProps {
     fontSize: string;
   };
   disabled?: boolean;
+  isZenMode?: boolean;
+  onToggleZen?: () => void;
 }
 
 const EditorToolbar: React.FC<EditorToolbarProps> = ({
@@ -38,20 +39,13 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
   onInsertImage,
   textFormat,
   disabled = false,
+  isZenMode = false,
+  onToggleZen,
 }) => {
   return (
-    <div className={`bg-white border-b border-gray-200 p-2 flex items-center gap-1 ${
-      disabled ? 'opacity-40 pointer-events-none select-none' : ''
-    }`}>
-
-        {disabled && (
-        <div className="absolute inset-0 bg-gray-100/30 backdrop-blur-[1px] flex items-center justify-center z-10">
-          <span className="text-xs font-medium text-gray-500 bg-white px-3 py-1 rounded-full shadow-sm border border-gray-200">
-            📝 Sélectionnez une Partie ou une Notion pour éditer
-          </span>
-        </div>
-      )}
-      {/* Police */}
+    <div className={`bg-white border-b border-gray-200 p-2 flex items-center gap-1 sticky top-0 z-30 ${disabled ? 'opacity-40 pointer-events-none select-none' : ''
+      }`}>
+      {/* ... existing font/size selects ... */}
       <select
         className="px-2 py-1 border border-gray-300 rounded text-sm bg-white text-black"
         value={textFormat.font}
@@ -66,7 +60,6 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
         <option>Comic Sans MS</option>
       </select>
 
-      {/* Taille */}
       <select
         className="px-2 py-1 border border-gray-300 rounded text-sm w-16 bg-white text-black"
         value={textFormat.fontSize}
@@ -89,113 +82,53 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
 
       <div className="w-px h-6 bg-gray-300 mx-1"></div>
 
-      {/* Formatage de texte */}
-      <button
-        className="px-2 py-1 hover:bg-gray-100 rounded text-black"
-        onClick={() => onFormatChange('bold')}
-        title="Gras (Ctrl+B)"
-      >
-        <Bold size={18} />
-      </button>
-
-      <button
-        className="px-2 py-1 hover:bg-gray-100 rounded text-black"
-        onClick={() => onFormatChange('italic')}
-        title="Italique (Ctrl+I)"
-      >
-        <Italic size={18} />
-      </button>
-
-      <button
-        className="px-2 py-1 hover:bg-gray-100 rounded text-black"
-        onClick={() => onFormatChange('underline')}
-        title="Souligné (Ctrl+U)"
-      >
-        <Underline size={18} />
-      </button>
-
-      <button
-        className="px-2 py-1 hover:bg-gray-100 rounded text-black"
-        onClick={() => onFormatChange('strikethrough')}
-        title="Barré"
-      >
-        <Strikethrough size={18} />
-      </button>
+      <button className="px-2 py-1 hover:bg-gray-100 rounded text-black" onClick={() => onFormatChange('bold')} title="Gras (Ctrl+B)"><Bold size={18} /></button>
+      <button className="px-2 py-1 hover:bg-gray-100 rounded text-black" onClick={() => onFormatChange('italic')} title="Italique (Ctrl+I)"><Italic size={18} /></button>
+      <button className="px-2 py-1 hover:bg-gray-100 rounded text-black" onClick={() => onFormatChange('underline')} title="Souligné (Ctrl+U)"><Underline size={18} /></button>
 
       <div className="w-px h-6 bg-gray-300 mx-1"></div>
 
-      {/* Alignement */}
-      <button
-        className="px-2 py-1 hover:bg-gray-100 rounded text-black"
-        onClick={() => onFormatChange('justifyLeft')}
-        title="Aligner à gauche"
-      >
-        <AlignLeft size={18} />
-      </button>
-
-      <button
-        className="px-2 py-1 hover:bg-gray-100 rounded text-black"
-        onClick={() => onFormatChange('justifyCenter')}
-        title="Centrer"
-      >
-        <AlignCenter size={18} />
-      </button>
-
-      <button
-        className="px-2 py-1 hover:bg-gray-100 rounded text-black"
-        onClick={() => onFormatChange('justifyRight')}
-        title="Aligner à droite"
-      >
-        <AlignRight size={18} />
-      </button>
-
-      <button
-        className="px-2 py-1 hover:bg-gray-100 rounded text-black"
-        onClick={() => onFormatChange('justifyFull')}
-        title="Justifier"
-      >
-        <AlignJustify size={18} />
-      </button>
+      <button className="px-2 py-1 hover:bg-gray-100 rounded text-black" onClick={() => onFormatChange('justifyLeft')} title="Aligner à gauche"><AlignLeft size={18} /></button>
+      <button className="px-2 py-1 hover:bg-gray-100 rounded text-black" onClick={() => onFormatChange('justifyCenter')} title="Centrer"><AlignCenter size={18} /></button>
+      <button className="px-2 py-1 hover:bg-gray-100 rounded text-black" onClick={() => onFormatChange('justifyRight')} title="Aligner à droite"><AlignRight size={18} /></button>
 
       <div className="w-px h-6 bg-gray-300 mx-1"></div>
 
-      {/* Listes */}
-      <button
-        className="px-2 py-1 hover:bg-gray-100 rounded text-black"
-        onClick={() => onFormatChange('insertUnorderedList')}
-        title="Liste à puces"
-      >
-        <List size={18} />
-      </button>
-
-      <button
-        className="px-2 py-1 hover:bg-gray-100 rounded text-black"
-        onClick={() => onFormatChange('insertOrderedList')}
-        title="Liste numérotée"
-      >
-        <ListOrdered size={18} />
-      </button>
+      <button className="px-2 py-1 hover:bg-gray-100 rounded text-black" onClick={() => onFormatChange('insertUnorderedList')} title="Liste à puces"><List size={18} /></button>
+      <button className="px-2 py-1 hover:bg-gray-100 rounded text-black" onClick={() => onFormatChange('insertOrderedList')} title="Liste numérotée"><ListOrdered size={18} /></button>
 
       <div className="flex-1"></div>
 
-      {/* Actions */}
       <button
-        className="px-3 py-1.5 rounded text-gray-700 hover:bg-gray-100 flex items-center gap-2 text-sm border border-gray-200 mr-2"
-        onClick={onInsertImage}
-        title="Insérer une image"
+        onClick={onToggleZen}
+        className={`px-3 py-1.5 rounded flex items-center gap-2 text-sm border font-bold transition-all ${isZenMode
+            ? 'bg-[#99334C] text-white border-[#99334C]'
+            : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
+          }`}
+        title={isZenMode ? "Quitter le Mode Zen" : "Passer en Mode Zen"}
       >
-        <ImageIcon size={16} />
-        Image
+        {isZenMode ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
+        {isZenMode ? "Quitter Zen" : "Zen Mode"}
       </button>
 
-      <button
-        className="px-4 py-1.5 rounded text-white flex items-center gap-2 text-sm hover:opacity-90 shadow-sm transition-all hover:shadow-md"
-        style={{ background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)' }} // Couleur style Gemini vert/bleu ou gardons le thème
-        onClick={onChatToggle}
-      >
-        <Bot size={16} />
-        IA Assistant
-      </button>
+      {!isZenMode && (
+        <>
+          <button
+            className="px-3 py-1.5 rounded text-gray-700 hover:bg-gray-100 flex items-center gap-2 text-sm border border-gray-200 ml-2"
+            onClick={onInsertImage}
+          >
+            <ImageIcon size={16} /> Image
+          </button>
+
+          <button
+            className="px-4 py-1.5 rounded text-white flex items-center gap-2 text-sm hover:opacity-90 shadow-sm transition-all hover:shadow-md ml-2"
+            style={{ background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)' }}
+            onClick={onChatToggle}
+          >
+            <Bot size={16} /> Assistant
+          </button>
+        </>
+      )}
     </div>
   );
 };

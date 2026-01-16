@@ -19,199 +19,205 @@ import 'katex/dist/katex.min.css';
 
 // Extension d'image personnalisée
 const CustomImage = Image.extend({
-    addAttributes() {
-        return {
-            ...this.parent?.(),
-            style: {
-                default: null,
-                parseHTML: element => element.getAttribute('style'),
-                renderHTML: attributes => {
-                    if (!attributes.style) return {};
-                    return { style: attributes.style };
-                }
-            },
-            width: {
-                default: null,
-                parseHTML: element => element.getAttribute('width'),
-                renderHTML: attributes => {
-                    if (!attributes.width) return {};
-                    return { width: attributes.width };
-                }
-            }
-        };
-    },
+  addAttributes() {
+    return {
+      ...this.parent?.(),
+      style: {
+        default: null,
+        parseHTML: element => element.getAttribute('style'),
+        renderHTML: attributes => {
+          if (!attributes.style) return {};
+          return { style: attributes.style };
+        }
+      },
+      width: {
+        default: null,
+        parseHTML: element => element.getAttribute('width'),
+        renderHTML: attributes => {
+          if (!attributes.width) return {};
+          return { width: attributes.width };
+        }
+      }
+    };
+  },
 });
 
 declare module '@tiptap/core' {
-    interface Commands<ReturnType> {
-        fontSize: {
-            setFontSize: (size: string) => ReturnType;
-            unsetFontSize: () => ReturnType;
-        };
-        setNoteBlock: () => ReturnType;
-        toggleNoteBlock: () => ReturnType;
-        setCaptureZoneBlock: () => ReturnType;
-        setMathBlock: (tex?: string) => ReturnType;
-        setMathInline: (tex?: string) => ReturnType;
-        setQuizBlock: () => ReturnType;
-        setDiscoveryHint: () => ReturnType;
-        toggleDiscoveryHint: () => ReturnType;
-        setCoderunnerBlock: () => ReturnType;
-    }
+  interface Commands<ReturnType> {
+    fontSize: {
+      setFontSize: (size: string) => ReturnType;
+      unsetFontSize: () => ReturnType;
+    };
+    setNoteBlock: () => ReturnType;
+    toggleNoteBlock: () => ReturnType;
+    setCaptureZoneBlock: () => ReturnType;
+    setMathBlock: (tex?: string) => ReturnType;
+    setMathInline: (tex?: string) => ReturnType;
+    setQuizBlock: () => ReturnType;
+    setDiscoveryHint: () => ReturnType;
+    toggleDiscoveryHint: () => ReturnType;
+    setCoderunnerBlock: () => ReturnType;
+  }
 }
 
 // Extension personnalisée pour la taille de police (ajoute un attribut au mark textStyle)
 const FontSize = Extension.create({
-    name: 'fontSize',
+  name: 'fontSize',
 
-    addOptions() {
-        return {
-            types: ['textStyle'],
-        };
-    },
+  addOptions() {
+    return {
+      types: ['textStyle'],
+    };
+  },
 
-    addGlobalAttributes() {
-        return [
-            {
-                types: this.options.types,
-                attributes: {
-                    fontSize: {
-                        default: null,
-                        parseHTML: element => element.style.fontSize?.replace('pt', '') || null,
-                        renderHTML: attributes => {
-                            if (!attributes.fontSize) {
-                                return {};
-                            }
+  addGlobalAttributes() {
+    return [
+      {
+        types: this.options.types,
+        attributes: {
+          fontSize: {
+            default: null,
+            parseHTML: element => element.style.fontSize?.replace('pt', '') || null,
+            renderHTML: attributes => {
+              if (!attributes.fontSize) {
+                return {};
+              }
 
-                            return {
-                                style: `font-size: ${attributes.fontSize}pt`,
-                            };
-                        },
-                    },
-                },
+              return {
+                style: `font-size: ${attributes.fontSize}pt`,
+              };
             },
-        ];
-    },
+          },
+        },
+      },
+    ];
+  },
 
-    addCommands() {
-        return {
-            setFontSize: (fontSize: string) => ({ chain }) => {
-                return chain()
-                    .setMark('textStyle', { fontSize })
-                    .run();
-            },
-            unsetFontSize: () => ({ chain }) => {
-                return chain()
-                    .setMark('textStyle', { fontSize: null })
-                    .removeEmptyTextStyle()
-                    .run();
-            },
-        };
-    },
+  addCommands() {
+    return {
+      setFontSize: (fontSize: string) => ({ chain }) => {
+        return chain()
+          .setMark('textStyle', { fontSize })
+          .run();
+      },
+      unsetFontSize: () => ({ chain }) => {
+        return chain()
+          .setMark('textStyle', { fontSize: null })
+          .removeEmptyTextStyle()
+          .run();
+      },
+    };
+  },
 });
 
 interface TiptapEditorProps {
-    content: string;
-    onChange: (html: string) => void;
-    placeholder?: string;
-    readOnly?: boolean;
-    className?: string;
-    textFormat?: {
-        font: string;
-        fontSize: string;
-    };
-    onSelectionChange?: (editor: any) => void;
-    onReady?: (editor: any) => void;
+  content: string;
+  onChange: (html: string) => void;
+  placeholder?: string;
+  readOnly?: boolean;
+  className?: string;
+  textFormat?: {
+    font: string;
+    fontSize: string;
+  };
+  onSelectionChange?: (editor: any) => void;
+  onReady?: (editor: any) => void;
 }
 
 const TiptapEditor: React.FC<TiptapEditorProps> = ({
-    content,
-    onChange,
-    placeholder = 'Commencez à écrire...',
-    readOnly = false,
-    className = '',
-    textFormat,
-    onSelectionChange,
-    onReady
+  content,
+  onChange,
+  placeholder = 'Commencez à écrire...',
+  readOnly = false,
+  className = '',
+  textFormat,
+  onSelectionChange,
+  onReady
 }) => {
-    const editor = useEditor({
-        immediatelyRender: false,
-        extensions: [
-            StarterKit,
-            Underline,
-            TextStyle,
-            FontFamily,
-            FontSize,
-            CustomImage.configure({
-                allowBase64: true,
-            }),
-            TextAlign.configure({
-                types: ['heading', 'paragraph', 'noteblock', 'discoveryhint'],
-                alignments: ['left', 'center', 'right', 'justify'],
-                defaultAlignment: 'left',
-            }),
-            Placeholder.configure({
-                placeholder,
-                emptyEditorClass: 'is-editor-empty',
-            }),
-            NoteBlock,
-            CaptureZoneBlock,
-            MathBlock,
-            QuizBlock,
-            DiscoveryHint,
-            CodeRunnerBlock,
-        ],
-        content: content,
-        editable: !readOnly,
-        onCreate: ({ editor }) => {
-            onReady?.(editor);
-        },
-        onUpdate: ({ editor }) => {
-            onChange(editor.getHTML());
-        },
-        onSelectionUpdate: ({ editor }) => {
-            onSelectionChange?.(editor);
-        },
-        editorProps: {
-            attributes: {
-                class: `focus:outline-none min-h-[800px] ${className}`,
-            },
-        },
-    });
+  const editor = useEditor({
+    immediatelyRender: false,
+    extensions: [
+      StarterKit,
+      Underline,
+      TextStyle,
+      FontFamily,
+      FontSize,
+      CustomImage.configure({
+        allowBase64: true,
+      }),
+      TextAlign.configure({
+        types: ['heading', 'paragraph', 'noteblock', 'discoveryhint'],
+        alignments: ['left', 'center', 'right', 'justify'],
+        defaultAlignment: 'left',
+      }),
+      Placeholder.configure({
+        placeholder,
+        emptyEditorClass: 'is-editor-empty',
+      }),
+      NoteBlock,
+      CaptureZoneBlock,
+      MathBlock,
+      QuizBlock,
+      DiscoveryHint,
+      CodeRunnerBlock,
+    ],
+    content: content,
+    editable: !readOnly,
+    onCreate: ({ editor }) => {
+      onReady?.(editor);
+    },
+    onUpdate: ({ editor }) => {
+      onChange(editor.getHTML());
+    },
+    onSelectionUpdate: ({ editor }) => {
+      onSelectionChange?.(editor);
+    },
+    editorProps: {
+      attributes: {
+        class: `focus:outline-none min-h-[800px] ${className}`,
+      },
+    },
+  });
 
-    // Mettre à jour le contenu si prop change de l'extérieur
-    useEffect(() => {
-        if (editor && content !== editor.getHTML()) {
-            editor.commands.setContent(content, { emitUpdate: false });
+  // Mettre à jour le contenu si prop change de l'extérieur
+  useEffect(() => {
+    if (editor && content !== editor.getHTML()) {
+      // Avoid "flushSync was called from inside a lifecycle method" error
+      // by deferring the update to the next microtask/frame
+      queueMicrotask(() => {
+        if (editor && !editor.isDestroyed) {
+          editor.commands.setContent(content, { emitUpdate: false });
         }
-    }, [content, editor]);
+      });
+    }
+  }, [content, editor]);
 
-    // Gérer le mode lecture seule
-    useEffect(() => {
-        if (editor) {
-            editor.setEditable(!readOnly);
-        }
-    }, [readOnly, editor]);
+  // Gérer le mode lecture seule
+  useEffect(() => {
+    if (editor) {
+      editor.setEditable(!readOnly);
+    }
+  }, [readOnly, editor]);
 
-    // Appliquer le formatage à la sélection quand textFormat change
-    useEffect(() => {
-        if (editor && textFormat && editor.isFocused) {
-            const { font, fontSize } = textFormat;
+  // Appliquer le formatage à la sélection quand textFormat change
+  useEffect(() => {
+    if (editor && textFormat && editor.isFocused) {
+      const { font, fontSize } = textFormat;
 
-            if (!editor.state.selection.empty) {
-                editor.chain()
-                    .setFontFamily(font)
-                    .setFontSize(fontSize)
-                    .run();
-            }
-        }
-    }, [textFormat, editor]);
+      if (!editor.state.selection.empty) {
+        editor.chain()
+          .setFontFamily(font)
+          .setFontSize(fontSize)
+          .run();
+      }
+    }
+  }, [textFormat, editor]);
 
-    return (
-        <div className="tiptap-wrapper w-full h-full">
-            <EditorContent editor={editor} />
+  return (
+    <div className="tiptap-wrapper w-full h-full">
+      <EditorContent editor={editor} />
 
-            <style jsx global>{`
+      <style jsx global>{`
         .tiptap p.is-editor-empty:first-child::before {
           content: attr(data-placeholder);
           float: left;
@@ -394,8 +400,8 @@ const TiptapEditor: React.FC<TiptapEditorProps> = ({
             box-shadow: 0 4px 12px rgba(37, 99, 235, 0.1);
         }
       `}</style>
-        </div>
-    );
+    </div>
+  );
 };
 
 export default TiptapEditor;

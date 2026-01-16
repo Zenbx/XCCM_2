@@ -38,6 +38,7 @@ export const translations: Record<Language, any> = {
                 about: "À propos",
                 edit: "Éditer",
                 library: "Bibliothèque",
+                marketplace: "Marketplace",
                 community: "Communauté",
                 help: "Aide"
             },
@@ -209,6 +210,7 @@ export const translations: Record<Language, any> = {
                 about: "About",
                 edit: "Edit",
                 library: "Library",
+                marketplace: "Marketplace",
                 community: "Community",
                 help: "Help"
             },

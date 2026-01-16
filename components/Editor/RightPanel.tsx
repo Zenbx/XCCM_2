@@ -1,18 +1,16 @@
 "use client";
 
 import React from 'react';
-import { Cloud, MessageSquare, Info, Settings } from 'lucide-react';
+import { Cloud, MessageSquare, Info, Settings, ShoppingBag, Lock } from 'lucide-react';
 import Granule from './Granule';
-import { i } from 'framer-motion/client';
 import ImportPanel from './Panels/ImportPanel';
 import CommentsPanel from './Panels/CommentsPanel';
 import InfoPanel from './Panels/InfoPanel';
 import SettingsPanel from './Panels/SettingsPanel';
+import MarketplacePanel from './Panels/MarketplacePanel';
+import VaultPanel from './Panels/VaultPanel';
 
 // ============= COMPOSANT: RightPanel =============
-
-
-
 
 const RightPanel = ({
   activePanel,
@@ -29,7 +27,9 @@ const RightPanel = ({
   isFetchingComments
 }: any) => {
   const panels = [
-    { id: 'import', icon: Cloud, title: 'Importer des documents' },
+    { id: 'import', icon: Cloud, title: 'Bibliothèque' },
+    { id: 'marketplace', icon: ShoppingBag, title: 'Marketplace' },
+    { id: 'vault', icon: Lock, title: 'Coffre-fort' },
     { id: 'comments', icon: MessageSquare, title: 'Commentaires' },
     { id: 'info', icon: Info, title: 'Informations' },
     { id: 'settings', icon: Settings, title: 'Paramètres' }
@@ -62,11 +62,13 @@ const RightPanel = ({
               {panels.find(p => p.id === activePanel)?.title}
             </h3>
             <button onClick={() => onToggle(activePanel)} className="text-gray-400 hover:text-gray-600">
-              {/* Close icon could go here */}
+              <span className="text-xl font-light">×</span>
             </button>
           </div>
-          <div className="p-6 flex-1 overflow-y-auto">
+          <div className="p-6 flex-1 overflow-y-auto custom-scrollbar">
             {activePanel === 'import' && <ImportPanel granules={granules} onDragStart={onDragStart} />}
+            {activePanel === 'marketplace' && <MarketplacePanel onDragStart={onDragStart} />}
+            {activePanel === 'vault' && <VaultPanel onDragStart={onDragStart} />}
             {activePanel === 'comments' && (
               <CommentsPanel
                 comments={comments}

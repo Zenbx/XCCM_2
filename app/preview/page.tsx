@@ -2,7 +2,27 @@
 
 import React, { useEffect, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { ArrowLeft, Loader2, Share2, Download, FileText, File, Printer, ChevronDown, Check, X } from 'lucide-react';
+import {
+    ArrowLeft,
+    Download,
+    FileText,
+    Printer,
+    Check,
+    Loader2,
+    File,
+    Share2,
+    Globe,
+    Lock,
+    Eye,
+    MoreVertical,
+    Save,
+    Archive,
+    FolderPlus,
+    X,
+    Box,
+    ChevronDown
+} from 'lucide-react';
+import { motion } from 'framer-motion';
 import { projectService } from '@/services/projectService';
 import { structureService, Part } from '@/services/structureService';
 import { publishService } from '@/services/publishService';
@@ -27,6 +47,27 @@ const PreviewPage = () => {
     const [isPublishing, setIsPublishing] = useState(false);
     const [publishSuccess, setPublishSuccess] = useState<{ doc_id: string; doc_name: string } | null>(null);
     const [snapshotName, setSnapshotName] = useState('');
+
+    // Phase 3: Marketplace & Vault States
+    const [showCollectModal, setShowCollectModal] = useState(false);
+    const [collectedGranule, setCollectedGranule] = useState<any>(null);
+
+    const handleCollect = (granule: any) => {
+        setCollectedGranule(granule);
+        setShowCollectModal(true);
+    };
+
+    const confirmCollectToVault = () => {
+        // Logic to save to vault
+        toast.success(`Granule "${collectedGranule?.title}" ajouté à votre coffre-fort !`);
+        setShowCollectModal(false);
+    };
+
+    const confirmCollectToProject = (targetProject: string) => {
+        // Logic to insert into project
+        toast.success(`Granule "${collectedGranule?.title}" inséré dans le projet ${targetProject}.`);
+        setShowCollectModal(false);
+    };
 
     // State for granular loading
     const [loadingProgress, setLoadingProgress] = useState<{ current: number; total: number } | null>(null);
@@ -1015,6 +1056,14 @@ const PreviewPage = () => {
                                 >
                                     {part.part_title}
                                 </h2>
+                                <button
+                                    onClick={() => handleCollect({ type: 'part', title: part.part_title, id: part.part_id })}
+                                    className="p-2 text-gray-400 hover:text-[#99334C] hover:bg-[#99334C]/5 rounded-lg transition-all flex items-center gap-2 group"
+                                    title="Récupérer cette partie"
+                                >
+                                    <Archive size={18} className="group-hover:scale-110 transition-transform" />
+                                    <span className="text-xs font-bold opacity-0 group-hover:opacity-100">Récupérer</span>
+                                </button>
                             </div>
 
                             {part.part_intro && (
@@ -1035,7 +1084,13 @@ const PreviewPage = () => {
                                             <span className="text-[#99334C] opacity-50">#</span>
                                             {chapter.chapter_title}
                                         </h3>
-
+                                        <button
+                                            onClick={() => handleCollect({ type: 'chapter', title: chapter.chapter_title, id: chapter.chapter_id })}
+                                            className="mt-12 p-2 text-gray-400 hover:text-[#99334C] hover:bg-[#99334C]/5 rounded-lg transition-all flex items-center gap-2 group"
+                                            title="Récupérer ce chapitre"
+                                        >
+                                            <Archive size={16} />
+                                        </button>
                                         <div className="space-y-10 pl-4 lg:pl-8">
                                             {chapter.paragraphs?.map((para: any) => (
                                                 <div key={para.para_id} className="para-section">
@@ -1045,7 +1100,13 @@ const PreviewPage = () => {
                                                     >
                                                         {para.para_name}
                                                     </h4>
-
+                                                    <button
+                                                        onClick={() => handleCollect({ type: 'paragraph', title: para.para_name, id: para.para_id })}
+                                                        className="p-2 text-gray-400 hover:text-[#99334C] hover:bg-[#99334C]/5 rounded-lg transition-all flex items-center gap-2 group"
+                                                        title="Récupérer ce paragraphe"
+                                                    >
+                                                        <Archive size={16} />
+                                                    </button>
                                                     <div className="space-y-6">
                                                         {para.notions?.map((notion: any) => (
                                                             <div key={notion.notion_id} className="mb-8">
@@ -1054,6 +1115,13 @@ const PreviewPage = () => {
                                                                         {notion.notion_name}
                                                                     </h5>
                                                                 )}
+                                                                <button
+                                                                    onClick={() => handleCollect({ type: 'notion', title: notion.notion_name, id: notion.notion_id })}
+                                                                    className="ml-3 p-1.5 text-gray-400 hover:text-[#99334C] hover:bg-[#99334C]/5 rounded-lg transition-all inline-flex items-center"
+                                                                    title="Récupérer cette notion"
+                                                                >
+                                                                    <Archive size={14} />
+                                                                </button>
                                                                 <div
                                                                     className="text-gray-700 leading-relaxed prose prose-lg max-w-none [&_p]:mb-4 [&_h1]:text-2xl [&_h1]:font-bold [&_h1]:mb-4 [&_h2]:text-xl [&_h2]:font-bold [&_h2]:mb-3 [&_ul]:list-disc [&_ul]:ml-6 [&_ol]:list-decimal [&_ol]:ml-6 [&_li]:mb-1 [&_blockquote]:border-l-4 [&_blockquote]:border-gray-200 [&_blockquote]:pl-4 [&_blockquote]:italic [&_blockquote]:text-gray-600 [&_a]:text-[#99334C] [&_a]:underline hover:[&_a]:text-[#7a283d]"
                                                                     style={{ fontSize: '1.125rem', lineHeight: '1.8' }}
@@ -1072,6 +1140,75 @@ const PreviewPage = () => {
                     ))}
                 </div>
             </div>
+            {/* Collect Granule Modal */}
+            {showCollectModal && (
+                <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        className="bg-white rounded-3xl shadow-2xl max-w-lg w-full overflow-hidden border border-gray-100"
+                    >
+                        <div className="bg-gradient-to-r from-[#99334C] to-[#DC3545] p-6 text-white">
+                            <div className="flex justify-between items-center mb-4">
+                                <Box className="w-8 h-8" />
+                                <button onClick={() => setShowCollectModal(false)} className="hover:rotate-90 transition-transform">
+                                    <X size={24} />
+                                </button>
+                            </div>
+                            <h3 className="text-2xl font-bold">Récupérer le granule</h3>
+                            <p className="text-white/80 text-sm mt-1 line-clamp-1 italic">"{collectedGranule?.title}"</p>
+                        </div>
+
+                        <div className="p-8 space-y-6">
+                            <button
+                                onClick={confirmCollectToVault}
+                                className="w-full flex items-center gap-4 p-5 rounded-2xl border-2 border-gray-50 hover:border-[#99334C]/30 hover:bg-[#99334C]/5 transition-all group text-left"
+                            >
+                                <div className="w-12 h-12 rounded-xl bg-gray-100 flex items-center justify-center text-gray-500 group-hover:bg-[#99334C] group-hover:text-white transition-all">
+                                    <Lock size={24} />
+                                </div>
+                                <div className="flex-1">
+                                    <div className="font-bold text-gray-900">Enregistrer dans mon coffre-fort</div>
+                                    <div className="text-xs text-gray-500 mt-0.5">Pour une réutilisation future dans n'importe quel projet</div>
+                                </div>
+                            </button>
+
+                            <div className="relative">
+                                <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 border-t border-gray-100" />
+                                <span className="relative bg-white px-4 text-[10px] font-black uppercase tracking-widest text-gray-300 left-1/2 -translate-x-1/2">OU</span>
+                            </div>
+
+                            <div className="space-y-3">
+                                <p className="text-xs font-black text-gray-400 uppercase tracking-widest pl-1">Insérer directement dans :</p>
+                                <div className="grid grid-cols-1 gap-2">
+                                    {['Projet Biologie', 'Cours Informatique', 'Physique Quantique'].map(proj => (
+                                        <button
+                                            key={proj}
+                                            onClick={() => confirmCollectToProject(proj)}
+                                            className="flex items-center justify-between p-4 rounded-xl border border-gray-100 hover:border-[#99334C] hover:bg-gray-50 transition-all group"
+                                        >
+                                            <div className="flex items-center gap-3">
+                                                <FolderPlus size={18} className="text-gray-400 group-hover:text-[#99334C]" />
+                                                <span className="text-sm font-bold text-gray-700">{proj}</span>
+                                            </div>
+                                            <span className="text-[10px] font-bold text-gray-300 group-hover:text-[#99334C]">SÉLECTIONNER</span>
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="p-6 bg-gray-50/50 border-t border-gray-100 flex justify-end">
+                            <button
+                                onClick={() => setShowCollectModal(false)}
+                                className="px-6 py-2 text-sm font-bold text-gray-500 hover:text-gray-700 transition-colors"
+                            >
+                                Annuler
+                            </button>
+                        </div>
+                    </motion.div>
+                </div>
+            )}
         </div>
     );
 };

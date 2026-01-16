@@ -93,6 +93,13 @@ const XCCM2Editor = () => {
   // Resizing states
   const [sidebarWidth, setSidebarWidth] = useState(320);
   const [isResizing, setIsResizing] = useState(false);
+  const [isZenMode, setIsZenMode] = useState(false);
+
+  const toggleZenMode = () => {
+    setIsZenMode(prev => !prev);
+    // When entering Zen Mode, close right panel if open
+    if (!isZenMode) setRightPanel(null);
+  };
 
   const isToolbarDisabled = React.useMemo(() => {
     // Désactiver si Chapter ou Paragraph est sélectionné (mais pas Notion)
@@ -1334,37 +1341,47 @@ const XCCM2Editor = () => {
         }
       ` }} />
       <meta name="viewport" content="width=1200, initial-scale=0.5" />
-      <div className="flex h-screen bg-gray-50 overflow-hidden">
-        <TableOfContents
-          projectName={projectData?.pr_name || ''}
-          structure={structure}
-          onSelectNotion={handleSelectNotion}
-          onSelectPart={handleSelectPart}
-          onSelectChapter={handleSelectChapter}
-          onSelectParagraph={handleSelectParagraph}
-          selectedPartId={currentContext?.part?.part_id}
-          selectedChapterId={currentContext?.chapterId}
-          selectedParagraphId={currentContext?.paraId}
-          selectedNotionId={currentContext?.notion?.notion_id}
-          onCreatePart={handleCreatePart}
-          onCreateChapter={handleCreateChapter}
-          onCreateParagraph={handleCreateParagraph}
-          onCreateNotion={handleCreateNotion}
-          onRename={handleRename}
-          onReorder={handleReorder}        // ✅ HANDLER DE RÉORDONNANCEMENT
-          onMove={handleMoveGranule}        // ✅ HANDLER DE DÉPLACEMENT
-          onDelete={handleDelete}
-          language={language}
-          width={sidebarWidth}
-        />
+      {/* Assuming isZenMode is a state variable defined elsewhere, e.g., const [isZenMode, setIsZenMode] = useState(false); */}
+      <div className={`flex h-screen bg-gray-50 overflow-hidden ${isZenMode ? 'zen-mode-active' : ''}`}>
+        {isZenMode && (
+          <style jsx global>{`
+            header, footer { display: none !important; }
+          `}</style>
+        )}
+        {!isZenMode && (
+          <TableOfContents
+            projectName={projectData?.pr_name || ''}
+            structure={structure}
+            onSelectNotion={handleSelectNotion}
+            onSelectPart={handleSelectPart}
+            onSelectChapter={handleSelectChapter}
+            onSelectParagraph={handleSelectParagraph}
+            selectedPartId={currentContext?.part?.part_id}
+            selectedChapterId={currentContext?.chapterId}
+            selectedParagraphId={currentContext?.paraId}
+            selectedNotionId={currentContext?.notion?.notion_id}
+            onCreatePart={handleCreatePart}
+            onCreateChapter={handleCreateChapter}
+            onCreateParagraph={handleCreateParagraph}
+            onCreateNotion={handleCreateNotion}
+            onRename={handleRename}
+            onReorder={handleReorder}        // ✅ HANDLER DE RÉORDONNANCEMENT
+            onMove={handleMoveGranule}        // ✅ HANDLER DE DÉPLACEMENT
+            onDelete={handleDelete}
+            language={language}
+            width={sidebarWidth}
+          />
+        )}
 
         {/* Resizer Handle */}
-        <div
-          className="w-1.5 h-full cursor-col-resize hover:bg-[#99334C]/20 active:bg-[#99334C]/40 transition-colors z-20 flex-shrink-0 -ml-0.5"
-          onMouseDown={startResizing}
-        />
+        {!isZenMode && (
+          <div
+            className="w-1.5 h-full cursor-col-resize hover:bg-[#99334C]/20 active:bg-[#99334C]/40 transition-colors z-20 flex-shrink-0 -ml-0.5"
+            onMouseDown={startResizing}
+          />
+        )}
 
-        <div className="flex-1 flex flex-col">
+        <div className={`flex-1 flex flex-col ${isZenMode ? 'max-w-4xl mx-auto w-full' : ''}`}>
           <div className="bg-white border-b border-gray-200 flex items-center justify-between px-4 py-2">
             <div className="flex items-center gap-4">
               <Link

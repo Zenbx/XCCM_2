@@ -4,7 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import clsx from "clsx";
-import { FaHome, FaInfoCircle, FaEdit, FaBook, FaQuestionCircle, FaGlobe, FaUsers } from "react-icons/fa";
+import { FaHome, FaInfoCircle, FaEdit, FaBook, FaQuestionCircle, FaGlobe, FaUsers, FaStore } from "react-icons/fa";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/context/AuthContext";
 import { useState, useEffect } from "react";
@@ -35,6 +35,7 @@ export default function Header() {
     { label: t.header.links.about, href: '/about', icon: <FaInfoCircle /> },
     { label: t.header.links.edit, href: '/edit-home', authOnly: true, icon: <FaEdit /> },
     { label: t.header.links.library, href: '/library', icon: <FaBook /> },
+    { label: t.header.links.marketplace, href: '/marketplace', icon: <FaStore /> },
     { label: t.header.links.help, href: '/help', icon: <FaQuestionCircle /> },
   ];
 
@@ -62,7 +63,7 @@ export default function Header() {
 
   return (
     <header className="w-full bg-white shadow-sm border-b border-gray-100 sticky top-0 z-50">
-      <nav className="mx-auto flex max-w-7xl items-center justify-between lg:justify-center px-6 py-1.5 lg:py-3 relative min-h-[50px] lg:min-h-[60px]">
+      <nav className="mx-auto flex max-w-[1400px] items-center justify-between lg:justify-center px-4 py-1 lg:py-2 relative min-h-[50px] lg:min-h-[60px]">
 
         {/* --- LOGO --- */}
         {/* En mobile : position statique. En Desktop : absolute left-6 pour garder ton design */}
@@ -71,16 +72,16 @@ export default function Header() {
             <Image
               src="/logo-pro.png"
               alt="XCCM2 Logo"
-              width={180}
-              height={60}
-              className="h-16 lg:h-28 w-auto object-contain"
+              width={160}
+              height={50}
+              className="h-12 lg:h-20 w-auto object-contain"
               priority
             />
           </Link>
         </div>
 
         {/* --- NAVIGATION DESKTOP (Cachée sur mobile) --- */}
-        <ul className="hidden lg:flex items-center gap-10 relative">
+        <ul className="hidden lg:flex items-center gap-4 xl:gap-8 relative">
           {!isLoading && LINKS.filter(link => !link.authOnly || isAuthenticated).map(link => {
             const isActive = pathname === link.href;
             return (
@@ -88,7 +89,7 @@ export default function Header() {
                 <Link
                   href={link.href}
                   className={clsx(
-                    "relative flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors duration-300 rounded-lg group"
+                    "relative flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium transition-colors duration-300 rounded-lg group"
                   )}
                   style={{
                     color: isActive ? COLORS.primary : COLORS.text,
@@ -113,7 +114,7 @@ export default function Header() {
         </ul>
 
         {/* --- ACTIONS UTILISATEUR DESKTOP (Cachées sur mobile) --- */}
-        <div className="hidden lg:flex absolute right-6 items-center gap-3">
+        <div className="hidden lg:flex absolute right-4 items-center gap-2 xl:gap-3">
           {isLoading ? (
             <div className="w-8 h-8 rounded-full bg-gray-200 animate-pulse" />
           ) : isAuthenticated && user ? (
