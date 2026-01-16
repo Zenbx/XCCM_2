@@ -35,6 +35,10 @@ const AboutPage = () => {
     message: ''
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const animationFrameRef = useRef<number | null>(null);
+  const scrollPositionRef = useRef(0);
+  const isPausedRef = useRef(false);
 
   const { language } = useLanguage();
   const { user } = useAuth();
@@ -55,11 +59,78 @@ const AboutPage = () => {
       });
     }, observerOptions);
 
-    // Observer tous les éléments avec la classe 'animate-on-scroll'
     const elements = document.querySelectorAll('.animate-on-scroll');
     elements.forEach(el => observer.observe(el));
 
     return () => observer.disconnect();
+  }, []);
+
+  // Gestion du défilement automatique optimisé
+  useEffect(() => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+
+    const scrollSpeed = 0.5; // Vitesse en pixels par frame
+
+    const scroll = () => {
+      if (!container || isPausedRef.current) {
+        animationFrameRef.current = requestAnimationFrame(scroll);
+        return;
+      }
+
+      // Incrémenter la position de scroll
+      scrollPositionRef.current += scrollSpeed;
+      
+      // Calculer les limites de défilement
+      const maxScroll = container.scrollWidth - container.clientWidth;
+      
+      // Si on atteint la fin, revenir au début avec transition fluide
+      if (scrollPositionRef.current >= maxScroll) {
+        // Dupliquer le contenu visuellement pour un effet de boucle infinie
+        scrollPositionRef.current = 0;
+      }
+      
+      // Appliquer le scroll de manière fluide
+      container.scrollLeft = scrollPositionRef.current;
+
+      animationFrameRef.current = requestAnimationFrame(scroll);
+    };
+
+    // Démarrer l'animation
+    animationFrameRef.current = requestAnimationFrame(scroll);
+
+    // Gestion du hover pour pause
+    const handleMouseEnter = () => {
+      isPausedRef.current = true;
+    };
+
+    const handleMouseLeave = () => {
+      isPausedRef.current = false;
+    };
+
+    // Gestion du touch pour mobile
+    const handleTouchStart = () => {
+      isPausedRef.current = true;
+    };
+
+    const handleTouchEnd = () => {
+      isPausedRef.current = false;
+    };
+
+    container.addEventListener('mouseenter', handleMouseEnter);
+    container.addEventListener('mouseleave', handleMouseLeave);
+    container.addEventListener('touchstart', handleTouchStart);
+    container.addEventListener('touchend', handleTouchEnd);
+
+    return () => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+      container.removeEventListener('mouseenter', handleMouseEnter);
+      container.removeEventListener('mouseleave', handleMouseLeave);
+      container.removeEventListener('touchstart', handleTouchStart);
+      container.removeEventListener('touchend', handleTouchEnd);
+    };
   }, []);
 
   const handleContactSubmit = async () => {
@@ -103,74 +174,85 @@ const AboutPage = () => {
       name: "BELEKOTAN II JEFF NICHOSS",
       pseudo: "Zenbx__",
       email: "jeffbelekotan@gmail.com",
-      github: "https://github.com/Zenbx__"
+      github: "https://github.com/Zenbx__",
+      photo: "/images/jeff.jpg"
     },
     {
       name: "NZIELEU NGNOULAYE M. NATHAN",
       pseudo: "Natech23__",
       email: "nathan.nzieleu@gmail.com",
-      github: "https://github.com/Natech23__"
+      github: "https://github.com/Natech23__",
+      photo: "/images/nathan.jpg"
     },
-
     {
       name: "BISSECK CHALVI NATHANAEL",
       pseudo: "HinaSejaru124__",
       email: "bissecknathanael@gmail.com",
-      github: "https://github.com/HinaSejaru124__"
+      github: "https://github.com/HinaSejaru124__",
+      photo: "/images/nathanael.jpg"
     },
     {
       name: "WOKMENI RAÏSSA",
       pseudo: "w-raissa__",
       email: "rwokmeni@gmail.com",
-      github: "https://github.com/w-raissa__"
+      github: "https://github.com/w-raissa__",
+      photo: "/images/raissa.jpg"
     },
     {
       name: "TAGNE SOUOP THOMAS DISNEY",
       pseudo: "Override__",
       email: "tstdtomson@gmail.com",
-      github: "https://github.com/Override__"
+      github: "https://github.com/Override__",
+      photo: "/images/disney.jpg"
     },
     {
       name: "FOFACK ALEMDJOU HENRI JOËL",
       pseudo: "ALEMDJOU__",
       email: "fofackhenri36@gmail.com",
-      github: "https://github.com/ALEMDJOU__"
+      github: "https://github.com/ALEMDJOU__",
+      photo: "/images/henri.jpg"
     },
     {
       name: "ELOUNDOU NGOUMA THOMAS",
       pseudo: "Thomas26__",
       email: "thomaseloundou3@gmail.com",
-      github: "https://github.com/Thomas26__"
+      github: "https://github.com/Thomas26__",
+      photo: "/images/thomas.jpg"
     },
     {
       name: "TOMO MBIANDA ANGELA KATIA",
       pseudo: "Angela Sevilla__",
       email: "sevillaangela73@gmail.com",
-      github: "https://github.com/AngelaSevilla__"
+      github: "https://github.com/AngelaSevilla__",
+      photo: "/images/angela.jpg"
     },
     {
       name: "MAGNE ISABELLE CHRIST",
       pseudo: "Isa-Christ",
-      email: null,
-      github: "https://github.com/Isa-Christ"
+      email: "isabellemagne34@gmail.com",
+      github: "https://github.com/Isa-Christ",
+      photo: "/images/isabelle.jpg"
     },
     {
       name: "WATONN JEUTA IVANA",
       pseudo: "Waton-Ivana__",
       email: "watonjeutaivana@gmail.com",
-      github: "https://github.com/Waton-Ivana__"
+      github: "https://github.com/Waton-Ivana__",
+      photo: "/images/ivana.jpg"
     },
     {
       name: "AYISSI ODILE",
       pseudo: "AyissiOdile__",
-      email: "ayissiodile@gmail.com",
-      github: "https://github.com/Waton-Ivana__"
+      email: "ayissiange18@gmail.com",
+      github: "https://github.com/Waton-Ivana__",
+      photo: "/images/odile.jpg"
     },
     {
       name: "MOGOU ULRICH",
       pseudo: " ",
       email: "ayissiodile@gmail.com",
-      github: "https://github.com/Waton-Ivana__"
+      github: "https://github.com/Waton-Ivana__",
+      photo: "/images/ulrich.jpg"
     }
   ];
 
@@ -234,15 +316,6 @@ const AboutPage = () => {
           }
         }
 
-        @keyframes scroll-horizontal {
-          0% {
-            transform: translateX(0);
-          }
-          100% {
-            transform: translateX(-50%);
-          }
-        }
-
         .animate-on-scroll {
           opacity: 0;
         }
@@ -251,18 +324,62 @@ const AboutPage = () => {
           animation: fade-in-up 0.8s ease-out forwards;
         }
 
-        .animate-scroll-horizontal {
-          animation: scroll-horizontal 40s linear infinite;
+        /* Scrollbar personnalisée et optimisée */
+        .custom-scrollbar {
+          scrollbar-width: thin;
+          scrollbar-color: rgba(153, 51, 76, 0.3) #f1f1f1;
+          scroll-behavior: smooth;
         }
 
-        .animate-scroll-horizontal:hover {
-          animation-play-state: paused;
+        .custom-scrollbar::-webkit-scrollbar {
+          height: 8px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: #f1f1f1;
+          border-radius: 10px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: rgba(153, 51, 76, 0.3);
+          border-radius: 10px;
+          transition: background 0.3s ease;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: rgba(153, 51, 76, 0.5);
+        }
+
+        /* Optimisation pour le défilement fluide */
+        .team-scroll-container {
+          will-change: scroll-position;
+          -webkit-overflow-scrolling: touch;
+        }
+
+        /* Animation de pulse pour l'indicateur */
+        @keyframes pulse-arrow {
+          0%, 100% {
+            opacity: 1;
+            transform: translateX(0);
+          }
+          50% {
+            opacity: 0.5;
+            transform: translateX(5px);
+          }
+        }
+
+        .animate-pulse-arrow-left {
+          animation: pulse-arrow 2s ease-in-out infinite;
+          transform: scaleX(-1);
+        }
+
+        .animate-pulse-arrow-right {
+          animation: pulse-arrow 2s ease-in-out infinite;
         }
       `}</style>
 
       {/* Hero Section */}
       <section id="hero" className="relative bg-gradient-to-br from-[#99334C] to-[#7a283d] text-white overflow-hidden py-20">
-        {/* Motif de fond */}
         <div className="absolute inset-0 opacity-10">
           <div className="absolute inset-0" style={{
             backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)',
@@ -271,12 +388,10 @@ const AboutPage = () => {
         </div>
 
         <div className="relative max-w-7xl mx-auto px-6 text-center">
-
           <h1 className="text-5xl md:text-6xl font-bold mb-6">
             {t.about.hero.title}
           </h1>
 
-          {/* Soulignement décoratif */}
           <div className="flex justify-center mb-8">
             <div className="h-1 w-32 bg-white/50 rounded-full relative">
               <div className="absolute inset-0 bg-white rounded-full animate-pulse"></div>
@@ -394,8 +509,8 @@ const AboutPage = () => {
         </div>
       </section>
 
-      {/* Section L'équipe */}
-      <section id="equipe" className="py-20 px-6 scroll-mt-20 overflow-hidden">
+      {/* Section L'équipe - OPTIMISÉE */}
+      <section id="equipe" className="py-20 px-6 scroll-mt-20">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16 animate-on-scroll">
             <div className="inline-flex items-center gap-2 bg-[#99334C]/10 px-4 py-2 rounded-full mb-4">
@@ -410,26 +525,65 @@ const AboutPage = () => {
             </p>
           </div>
 
-          {/* Défilement horizontal automatique */}
           <div className="relative animate-on-scroll">
-            <div className="overflow-hidden">
-              <div className="flex gap-6 animate-scroll-horizontal">
+            {/* Gradient de fade sur les bords */}
+            <div className="absolute left-0 top-0 bottom-0 w-20 bg-gradient-to-r from-white to-transparent z-10 pointer-events-none"></div>
+            <div className="absolute right-0 top-0 bottom-0 w-20 bg-gradient-to-l from-white to-transparent z-10 pointer-events-none"></div>
+            
+            {/* Container avec défilement automatique optimisé */}
+            <div 
+              ref={scrollContainerRef}
+              className="overflow-x-auto overflow-y-hidden pb-4 custom-scrollbar team-scroll-container"
+            >
+              <div className="flex gap-6 w-max">
+                {/* Afficher les cartes deux fois pour créer un effet de boucle infinie */}
                 {[...teamMembers, ...teamMembers].map((member, index) => (
-                  <div key={index} className="flex-shrink-0 w-80 bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all border border-gray-100 group">
-                    {/* Photo de profil placeholder */}
-                    <div className="relative h-48 bg-gradient-to-br from-[#99334C]/20 to-[#99334C]/40 flex items-center justify-center overflow-hidden">
-                      <div className="w-20 h-20 bg-white/30 backdrop-blur-sm rounded-full flex items-center justify-center">
-                        <Users className="w-10 h-10 text-white" />
+                  <div 
+                    key={`member-${index}`} 
+                    className="flex-shrink-0 w-80 bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 border border-gray-100 group"
+                  >
+                    {/* Photo de profil avec overlay */}
+                    <div className="relative h-48 overflow-hidden">
+                      {member.photo ? (
+                        <div 
+                          className="absolute inset-0 bg-cover bg-center bg-no-repeat transform group-hover:scale-110 transition-transform duration-500"
+                          style={{ 
+                            backgroundImage: `url(${member.photo})`,
+                          }}
+                        />
+                      ) : (
+                        <div className="absolute inset-0 bg-gradient-to-br from-gray-300 to-gray-400" />
+                      )}
+                      
+                      <div className="absolute inset-0 bg-gradient-to-br from-[#99334C]/40 to-[#99334C]/60 transition-all group-hover:from-[#99334C]/30 group-hover:to-[#99334C]/50" />
+                      
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="w-20 h-20 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center opacity-60 group-hover:opacity-0 transition-opacity duration-300">
+                          <Users className="w-10 h-10 text-white" />
+                        </div>
                       </div>
-                      {/* Overlay au hover */}
-                      <div className="absolute inset-0 bg-[#99334C]/90 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center gap-4">
+                      
+                      {/* Overlay au hover avec les actions */}
+                      <div className="absolute inset-0 bg-[#99334C]/90 opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center justify-center gap-4">
                         {member.email && (
-                          <a href={`mailto:${member.email}`} className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white/30 transition-all" title={t.about.contact.email}>
+                          <a 
+                            href={`mailto:${member.email}`} 
+                            className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white/30 transition-all transform hover:scale-110" 
+                            title={t.about.contact.email}
+                            onClick={(e) => e.stopPropagation()}
+                          >
                             <Mail className="w-5 h-5 text-white" />
                           </a>
                         )}
                         {member.github && (
-                          <a href={member.github} target="_blank" rel="noopener noreferrer" className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white/30 transition-all" title="GitHub">
+                          <a 
+                            href={member.github} 
+                            target="_blank" 
+                            rel="noopener noreferrer" 
+                            className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white/30 transition-all transform hover:scale-110" 
+                            title="GitHub"
+                            onClick={(e) => e.stopPropagation()}
+                          >
                             <Github className="w-5 h-5 text-white" />
                           </a>
                         )}
@@ -445,6 +599,15 @@ const AboutPage = () => {
                     </div>
                   </div>
                 ))}
+              </div>
+            </div>
+            
+            {/* Indicateur de scroll amélioré */}
+            <div className="flex justify-center mt-6 gap-3">
+              <div className="text-sm text-gray-500 flex items-center gap-3 bg-gray-50 px-4 py-2 rounded-full">
+                <span className="animate-pulse-arrow-left text-[#99334C]">→</span>
+                <span className="font-medium">Défilement automatique • Survolez pour mettre en pause</span>
+                <span className="animate-pulse-arrow-right text-[#99334C]">→</span>
               </div>
             </div>
           </div>
@@ -620,10 +783,10 @@ const AboutPage = () => {
             </div>
           </div>
         </div>
-      </section >
+      </section>
 
       {/* Call to Action Final */}
-      < section className="py-16 px-6" >
+      <section className="py-16 px-6">
         <div className="max-w-5xl mx-auto">
           <div className="bg-gradient-to-br from-[#99334C] to-[#7a283d] rounded-[40px] p-12 text-center text-white relative overflow-hidden animate-on-scroll">
             <div className="absolute inset-0 opacity-10">
@@ -648,8 +811,8 @@ const AboutPage = () => {
             </div>
           </div>
         </div>
-      </section >
-    </div >
+      </section>
+    </div>
   );
 };
 
