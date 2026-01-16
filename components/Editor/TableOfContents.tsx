@@ -6,6 +6,7 @@ import { Part, Chapter, Paragraph, Notion } from '@/services/structureService';
 import { Language, translations } from '@/services/locales';
 import toast from 'react-hot-toast';
 import ContextMenu from './ContextMenu';
+import RichTooltip from '../UI/RichTooltip';
 import { useOptimisticUpdate } from '@/hooks/useOptimisticUpdate';
 
 // Helper pour mettre à jour l'arbre localement
@@ -525,15 +526,14 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
       {/* Header */}
       <div className="p-4 border-b border-gray-100 flex items-center justify-between sticky top-0 z-10 bg-white/95 backdrop-blur-sm">
         <h2 className="text-gray-800 font-bold text-sm uppercase tracking-wider">{t.title}</h2>
-        {onCreatePart && (
+        <RichTooltip title={t.addPart} description="Créer une nouvelle division principale dans votre projet.">
           <button
             onClick={onCreatePart}
             className="p-1.5 bg-[#99334C]/10 text-[#99334C] hover:bg-[#99334C] hover:text-white rounded-md transition-all"
-            title={t.addPart}
           >
             <Plus size={18} />
           </button>
-        )}
+        </RichTooltip>
       </div>
 
       {/* Contenu */}
@@ -601,13 +601,14 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
                 )}
 
                 {onCreateChapter && (
-                  <button
-                    onClick={(e) => { e.stopPropagation(); onCreateChapter(part.part_title); }}
-                    className="p-1 text-gray-300 hover:text-[#DC3545] hover:bg-[#DC3545]/10 rounded transition-all"
-                    title="Ajouter un chapitre"
-                  >
-                    <Plus size={16} />
-                  </button>
+                  <RichTooltip title="Ajouter un chapitre" description="Créer une sous-division logique dans cette partie.">
+                    <button
+                      onClick={(e) => { e.stopPropagation(); onCreateChapter(part.part_title); }}
+                      className="p-1 text-gray-300 hover:text-[#DC3545] hover:bg-[#DC3545]/10 rounded transition-all"
+                    >
+                      <Plus size={16} />
+                    </button>
+                  </RichTooltip>
                 )}
               </div>
 
@@ -662,13 +663,14 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
                         )}
 
                         {onCreateParagraph && (
-                          <button
-                            onClick={(e) => { e.stopPropagation(); onCreateParagraph(part.part_title, chapter.chapter_title); }}
-                            className="p-1 text-gray-300 hover:text-amber-600 hover:bg-amber-50 rounded transition-all"
-                            title={t.addParagraph}
-                          >
-                            <Plus size={14} />
-                          </button>
+                          <RichTooltip title={t.addParagraph} description="Diviser votre chapitre en sections de contenu.">
+                            <button
+                              onClick={(e) => { e.stopPropagation(); onCreateParagraph(part.part_title, chapter.chapter_title); }}
+                              className="p-1 text-gray-300 hover:text-amber-600 hover:bg-amber-50 rounded transition-all"
+                            >
+                              <Plus size={14} />
+                            </button>
+                          </RichTooltip>
                         )}
                       </div>
 
@@ -720,6 +722,17 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
                                   >
                                     {paragraph.para_number}. {paragraph.para_name}
                                   </span>
+                                )}
+
+                                {onCreateNotion && (
+                                  <RichTooltip title="Ajouter une notion" description="Créer une unité de contenu (texte, image, rappel) dans ce paragraphe.">
+                                    <button
+                                      onClick={(e) => { e.stopPropagation(); onCreateNotion(part.part_title, chapter.chapter_title, paragraph.para_name); }}
+                                      className="p-1 text-green-600/50 hover:text-green-600 hover:bg-green-50 rounded transition-all ml-auto"
+                                    >
+                                      <Plus size={14} />
+                                    </button>
+                                  </RichTooltip>
                                 )}
                               </div>
 

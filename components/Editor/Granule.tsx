@@ -2,6 +2,7 @@
 
 import React, { useState, useRef } from 'react';
 import { ChevronDown, ChevronRight, Cloud, MessageSquare, Info, Settings, Eye, Bot, GripVertical, Folder, FolderOpen, Book, FileText, File } from 'lucide-react';
+import RichTooltip from '../UI/RichTooltip';
 
 // ============= COMPOSANT: Granule (Draggable) =============
 const Granule = ({ granule, onDragStart }) => {
@@ -30,23 +31,29 @@ const Granule = ({ granule, onDragStart }) => {
 
   return (
     <div className="flex flex-col">
-      <div
-        draggable
-        onDragStart={(e) => onDragStart(e, granule)}
-        className="flex items-center gap-3 p-3 bg-white border border-gray-200 rounded-xl cursor-move hover:shadow-md transition-all group"
-        style={{ borderLeft: `4px solid ${color}` }}
+      <RichTooltip
+        title={`${granule.content} (${granule.type})`}
+        description="Faites glisser cet élément dans l'éditeur pour l'ajouter à votre projet."
+        position="left"
       >
-        <GripVertical size={16} className="text-gray-300 group-hover:text-gray-500" />
+        <div
+          draggable
+          onDragStart={(e) => onDragStart(e, granule)}
+          className="flex items-center gap-3 p-3 bg-white border border-gray-200 rounded-xl cursor-move hover:shadow-md transition-all group"
+          style={{ borderLeft: `4px solid ${color}` }}
+        >
+          <GripVertical size={16} className="text-gray-300 group-hover:text-gray-500" />
 
-        <div className={`p-2 rounded-lg bg-opacity-10`} style={{ backgroundColor: `${color}20` }}>
-          <IconComponent size={18} style={{ color: color }} />
-        </div>
+          <div className={`p-2 rounded-lg bg-opacity-10`} style={{ backgroundColor: `${color}20` }}>
+            <IconComponent size={18} style={{ color: color }} />
+          </div>
 
-        <div className="flex-1">
-          <h4 className="text-sm font-semibold text-gray-900">{granule.content}</h4>
-          <p className="text-xs text-gray-500 capitalize">{granule.type}</p>
+          <div className="flex-1">
+            <h4 className="text-sm font-semibold text-gray-900">{granule.content}</h4>
+            <p className="text-xs text-gray-500 capitalize">{granule.type}</p>
+          </div>
         </div>
-      </div>
+      </RichTooltip>
 
       {granule.children && granule.children.length > 0 && (
         <div className="pl-6 mt-2 space-y-2 border-l-2 border-gray-100 ml-4">

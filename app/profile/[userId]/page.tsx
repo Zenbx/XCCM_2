@@ -76,20 +76,20 @@ const PublicProfilePage = () => {
   const { user, stats, projects } = profile;
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-6">
+    <div className="min-h-screen bg-gray-50 py-6 md:py-12 px-4 md:px-6">
       <div className="max-w-5xl mx-auto">
 
         {/* Premium Profile Header */}
         <div className="relative mb-12">
           {/* Background decoration */}
-          <div className="absolute inset-0 h-48 bg-gradient-to-r from-[#99334C] via-[#7a283d] to-[#4a1825] rounded-3xl shadow-lg transform -skew-y-1"></div>
+          <div className="absolute inset-0 h-48 md:h-64 bg-gradient-to-r from-[#99334C] via-[#7a283d] to-[#4a1825] rounded-3xl shadow-lg transform md:-skew-y-1"></div>
 
-          <div className="relative pt-20 px-6 sm:px-12">
-            <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-xl border border-white/50 p-8">
-              <div className="flex flex-col md:flex-row gap-8 items-start">
+          <div className="relative pt-12 md:pt-20 px-4 sm:px-12">
+            <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-xl border border-white/50 p-6 md:p-8">
+              <div className="flex flex-col md:flex-row gap-6 md:gap-8 items-center md:items-start text-center md:text-left">
                 {/* Avatar with Ring */}
-                <div className="relative -mt-20">
-                  <div className="w-40 h-40 rounded-full p-2 bg-white shadow-2xl ring-4 ring-[#99334C]/10">
+                <div className="relative -mt-16 md:-mt-20">
+                  <div className="w-32 h-32 md:w-40 md:h-40 rounded-full p-2 bg-white shadow-2xl ring-4 ring-[#99334C]/10">
                     <div className="w-full h-full rounded-full overflow-hidden bg-gray-100 relative">
                       {user.profile_picture ? (
                         <img
@@ -114,9 +114,9 @@ const PublicProfilePage = () => {
                 {/* User Info */}
                 <div className="flex-1 pt-2">
                   <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
-                    <div>
-                      <h1 className="text-4xl font-bold text-gray-900 mb-2">{user.firstname} {user.lastname}</h1>
-                      <div className="flex flex-wrap items-center gap-4 text-gray-600">
+                    <div className="flex flex-col items-center md:items-start">
+                      <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-2">{user.firstname} {user.lastname}</h1>
+                      <div className="flex flex-wrap items-center justify-center md:justify-start gap-4 text-gray-600">
                         {user.occupation && (
                           <div className="flex items-center gap-2 px-3 py-1 bg-gray-100 rounded-full text-sm font-medium">
                             <Briefcase className="w-4 h-4" />
@@ -132,22 +132,22 @@ const PublicProfilePage = () => {
                   </div>
 
                   {/* Stats Cards (Glassmorphism) */}
-                  <div className="grid grid-cols-3 gap-4 mt-8">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 md:gap-4 mt-8">
                     <div className="p-4 bg-gradient-to-br from-blue-50 to-blue-100/50 rounded-2xl border border-blue-100 flex flex-col items-center justify-center transition-transform hover:scale-105">
-                      <span className="text-3xl font-bold text-blue-900">{stats.totalProjects}</span>
-                      <span className="text-sm font-medium text-blue-700 mt-1 flex items-center gap-1">
+                      <span className="text-2xl md:text-3xl font-bold text-blue-900">{stats.totalProjects}</span>
+                      <span className="text-xs md:text-sm font-medium text-blue-700 mt-1 flex items-center gap-1">
                         <BookOpen className="w-4 h-4" /> Projets
                       </span>
                     </div>
                     <div className="p-4 bg-gradient-to-br from-green-50 to-green-100/50 rounded-2xl border border-green-100 flex flex-col items-center justify-center transition-transform hover:scale-105">
-                      <span className="text-3xl font-bold text-green-900">{stats.totalViews}</span>
-                      <span className="text-sm font-medium text-green-700 mt-1 flex items-center gap-1">
+                      <span className="text-2xl md:text-3xl font-bold text-green-900">{stats.totalViews}</span>
+                      <span className="text-xs md:text-sm font-medium text-green-700 mt-1 flex items-center gap-1">
                         <Eye className="w-4 h-4" /> Vues
                       </span>
                     </div>
-                    <div className="p-4 bg-gradient-to-br from-pink-50 to-pink-100/50 rounded-2xl border border-pink-100 flex flex-col items-center justify-center transition-transform hover:scale-105">
-                      <span className="text-3xl font-bold text-pink-900">{stats.totalLikes}</span>
-                      <span className="text-sm font-medium text-pink-700 mt-1 flex items-center gap-1">
+                    <div className="p-4 bg-gradient-to-br from-pink-50 to-pink-100/50 rounded-2xl border border-pink-100 flex flex-col items-center justify-center transition-transform hover:scale-105 col-span-2 sm:col-span-1">
+                      <span className="text-2xl md:text-3xl font-bold text-pink-900">{stats.totalLikes}</span>
+                      <span className="text-xs md:text-sm font-medium text-pink-700 mt-1 flex items-center gap-1">
                         <Heart className="w-4 h-4" /> J'aime
                       </span>
                     </div>

@@ -203,17 +203,17 @@ const AccountPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white py-12 px-6">
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white py-6 md:py-12 px-4 md:px-6">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="mb-8 flex justify-between items-end">
+        <div className="mb-8 flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
           <div>
-            <h1 className="text-4xl font-bold text-gray-900 mb-2">Mon Compte</h1>
+            <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-2">Mon Compte</h1>
             <p className="text-gray-600">Gérez vos informations personnelles et votre activité</p>
           </div>
           <button
             onClick={handlePublicProfile}
-            className="px-4 py-2 text-[#99334C] border border-[#99334C] rounded-xl hover:bg-[#99334C] hover:text-white transition-all flex items-center gap-2 font-semibold"
+            className="w-full md:w-auto px-4 py-2.5 text-[#99334C] border border-[#99334C] rounded-xl hover:bg-[#99334C] hover:text-white transition-all flex items-center justify-center gap-2 font-semibold"
           >
             <Eye className="w-4 h-4" />
             Voir mon profil public
@@ -240,9 +240,9 @@ const AccountPage = () => {
             <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
 
               {/* Header de la carte */}
-              <div className="bg-gradient-to-r from-[#99334C] to-[#7a283d] p-6 text-white">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4">
+              <div className="bg-gradient-to-r from-[#99334C] to-[#7a283d] p-4 md:p-6 text-white">
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                  <div className="flex flex-col sm:flex-row items-center gap-4 text-center sm:text-left">
                     <div className="relative group">
                       <div className="w-20 h-20 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center text-3xl font-bold overflow-hidden border-2 border-white/50">
                         {(previewUrl || user.profile_picture) ? (
@@ -279,7 +279,7 @@ const AccountPage = () => {
                   {!isEditing && (
                     <button
                       onClick={handleEdit}
-                      className="px-4 py-2 bg-white/20 backdrop-blur-sm rounded-xl hover:bg-white/30 transition-all flex items-center gap-2"
+                      className="w-full sm:w-auto px-4 py-2 bg-white/20 backdrop-blur-sm rounded-xl hover:bg-white/30 transition-all flex items-center justify-center gap-2"
                     >
                       <Edit3 className="w-4 h-4" />
                       <span>Modifier</span>
@@ -498,8 +498,8 @@ const AccountPage = () => {
                 Statistiques
               </h3>
 
-              <div className="space-y-4">
-                <div className="p-4 bg-gradient-to-br from-[#99334C]/10 to-[#99334C]/5 rounded-xl">
+              <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-1 gap-4">
+                <div className="p-4 bg-gradient-to-br from-[#99334C]/10 to-[#99334C]/5 rounded-xl text-center sm:text-left">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-sm text-gray-600">Cours créés</span>
                     <BookOpen className="w-5 h-5 text-[#99334C]" />
@@ -507,7 +507,7 @@ const AccountPage = () => {
                   <p className="text-3xl font-bold text-[#99334C]">{stats.coursCreated}</p>
                 </div>
 
-                <div className="p-4 bg-blue-50 rounded-xl">
+                <div className="p-4 bg-blue-50 rounded-xl text-center sm:text-left">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-sm text-gray-600">Vues totales</span>
                     <Eye className="w-5 h-5 text-blue-600" />
@@ -515,7 +515,7 @@ const AccountPage = () => {
                   <p className="text-3xl font-bold text-blue-600">{stats.coursViews.toLocaleString()}</p>
                 </div>
 
-                <div className="p-4 bg-green-50 rounded-xl">
+                <div className="p-4 bg-green-50 rounded-xl text-center sm:text-left">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-sm text-gray-600">Téléchargements</span>
                     <Download className="w-5 h-5 text-green-600" />

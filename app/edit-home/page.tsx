@@ -33,7 +33,7 @@ import {
 import Link from 'next/link';
 import { useRouter } from "next/navigation";
 import { projectService, Project } from '@/services/projectService';
-import { structureService } from '@/services/structureService';
+import { structureService, getProjectStructureOptimized } from '@/services/structureService';
 import { useAuth } from '@/context/AuthContext';
 import toast from 'react-hot-toast';
 import { TEMPLATE_DATA, GENERIC_TEMPLATE } from '@/app/templates/TemplateData';
@@ -65,6 +65,8 @@ const EditHomePage = () => {
   // --- États Modale Écrasement ---
   const [showOverwriteModal, setShowOverwriteModal] = useState(false);
   const [creatingTemplateId, setCreatingTemplateId] = useState<number | null>(null);
+
+  const [downloadingProjectId, setDownloadingProjectId] = useState<string | null>(null);
 
   const router = useRouter();
   const { user } = useAuth();
@@ -327,6 +329,36 @@ const EditHomePage = () => {
     }
   };
 
+  const handleDownloadProject = async (projectName: string, projectId: string) => {
+    try {
+      setDownloadingProjectId(projectId);
+      const structure = await getProjectStructureOptimized(projectName);
+
+      const projectData = {
+        name: projectName,
+        exportedAt: new Date().toISOString(),
+        version: "2.0",
+        structure: structure
+      };
+
+      const blob = new Blob([JSON.stringify(projectData, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${projectName.replace(/[^a-z0-9]/gi, '_')}_export.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      toast.success('Exportation réussie');
+    } catch (err: any) {
+      toast.error(err.message || 'Erreur lors de l\'exportation');
+    } finally {
+      setDownloadingProjectId(null);
+    }
+  };
+
   // --- Navigation ---
   const handleOpenEditor = (projectName: string) => {
     router.push(`/edit?projectName=${encodeURIComponent(projectName)}`);
@@ -576,11 +608,16 @@ const EditHomePage = () => {
 
                               {/* Bouton Télécharger */}
                               <button
-                                onClick={(e) => e.stopPropagation()}
-                                className="p-2 rounded-lg hover:bg-blue-50 text-blue-600 transition-all"
-                                title="Télécharger"
+                                onClick={(e) => { e.stopPropagation(); handleDownloadProject(project.pr_name, project.pr_id); }}
+                                disabled={downloadingProjectId === project.pr_id}
+                                className="p-2 rounded-lg hover:bg-blue-50 text-blue-600 transition-all disabled:opacity-50"
+                                title="Télécharger (JSON)"
                               >
-                                <Download className="w-5 h-5" />
+                                {downloadingProjectId === project.pr_id ? (
+                                  <Loader2 className="w-5 h-5 animate-spin" />
+                                ) : (
+                                  <Download className="w-5 h-5" />
+                                )}
                               </button>
 
                               {/* Bouton Supprimer */}

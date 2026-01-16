@@ -10,6 +10,8 @@ import SettingsPanel from './Panels/SettingsPanel';
 import MarketplacePanel from './Panels/MarketplacePanel';
 import VaultPanel from './Panels/VaultPanel';
 
+import RichTooltip from '../UI/RichTooltip';
+
 // ============= COMPOSANT: RightPanel =============
 
 const RightPanel = ({
@@ -24,33 +26,34 @@ const RightPanel = ({
   comments,
   onAddComment,
   onDeleteComment,
-  isFetchingComments
+  isFetchingComments,
+  onImportFile
 }: any) => {
   const panels = [
-    { id: 'import', icon: Cloud, title: 'Bibliothèque' },
-    { id: 'marketplace', icon: ShoppingBag, title: 'Marketplace' },
-    { id: 'vault', icon: Lock, title: 'Coffre-fort' },
-    { id: 'comments', icon: MessageSquare, title: 'Commentaires' },
-    { id: 'info', icon: Info, title: 'Informations' },
-    { id: 'settings', icon: Settings, title: 'Paramètres' }
+    { id: 'import', icon: Cloud, title: 'Importer Fichier', description: 'Gérez vos ressources et importez des modules de connaissance.' },
+    { id: 'marketplace', icon: ShoppingBag, title: 'Marketplace', description: 'Découvrez et achetez de nouveaux contenus pédagogiques.' },
+    { id: 'vault', icon: Lock, title: 'Coffre-fort', description: 'Accédez à votre bibliothèque personnelle d\'éléments sauvegardés.' },
+    { id: 'comments', icon: MessageSquare, title: 'Commentaires', description: 'Collaborez et discutez des modifications avec votre équipe.' },
+    { id: 'info', icon: Info, title: 'Informations', description: 'Détails techniques et métadonnées du projet actuel.' },
+    { id: 'settings', icon: Settings, title: 'Paramètres', description: 'Configurez les options d\'export et de publication du projet.' }
   ];
 
   return (
     <div className="relative h-full flex flex-row-reverse">
       {/* Barre d'icônes - toujours visible et fixe */}
       <div className="w-14 bg-white border-l border-gray-200 flex flex-col items-center py-4 gap-4 z-20 shadow-sm">
-        {panels.map(({ id, icon: Icon, title }) => (
-          <button
-            key={id}
-            onClick={() => onToggle(id)}
-            className={`p-3 rounded-xl transition-all duration-200 ${activePanel === id
-              ? 'bg-[#99334C] text-white shadow-md transform scale-105'
-              : 'text-gray-500 hover:bg-gray-100'
-              }`}
-            title={title}
-          >
-            <Icon size={20} strokeWidth={activePanel === id ? 2.5 : 2} />
-          </button>
+        {panels.map(({ id, icon: Icon, title, description }) => (
+          <RichTooltip key={id} title={title} description={description} position="left">
+            <button
+              onClick={() => onToggle(id)}
+              className={`p-3 rounded-xl transition-all duration-200 ${activePanel === id
+                ? 'bg-[#99334C] text-white shadow-md transform scale-105'
+                : 'text-gray-500 hover:bg-gray-100'
+                }`}
+            >
+              <Icon size={20} strokeWidth={activePanel === id ? 2.5 : 2} />
+            </button>
+          </RichTooltip>
         ))}
       </div>
 
@@ -66,7 +69,7 @@ const RightPanel = ({
             </button>
           </div>
           <div className="p-6 flex-1 overflow-y-auto custom-scrollbar">
-            {activePanel === 'import' && <ImportPanel granules={granules} onDragStart={onDragStart} />}
+            {activePanel === 'import' && <ImportPanel granules={granules} onDragStart={onDragStart} onImportFile={onImportFile} />}
             {activePanel === 'marketplace' && <MarketplacePanel onDragStart={onDragStart} />}
             {activePanel === 'vault' && <VaultPanel onDragStart={onDragStart} />}
             {activePanel === 'comments' && (

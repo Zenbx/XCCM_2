@@ -14,7 +14,7 @@ import type { NextRequest } from 'next/server';
 import { jwtVerify } from 'jose';
 
 // Routes qui nécessitent une authentification
-const protectedRoutes = ['/edit-home', '/edit', '/account', '/settings', '/admin'];
+const protectedRoutes = ['/edit-home', '/edit', '/account', '/settings', '/admin', '/invitations'];
 
 // Routes réservées aux administrateurs
 const adminRoutes = ['/admin'];
@@ -79,10 +79,10 @@ export async function middleware(request: NextRequest) {
     } catch (error) {
       console.error('❌ Token invalide:', error);
 
-      const response = isProtectedRoute 
+      const response = isProtectedRoute
         ? NextResponse.redirect(new URL('/login', request.url))
         : NextResponse.next();
-      
+
       // Supprimer le cookie corrompu
       response.cookies.delete('auth_token');
       return response;

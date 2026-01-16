@@ -13,6 +13,7 @@ interface EditorAreaProps {
   textFormat: {
     font: string;
     fontSize: string;
+    color?: string;
   };
   onChange: (content: string) => void;
   onEditorReady?: (editor: any) => void;
@@ -24,6 +25,7 @@ interface EditorAreaProps {
   // Nouvelles props pour les commandes structurelles
   onAddPart?: () => void;
   onAddChapter?: () => void;
+  onAddParagraph?: () => void;
   onAddNotion?: () => void;
   onOpenChat?: () => void;
   onSave?: () => void;
@@ -40,6 +42,7 @@ const EditorArea: React.FC<EditorAreaProps> = ({
   readOnly = false,
   onAddPart,
   onAddChapter,
+  onAddParagraph,
   onAddNotion,
   onOpenChat,
   onSave,
@@ -77,29 +80,6 @@ const EditorArea: React.FC<EditorAreaProps> = ({
 
   // Tiptap gère sa propre synchronisation via onUpdate, 
   // on n'a plus besoin du useEffect qui injecte innerHTML
-
-  // --- Gestion des Raccourcis Clavier Globaux ---
-  useEffect(() => {
-    const handleGlobalShortcuts = (e: KeyboardEvent) => {
-      if (readOnly) return;
-
-      // Ctrl+S : Sauvegarder
-      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
-        e.preventDefault();
-        if (onSave) onSave();
-        else toast.success("Contenu prêt à être sauvegardé automatiquement");
-      }
-
-      // Ctrl+K : Palette de commande (placeholder pour l'instant)
-      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
-        e.preventDefault();
-        toast("Command Palette (Ctrl+K) bientôt disponible !", { icon: 'ℹ️' });
-      }
-    };
-
-    window.addEventListener('keydown', handleGlobalShortcuts);
-    return () => window.removeEventListener('keydown', handleGlobalShortcuts);
-  }, [readOnly, onSave]);
 
   // Tiptap gère désormais la sélection via handleSelectionUpdate
 
@@ -201,6 +181,8 @@ const EditorArea: React.FC<EditorAreaProps> = ({
         onAddPart();
       } else if (command.id === 'chapter' && onAddChapter) {
         onAddChapter();
+      } else if (command.id === 'paragraph' && onAddParagraph) {
+        onAddParagraph();
       } else if (command.id === 'notion' && onAddNotion) {
         onAddNotion();
       } else if (command.id === 'chat' || command.id === 'ai') {

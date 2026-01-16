@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { Loader2, AlertCircle, X, Link2, Copy, Check, Users, Mail, Share2 } from 'lucide-react';
+import { Loader2, AlertCircle, X, Link2, Copy, Check, Users, Mail, Share2, Trash2, RefreshCw } from 'lucide-react';
 import { invitationService } from '@/services/invitationService';
 
 interface ShareOverlayProps {
@@ -19,6 +19,7 @@ const ShareOverlay: React.FC<ShareOverlayProps> = ({ isOpen, onClose, projectNam
     const [success, setSuccess] = useState('');
     const [invitations, setInvitations] = useState<any[]>([]);
     const [isLoadingInvitations, setIsLoadingInvitations] = useState(false);
+    const [revokingId, setRevokingId] = useState<string | null>(null);
 
     useEffect(() => {
         if (isOpen && projectName) {
@@ -70,6 +71,24 @@ const ShareOverlay: React.FC<ShareOverlayProps> = ({ isOpen, onClose, projectNam
             setError(err.message || 'Erreur lors de l\'envoi de l\'invitation');
         } finally {
             setIsSending(false);
+        }
+    };
+
+    const handleRevoke = async (token: string, id: string) => {
+        if (!window.confirm('Êtes-vous sûr de vouloir révoquer cette invitation ?')) return;
+
+        try {
+            setRevokingId(id);
+            setError('');
+            await invitationService.revokeInvitation(token);
+            setSuccess('Invitation révoquée avec succès');
+            fetchInvitations();
+            setTimeout(() => setSuccess(''), 3000);
+        } catch (err: any) {
+            console.error('Erreur révocation:', err);
+            setError(err.message || 'Erreur lors de la révocation');
+        } finally {
+            setRevokingId(null);
         }
     };
 
@@ -230,15 +249,30 @@ const ShareOverlay: React.FC<ShareOverlayProps> = ({ isOpen, onClose, projectNam
                                                 <p className="text-xs text-gray-500 capitalize">{inv.role?.toLowerCase() || 'Editor'}</p>
                                             </div>
                                         </div>
-                                        <div className="flex items-center gap-4">
+                                        <div className="flex items-center gap-3">
                                             <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${inv.status === 'Accepted' ? 'bg-green-100 text-green-700' :
-                                                    inv.status === 'Pending' ? 'bg-amber-100 text-amber-700' :
-                                                        'bg-gray-100 text-gray-700'
+                                                inv.status === 'Pending' ? 'bg-amber-100 text-amber-700' :
+                                                    'bg-gray-100 text-gray-700'
                                                 }`}>
                                                 {inv.status === 'Accepted' ? 'Accepté' :
                                                     inv.status === 'Pending' ? 'En attente' :
                                                         inv.status}
                                             </span>
+
+                                            {inv.status === 'Pending' && (
+                                                <button
+                                                    onClick={() => handleRevoke(inv.invitation_token, inv.id)}
+                                                    disabled={revokingId === inv.id}
+                                                    className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
+                                                    title="Révoquer l'invitation"
+                                                >
+                                                    {revokingId === inv.id ? (
+                                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                                    ) : (
+                                                        <Trash2 className="w-4 h-4" />
+                                                    )}
+                                                </button>
+                                            )}
                                         </div>
                                     </div>
                                 ))

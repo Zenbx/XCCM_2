@@ -4,6 +4,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { ChevronDown, ChevronRight, Plus, Eye, Share2, Save, Loader2, AlertCircle, Home, X, Bot, Command } from 'lucide-react';
 import Link from 'next/link';
+import RichTooltip from '@/components/UI/RichTooltip';
 import TableOfContents from '@/components/Editor/TableOfContents';
 import EditorToolbar from '@/components/Editor/EditorToolBar';
 import EditorArea from '@/components/Editor/EditorArea';
@@ -41,7 +42,8 @@ const XCCM2Editor = () => {
   const [rightPanel, setRightPanel] = useState<string | null>(null);
   const [textFormat, setTextFormat] = useState({
     font: 'Calibri',
-    fontSize: '11'
+    fontSize: '11',
+    color: '#000000'
   });
 
   const [currentContext, setCurrentContext] = useState<{
@@ -413,17 +415,40 @@ const XCCM2Editor = () => {
     setRightPanel(rightPanel === panelName ? null : panelName);
   };
 
-  // Shortcut for Command Palette
+  // --- Centralisation des Raccourcis Clavier Globaux ---
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
+    const handleGlobalShortcuts = (e: KeyboardEvent) => {
+      // 1. Sauvegarde (Ctrl+S)
+      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        e.preventDefault();
+        handleSave(false);
+      }
+
+      // 2. Mode Zen (Alt+Z)
+      if (e.altKey && (e.key === 'z' || e.key === 'Z')) {
+        e.preventDefault();
+        toggleZenMode();
+      }
+
+      // 3. Palette de commande (Ctrl+K)
       if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
         e.preventDefault();
         setShowCommandPalette(true);
       }
+
+      // 4. Formatage de base (uniquement si tiptap est présent et on n'est pas en readOnly)
+      if (!isToolbarDisabled && tiptapEditor) {
+        if ((e.ctrlKey || e.metaKey)) {
+          if (e.key === 'b') { e.preventDefault(); applyFormat('bold'); }
+          if (e.key === 'i') { e.preventDefault(); applyFormat('italic'); }
+          if (e.key === 'u') { e.preventDefault(); applyFormat('underline'); }
+        }
+      }
     };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+
+    window.addEventListener('keydown', handleGlobalShortcuts);
+    return () => window.removeEventListener('keydown', handleGlobalShortcuts);
+  }, [tiptapEditor, isToolbarDisabled, isZenMode]); // Dépendances pour avoir les closures à jour
 
 
   const applyFormat = (command: string) => {
@@ -442,7 +467,14 @@ const XCCM2Editor = () => {
       case 'justifyFull': chain.setTextAlign('justify').run(); break;
       case 'insertUnorderedList': chain.toggleBulletList().run(); break;
       case 'insertOrderedList': chain.toggleOrderedList().run(); break;
-      default: console.warn('Command not implemented for Tiptap:', command);
+      default:
+        if (command.startsWith('color:')) {
+          const color = command.split(':')[1];
+          chain.setColor(color).run();
+          setTextFormat(prev => ({ ...prev, color }));
+        } else {
+          console.warn('Command not implemented for Tiptap:', command);
+        }
     }
   };
 
@@ -1381,90 +1413,79 @@ const XCCM2Editor = () => {
           />
         )}
 
-        <div className={`flex-1 flex flex-col ${isZenMode ? 'max-w-4xl mx-auto w-full' : ''}`}>
-          <div className="bg-white border-b border-gray-200 flex items-center justify-between px-4 py-2">
-            <div className="flex items-center gap-4">
-              <Link
-                href="/edit-home"
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-gray-600 hover:text-[#99334C]"
-                title="Retour à l'accueil"
-              >
-                <Home className="w-5 h-5" />
-              </Link>
+        <div className={`flex-1 flex flex-col transition-all duration-500 ease-in-out ${isZenMode ? 'max-w-4xl mx-auto w-full shadow-2xl my-4 rounded-xl overflow-hidden border border-gray-100 bg-white' : ''}`}>
+          {!isZenMode && (
+            <div className="bg-white border-b border-gray-200 flex items-center justify-between px-4 py-2">
+              <div className="flex items-center gap-4">
+                <RichTooltip title="Accueil" description="Retourner à la gestion de vos projets." shortcut="Alt+H">
+                  <Link
+                    href="/edit-home"
+                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-gray-600 hover:text-[#99334C]"
+                  >
+                    <Home className="w-5 h-5" />
+                  </Link>
+                </RichTooltip>
 
-              <h1 className="text-lg font-bold text-gray-900 border-l pl-4 border-gray-200">
-                {projectData?.pr_name}
-              </h1>
+                <h1 className="text-lg font-bold text-gray-900 border-l pl-4 border-gray-200">
+                  {projectData?.pr_name}
+                </h1>
 
-              {currentContext && (
-                <div className="flex items-center gap-2 text-[11px] text-gray-400 ml-5 pl-5 border-l border-gray-100 max-w-xl truncate">
-                  {currentContext.type === 'notion' ? (
-                    <>
-                      <span className="hover:text-gray-700 transition-colors uppercase text-[10px] font-bold tracking-wider">{currentContext.partTitle}</span>
-                      <ChevronRight className="w-3 h-3 text-gray-300" />
-                      <span className="hover:text-gray-700 transition-colors uppercase text-[10px] font-bold tracking-wider">{currentContext.chapterTitle}</span>
-                      <ChevronRight className="w-3 h-3 text-gray-300" />
-                      <span className="hover:text-gray-700 transition-colors uppercase text-[10px] font-bold tracking-wider">{currentContext.paraName}</span>
-                      <ChevronRight className="w-3 h-3 text-gray-300" />
-                      <span className="font-bold text-[#99334C]">{currentContext.notionName}</span>
-                    </>
-                  ) : (
-                    <>
-                      <span className="uppercase text-[10px] font-bold tracking-wider">{t.editor.part}</span>
-                      <ChevronRight className="w-3 h-3 text-gray-300" />
-                      <span className="font-bold text-[#99334C]">{currentContext.partTitle}</span>
-                      <span className="ml-1 text-gray-400 font-normal">(Intro)</span>
-                    </>
-                  )}
-                </div>
-              )}
-            </div>
-            <div className="flex items-center gap-3">
-
-              <button
-                onClick={() => {
-                  if (hasUnsavedChanges) handleSave(true);
-                  router.push(`/preview?projectName=${encodeURIComponent(projectData?.pr_name || '')}`);
-                }}
-                className="px-4 py-2 border border-gray-200 text-gray-700 bg-white rounded-lg hover:bg-gray-50 transition-all flex items-center gap-2"
-                title={t.editor.publishPreview}
-              >
-                <Eye className="w-4 h-4" />
-                {t.editor.publishPreview.split(' / ')[0]}
-              </button>
-
-
-              {/* Bouton Partager - AVEC CHECK AUTH */}
-              <button
-                onClick={() => {
-                  setShowShareOverlay(true);
-                }}
-                className="px-4 py-2 border border-[#99334C] text-[#99334C] bg-white rounded-lg hover:bg-[#99334C]/5 transition-all flex items-center gap-2 font-medium"
-                title="Publier / Partager le projet"
-              >
-                <Share2 className="w-4 h-4" />
-                Partager
-              </button>
-
-              <button
-                onClick={() => handleSave(false)}
-                disabled={!hasUnsavedChanges || isSaving}
-                className="px-4 py-2 bg-[#99334C] text-white rounded-lg hover:bg-[#7a283d] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-              >
-                {isSaving ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Sauvegarde...
-                  </>
-                ) : (
-                  <>
-                    <Save className="w-4 h-4" />
-                    Sauvegarder
-                  </>
+                {currentContext && (
+                  <div className="flex items-center gap-2 text-[11px] text-gray-400 ml-5 pl-5 border-l border-gray-100 max-w-xl truncate">
+                    {currentContext.type === 'notion' ? (
+                      <>
+                        <span className="hover:text-gray-700 transition-colors uppercase text-[10px] font-bold tracking-wider">{currentContext.partTitle}</span>
+                        <ChevronRight className="w-3 h-3 text-gray-300" />
+                        <span className="hover:text-gray-700 transition-colors uppercase text-[10px] font-bold tracking-wider">{currentContext.chapterTitle}</span>
+                        <ChevronRight className="w-3 h-3 text-gray-300" />
+                        <span className="hover:text-gray-700 transition-colors uppercase text-[10px] font-bold tracking-wider">{currentContext.paraName}</span>
+                        <ChevronRight className="w-3 h-3 text-gray-300" />
+                        <span className="font-bold text-[#99334C]">{currentContext.notionName}</span>
+                      </>
+                    ) : (
+                      <>
+                        <span className="uppercase text-[10px] font-bold tracking-wider">{t.editor.part}</span>
+                        <ChevronRight className="w-3 h-3 text-gray-300" />
+                        <span className="font-bold text-[#99334C]">{currentContext.partTitle}</span>
+                        <span className="ml-1 text-gray-400 font-normal">(Intro)</span>
+                      </>
+                    )}
+                  </div>
                 )}
-              </button>
+              </div>
+              <div className="flex items-center gap-3">
+                <RichTooltip title="Aperçu" description="Visualiser le projet tel qu'il sera publié." shortcut="Alt+P">
+                  <button
+                    onClick={() => {
+                      if (hasUnsavedChanges) handleSave(true);
+                      router.push(`/preview?projectName=${encodeURIComponent(projectData?.pr_name || '')}`);
+                    }}
+                    className="p-2 text-gray-500 hover:text-[#99334C] hover:bg-gray-100 rounded-lg transition-all"
+                  >
+                    <Eye className="w-5 h-5" />
+                  </button>
+                </RichTooltip>
+
+                <RichTooltip title="Partager" description="Inviter des collaborateurs ou publier sur la marketplace.">
+                  <button
+                    onClick={() => setShowShareOverlay(true)}
+                    className="p-2 text-gray-500 hover:text-[#99334C] hover:bg-gray-100 rounded-lg transition-all"
+                  >
+                    <Share2 className="w-5 h-5" />
+                  </button>
+                </RichTooltip>
+                <RichTooltip title="Enregistrer" description="Sauvegarder manuellement vos modifications." shortcut="Ctrl+S">
+                  <button
+                    onClick={() => handleSave(false)}
+                    disabled={isSaving}
+                    className="p-2 text-gray-500 hover:text-[#99334C] hover:bg-gray-100 rounded-lg transition-all"
+                  >
+                    {isSaving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
+                  </button>
+                </RichTooltip>
+              </div>
             </div>
-          </div>
+          )}
 
           <EditorToolbar
             textFormat={textFormat}
@@ -1473,7 +1494,9 @@ const XCCM2Editor = () => {
             onFontSizeChange={handleFontSizeChange}
             onChatToggle={() => setShowChatBot(!showChatBot)}
             onInsertImage={handleInsertImage}
-            disabled={isToolbarDisabled}  // ✅ AJOUT DE LA PROP disabled
+            disabled={isToolbarDisabled}
+            isZenMode={isZenMode}
+            onToggleZen={toggleZenMode}
           />
 
           {isImporting ? (
@@ -1490,6 +1513,13 @@ const XCCM2Editor = () => {
               readOnly={currentContext.type === 'chapter' || currentContext.type === 'paragraph'}
               onAddPart={handleCreatePart}
               onAddChapter={() => handleCreateChapter(currentContext.partTitle)}
+              onAddParagraph={() => {
+                if (currentContext.type === 'chapter' || currentContext.type === 'paragraph') {
+                  handleCreateParagraph(currentContext.partTitle, currentContext.chapterTitle || '');
+                } else {
+                  toast.error("Veuillez d'abord sélectionner un chapitre");
+                }
+              }}
               onAddNotion={() => {
                 if (currentContext.type === 'paragraph') {
                   handleCreateNotion(currentContext.partTitle, currentContext.chapterTitle || '', currentContext.paraName || '');
@@ -1519,7 +1549,7 @@ const XCCM2Editor = () => {
               </div>
             </div>
           )}
-        </div>
+        </div >
 
         <RightPanel
           activePanel={rightPanel}
@@ -1574,6 +1604,7 @@ const XCCM2Editor = () => {
           onAddComment={handleAddComment}
           onDeleteComment={handleDeleteComment}
           isFetchingComments={isFetchingComments}
+          onImportFile={handleDropNew}
         />
 
 
@@ -1592,252 +1623,260 @@ const XCCM2Editor = () => {
         />
 
         {/* MODALE PARTIE */}
-        {showPartModal && (
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in">
-            <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-2xl font-bold text-gray-900">Nouvelle Partie</h3>
-                <button onClick={() => setShowPartModal(false)} className="text-gray-400 hover:text-gray-600">
-                  <X className="w-6 h-6" />
-                </button>
-              </div>
-
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Titre de la partie</label>
-                  <input
-                    type="text"
-                    value={partFormData.title}
-                    onChange={(e) => setPartFormData(prev => ({ ...prev, title: e.target.value }))}
-                    placeholder="Ex: Introduction"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#99334C] text-gray-900 outline-none"
-                    autoFocus
-                  />
-                  <p className="mt-1 text-xs text-gray-500">Min. 3 caractères</p>
+        {
+          showPartModal && (
+            <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in">
+              <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-2xl font-bold text-gray-900">Nouvelle Partie</h3>
+                  <button onClick={() => setShowPartModal(false)} className="text-gray-400 hover:text-gray-600">
+                    <X className="w-6 h-6" />
+                  </button>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Numéro</label>
-                  <input
-                    type="number"
-                    value={partFormData.number}
-                    onChange={(e) => setPartFormData(prev => ({ ...prev, number: parseInt(e.target.value) || 1 }))}
-                    min="1"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#99334C] text-gray-900"
-                  />
-                </div>
-              </div>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Titre de la partie</label>
+                    <input
+                      type="text"
+                      value={partFormData.title}
+                      onChange={(e) => setPartFormData(prev => ({ ...prev, title: e.target.value }))}
+                      placeholder="Ex: Introduction"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#99334C] text-gray-900 outline-none"
+                      autoFocus
+                    />
+                    <p className="mt-1 text-xs text-gray-500">Min. 3 caractères</p>
+                  </div>
 
-              <div className="flex gap-3 mt-6">
-                <button
-                  onClick={() => setShowPartModal(false)}
-                  className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50"
-                >
-                  Annuler
-                </button>
-                <button
-                  onClick={confirmCreatePart}
-                  disabled={isCreatingPart || partFormData.title.trim().length < 3}
-                  className="flex-1 px-4 py-3 bg-[#99334C] text-white rounded-xl hover:bg-[#7a283d] disabled:opacity-50 flex justify-center items-center gap-2"
-                >
-                  {isCreatingPart && <Loader2 className="w-4 h-4 animate-spin" />}
-                  Créer
-                </button>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Numéro</label>
+                    <input
+                      type="number"
+                      value={partFormData.number}
+                      onChange={(e) => setPartFormData(prev => ({ ...prev, number: parseInt(e.target.value) || 1 }))}
+                      min="1"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#99334C] text-gray-900"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex gap-3 mt-6">
+                  <button
+                    onClick={() => setShowPartModal(false)}
+                    className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50"
+                  >
+                    Annuler
+                  </button>
+                  <button
+                    onClick={confirmCreatePart}
+                    disabled={isCreatingPart || partFormData.title.trim().length < 3}
+                    className="flex-1 px-4 py-3 bg-[#99334C] text-white rounded-xl hover:bg-[#7a283d] disabled:opacity-50 flex justify-center items-center gap-2"
+                  >
+                    {isCreatingPart && <Loader2 className="w-4 h-4 animate-spin" />}
+                    Créer
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          )
+        }
 
         {/* MODALE CHAPITRE */}
-        {showChapterModal && (
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in">
-            <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-2xl font-bold text-gray-900">Nouveau Chapitre</h3>
-                <button onClick={() => setShowChapterModal(false)} className="text-gray-400 hover:text-gray-600">
-                  <X className="w-6 h-6" />
-                </button>
-              </div>
-
-              <div className="mb-3 text-sm text-gray-600">
-                Dans la partie : <span className="font-semibold text-[#99334C]">{modalContext.partTitle}</span>
-              </div>
-
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Titre du chapitre</label>
-                  <input
-                    type="text"
-                    value={chapterFormData.title}
-                    onChange={(e) => setChapterFormData(prev => ({ ...prev, title: e.target.value }))}
-                    placeholder="Ex: Concepts fondamentaux"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#99334C] text-gray-900 outline-none"
-                    autoFocus
-                  />
-                  <p className="mt-1 text-xs text-gray-500">Min. 3 caractères</p>
+        {
+          showChapterModal && (
+            <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in">
+              <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-2xl font-bold text-gray-900">Nouveau Chapitre</h3>
+                  <button onClick={() => setShowChapterModal(false)} className="text-gray-400 hover:text-gray-600">
+                    <X className="w-6 h-6" />
+                  </button>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Numéro</label>
-                  <input
-                    type="number"
-                    value={chapterFormData.number}
-                    onChange={(e) => setChapterFormData(prev => ({ ...prev, number: parseInt(e.target.value) || 1 }))}
-                    min="1"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#99334C] text-gray-900"
-                  />
+                <div className="mb-3 text-sm text-gray-600">
+                  Dans la partie : <span className="font-semibold text-[#99334C]">{modalContext.partTitle}</span>
                 </div>
-              </div>
 
-              <div className="flex gap-3 mt-6">
-                <button
-                  onClick={() => setShowChapterModal(false)}
-                  className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50"
-                >
-                  Annuler
-                </button>
-                <button
-                  onClick={confirmCreateChapter}
-                  disabled={isCreatingChapter || chapterFormData.title.trim().length < 3}
-                  className="flex-1 px-4 py-3 bg-[#99334C] text-white rounded-xl hover:bg-[#7a283d] disabled:opacity-50 flex justify-center items-center gap-2"
-                >
-                  {isCreatingChapter && <Loader2 className="w-4 h-4 animate-spin" />}
-                  Créer
-                </button>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Titre du chapitre</label>
+                    <input
+                      type="text"
+                      value={chapterFormData.title}
+                      onChange={(e) => setChapterFormData(prev => ({ ...prev, title: e.target.value }))}
+                      placeholder="Ex: Concepts fondamentaux"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#99334C] text-gray-900 outline-none"
+                      autoFocus
+                    />
+                    <p className="mt-1 text-xs text-gray-500">Min. 3 caractères</p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Numéro</label>
+                    <input
+                      type="number"
+                      value={chapterFormData.number}
+                      onChange={(e) => setChapterFormData(prev => ({ ...prev, number: parseInt(e.target.value) || 1 }))}
+                      min="1"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#99334C] text-gray-900"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex gap-3 mt-6">
+                  <button
+                    onClick={() => setShowChapterModal(false)}
+                    className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50"
+                  >
+                    Annuler
+                  </button>
+                  <button
+                    onClick={confirmCreateChapter}
+                    disabled={isCreatingChapter || chapterFormData.title.trim().length < 3}
+                    className="flex-1 px-4 py-3 bg-[#99334C] text-white rounded-xl hover:bg-[#7a283d] disabled:opacity-50 flex justify-center items-center gap-2"
+                  >
+                    {isCreatingChapter && <Loader2 className="w-4 h-4 animate-spin" />}
+                    Créer
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          )
+        }
 
         {/* MODALE PARAGRAPHE */}
-        {showParagraphModal && (
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-2xl font-bold text-gray-900">Nouveau Paragraphe</h3>
-                <button onClick={() => setShowParagraphModal(false)} className="text-gray-400 hover:text-gray-600">
-                  <X className="w-6 h-6" />
-                </button>
-              </div>
-
-              <div className="mb-3 text-sm text-gray-600">
-                Dans : <span className="font-semibold text-[#99334C]">{modalContext.partTitle} / {modalContext.chapterTitle}</span>
-              </div>
-
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Nom du paragraphe</label>
-                  <input
-                    type="text"
-                    value={paragraphFormData.name}
-                    onChange={(e) => setParagraphFormData(prev => ({ ...prev, name: e.target.value }))}
-                    placeholder="Ex: Définitions"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#99334C] text-gray-900 outline-none"
-                    autoFocus
-                  />
-                  <p className="mt-1 text-xs text-gray-500">Min. 3 caractères</p>
+        {
+          showParagraphModal && (
+            <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+              <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-2xl font-bold text-gray-900">Nouveau Paragraphe</h3>
+                  <button onClick={() => setShowParagraphModal(false)} className="text-gray-400 hover:text-gray-600">
+                    <X className="w-6 h-6" />
+                  </button>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Numéro</label>
-                  <input
-                    type="number"
-                    min="1"
-                    value={paragraphFormData.number}
-                    onChange={(e) => setParagraphFormData(prev => ({
-                      ...prev,
-                      number: parseInt(e.target.value) || 1
-                    }))}
-                    placeholder="1"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#99334C] text-gray-900"
-                  />
+                <div className="mb-3 text-sm text-gray-600">
+                  Dans : <span className="font-semibold text-[#99334C]">{modalContext.partTitle} / {modalContext.chapterTitle}</span>
                 </div>
-              </div>
 
-              <div className="flex gap-3 mt-6">
-                <button
-                  onClick={() => setShowParagraphModal(false)}
-                  className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50"
-                >
-                  Annuler
-                </button>
-                <button
-                  onClick={confirmCreateParagraph}
-                  disabled={isCreatingParagraph || paragraphFormData.name.trim().length < 3}
-                  className="flex-1 px-4 py-3 bg-[#99334C] text-white rounded-xl hover:bg-[#7a283d] disabled:opacity-50 flex justify-center items-center gap-2"
-                >
-                  {isCreatingParagraph && <Loader2 className="w-4 h-4 animate-spin" />}
-                  Créer
-                </button>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Nom du paragraphe</label>
+                    <input
+                      type="text"
+                      value={paragraphFormData.name}
+                      onChange={(e) => setParagraphFormData(prev => ({ ...prev, name: e.target.value }))}
+                      placeholder="Ex: Définitions"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#99334C] text-gray-900 outline-none"
+                      autoFocus
+                    />
+                    <p className="mt-1 text-xs text-gray-500">Min. 3 caractères</p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Numéro</label>
+                    <input
+                      type="number"
+                      min="1"
+                      value={paragraphFormData.number}
+                      onChange={(e) => setParagraphFormData(prev => ({
+                        ...prev,
+                        number: parseInt(e.target.value) || 1
+                      }))}
+                      placeholder="1"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#99334C] text-gray-900"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex gap-3 mt-6">
+                  <button
+                    onClick={() => setShowParagraphModal(false)}
+                    className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50"
+                  >
+                    Annuler
+                  </button>
+                  <button
+                    onClick={confirmCreateParagraph}
+                    disabled={isCreatingParagraph || paragraphFormData.name.trim().length < 3}
+                    className="flex-1 px-4 py-3 bg-[#99334C] text-white rounded-xl hover:bg-[#7a283d] disabled:opacity-50 flex justify-center items-center gap-2"
+                  >
+                    {isCreatingParagraph && <Loader2 className="w-4 h-4 animate-spin" />}
+                    Créer
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          )
+        }
 
 
         {/* MODALE NOTION */}
-        {showNotionModal && (
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in">
-            <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-2xl font-bold text-gray-900">Nouvelle Notion</h3>
-                <button onClick={() => setShowNotionModal(false)} className="text-gray-400 hover:text-gray-600">
-                  <X className="w-6 h-6" />
-                </button>
-              </div>
-
-              <div className="mb-3 text-sm text-gray-600">
-                Dans : <span className="font-semibold text-[#99334C]">{modalContext.partTitle} / {modalContext.chapterTitle} / {modalContext.paraName}</span>
-              </div>
-
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Nom de la notion</label>
-                  <input
-                    type="text"
-                    value={notionFormData.name}
-                    onChange={(e) => setNotionFormData(prev => ({ ...prev, name: e.target.value }))}
-                    placeholder="Ex: Théorème de Pythagore"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#99334C] text-gray-900 outline-none"
-                    autoFocus
-                  />
-                  <p className="mt-1 text-xs text-gray-500">Min. 3 caractères</p>
+        {
+          showNotionModal && (
+            <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in">
+              <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-2xl font-bold text-gray-900">Nouvelle Notion</h3>
+                  <button onClick={() => setShowNotionModal(false)} className="text-gray-400 hover:text-gray-600">
+                    <X className="w-6 h-6" />
+                  </button>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Numéro</label>
-                  <input
-                    type="number"
-                    min="1"
-                    value={notionFormData.number}
-                    onChange={(e) => setNotionFormData(prev => ({
-                      ...prev,
-                      number: parseInt(e.target.value) || 1
-                    }))}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#99334C] text-gray-900"
-                  />
+                <div className="mb-3 text-sm text-gray-600">
+                  Dans : <span className="font-semibold text-[#99334C]">{modalContext.partTitle} / {modalContext.chapterTitle} / {modalContext.paraName}</span>
                 </div>
-              </div>
 
-              <div className="flex gap-3 mt-6">
-                <button
-                  onClick={() => setShowNotionModal(false)}
-                  className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50"
-                >
-                  Annuler
-                </button>
-                <button
-                  onClick={confirmCreateNotion}
-                  disabled={isCreatingNotion || notionFormData.name.trim().length < 3}
-                  className="flex-1 px-4 py-3 bg-[#99334C] text-white rounded-xl hover:bg-[#7a283d] disabled:opacity-50 flex justify-center items-center gap-2"
-                >
-                  {isCreatingNotion && <Loader2 className="w-4 h-4 animate-spin" />}
-                  Créer
-                </button>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Nom de la notion</label>
+                    <input
+                      type="text"
+                      value={notionFormData.name}
+                      onChange={(e) => setNotionFormData(prev => ({ ...prev, name: e.target.value }))}
+                      placeholder="Ex: Théorème de Pythagore"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#99334C] text-gray-900 outline-none"
+                      autoFocus
+                    />
+                    <p className="mt-1 text-xs text-gray-500">Min. 3 caractères</p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Numéro</label>
+                    <input
+                      type="number"
+                      min="1"
+                      value={notionFormData.number}
+                      onChange={(e) => setNotionFormData(prev => ({
+                        ...prev,
+                        number: parseInt(e.target.value) || 1
+                      }))}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#99334C] text-gray-900"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex gap-3 mt-6">
+                  <button
+                    onClick={() => setShowNotionModal(false)}
+                    className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50"
+                  >
+                    Annuler
+                  </button>
+                  <button
+                    onClick={confirmCreateNotion}
+                    disabled={isCreatingNotion || notionFormData.name.trim().length < 3}
+                    className="flex-1 px-4 py-3 bg-[#99334C] text-white rounded-xl hover:bg-[#7a283d] disabled:opacity-50 flex justify-center items-center gap-2"
+                  >
+                    {isCreatingNotion && <Loader2 className="w-4 h-4 animate-spin" />}
+                    Créer
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          )
+        }
 
         {/* Overlay de partage */}
         <ShareOverlay
@@ -1850,7 +1889,7 @@ const XCCM2Editor = () => {
           onClose={() => setShowCommandPalette(false)}
           commands={commands}
         />
-      </div>
+      </div >
     </>
   );
 };

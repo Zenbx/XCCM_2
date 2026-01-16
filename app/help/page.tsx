@@ -69,6 +69,8 @@ const HelpCenter = () => {
         { id: 'fonctionnalites', title: t.help?.sections?.documentation?.subsections?.fonctionnalites || 'Fonctionnalités' },
         { id: 'interface', title: t.help?.sections?.documentation?.subsections?.interface || 'Interface' },
         { id: 'organisation', title: t.help?.sections?.documentation?.subsections?.organisation || 'Organisation' },
+        { id: 'shortcuts', title: 'Raccourcis' },
+        { id: 'slash-commands', title: 'Commandes Slash' },
         { id: 'publication', title: t.help?.sections?.documentation?.subsections?.publication || 'Publication' }
       ]
     },
@@ -168,7 +170,35 @@ Table des matières (gauche) : Visualisez et naviguez dans la structure hiérarc
 
 Zone d'édition (centre) : Créez et modifiez vos contenus avec un éditeur de texte riche, similaire à Word. La barre d'outils offre toutes les options de formatage nécessaires.
 
-Panneau latéral (droite) : Accédez rapidement aux fonctionnalités d'import, commentaires, informations du cours et paramètres via les icônes verticales.`
+Panneau latéral (droite) : Accédez rapidement aux fonctionnalités d'import, commentaires, informations du cours et paramètres via les icônes verticales.
+
+Barre d'outils minimaliste : Pour maximiser l'espace, les boutons Secondaires (Partager, Aperçu, Image) sont affichés sous forme d'icônes seules avec des infobulles descriptives.`
+      },
+      shortcuts: {
+        title: 'Raccourcis Clavier',
+        content: `Gagnez du temps avec les raccourcis essentiels de XCCM 2 :
+
+• Ctrl + S : Enregistrer les modifications
+• Ctrl + K : Ouvrir la palette de commandes
+• Alt + Z : Activer/Désactiver le Mode Zen
+• Ctrl + B : Mettre en gras (Bold)
+• Ctrl + I : Mettre en italique (Italic)
+• Ctrl + U : Souligner (Underline)
+• Echap : Fermer les menus ou dialogues`
+      },
+      'slash-commands': {
+        title: 'Commandes Slash (/)',
+        content: `Tapez "/" dans l'éditeur pour ouvrir le menu des actions rapides. Vous pouvez aussi utiliser ces alias :
+
+• /part ou /p : Nouvelle Partie
+• /chap ou /c : Nouveau Chapitre
+• /para : Nouveau Paragraphe
+• /notion ou /n : Nouvelle Notion
+• /img : Insérer une image
+• /ai ou /bot : Assistant IA
+• /math : Formule Mathématique (LaTeX)
+• /note : Bloc de Note
+• /capt : Zone de Capture`
       },
       organisation: {
         title: 'Organisation des cours',

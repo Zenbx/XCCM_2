@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Eye, EyeOff, Loader2 } from 'lucide-react';
 import { Facebook, Instagram, Twitter } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import toast from 'react-hot-toast';
 
@@ -17,7 +17,9 @@ const LoginPage = () => {
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
 
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { login } = useAuth();
+  const redirectTo = searchParams.get('redirect');
 
   useEffect(() => {
     setMounted(true);
@@ -42,7 +44,12 @@ const LoginPage = () => {
     try {
       await login(email, password);
       toast.success('Connexion réussie !');
-      router.push('/edit-home');
+
+      if (redirectTo) {
+        router.push(redirectTo);
+      } else {
+        router.push('/edit-home');
+      }
     } catch (err: any) {
       toast.error(err.message || 'Erreur lors de la connexion');
     } finally {

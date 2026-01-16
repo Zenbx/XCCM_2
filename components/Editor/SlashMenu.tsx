@@ -30,6 +30,7 @@ interface SlashCommand {
     icon: React.ReactNode;
     action: () => void;
     category: string;
+    aliases?: string[];
 }
 
 interface SlashMenuProps {
@@ -55,7 +56,8 @@ export const SlashMenu: React.FC<SlashMenuProps> = ({
             description: 'Grand titre de section',
             icon: <Heading1 size={18} />,
             action: () => { },
-            category: 'Formatage'
+            category: 'Formatage',
+            aliases: ['h1', 't1', 'titre1']
         },
         {
             id: 'h2',
@@ -63,7 +65,8 @@ export const SlashMenu: React.FC<SlashMenuProps> = ({
             description: 'Sous-titre moyen',
             icon: <Heading2 size={18} />,
             action: () => { },
-            category: 'Formatage'
+            category: 'Formatage',
+            aliases: ['h2', 't2', 'titre2']
         },
         {
             id: 'ul',
@@ -71,7 +74,8 @@ export const SlashMenu: React.FC<SlashMenuProps> = ({
             description: 'Liste non-ordonnée simple',
             icon: <List size={18} />,
             action: () => { },
-            category: 'Formatage'
+            category: 'Formatage',
+            aliases: ['ul', 'liste', 'bullet']
         },
         {
             id: 'ol',
@@ -79,101 +83,123 @@ export const SlashMenu: React.FC<SlashMenuProps> = ({
             description: 'Liste ordonnée séquentielle',
             icon: <ListOrdered size={18} />,
             action: () => { },
-            category: 'Formatage'
+            category: 'Formatage',
+            aliases: ['ol', 'num', 'ordered']
         },
         {
             id: 'image',
             label: 'Image',
             description: 'Insérer une image depuis votre PC',
             icon: <ImageIcon size={18} />,
-            action: () => { }, // Sera géré par le parent
-            category: 'Média'
+            action: () => { },
+            category: 'Média',
+            aliases: ['img', 'image', 'photo', 'pic']
         },
         {
             id: 'ai',
             label: 'Assistant IA',
             description: 'Demander à l\'IA de rédiger',
             icon: <Bot size={18} />,
-            action: () => { }, // Sera géré par le parent
-            category: 'Avancé'
+            action: () => { },
+            category: 'Avancé',
+            aliases: ['ai', 'ia', 'bot', 'chat', 'gen']
         },
         {
             id: 'part',
             label: 'Nouvelle Partie',
             description: 'Ajouter une Part structurelle',
             icon: <Layout size={18} />,
-            action: () => { }, // Sera géré par le parent
-            category: 'Structure'
+            action: () => { },
+            category: 'Structure',
+            aliases: ['part', 'partie', 'p']
         },
         {
             id: 'chapter',
             label: 'Nouveau Chapitre',
             description: 'Ajouter un Chapitre au plan',
             icon: <BookOpen size={18} />,
-            action: () => { }, // Sera géré par le parent
-            category: 'Structure'
+            action: () => { },
+            category: 'Structure',
+            aliases: ['chap', 'chapter', 'chapitre', 'c']
+        },
+        {
+            id: 'paragraph',
+            label: 'Nouveau Paragraphe',
+            description: 'Ajouter une section de texte',
+            icon: <PlusCircle size={18} />,
+            action: () => { },
+            category: 'Structure',
+            aliases: ['para', 'p', 'paragraph', 'paragraphe']
         },
         {
             id: 'notion',
             label: 'Nouvelle Notion',
             description: 'Ajouter un grain de contenu',
             icon: <FileText size={18} />,
-            action: () => { }, // Sera géré par le parent
-            category: 'Structure'
+            action: () => { },
+            category: 'Structure',
+            aliases: ['notion', 'n', 'grain', 'concept']
         },
         {
             id: 'capture',
             label: 'Zone de Capture',
             description: 'Encadré pour capture d\'écran',
             icon: <Maximize size={18} />,
-            action: () => { }, // Sera géré par le parent
-            category: 'Design'
+            action: () => { },
+            category: 'Design',
+            aliases: ['capt', 'capture', 'zone', 'screen']
         },
         {
             id: 'note',
             label: 'Bloc Note',
             description: 'Encadré bleu pour remarques',
             icon: <Info size={18} />,
-            action: () => { }, // Sera géré par le parent
-            category: 'Design'
+            action: () => { },
+            category: 'Design',
+            aliases: ['note', 'info', 'remarque', 'bloc']
         },
         {
             id: 'math',
             label: 'Mathématiques',
             description: 'Formule LaTeX (KaTeX)',
             icon: <Sigma size={18} />,
-            action: () => { }, // Sera géré par le parent
-            category: 'Pédagogie'
+            action: () => { },
+            category: 'Pédagogie',
+            aliases: ['math', 'latex', 'sigma', 'formule', 'eq']
         },
         {
             id: 'quiz',
             label: 'Quiz Rapide',
             description: 'Question à choix multiples',
             icon: <HelpCircle size={18} />,
-            action: () => { }, // Sera géré par le parent
-            category: 'Pédagogie'
+            action: () => { },
+            category: 'Pédagogie',
+            aliases: ['quiz', 'qcm', 'question', 'exam']
         },
         {
             id: 'hint',
             label: 'Indice / Découverte',
             description: 'Bloc pliable pour révéler des infos',
             icon: <Eye size={18} />,
-            action: () => { }, // Sera géré par le parent
-            category: 'Pédagogie'
+            action: () => { },
+            category: 'Pédagogie',
+            aliases: ['hint', 'indice', 'discovery', 'secret']
         },
         {
             id: 'code',
             label: 'Code Interactif',
             description: 'Bloc de code avec exécution',
             icon: <Code size={18} />,
-            action: () => { }, // Sera géré par le parent
-            category: 'Pédagogie'
+            action: () => { },
+            category: 'Pédagogie',
+            aliases: ['code', 'js', 'script', 'run']
         }
     ];
 
     const filteredCommands = commands.filter(cmd =>
         cmd.label.toLowerCase().includes(filter.toLowerCase()) ||
-        cmd.category.toLowerCase().includes(filter.toLowerCase())
+        cmd.category.toLowerCase().includes(filter.toLowerCase()) ||
+        cmd.aliases?.some(alias => alias.toLowerCase().includes(filter.toLowerCase()))
     );
 
     useEffect(() => {
