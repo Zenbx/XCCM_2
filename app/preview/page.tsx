@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import {
     ArrowLeft,
@@ -1213,4 +1213,17 @@ const PreviewPage = () => {
     );
 };
 
-export default PreviewPage;
+// Wrapper avec Suspense pour useSearchParams
+function PreviewPageWrapper() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen flex items-center justify-center bg-gray-50">
+                <Loader2 className="w-10 h-10 text-[#99334C] animate-spin" />
+            </div>
+        }>
+            <PreviewPage />
+        </Suspense>
+    );
+}
+
+export default PreviewPageWrapper;

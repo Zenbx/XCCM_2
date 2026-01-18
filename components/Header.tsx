@@ -10,6 +10,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useState, useEffect } from "react";
 import { LogOut, Settings, User as UserIcon, Menu, X, BarChart2, ShieldCheck } from "lucide-react";
 import LanguageToggle from '@/components/LanguageToggle';
+import { ThemeToggle } from '@/components/ThemeToggle';
 import { useLanguage } from '@/context/LanguageContext';
 import { translations } from '@/services/locales';
 
@@ -62,69 +63,69 @@ export default function Header() {
   };
 
   return (
-    <header className="w-full bg-white shadow-sm border-b border-gray-100 sticky top-0 z-50">
-      <nav className="mx-auto flex max-w-[1400px] items-center justify-between lg:justify-center px-4 py-1 lg:py-2 relative min-h-[50px] lg:min-h-[60px]">
+    <header className="w-full bg-white/80 dark:bg-gray-900/80 backdrop-blur-md shadow-sm border-b border-gray-100 dark:border-gray-800 sticky top-0 z-100">
+      <nav className="mx-auto flex max-w-[1400px] items-center justify-between px-4 py-2 relative min-h-[60px] lg:min-h-[70px]">
 
         {/* --- LOGO --- */}
-        {/* En mobile : position statique. En Desktop : absolute left-6 pour garder ton design */}
-        <div className="lg:absolute lg:left-6 z-20">
+        <div className="flex-shrink-0">
           <Link href="/" className="flex items-center gap-2">
             <Image
               src="/logo-pro.png"
               alt="XCCM2 Logo"
               width={160}
               height={50}
-              className="h-12 lg:h-20 w-auto object-contain"
+              className="h-10 lg:h-16 w-auto object-contain"
               priority
             />
           </Link>
         </div>
 
-        {/* --- NAVIGATION DESKTOP (Cachée sur mobile) --- */}
-        <ul className="hidden lg:flex items-center gap-4 xl:gap-8 relative">
-          {!isLoading && LINKS.filter(link => !link.authOnly || isAuthenticated).map(link => {
-            const isActive = pathname === link.href;
-            return (
-              <li key={link.href} className="relative">
-                <Link
-                  href={link.href}
-                  className={clsx(
-                    "relative flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium transition-colors duration-300 rounded-lg group"
-                  )}
-                  style={{
-                    color: isActive ? COLORS.primary : COLORS.text,
-                  }}
-                >
-                  {isActive && (
-                    <motion.div
-                      layoutId="nav-active-bg"
-                      className="absolute inset-0 rounded-lg"
-                      style={{ backgroundColor: "#99334C4D" }}
-                      transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
-                    />
-                  )}
-                  <span className="relative z-10 flex items-center gap-2 group-hover:text-[#99334C] transition-colors">
-                    {link.icon}
-                    {link.label}
-                  </span>
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
+        {/* --- NAVIGATION DESKTOP --- */}
+        <div className="hidden lg:flex flex-1 justify-center px-4">
+          <ul className="flex items-center gap-1 xl:gap-2">
+            {!isLoading && LINKS.filter(link => !link.authOnly || isAuthenticated).map(link => {
+              const isActive = pathname === link.href;
+              return (
+                <li key={link.href} className="relative">
+                  <Link
+                    href={link.href}
+                    className={clsx(
+                      "relative flex items-center gap-1.5 px-3 py-2 text-xs xl:text-sm font-medium transition-all duration-300 rounded-lg group whitespace-nowrap"
+                    )}
+                  >
+                    {isActive && (
+                      <motion.div
+                        layoutId="nav-active-bg"
+                        className="absolute inset-0 rounded-lg bg-[#99334C]/10 dark:bg-[#ff9daf]/10"
+                        transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                      />
+                    )}
+                    <span className={clsx("relative z-10 flex items-center gap-2 transition-colors",
+                      isActive ? "text-[#99334C] dark:text-[#ff9daf]" : "text-gray-600 dark:text-gray-300 group-hover:text-[#99334C] dark:group-hover:text-[#ff9daf]"
+                    )}>
+                      {link.icon}
+                      <span className="hidden xl:inline">{link.label}</span>
+                      <span className="xl:hidden">{link.label.length > 10 ? link.label.substring(0, 8) + '...' : link.label}</span>
+                    </span>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
 
-        {/* --- ACTIONS UTILISATEUR DESKTOP (Cachées sur mobile) --- */}
-        <div className="hidden lg:flex absolute right-4 items-center gap-2 xl:gap-3">
+        {/* --- ACTIONS UTILISATEUR DESKTOP --- */}
+        <div className="hidden lg:flex items-center gap-2 xl:gap-3 flex-shrink-0">
           {isLoading ? (
-            <div className="w-8 h-8 rounded-full bg-gray-200 animate-pulse" />
+            <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 animate-pulse" />
           ) : isAuthenticated && user ? (
             <div className="relative">
               <button
                 onClick={() => setShowUserMenu(!showUserMenu)}
                 onBlur={handleMenuBlur}
-                className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 transition-all"
+                className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-all"
               >
-                <div className="w-8 h-8 rounded-full bg-[#99334C] text-white flex items-center justify-center font-semibold overflow-hidden">
+                <div className="w-8 h-8 rounded-full bg-[#99334C] text-white flex items-center justify-center font-semibold overflow-hidden shadow-sm">
                   {user.profile_picture ? (
                     <img
                       src={`${process.env.NEXT_PUBLIC_API_URL}${user.profile_picture}`}
@@ -135,7 +136,7 @@ export default function Header() {
                     <span>{user.firstname?.[0]}{user.lastname?.[0]}</span>
                   )}
                 </div>
-                <span className="text-sm font-medium text-gray-700 block">
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-200 block">
                   {user.firstname} {user.lastname}
                 </span>
               </button>
@@ -144,11 +145,11 @@ export default function Header() {
                 <motion.div
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-xl border border-gray-100 py-2 z-100"
+                  className="absolute right-0 mt-2 w-72 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-100 dark:border-gray-700 py-2 z-100"
                 >
-                  <div className="px-4 py-3 border-b border-gray-100">
-                    <p className="font-semibold text-gray-900">{user.firstname} {user.lastname}</p>
-                    <p className="text-sm text-gray-500 truncate">{user.email}</p>
+                  <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-700">
+                    <p className="font-semibold text-gray-900 dark:text-white">{user.firstname} {user.lastname}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 truncate">{user.email}</p>
                     {user.occupation && (
                       <p className="text-xs text-gray-400 mt-1">{user.occupation}</p>
                     )}
@@ -164,7 +165,7 @@ export default function Header() {
                     </Link>
                     <Link
                       href="/account"
-                      className="flex items-center gap-3 px-4 py-2 text-gray-700 hover:bg-gray-50 transition-all font-medium"
+                      className="flex items-center gap-3 px-4 py-2 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all font-medium"
                       onClick={() => setShowUserMenu(false)}
                     >
                       <UserIcon className="w-4 h-4" />
@@ -172,7 +173,7 @@ export default function Header() {
                     </Link>
                     <Link
                       href="/settings"
-                      className="flex items-center gap-3 px-4 py-2 text-gray-700 hover:bg-gray-50 transition-all"
+                      className="flex items-center gap-3 px-4 py-2 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all"
                       onClick={() => setShowUserMenu(false)}
                     >
                       <Settings className="w-4 h-4" />
@@ -180,17 +181,17 @@ export default function Header() {
                     </Link>
                     <Link
                       href="/analytics"
-                      className="flex items-center gap-3 px-4 py-2 text-gray-700 hover:bg-gray-50 transition-all"
+                      className="flex items-center gap-3 px-4 py-2 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all"
                       onClick={() => setShowUserMenu(false)}
                     >
                       <BarChart2 className="w-4 h-4" />
                       <span className="text-sm">{t.auth.analytics}</span>
                     </Link>
                   </div>
-                  <div className="border-t border-gray-100 pt-2">
+                  <div className="border-t border-gray-100 dark:border-gray-700 pt-2">
                     <button
                       onClick={handleLogout}
-                      className="flex items-center gap-3 px-4 py-2 text-red-600 hover:bg-red-50 transition-all w-full"
+                      className="flex items-center gap-3 px-4 py-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/10 transition-all w-full"
                     >
                       <LogOut className="w-4 h-4" />
                       <span className="text-sm">{t.auth.logout}</span>
@@ -203,14 +204,14 @@ export default function Header() {
             <>
               <Link
                 href="/register"
-                className="rounded-[8px] px-4 py-2 text-sm font-medium text-white transition-opacity hover:opacity-90"
+                className="rounded-[8px] px-4 py-2 text-sm font-medium text-white transition-opacity hover:opacity-90 shadow-sm"
                 style={{ backgroundColor: COLORS.primary }}
               >
                 {t.auth.register}
               </Link>
               <Link
                 href="/login"
-                className="rounded-[8px] border px-4 py-2 text-sm font-medium transition-all hover:bg-[#99334C1A]"
+                className="rounded-[8px] border px-4 py-2 text-sm font-medium transition-all hover:bg-[#99334C1A] dark:text-gray-200 dark:border-gray-600 dark:hover:bg-gray-800"
                 style={{
                   color: COLORS.primary,
                   borderColor: COLORS.primary,
@@ -220,6 +221,8 @@ export default function Header() {
               </Link>
             </>
           )}
+          <div className="h-6 w-px bg-gray-200 dark:bg-gray-700 mx-1"></div>
+          <ThemeToggle />
           <LanguageToggle />
         </div>
 
@@ -260,8 +263,9 @@ export default function Header() {
                 </button>
               </div>
 
-              <div className="p-4 border-b border-gray-100">
+              <div className="p-4 border-b border-gray-100 flex items-center gap-4 justify-between">
                 <LanguageToggle />
+                <ThemeToggle />
               </div>
 
               {/* Contenu Mobile : Navigation */}

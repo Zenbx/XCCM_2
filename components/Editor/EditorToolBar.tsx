@@ -18,7 +18,6 @@ import {
   Maximize2
 } from 'lucide-react';
 import RichTooltip from '@/components/UI/RichTooltip';
-
 interface EditorToolbarProps {
   onFormatChange: (format: string) => void;
   onFontChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;

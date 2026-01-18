@@ -2,14 +2,20 @@
 
 import React, { useState } from 'react';
 import { Search, Filter, ShoppingBag, Folder, Book, FileText, File } from 'lucide-react';
-import Granule from '../Granule';
+import Granule, { GranuleData } from '../Granule';
 
-const MarketplacePanel = ({ onDragStart }: any) => {
+interface MarketplacePanelProps {
+    onDragStart: (e: React.DragEvent, granule: GranuleData) => void;
+}
+
+type GranuleType = GranuleData['type'];
+
+const MarketplacePanel: React.FC<MarketplacePanelProps> = ({ onDragStart }) => {
     const [searchTerm, setSearchTerm] = useState('');
-    const [filterType, setFilterType] = useState('all');
+    const [filterType, setFilterType] = useState<'all' | GranuleType>('all');
 
     // Données mockées pour la marketplace
-    const marketplaceGranules = [
+    const marketplaceGranules: GranuleData[] = [
         {
             id: 'm1',
             type: 'part',
@@ -74,12 +80,12 @@ const MarketplacePanel = ({ onDragStart }: any) => {
                     >
                         Tous
                     </button>
-                    {[
-                        { id: 'part', label: 'Parties', icon: Folder },
-                        { id: 'chapter', label: 'Chapitres', icon: Book },
-                        { id: 'paragraph', label: 'Paragraphes', icon: FileText },
-                        { id: 'notion', label: 'Notions', icon: File }
-                    ].map(f => (
+                    {([
+                        { id: 'part' as const, label: 'Parties', icon: Folder },
+                        { id: 'chapter' as const, label: 'Chapitres', icon: Book },
+                        { id: 'paragraph' as const, label: 'Paragraphes', icon: FileText },
+                        { id: 'notion' as const, label: 'Notions', icon: File }
+                    ]).map(f => (
                         <button
                             key={f.id}
                             onClick={() => setFilterType(f.id)}

@@ -384,11 +384,14 @@ const EditorArea: React.FC<EditorAreaProps> = ({
 
   return (
     <div
-      className="flex-1 bg-gray-50 p-8 overflow-y-auto cursor-text"
+      className="flex-1 bg-gray-50 dark:bg-gray-950 p-8 overflow-y-auto cursor-text transition-colors duration-300"
       onClick={handleClick}
     >
       <div
-        className="max-w-4xl mx-auto bg-white shadow-sm transition-all min-h-[800px]"
+        className="max-w-4xl mx-auto bg-white dark:bg-gray-900 shadow-sm transition-all min-h-[800px] dark:border dark:border-gray-800"
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
       >
         <div className="w-full h-full p-10">
           <TiptapEditor
@@ -402,7 +405,7 @@ const EditorArea: React.FC<EditorAreaProps> = ({
               setTiptapInstance(editor);
               onEditorReady?.(editor);
             }}
-            className="prose prose-lg max-w-none text-black"
+            className="prose prose-lg max-w-none text-black dark:text-gray-100"
           />
         </div>
 
@@ -418,8 +421,15 @@ const EditorArea: React.FC<EditorAreaProps> = ({
             switch (cmd) {
               case 'bold': chain.toggleBold().run(); break;
               case 'italic': chain.toggleItalic().run(); break;
-              case 'underline': chain.toggleUnderline().run(); break; // Nécessitera extension Underline plus tard
+              case 'underline': chain.toggleUnderline().run(); break;
               case 'strikethrough': chain.toggleStrike().run(); break;
+              default:
+                if (cmd.startsWith('foreColor:')) {
+                  chain.setColor(cmd.split(':')[1]).run();
+                } else if (cmd.startsWith('hiliteColor:')) {
+                  chain.toggleHighlight({ color: cmd.split(':')[1] }).run();
+                }
+                break;
             }
 
             handleTiptapUpdate(tiptapInstance.getHTML());

@@ -9,6 +9,7 @@ import { TextStyle } from '@tiptap/extension-text-style';
 import { Color } from '@tiptap/extension-color';
 import { FontFamily } from '@tiptap/extension-font-family';
 import { TextAlign } from '@tiptap/extension-text-align';
+import Highlight from '@tiptap/extension-highlight';
 import React, { useEffect } from 'react';
 import { NoteBlock } from './Blocks/NoteBlock';
 import { CaptureZoneBlock } from './Blocks/CaptureZoneBlock';
@@ -144,6 +145,7 @@ const TiptapEditor: React.FC<TiptapEditorProps> = ({
       Color,
       FontFamily,
       FontSize,
+      Highlight.configure({ multicolor: true }),
       CustomImage.configure({
         allowBase64: true,
       }),

@@ -212,6 +212,11 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ project, onUpdateProject 
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.currentTarget.blur();
+              }
+            }}
             onBlur={() => {
               if (onUpdateProject && name !== project?.pr_name) {
                 onUpdateProject({ pr_name: name });
@@ -219,7 +224,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ project, onUpdateProject 
             }}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-500 focus:ring-2 focus:ring-[#99334C] focus:border-transparent outline-none transition-all"
           />
-          <p className="text-xs text-gray-500 mt-1">Le changement sera sauvegardé automatiquement.</p>
+          <p className="text-xs text-gray-500 mt-1">Appuyez sur Entrée pour valider le changement de nom.</p>
         </div>
       </div>
 

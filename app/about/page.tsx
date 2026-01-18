@@ -303,7 +303,7 @@ const AboutPage = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white dark:bg-gray-950">
       <style jsx>{`
         @keyframes fade-in-up {
           from {
@@ -379,7 +379,7 @@ const AboutPage = () => {
       `}</style>
 
       {/* Hero Section */}
-      <section id="hero" className="relative bg-gradient-to-br from-[#99334C] to-[#7a283d] text-white overflow-hidden py-20">
+      <section id="hero" className="relative bg-gradient-to-br from-[#99334C] to-[#7a283d] dark:from-[#ff9daf] dark:to-[#99334C] text-white overflow-hidden py-20">
         <div className="absolute inset-0 opacity-10">
           <div className="absolute inset-0" style={{
             backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)',
@@ -408,16 +408,16 @@ const AboutPage = () => {
       <section id="presentation" className="py-20 px-6 scroll-mt-20">
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-16 animate-on-scroll">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">
+            <h2 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">
               {t.about.presentation.title}
             </h2>
-            <div className="w-20 h-1 bg-[#99334C] mx-auto rounded-full"></div>
+            <div className="w-20 h-1 bg-[#99334C] dark:bg-[#ff9daf] mx-auto rounded-full"></div>
           </div>
 
-          <div className="bg-gradient-to-br from-gray-50 to-white rounded-3xl p-8 md:p-12 shadow-lg border border-gray-100 animate-on-scroll">
-            <div className="prose prose-lg max-w-none text-gray-700 leading-relaxed space-y-6">
+          <div className="bg-gradient-to-br from-gray-50 dark:from-gray-800 to-white dark:to-gray-900 rounded-3xl p-8 md:p-12 shadow-lg border border-gray-100 dark:border-gray-700 animate-on-scroll">
+            <div className="prose prose-lg max-w-none text-gray-700 dark:text-gray-300 leading-relaxed space-y-6">
               <p>
-                <span className="text-[#99334C] font-bold text-xl">XCCM 2</span> {t.about.presentation.intro}
+                <span className="text-[#99334C] dark:text-[#ff9daf] font-bold text-xl">XCCM 2</span> {t.about.presentation.intro}
               </p>
 
               <p>
@@ -428,21 +428,21 @@ const AboutPage = () => {
                 {t.about.features.map((feature: any, index: number) => {
                   const IconComponent = features[index]?.icon || BookOpen;
                   return (
-                    <div key={index} className="flex gap-4 p-4 bg-white rounded-xl border border-gray-200 hover:border-[#99334C]/50 transition-all">
-                      <div className="w-12 h-12 bg-[#99334C]/10 rounded-lg flex items-center justify-center flex-shrink-0">
-                        <IconComponent className="w-6 h-6 text-[#99334C]" />
+                    <div key={index} className="flex gap-4 p-4 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-[#99334C]/50 dark:hover:border-[#ff9daf]/50 transition-all">
+                      <div className="w-12 h-12 bg-[#99334C]/10 dark:bg-[#99334C]/20 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <IconComponent className="w-6 h-6 text-[#99334C] dark:text-[#ff9daf]" />
                       </div>
                       <div>
-                        <h3 className="font-bold text-gray-900 mb-1">{feature.title}</h3>
-                        <p className="text-sm text-gray-600">{feature.desc}</p>
+                        <h3 className="font-bold text-gray-900 dark:text-white mb-1">{feature.title}</h3>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">{feature.desc}</p>
                       </div>
                     </div>
                   );
                 })}
               </div>
 
-              <div className="bg-[#99334C]/5 border-l-4 border-[#99334C] p-6 rounded-r-xl mt-8">
-                <p className="text-gray-700 italic">
+              <div className="bg-[#99334C]/5 dark:bg-[#99334C]/10 border-l-4 border-[#99334C] dark:border-[#ff9daf] p-6 rounded-r-xl mt-8">
+                <p className="text-gray-700 dark:text-gray-300 italic">
                   "Développé dans le cadre d'un projet d'<strong>Interaction Homme‑Machine (IHM)</strong>,
                   XCCM 2 place l'utilisateur au centre de la conception, en mettant l'accent sur l'ergonomie,
                   la simplicité d'usage et la qualité de l'expérience utilisateur."
@@ -454,17 +454,17 @@ const AboutPage = () => {
       </section>
 
       {/* Section Vision */}
-      <section id="vision" className="py-20 px-6 bg-gradient-to-b from-white to-gray-50 scroll-mt-20">
+      <section id="vision" className="py-20 px-6 bg-gradient-to-b from-white dark:from-gray-950 to-gray-50 dark:to-gray-900 scroll-mt-20">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16 animate-on-scroll">
-            <div className="inline-flex items-center gap-2 bg-[#99334C]/10 px-4 py-2 rounded-full mb-4">
-              <Target className="w-5 h-5 text-[#99334C]" />
-              <span className="text-sm font-semibold text-[#99334C]">{t.about.vision.title}</span>
+            <div className="inline-flex items-center gap-2 bg-[#99334C]/10 dark:bg-[#99334C]/20 px-4 py-2 rounded-full mb-4">
+              <Target className="w-5 h-5 text-[#99334C] dark:text-[#ff9daf]" />
+              <span className="text-sm font-semibold text-[#99334C] dark:text-[#ff9daf]">{t.about.vision.title}</span>
             </div>
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">
+            <h2 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">
               {t.about.vision.title}
             </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+            <p className="text-xl text-gray-600 dark:text-gray-400 max-w-3xl mx-auto">
               {t.about.vision.subtitle}
             </p>
           </div>
@@ -473,35 +473,35 @@ const AboutPage = () => {
             {t.about.values.map((value: any, index: number) => {
               const IconComponent = values[index]?.icon || Lightbulb;
               return (
-                <div key={index} className="bg-white rounded-2xl p-8 shadow-lg hover:shadow-xl transition-all border border-gray-100 group animate-on-scroll" style={{ animationDelay: `${index * 0.1}s` }}>
-                  <div className="w-16 h-16 bg-gradient-to-br from-[#99334C] to-[#7a283d] rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                <div key={index} className="bg-white dark:bg-gray-800 rounded-2xl p-8 shadow-lg hover:shadow-xl transition-all border border-gray-100 dark:border-gray-700 group animate-on-scroll" style={{ animationDelay: `${index * 0.1}s` }}>
+                  <div className="w-16 h-16 bg-gradient-to-br from-[#99334C] to-[#7a283d] dark:from-[#ff9daf] dark:to-[#99334C] rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                     <IconComponent className="w-8 h-8 text-white" />
                   </div>
-                  <h3 className="text-2xl font-bold text-gray-900 mb-3">{value.title}</h3>
-                  <p className="text-gray-600 leading-relaxed">{value.desc}</p>
+                  <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-3">{value.title}</h3>
+                  <p className="text-gray-600 dark:text-gray-400 leading-relaxed">{value.desc}</p>
                 </div>
               );
             })}
           </div>
 
-          <div className="bg-white rounded-3xl p-8 md:p-12 shadow-xl border border-gray-100 animate-on-scroll">
+          <div className="bg-white dark:bg-gray-800 rounded-3xl p-8 md:p-12 shadow-xl border border-gray-100 dark:border-gray-700 animate-on-scroll">
             <div className="flex flex-col md:flex-row gap-8 items-center">
               <div className="flex-1">
-                <h3 className="text-3xl font-bold text-gray-900 mb-6">
+                <h3 className="text-3xl font-bold text-gray-900 dark:text-white mb-6">
                   {t.about.vision.ambitionTitle}
                 </h3>
-                <p className="text-lg text-gray-700 leading-relaxed mb-6">
+                <p className="text-lg text-gray-700 dark:text-gray-300 leading-relaxed mb-6">
                   {t.about.vision.ambitionParagraph1}
                 </p>
-                <p className="text-lg text-gray-700 leading-relaxed">
+                <p className="text-lg text-gray-700 dark:text-gray-300 leading-relaxed">
                   {t.about.vision.ambitionParagraph2}
                 </p>
               </div>
               <div className="w-full md:w-1/3">
-                <div className="bg-gradient-to-br from-[#99334C]/10 to-[#99334C]/5 rounded-2xl p-8 text-center">
-                  <Award className="w-16 h-16 text-[#99334C] mx-auto mb-4" />
-                  <p className="text-4xl font-bold text-[#99334C] mb-2">100%</p>
-                  <p className="text-gray-600 font-semibold">Centré utilisateur</p>
+                <div className="bg-gradient-to-br from-[#99334C]/10 dark:from-[#99334C]/20 to-[#99334C]/5 dark:to-[#99334C]/10 rounded-2xl p-8 text-center">
+                  <Award className="w-16 h-16 text-[#99334C] dark:text-[#ff9daf] mx-auto mb-4" />
+                  <p className="text-4xl font-bold text-[#99334C] dark:text-[#ff9daf] mb-2">100%</p>
+                  <p className="text-gray-600 dark:text-gray-400 font-semibold">Centré utilisateur</p>
                 </div>
               </div>
             </div>
@@ -513,22 +513,22 @@ const AboutPage = () => {
       <section id="equipe" className="py-20 px-6 scroll-mt-20">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16 animate-on-scroll">
-            <div className="inline-flex items-center gap-2 bg-[#99334C]/10 px-4 py-2 rounded-full mb-4">
-              <Users className="w-5 h-5 text-[#99334C]" />
-              <span className="text-sm font-semibold text-[#99334C]">{t.about.team.title}</span>
+            <div className="inline-flex items-center gap-2 bg-[#99334C]/10 dark:bg-[#99334C]/20 px-4 py-2 rounded-full mb-4">
+              <Users className="w-5 h-5 text-[#99334C] dark:text-[#ff9daf]" />
+              <span className="text-sm font-semibold text-[#99334C] dark:text-[#ff9daf]">{t.about.team.title}</span>
             </div>
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">
+            <h2 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">
               {t.about.team.title}
             </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+            <p className="text-xl text-gray-600 dark:text-gray-400 max-w-3xl mx-auto">
               {t.about.team.subtitle}
             </p>
           </div>
 
           <div className="relative animate-on-scroll">
             {/* Gradient de fade sur les bords */}
-            <div className="absolute left-0 top-0 bottom-0 w-20 bg-gradient-to-r from-white to-transparent z-10 pointer-events-none"></div>
-            <div className="absolute right-0 top-0 bottom-0 w-20 bg-gradient-to-l from-white to-transparent z-10 pointer-events-none"></div>
+            <div className="absolute left-0 top-0 bottom-0 w-20 bg-gradient-to-r from-white dark:from-gray-950 to-transparent z-10 pointer-events-none"></div>
+            <div className="absolute right-0 top-0 bottom-0 w-20 bg-gradient-to-l from-white dark:from-gray-950 to-transparent z-10 pointer-events-none"></div>
             
             {/* Container avec défilement automatique optimisé */}
             <div 
@@ -538,9 +538,9 @@ const AboutPage = () => {
               <div className="flex gap-6 w-max">
                 {/* Afficher les cartes deux fois pour créer un effet de boucle infinie */}
                 {[...teamMembers, ...teamMembers].map((member, index) => (
-                  <div 
-                    key={`member-${index}`} 
-                    className="flex-shrink-0 w-80 bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 border border-gray-100 group"
+                  <div
+                    key={`member-${index}`}
+                    className="flex-shrink-0 w-80 bg-white dark:bg-gray-800 rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 border border-gray-100 dark:border-gray-700 group"
                   >
                     {/* Photo de profil avec overlay */}
                     <div className="relative h-48 overflow-hidden">
@@ -591,10 +591,10 @@ const AboutPage = () => {
                     </div>
 
                     <div className="p-6">
-                      <h3 className="text-lg font-bold text-gray-900 mb-1">{member.name}</h3>
-                      <p className="text-[#99334C] font-semibold mb-2 text-sm">{member.pseudo}</p>
+                      <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1">{member.name}</h3>
+                      <p className="text-[#99334C] dark:text-[#ff9daf] font-semibold mb-2 text-sm">{member.pseudo}</p>
                       {member.email && (
-                        <p className="text-gray-600 text-xs truncate">{member.email}</p>
+                        <p className="text-gray-600 dark:text-gray-400 text-xs truncate">{member.email}</p>
                       )}
                     </div>
                   </div>
@@ -604,10 +604,10 @@ const AboutPage = () => {
             
             {/* Indicateur de scroll amélioré */}
             <div className="flex justify-center mt-6 gap-3">
-              <div className="text-sm text-gray-500 flex items-center gap-3 bg-gray-50 px-4 py-2 rounded-full">
-                <span className="animate-pulse-arrow-left text-[#99334C]">→</span>
+              <div className="text-sm text-gray-500 dark:text-gray-400 flex items-center gap-3 bg-gray-50 dark:bg-gray-800 px-4 py-2 rounded-full">
+                <span className="animate-pulse-arrow-left text-[#99334C] dark:text-[#ff9daf]">→</span>
                 <span className="font-medium">Défilement automatique • Survolez pour mettre en pause</span>
-                <span className="animate-pulse-arrow-right text-[#99334C]">→</span>
+                <span className="animate-pulse-arrow-right text-[#99334C] dark:text-[#ff9daf]">→</span>
               </div>
             </div>
           </div>
@@ -615,75 +615,75 @@ const AboutPage = () => {
       </section>
 
       {/* Section Contact */}
-      <section id="contact" className="py-20 px-6 bg-gradient-to-b from-gray-50 to-white scroll-mt-20">
+      <section id="contact" className="py-20 px-6 bg-gradient-to-b from-gray-50 dark:from-gray-900 to-white dark:to-gray-950 scroll-mt-20">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16 animate-on-scroll">
-            <div className="inline-flex items-center gap-2 bg-[#99334C]/10 px-4 py-2 rounded-full mb-4">
-              <Mail className="w-5 h-5 text-[#99334C]" />
-              <span className="text-sm font-semibold text-[#99334C]">{t.about.contact.sectionLabel}</span>
+            <div className="inline-flex items-center gap-2 bg-[#99334C]/10 dark:bg-[#99334C]/20 px-4 py-2 rounded-full mb-4">
+              <Mail className="w-5 h-5 text-[#99334C] dark:text-[#ff9daf]" />
+              <span className="text-sm font-semibold text-[#99334C] dark:text-[#ff9daf]">{t.about.contact.sectionLabel}</span>
             </div>
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">
+            <h2 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">
               {t.about.contact.heading}
             </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+            <p className="text-xl text-gray-600 dark:text-gray-400 max-w-3xl mx-auto">
               {t.about.contact.subtitle}
             </p>
           </div>
 
           <div className="grid lg:grid-cols-2 gap-12">
             {/* Formulaire */}
-            <div className="bg-white rounded-3xl p-8 shadow-xl border border-gray-100 animate-on-scroll">
-              <h3 className="text-2xl font-bold text-gray-900 mb-6">{t.about.contact.formTitle}</h3>
+            <div className="bg-white dark:bg-gray-800 rounded-3xl p-8 shadow-xl border border-gray-100 dark:border-gray-700 animate-on-scroll">
+              <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">{t.about.contact.formTitle}</h3>
 
               <div className="space-y-6">
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                     {t.about.contact.name}
                   </label>
                   <input
                     type="text"
                     value={contactForm.nom}
                     onChange={(e) => setContactForm({ ...contactForm, nom: e.target.value })}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#99334C]/20 focus:border-[#99334C] transition-all"
+                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#99334C]/20 focus:border-[#99334C] dark:focus:border-[#ff9daf] transition-all bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
                     placeholder={t.about.contact.namePlaceholder}
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                     {t.about.contact.email}
                   </label>
                   <input
                     type="email"
                     value={contactForm.email}
                     onChange={(e) => setContactForm({ ...contactForm, email: e.target.value })}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#99334C]/20 focus:border-[#99334C] transition-all"
+                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#99334C]/20 focus:border-[#99334C] dark:focus:border-[#ff9daf] transition-all bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
                     placeholder={t.about.contact.emailPlaceholder}
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                     {t.about.contact.subject}
                   </label>
                   <input
                     type="text"
                     value={contactForm.sujet}
                     onChange={(e) => setContactForm({ ...contactForm, sujet: e.target.value })}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#99334C]/20 focus:border-[#99334C] transition-all"
+                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#99334C]/20 focus:border-[#99334C] dark:focus:border-[#ff9daf] transition-all bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
                     placeholder={t.about.contact.subjectPlaceholder}
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                     {t.about.contact.message}
                   </label>
                   <textarea
                     value={contactForm.message}
                     onChange={(e) => setContactForm({ ...contactForm, message: e.target.value })}
                     rows={5}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#99334C]/20 focus:border-[#99334C] transition-all resize-none"
+                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#99334C]/20 focus:border-[#99334C] dark:focus:border-[#ff9daf] transition-all resize-none bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
                     placeholder={t.about.contact.messagePlaceholder}
                   />
                 </div>
@@ -763,9 +763,9 @@ const AboutPage = () => {
                 </div>
               </div>
 
-              <div className="bg-white rounded-3xl p-8 shadow-lg border border-gray-100">
-                <h4 className="text-xl font-bold text-gray-900 mb-4">{t.about.contact.hoursTitle}</h4>
-                <div className="space-y-3 text-gray-700">
+              <div className="bg-white dark:bg-gray-800 rounded-3xl p-8 shadow-lg border border-gray-100 dark:border-gray-700">
+                <h4 className="text-xl font-bold text-gray-900 dark:text-white mb-4">{t.about.contact.hoursTitle}</h4>
+                <div className="space-y-3 text-gray-700 dark:text-gray-300">
                   <div className="flex justify-between">
                     <span>Lundi - Vendredi</span>
                     <span className="font-semibold">9h - 18h</span>
@@ -788,7 +788,7 @@ const AboutPage = () => {
       {/* Call to Action Final */}
       <section className="py-16 px-6">
         <div className="max-w-5xl mx-auto">
-          <div className="bg-gradient-to-br from-[#99334C] to-[#7a283d] rounded-[40px] p-12 text-center text-white relative overflow-hidden animate-on-scroll">
+          <div className="bg-gradient-to-br from-[#99334C] to-[#7a283d] dark:from-[#ff9daf] dark:to-[#99334C] rounded-[40px] p-12 text-center text-white relative overflow-hidden animate-on-scroll">
             <div className="absolute inset-0 opacity-10">
               <div className="absolute inset-0" style={{
                 backgroundImage: 'radial-gradient(circle, white 2px, transparent 2px)',
@@ -805,7 +805,7 @@ const AboutPage = () => {
               </p>
               <button
                 onClick={() => router.push('/login')}
-                className="bg-white text-[#99334C] px-8 py-4 rounded-xl font-bold shadow-lg hover:shadow-xl transition-all hover:scale-105">
+                className="bg-white dark:bg-gray-900 text-[#99334C] dark:text-[#ff9daf] px-8 py-4 rounded-xl font-bold shadow-lg hover:shadow-xl transition-all hover:scale-105">
                 Commencer maintenant
               </button>
             </div>

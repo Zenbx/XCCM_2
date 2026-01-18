@@ -1,7 +1,11 @@
+"use client";
+
 import React, { useState, useRef, useEffect } from 'react';
 import { X, Send, Bot, User, Copy, Check } from 'lucide-react';
 import { chatbotService } from '@/services/chatbotService';
 import toast from 'react-hot-toast';
+import { motion, AnimatePresence } from 'framer-motion';
+import GlassPanel from '../UI/GlassPanel';
 
 interface ChatBotOverlayProps {
     isOpen: boolean;
@@ -150,105 +154,114 @@ const ChatBotOverlay: React.FC<ChatBotOverlayProps> = ({ isOpen, onClose, curren
         }
     };
 
-    if (!isOpen) return null;
-
     return (
-        <div className="fixed bottom-24 right-8 w-96 h-[500px] bg-white rounded-2xl shadow-2xl border border-gray-100 flex flex-col overflow-hidden z-50 animate-in fade-in slide-in-from-bottom-10 flex flex-col">
-            {/* Header */}
-            <div className="bg-gradient-to-r from-[#99334C] to-[#C0392B] p-4 flex items-center justify-between text-white shrink-0">
-                <div className="flex items-center gap-2">
-                    <div className="bg-white/20 p-1.5 rounded-lg">
-                        <Bot size={16} />
-                    </div>
-                    <div>
-                        <span className="font-semibold block text-sm">Assistant Pédagogique</span>
-                        <span className="text-xs opacity-80 block">{currentContext ? currentContext.notionName : 'Aucune notion sélectionnée'}</span>
-                    </div>
-                </div>
-                <button onClick={onClose} className="hover:bg-white/20 p-1 rounded-full transition-colors">
-                    <X size={18} />
-                </button>
-            </div>
-
-            {/* Messages */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50 min-h-0">
-                {messages.map((msg) => (
-                    <div key={msg.id} className={`flex gap-3 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
-                        <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${msg.role === 'assistant' ? 'bg-[#99334C] text-white' : 'bg-gray-300 text-gray-600'}`}>
-                            {msg.role === 'assistant' ? <Bot size={16} /> : <User size={16} />}
-                        </div>
-                        <div className={`relative group max-w-[85%] ${msg.role === 'assistant' ? 'w-full' : ''}`}>
-                            <div className={`p-3 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap shadow-sm ${msg.role === 'user'
-                                ? 'bg-[#99334C] text-white rounded-tr-none'
-                                : 'bg-white border border-gray-200 text-gray-800 rounded-tl-none' // Enlevé pr-10
-                                }`}>
-                                {msg.content}
-
-                                {/* Bouton Copier en bas du message pour l'assistant */}
-                                {msg.role === 'assistant' && (
-                                    <div className="mt-2 pt-2 border-t border-gray-100 flex justify-end">
-                                        <button
-                                            onClick={() => handleCopy(msg.content, msg.id)}
-                                            className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-[#99334C] transition-colors p-1 rounded-md hover:bg-gray-50"
-                                            title="Copier le texte"
-                                        >
-                                            {copiedId === msg.id ? (
-                                                <>
-                                                    <Check size={14} className="text-green-600" />
-                                                    <span className="text-green-600">Copié</span>
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <Copy size={14} />
-                                                    <span>Copier</span>
-                                                </>
-                                            )}
-                                        </button>
-                                    </div>
-                                )}
+        <AnimatePresence>
+            {isOpen && (
+                <GlassPanel
+                    initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                    className="fixed bottom-24 right-8 w-96 h-[500px] rounded-2xl shadow-2xl flex flex-col overflow-hidden z-50"
+                    intensity="high"
+                    blur="xl"
+                >
+                    {/* Header */}
+                    <div className="bg-gradient-to-r from-[#99334C] to-[#C0392B] p-4 flex items-center justify-between text-white shrink-0">
+                        <div className="flex items-center gap-2">
+                            <div className="bg-white/20 p-1.5 rounded-lg">
+                                <Bot size={16} />
+                            </div>
+                            <div>
+                                <span className="font-semibold block text-sm">Assistant Pédagogique</span>
+                                <span className="text-xs opacity-80 block truncate max-w-[180px]">{currentContext ? currentContext.notionName : 'Aucune notion sélectionnée'}</span>
                             </div>
                         </div>
+                        <button onClick={onClose} className="hover:bg-white/20 p-1 rounded-full transition-colors">
+                            <X size={18} />
+                        </button>
                     </div>
-                ))}
 
-                {isTyping && (
-                    <div className="flex gap-3">
-                        <div className="w-8 h-8 rounded-full bg-[#99334C] text-white flex items-center justify-center flex-shrink-0">
-                            <Bot size={16} />
-                        </div>
-                        <div className="bg-white border border-gray-200 p-3 rounded-2xl rounded-tl-none shadow-sm flex gap-1 items-center">
-                            <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></span>
-                            <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce [animation-delay:0.2s]"></span>
-                            <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce [animation-delay:0.4s]"></span>
+                    {/* Messages */}
+                    <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50/30 dark:bg-gray-900/10 min-h-0 custom-scrollbar">
+                        {messages.map((msg) => (
+                            <div key={msg.id} className={`flex gap-3 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
+                                <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${msg.role === 'assistant' ? 'bg-[#99334C] text-white' : 'bg-gray-300 dark:bg-gray-700 text-gray-600 dark:text-gray-400'}`}>
+                                    {msg.role === 'assistant' ? <Bot size={16} /> : <User size={16} />}
+                                </div>
+                                <div className={`relative group max-w-[85%] ${msg.role === 'assistant' ? 'w-full' : ''}`}>
+                                    <div className={`p-3 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap shadow-sm ${msg.role === 'user'
+                                        ? 'bg-[#99334C] text-white rounded-tr-none'
+                                        : 'bg-white/80 dark:bg-gray-800/80 border border-gray-100 dark:border-gray-700/50 text-gray-800 dark:text-gray-100 rounded-tl-none'
+                                        }`}>
+                                        {msg.content}
+
+                                        {/* Bouton Copier en bas du message pour l'assistant */}
+                                        {msg.role === 'assistant' && (
+                                            <div className="mt-2 pt-2 border-t border-gray-100 dark:border-gray-700/50 flex justify-end">
+                                                <button
+                                                    onClick={() => handleCopy(msg.content, msg.id)}
+                                                    className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 hover:text-[#99334C] dark:hover:text-[#ff4d7d] transition-colors p-1 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700/50"
+                                                    title="Copier le texte"
+                                                >
+                                                    {copiedId === msg.id ? (
+                                                        <>
+                                                            <Check size={14} className="text-green-600" />
+                                                            <span className="text-green-600">Copié</span>
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <Copy size={14} />
+                                                            <span>Copier</span>
+                                                        </>
+                                                    )}
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+
+                        {isTyping && (
+                            <div className="flex gap-3">
+                                <div className="w-8 h-8 rounded-full bg-[#99334C] text-white flex items-center justify-center flex-shrink-0">
+                                    <Bot size={16} />
+                                </div>
+                                <div className="bg-white/80 dark:bg-gray-800/80 border border-gray-100 dark:border-gray-700/50 p-3 rounded-2xl rounded-tl-none shadow-sm flex gap-1 items-center">
+                                    <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></span>
+                                    <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce [animation-delay:0.2s]"></span>
+                                    <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce [animation-delay:0.4s]"></span>
+                                </div>
+                            </div>
+                        )}
+
+                        <div ref={messagesEndRef} />
+                    </div>
+
+                    {/* Input */}
+                    <div className="p-4 bg-white/50 dark:bg-gray-900/50 border-t border-gray-100 dark:border-gray-700/50 shrink-0 backdrop-blur-sm">
+                        <div className="relative">
+                            <input
+                                type="text"
+                                value={input}
+                                onChange={(e) => setInput(e.target.value)}
+                                onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+                                placeholder={currentContext ? "Ex: 'Je veux un style formal'..." : "Sélectionnez une notion"}
+                                disabled={isTyping}
+                                className="w-full pl-4 pr-12 py-3 bg-white/80 dark:bg-gray-800/80 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-[#99334C] focus:border-transparent outline-none text-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 disabled:opacity-50 transition-all font-medium"
+                            />
+                            <button
+                                onClick={handleSend}
+                                disabled={!input.trim() || isTyping}
+                                className="absolute right-2 top-2 p-1.5 bg-[#99334C] text-white rounded-lg hover:bg-[#7a283d] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                            >
+                                <Send size={16} />
+                            </button>
                         </div>
                     </div>
-                )}
-
-                <div ref={messagesEndRef} />
-            </div>
-
-            {/* Input */}
-            <div className="p-4 bg-white border-t border-gray-100 shrink-0">
-                <div className="relative">
-                    <input
-                        type="text"
-                        value={input}
-                        onChange={(e) => setInput(e.target.value)}
-                        onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-                        placeholder={currentContext ? "Ex: 'Je veux un style formal' ou 'simple'..." : "Sélectionnez une notion d'abord"}
-                        disabled={isTyping}
-                        className="w-full pl-4 pr-12 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#99334C] focus:border-transparent outline-none text-gray-800 placeholder-gray-400 disabled:opacity-50"
-                    />
-                    <button
-                        onClick={handleSend}
-                        disabled={!input.trim() || isTyping}
-                        className="absolute right-2 top-2 p-1.5 bg-[#99334C] text-white rounded-lg hover:bg-[#7a283d] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                    >
-                        <Send size={16} />
-                    </button>
-                </div>
-            </div>
-        </div>
+                </GlassPanel>
+            )}
+        </AnimatePresence>
     );
 };
 

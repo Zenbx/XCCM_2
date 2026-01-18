@@ -1,13 +1,111 @@
 "use client";
 
 import React, { useState, useRef } from 'react';
-import { ChevronDown, ChevronRight, Plus, Folder, FolderOpen, FileText, GripVertical, ArrowRight } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ChevronRight, Plus, Folder, FolderOpen, FileText, GripVertical } from 'lucide-react';
 import { Part, Chapter, Paragraph, Notion } from '@/services/structureService';
 import { Language, translations } from '@/services/locales';
 import toast from 'react-hot-toast';
 import ContextMenu from './ContextMenu';
 import RichTooltip from '../UI/RichTooltip';
 import { useOptimisticUpdate } from '@/hooks/useOptimisticUpdate';
+
+// Animation variants pour les conteneurs expandables
+const expandVariants = {
+  hidden: {
+    opacity: 0,
+    height: 0,
+    transition: {
+      height: { duration: 0.2 },
+      opacity: { duration: 0.15 }
+    }
+  },
+  visible: {
+    opacity: 1,
+    height: "auto",
+    transition: {
+      height: { duration: 0.2 },
+      opacity: { duration: 0.15, delay: 0.05 }
+    }
+  }
+};
+
+// Animation pour les items individuels
+const itemVariants = {
+  hidden: { opacity: 0, x: -10 },
+  visible: (i: number) => ({
+    opacity: 1,
+    x: 0,
+    transition: {
+      delay: i * 0.03,
+      duration: 0.2
+    }
+  })
+};
+
+// Animation pour le chevron de toggle
+const chevronVariants = {
+  collapsed: { rotate: 0 },
+  expanded: { rotate: 90 }
+};
+
+// Couleurs par type pour le ghost image
+const typeColors: Record<string, string> = {
+  part: '#99334C',
+  chapter: '#DC3545',
+  paragraph: '#D97706',
+  notion: '#28A745'
+};
+
+// Icônes par type (pour le ghost)
+const typeIcons: Record<string, string> = {
+  part: '📁',
+  chapter: '📖',
+  paragraph: '📄',
+  notion: '📝'
+};
+
+// Créer un ghost image personnalisé pour le drag
+const createDragGhost = (
+  type: 'part' | 'chapter' | 'paragraph' | 'notion',
+  title: string
+): HTMLElement => {
+  const ghost = document.createElement('div');
+  const color = typeColors[type];
+
+  ghost.innerHTML = `
+    <div style="
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      background: linear-gradient(135deg, ${color}15, ${color}08);
+      border: 2px solid ${color};
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15), 0 0 0 1px ${color}40;
+      font-family: system-ui, -apple-system, sans-serif;
+      font-size: 13px;
+      font-weight: 500;
+      color: ${color};
+      white-space: nowrap;
+      max-width: 200px;
+      overflow: hidden;
+      backdrop-filter: blur(8px);
+    ">
+      <span style="font-size: 14px;">${typeIcons[type]}</span>
+      <span style="overflow: hidden; text-overflow: ellipsis;">${title}</span>
+    </div>
+  `;
+
+  ghost.style.position = 'absolute';
+  ghost.style.top = '-1000px';
+  ghost.style.left = '-1000px';
+  ghost.style.zIndex = '9999';
+
+  document.body.appendChild(ghost);
+
+  return ghost;
+};
 
 // Helper pour mettre à jour l'arbre localement
 const updateTree = (
@@ -231,6 +329,7 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
   }>({ isOpen: false, x: 0, y: 0 });
 
   const isSubmitting = useRef(false);
+  const dragGhostRef = useRef<HTMLElement | null>(null);
 
   const toggleExpand = (id: string) => {
     setExpandedItems(prev => ({ ...prev, [id]: !prev[id] }));
@@ -316,8 +415,17 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
   ) => {
     e.stopPropagation();
     const id = item.part_id || item.chapter_id || item.para_id || item.notion_id;
+    const title = item.part_title || item.chapter_title || item.para_name || item.notion_name || 'Élément';
+
+    // Créer le ghost image personnalisé
+    const ghost = createDragGhost(type, title);
+    dragGhostRef.current = ghost;
+
+    // Appliquer le ghost comme image de drag
+    e.dataTransfer.setDragImage(ghost.firstElementChild as HTMLElement, 20, 20);
     e.dataTransfer.setData('text/plain', JSON.stringify({ type, id, parentId }));
     e.dataTransfer.effectAllowed = 'move';
+
     setDraggedItem({ type, id, parentId, item });
   };
 
@@ -504,6 +612,11 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
   };
 
   const handleDragEnd = () => {
+    // Nettoyer le ghost image du DOM
+    if (dragGhostRef.current) {
+      dragGhostRef.current.remove();
+      dragGhostRef.current = null;
+    }
     setDraggedItem(null);
     setDropTarget(null);
   };
@@ -564,9 +677,15 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
                 onContextMenu={(e) => handleContextMenu(e, 'part', part.part_id, { partTitle: part.part_title })}
               >
                 <span className="text-gray-300 cursor-grab"><GripVertical size={14} /></span>
-                <button onClick={(e) => { e.stopPropagation(); toggleExpand(`part-${part.part_id}`); }} className="p-0.5 text-gray-400 hover:text-gray-600">
+                <button onClick={(e) => { e.stopPropagation(); toggleExpand(`part-${part.part_id}`); }} className="p-0.5 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300">
                   {part.chapters && part.chapters.length > 0 ? (
-                    expandedItems[`part-${part.part_id}`] ? <ChevronDown size={14} /> : <ChevronRight size={14} />
+                    <motion.div
+                      variants={chevronVariants}
+                      animate={expandedItems[`part-${part.part_id}`] ? "expanded" : "collapsed"}
+                      transition={{ duration: 0.2 }}
+                    >
+                      <ChevronRight size={14} />
+                    </motion.div>
                   ) : <div className="w-3.5" />}
                 </button>
 
@@ -627,9 +746,15 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
                         onContextMenu={(e) => handleContextMenu(e, 'chapter', chapter.chapter_id, { partTitle: part.part_title, chapterTitle: chapter.chapter_title })}
                       >
                         <span className="text-gray-300 opacity-0 group-hover:opacity-100 cursor-grab"><GripVertical size={14} /></span>
-                        <button onClick={(e) => { e.stopPropagation(); toggleExpand(`chapter-${chapter.chapter_id}`); }} className="p-0.5 text-gray-400 hover:text-gray-600">
+                        <button onClick={(e) => { e.stopPropagation(); toggleExpand(`chapter-${chapter.chapter_id}`); }} className="p-0.5 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300">
                           {chapter.paragraphs && chapter.paragraphs.length > 0 ? (
-                            expandedItems[`chapter-${chapter.chapter_id}`] ? <ChevronDown size={14} /> : <ChevronRight size={14} />
+                            <motion.div
+                              variants={chevronVariants}
+                              animate={expandedItems[`chapter-${chapter.chapter_id}`] ? "expanded" : "collapsed"}
+                              transition={{ duration: 0.2 }}
+                            >
+                              <ChevronRight size={14} />
+                            </motion.div>
                           ) : <div className="w-3.5" />}
                         </button>
 
@@ -689,9 +814,15 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
                                 onContextMenu={(e) => handleContextMenu(e, 'paragraph', paragraph.para_id, { partTitle: part.part_title, chapterTitle: chapter.chapter_title, paraName: paragraph.para_name })}
                               >
                                 <span className="text-gray-300 opacity-0 group-hover:opacity-100 cursor-grab"><GripVertical size={14} /></span>
-                                <button onClick={(e) => { e.stopPropagation(); toggleExpand(`paragraph-${paragraph.para_id}`); }} className="p-0.5 text-gray-400 hover:text-gray-600">
+                                <button onClick={(e) => { e.stopPropagation(); toggleExpand(`paragraph-${paragraph.para_id}`); }} className="p-0.5 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300">
                                   {paragraph.notions && paragraph.notions.length > 0 ? (
-                                    expandedItems[`paragraph-${paragraph.para_id}`] ? <ChevronDown size={14} /> : <ChevronRight size={14} />
+                                    <motion.div
+                                      variants={chevronVariants}
+                                      animate={expandedItems[`paragraph-${paragraph.para_id}`] ? "expanded" : "collapsed"}
+                                      transition={{ duration: 0.2 }}
+                                    >
+                                      <ChevronRight size={14} />
+                                    </motion.div>
                                   ) : <div className="w-3.5" />}
                                 </button>
 
@@ -738,7 +869,7 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
 
                               {expandedItems[`paragraph-${paragraph.para_id}`] && paragraph.notions && (
                                 <div className="pl-8 mt-1 space-y-0.5 relative before:absolute before:left-4 before:top-0 before:bottom-0 before:w-px before:bg-gray-100">
-                                  {paragraph.notions.map(notion => (
+                                  {paragraph.notions.map((notion) => (
                                     <div
                                       key={notion.notion_id}
                                       className={`flex items-center gap-2 py-1.5 px-2 rounded-lg cursor-pointer w-full text-left transition-all group ${selectedNotionId === notion.notion_id ? 'bg-[#99334C]/10 text-[#99334C]' : 'text-gray-500 hover:text-gray-900 hover:bg-gray-50'} ${getDropStyle('notion', notion.notion_id)}`}
@@ -752,13 +883,13 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
                                       onContextMenu={(e) => handleContextMenu(e, 'notion', notion.notion_id, { partTitle: part.part_title, chapterTitle: chapter.chapter_title, paraName: paragraph.para_name })}
                                     >
                                       <span className="text-gray-300 opacity-0 group-hover:opacity-100 cursor-grab"><GripVertical size={14} /></span>
-                                      <FileText size={14} className="flex-shrink-0" color={selectedNotionId === notion.notion_id ? '#99334C' : getIconColor('notion')} />
+                                      <FileText size={14} className="shrink-0" color={selectedNotionId === notion.notion_id ? '#99334C' : getIconColor('notion')} />
                                       <span className={`text-sm truncate ${selectedNotionId === notion.notion_id ? 'font-medium' : ''}`}>{notion.notion_name}</span>
                                     </div>
                                   ))}
                                   {/* End zone Notions */}
                                   <div
-                                    className={`h-2 transition-all ${dropTarget?.id === `paragraph-${paragraph.para_id}-notions-end` ? 'bg-blue-100 border border-blue-200 h-6' : 'opacity-0'}`}
+                                    className={`h-2 transition-all ${dropTarget?.id === `paragraph-${paragraph.para_id}-notions-end` ? 'bg-[#99334C]/10 border border-[#99334C]/20 h-6' : 'opacity-0'}`}
                                     onDragOver={(e) => handleDragOver(e, 'paragraph', `paragraph-${paragraph.para_id}-notions-end`, paragraph.para_id)}
                                     onDrop={(e) => handleDrop(e, 'notion', `paragraph-${paragraph.para_id}-notions-end`, paragraph.para_id)}
                                   />
@@ -768,7 +899,7 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
                           ))}
                           {/* End zone Paragraphs */}
                           <div
-                            className={`h-2 transition-all ${dropTarget?.id === `chapter-${chapter.chapter_id}-paragraphs-end` ? 'bg-blue-100 border border-blue-200 h-6' : 'opacity-0'}`}
+                            className={`h-2 transition-all ${dropTarget?.id === `chapter-${chapter.chapter_id}-paragraphs-end` ? 'bg-[#D97706]/10 border border-[#D97706]/30 h-6 rounded' : 'opacity-0'}`}
                             onDragOver={(e) => handleDragOver(e, 'chapter', `chapter-${chapter.chapter_id}-paragraphs-end`, chapter.chapter_id)}
                             onDrop={(e) => handleDrop(e, 'paragraph', `chapter-${chapter.chapter_id}-paragraphs-end`, chapter.chapter_id)}
                           />
@@ -778,7 +909,7 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
                   ))}
                   {/* End zone Chapters */}
                   <div
-                    className={`h-2 transition-all ${dropTarget?.id === `part-${part.part_id}-chapters-end` ? 'bg-blue-100 border border-blue-200 h-6' : 'opacity-0'}`}
+                    className={`h-2 transition-all ${dropTarget?.id === `part-${part.part_id}-chapters-end` ? 'bg-[#DC3545]/10 border border-[#DC3545]/30 h-6 rounded' : 'opacity-0'}`}
                     onDragOver={(e) => handleDragOver(e, 'part', `part-${part.part_id}-chapters-end`, part.part_id)}
                     onDrop={(e) => handleDrop(e, 'chapter', `part-${part.part_id}-chapters-end`, part.part_id)}
                   />

@@ -568,7 +568,7 @@ Limites de taux
   const Icon = currentSection?.icon || Book;
 
   return (
-    <div className="flex flex-col md:flex-row h-screen bg-gray-50 text-gray-900">
+    <div className="flex flex-col md:flex-row h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white">
       {/* Header Mobile */}
       <div className="md:hidden bg-white border-b border-gray-200 p-4 flex items-center justify-between sticky top-0 z-50">
         <div className="flex items-center gap-3">
@@ -605,14 +605,14 @@ Limites de taux
       {/* Sidebar Gauche */}
       <div className={`
         fixed md:relative inset-y-0 left-0 z-40
-        w-72 md:w-64 bg-white border-r border-gray-200 overflow-y-auto
+        w-72 md:w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 overflow-y-auto
         transform transition-transform duration-300 ease-in-out
         ${isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
       `}>
-        <div className="p-6 border-b border-gray-200 flex items-center justify-between">
+        <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">XCCM 2</h1>
-            <p className="text-sm text-gray-600">Centre d'aide</p>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">XCCM 2</h1>
+            <p className="text-sm text-gray-600 dark:text-gray-400">Centre d'aide</p>
           </div>
           <button
             onClick={() => setIsMobileSidebarOpen(false)}
@@ -656,25 +656,25 @@ Limites de taux
           </div>
         </nav>
 
-        <div className="p-4 border-t border-gray-200 mt-auto">
-          <p className="text-xs text-gray-500">Version 2.0.0</p>
-          <p className="text-xs text-gray-500 mt-1">Projet IHM 2025</p>
+        <div className="p-4 border-t border-gray-200 dark:border-gray-700 mt-auto">
+          <p className="text-xs text-gray-500 dark:text-gray-400">Version 2.0.0</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Projet IHM 2025</p>
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto bg-white">
+      <div className="flex-1 overflow-y-auto bg-white dark:bg-gray-950">
         <div className="max-w-4xl mx-auto p-4 md:p-8 pb-24">
 
           {/* Search Results View */}
           {searchResults ? (
             <div className="mb-12">
               <div className="flex items-center gap-3 mb-8">
-                <Search className="w-8 h-8 text-[#99334C]" />
-                <h1 className="text-3xl font-bold text-gray-900">Résultats de recherche</h1>
+                <Search className="w-8 h-8 text-[#99334C] dark:text-[#ff9daf]" />
+                <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Résultats de recherche</h1>
               </div>
 
               {searchResults.length === 0 ? (
-                <p className="text-gray-600">Aucun résultat trouvé pour "{searchQuery}".</p>
+                <p className="text-gray-600 dark:text-gray-400">Aucun résultat trouvé pour &ldquo;{searchQuery}&rdquo;.</p>
               ) : (
                 <div className="space-y-6">
                   {searchResults.map((result, idx) => (
@@ -703,12 +703,12 @@ Limites de taux
             /* Normal View */
             <div className="mb-8 md:mb-12">
               <div className="flex items-center gap-3 mb-4">
-                <div className="p-2 md:p-3 bg-[#99334C] rounded-lg">
+                <div className="p-2 md:p-3 bg-[#99334C] dark:bg-[#ff9daf] rounded-lg">
                   <Icon size={20} className="text-white md:w-6 md:h-6" />
                 </div>
-                <h1 className="text-2xl md:text-4xl font-bold text-gray-900">{currentSection?.title}</h1>
+                <h1 className="text-2xl md:text-4xl font-bold text-gray-900 dark:text-white">{currentSection?.title}</h1>
               </div>
-              <p className="text-gray-600 text-sm md:text-lg">
+              <p className="text-gray-600 dark:text-gray-400 text-sm md:text-lg">
                 {activeSection === 'documentation' && 'Découvrez toutes les fonctionnalités de XCCM 2'}
                 {activeSection === 'faq' && 'Réponses aux questions fréquemment posées'}
                 {activeSection === 'guide' && 'Apprenez à créer des cours de qualité'}
@@ -734,8 +734,8 @@ Limites de taux
 
                   <div className="grid lg:grid-cols-2 gap-8">
                     {/* Formulaire */}
-                    <div className="bg-gray-50 rounded-2xl p-6 md:p-8 border border-gray-200">
-                      <h3 className="text-xl font-bold text-gray-900 mb-6">{t.help.contactForm.formTitle}</h3>
+                    <div className="bg-gray-50 dark:bg-gray-800 rounded-2xl p-6 md:p-8 border border-gray-200 dark:border-gray-700">
+                      <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6">{t.help.contactForm.formTitle}</h3>
 
                       {formSubmitted ? (
                         <div className="bg-green-50 border border-green-200 rounded-xl p-6 text-center">
@@ -748,53 +748,53 @@ Limites de taux
                       ) : (
                         <div className="space-y-5">
                           <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-2">
+                            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                               {t.help.contactForm.name}
                             </label>
                             <input
                               type="text"
                               value={contactForm.nom}
                               onChange={(e) => setContactForm({ ...contactForm, nom: e.target.value })}
-                              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#99334C]/20 focus:border-[#99334C] transition-all"
+                              className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#99334C]/20 focus:border-[#99334C] dark:focus:border-[#ff9daf] transition-all bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
                               placeholder={t.help.contactForm.namePlaceholder ?? "Votre nom"}
                             />
                           </div>
 
                           <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-2">
+                            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                               {t.help.contactForm.email}
                             </label>
                             <input
                               type="email"
                               value={contactForm.email}
                               onChange={(e) => setContactForm({ ...contactForm, email: e.target.value })}
-                              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#99334C]/20 focus:border-[#99334C] transition-all"
+                              className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#99334C]/20 focus:border-[#99334C] dark:focus:border-[#ff9daf] transition-all bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
                               placeholder={t.help.contactForm.emailPlaceholder ?? "votre@email.com"}
                             />
                           </div>
 
                           <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-2">
+                            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                               {t.help.contactForm.subject}
                             </label>
                             <input
                               type="text"
                               value={contactForm.sujet}
                               onChange={(e) => setContactForm({ ...contactForm, sujet: e.target.value })}
-                              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#99334C]/20 focus:border-[#99334C] transition-all"
+                              className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#99334C]/20 focus:border-[#99334C] dark:focus:border-[#ff9daf] transition-all bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
                               placeholder={t.help.contactForm.subjectPlaceholder ?? "Objet de votre message"}
                             />
                           </div>
 
                           <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-2">
+                            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                               {t.help.contactForm.description}
                             </label>
                             <textarea
                               value={contactForm.description}
                               onChange={(e) => setContactForm({ ...contactForm, description: e.target.value })}
                               rows={5}
-                              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#99334C]/20 focus:border-[#99334C] transition-all resize-none"
+                              className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#99334C]/20 focus:border-[#99334C] dark:focus:border-[#ff9daf] transition-all resize-none bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
                               placeholder={t.help.contactForm.descriptionPlaceholder ?? "Décrivez votre problème en détail..."}
                             />
                           </div>
@@ -896,7 +896,7 @@ Limites de taux
                   {subsectionContent?.title || subsection.title}
                 </h2>
                 <div className="prose prose-sm md:prose-lg max-w-none">
-                  <p className="text-gray-700 leading-relaxed whitespace-pre-line text-sm md:text-base">
+                  <p className="text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-line text-sm md:text-base">
                     {subsectionContent?.content}
                   </p>
                 </div>
@@ -909,13 +909,13 @@ Limites de taux
       {/* Sidebar Droite - TOC */}
       <div className={`
         fixed xl:relative inset-y-0 right-0 z-40
-        w-72 xl:w-64 bg-white border-l border-gray-200 overflow-y-auto
+        w-72 xl:w-64 bg-white dark:bg-gray-800 border-l border-gray-200 dark:border-gray-700 overflow-y-auto
         transform transition-transform duration-300 ease-in-out
         ${isMobileTocOpen ? 'translate-x-0' : 'translate-x-full xl:translate-x-0'}
       `}>
-        <div className="p-6 sticky top-0 bg-white">
+        <div className="p-6 sticky top-0 bg-white dark:bg-gray-800">
           <div className="flex items-center justify-between mb-4 md:mb-4">
-            <h3 className="text-sm font-semibold text-gray-600 uppercase tracking-wider">
+            <h3 className="text-sm font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">
               Sur cette page
             </h3>
             <button

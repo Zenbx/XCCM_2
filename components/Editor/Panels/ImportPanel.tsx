@@ -2,13 +2,17 @@
 
 import React from 'react';
 import { Cloud } from 'lucide-react';
-import Granule from '../Granule';
+import Granule, { GranuleData } from '../Granule';
 
 // ============= COMPOSANT: ImportPanel =============
 
+interface ImportPanelProps {
+  granules: GranuleData[];
+  onDragStart: (e: React.DragEvent, granule: GranuleData) => void;
+  onImportFile?: (json: unknown) => void;
+}
 
-
-const ImportPanel = ({ granules, onDragStart, onImportFile }: any) => {
+const ImportPanel: React.FC<ImportPanelProps> = ({ granules, onDragStart, onImportFile }) => {
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {

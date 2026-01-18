@@ -19,6 +19,7 @@ export interface Project {
   styles?: any;
   user_role?: 'OWNER' | 'EDITOR' | 'VIEWER';
   invitation_status?: 'Pending' | 'Accepted' | 'Declined' | null;
+  invitation_token?: string | null;
 }
 
 // ... (autres interfaces)

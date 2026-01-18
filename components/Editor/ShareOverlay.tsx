@@ -1,8 +1,10 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { Loader2, AlertCircle, X, Link2, Copy, Check, Users, Mail, Share2, Trash2, RefreshCw } from 'lucide-react';
+import { Loader2, AlertCircle, X, Link2, Copy, Check, Users, Mail, Share2, Trash2 } from 'lucide-react';
 import { invitationService } from '@/services/invitationService';
+import { motion, AnimatePresence } from 'framer-motion';
+import GlassPanel from '../UI/GlassPanel';
 
 interface ShareOverlayProps {
     isOpen: boolean;
@@ -92,222 +94,225 @@ const ShareOverlay: React.FC<ShareOverlayProps> = ({ isOpen, onClose, projectNam
         }
     };
 
-    if (!isOpen) return null;
-
     return (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in">
-            <div className="bg-white rounded-2xl max-w-2xl w-full shadow-2xl animate-in slide-in-from-bottom">
-                {/* Header */}
-                <div className="flex items-center justify-between p-6 border-b border-gray-200">
-                    <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-gradient-to-br from-[#99334C] to-[#7a283d] rounded-xl flex items-center justify-center">
-                            <Share2 className="w-5 h-5 text-white" />
-                        </div>
-                        <div>
-                            <h3 className="text-xl font-bold text-gray-900">Partager le projet</h3>
-                            <p className="text-sm text-gray-600">{projectName}</p>
-                        </div>
-                    </div>
-                    <button
+        <AnimatePresence>
+            {isOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                    {/* Backdrop */}
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
                         onClick={onClose}
-                        className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 p-2 rounded-lg transition-all"
+                        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+                    />
+
+                    {/* Modal Content */}
+                    <GlassPanel
+                        initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                        className="relative max-w-2xl w-full shadow-2xl overflow-hidden rounded-3xl flex flex-col"
+                        intensity="high"
+                        blur="lg"
                     >
-                        <X className="w-5 h-5" />
-                    </button>
-                </div>
-
-                <div className="p-6 space-y-6 max-h-[70vh] overflow-y-auto">
-                    {/* Messages d'erreur/succès */}
-                    {error && (
-                        <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-start gap-3">
-                            <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-                            <div className="flex-1">
-                                <p className="text-sm font-medium text-red-900">Erreur</p>
-                                <p className="text-sm text-red-700">{error}</p>
-                            </div>
-                            <button onClick={() => setError('')} className="text-red-400 hover:text-red-600">
-                                <X className="w-4 h-4" />
-                            </button>
-                        </div>
-                    )}
-
-                    {success && (
-                        <div className="bg-green-50 border border-green-200 rounded-xl p-4 flex items-start gap-3">
-                            <Check className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
-                            <div className="flex-1">
-                                <p className="text-sm font-medium text-green-900">Succès</p>
-                                <p className="text-sm text-green-700">{success}</p>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Section Inviter */}
-                    <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-3">
-                            Inviter un collaborateur
-                        </label>
-                        <p className="text-xs text-gray-500 mb-3">
-                            L'invité recevra un email avec un lien d'invitation. Il pourra contribuer une fois l'invitation acceptée.
-                        </p>
-                        <div className="flex gap-2">
-                            <div className="flex-1 relative">
-                                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                                <input
-                                    type="email"
-                                    value={inviteEmail}
-                                    onChange={(e) => setInviteEmail(e.target.value)}
-                                    onKeyPress={(e) => {
-                                        if (e.key === 'Enter' && !isSending) {
-                                            handleInvite();
-                                        }
-                                    }}
-                                    placeholder="email@exemple.com"
-                                    disabled={isSending}
-                                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl text-gray-700 placeholder-gray-400 focus:ring-2 focus:ring-[#99334C]/20 focus:border-[#99334C] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                                />
-                            </div>
-
-                            <button
-                                onClick={handleInvite}
-                                disabled={!inviteEmail.trim() || isSending}
-                                className="px-6 py-3 bg-[#99334C] text-white rounded-xl hover:bg-[#7a283d] transition-all disabled:opacity-50 disabled:cursor-not-allowed font-medium flex items-center gap-2"
-                            >
-                                {isSending ? (
-                                    <>
-                                        <Loader2 className="w-4 h-4 animate-spin" />
-                                        Envoi...
-                                    </>
-                                ) : (
-                                    'Inviter'
-                                )}
-                            </button>
-                        </div>
-                    </div>
-
-                    {/* Lien de partage */}
-                    <div>
-                        <div className="flex items-center justify-between mb-3">
-                            <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                                <Link2 className="w-4 h-4" />
-                                Lien de partage
-                            </label>
-                        </div>
-
-                        <div className="flex gap-2">
-                            <div className="flex-1 relative">
-                                <input
-                                    type="text"
-                                    value={shareLink}
-                                    readOnly
-                                    className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-xl text-gray-700 bg-gray-50 text-sm font-mono select-all"
-                                />
-                                <Link2 className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                            </div>
-                            <button
-                                onClick={handleCopyLink}
-                                className="px-6 py-3 border border-gray-300 text-gray-700 bg-white rounded-xl hover:bg-gray-50 transition-all flex items-center gap-2 font-medium"
-                            >
-                                {copied ? (
-                                    <>
-                                        <Check className="w-5 h-5 text-green-600" />
-                                        Copié !
-                                    </>
-                                ) : (
-                                    <>
-                                        <Copy className="w-5 h-5" />
-                                        Copier
-                                    </>
-                                )}
-                            </button>
-                        </div>
-                    </div>
-
-                    {/* Liste des invités */}
-                    <div>
-                        <div className="flex items-center justify-between mb-4">
-                            <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                                <Users className="w-4 h-4" />
-                                Liste des collaborateurs
-                            </label>
-                            {isLoadingInvitations && <Loader2 className="w-4 h-4 animate-spin text-gray-400" />}
-                        </div>
-
-                        <div className="space-y-3">
-                            {invitations.length === 0 ? (
-                                <div className="text-center py-6 bg-gray-50 rounded-xl border border-dashed border-gray-200">
-                                    <p className="text-sm text-gray-500">Aucun collaborateur invité</p>
+                        {/* Header */}
+                        <div className="flex items-center justify-between p-6 border-b border-gray-100 dark:border-gray-700/50">
+                            <div className="flex items-center gap-4">
+                                <div className="w-12 h-12 bg-gradient-to-br from-[#99334C] to-[#C0392B] rounded-2xl flex items-center justify-center shadow-lg shadow-[#99334C]/20">
+                                    <Share2 className="w-6 h-6 text-white" />
                                 </div>
-                            ) : (
-                                invitations.map((inv) => (
-                                    <div key={inv.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-200 transition-all hover:bg-white hover:shadow-sm">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-9 h-9 bg-white border border-gray-200 rounded-lg flex items-center justify-center text-xs font-bold text-gray-600">
-                                                {inv.guest_email.slice(0, 2).toUpperCase()}
-                                            </div>
-                                            <div>
-                                                <p className="text-sm font-medium text-gray-900">{inv.guest_email}</p>
-                                                <p className="text-xs text-gray-500 capitalize">{inv.role?.toLowerCase() || 'Editor'}</p>
-                                            </div>
-                                        </div>
-                                        <div className="flex items-center gap-3">
-                                            <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${inv.status === 'Accepted' ? 'bg-green-100 text-green-700' :
-                                                inv.status === 'Pending' ? 'bg-amber-100 text-amber-700' :
-                                                    'bg-gray-100 text-gray-700'
-                                                }`}>
-                                                {inv.status === 'Accepted' ? 'Accepté' :
-                                                    inv.status === 'Pending' ? 'En attente' :
-                                                        inv.status}
-                                            </span>
+                                <div>
+                                    <h3 className="text-xl font-bold text-gray-900 dark:text-white">Partager le projet</h3>
+                                    <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">{projectName}</p>
+                                </div>
+                            </div>
+                            <button
+                                onClick={onClose}
+                                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 p-2 rounded-xl transition-all"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
 
-                                            {inv.status === 'Pending' && (
-                                                <button
-                                                    onClick={() => handleRevoke(inv.invitation_token, inv.id)}
-                                                    disabled={revokingId === inv.id}
-                                                    className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
-                                                    title="Révoquer l'invitation"
-                                                >
-                                                    {revokingId === inv.id ? (
-                                                        <Loader2 className="w-4 h-4 animate-spin" />
-                                                    ) : (
-                                                        <Trash2 className="w-4 h-4" />
-                                                    )}
-                                                </button>
-                                            )}
-                                        </div>
+                        <div className="p-6 space-y-6 max-h-[70vh] overflow-y-auto custom-scrollbar">
+                            {/* Messages d'erreur/succès */}
+                            {error && (
+                                <motion.div
+                                    initial={{ opacity: 0, y: -10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    className="bg-red-50/50 dark:bg-red-900/20 border border-red-100 dark:border-red-800/50 rounded-2xl p-4 flex items-start gap-3"
+                                >
+                                    <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+                                    <div className="flex-1">
+                                        <p className="text-sm font-bold text-red-900 dark:text-red-400">Erreur</p>
+                                        <p className="text-sm text-red-700 dark:text-red-300/80">{error}</p>
                                     </div>
-                                ))
+                                    <button onClick={() => setError('')} className="text-red-400 hover:text-red-600">
+                                        <X className="w-4 h-4" />
+                                    </button>
+                                </motion.div>
                             )}
-                        </div>
-                    </div>
 
-                    {/* Info supplémentaire */}
-                    <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
-                        <div className="flex gap-3">
-                            <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                                <AlertCircle className="w-5 h-5 text-blue-600" />
+                            {success && (
+                                <motion.div
+                                    initial={{ opacity: 0, y: -10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    className="bg-green-50/50 dark:bg-green-900/20 border border-green-100 dark:border-green-800/50 rounded-2xl p-4 flex items-start gap-3"
+                                >
+                                    <Check className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                                    <div className="flex-1">
+                                        <p className="text-sm font-bold text-green-900 dark:text-green-400">Succès</p>
+                                        <p className="text-sm text-green-700 dark:text-green-300/80">{success}</p>
+                                    </div>
+                                </motion.div>
+                            )}
+
+                            {/* Section Inviter */}
+                            <div className="space-y-4">
+                                <label className="block text-sm font-bold text-gray-700 dark:text-gray-300">
+                                    Inviter un collaborateur
+                                </label>
+                                <div className="flex gap-2">
+                                    <div className="flex-1 relative">
+                                        <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                                        <input
+                                            type="email"
+                                            value={inviteEmail}
+                                            onChange={(e) => setInviteEmail(e.target.value)}
+                                            onKeyPress={(e) => {
+                                                if (e.key === 'Enter' && !isSending) {
+                                                    handleInvite();
+                                                }
+                                            }}
+                                            placeholder="email@exemple.com"
+                                            disabled={isSending}
+                                            className="w-full pl-12 pr-4 py-3.5 bg-white/50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-2xl text-gray-700 dark:text-gray-100 placeholder-gray-400 focus:ring-2 focus:ring-[#99334C] focus:border-transparent outline-none transition-all disabled:opacity-50 font-medium"
+                                        />
+                                    </div>
+
+                                    <button
+                                        onClick={handleInvite}
+                                        disabled={!inviteEmail.trim() || isSending}
+                                        className="px-8 py-3.5 bg-[#99334C] text-white rounded-2xl hover:bg-[#7a283d] transition-all disabled:opacity-50 disabled:cursor-not-allowed font-bold shadow-lg shadow-[#99334C]/20 flex items-center gap-2"
+                                    >
+                                        {isSending ? (
+                                            <Loader2 className="w-5 h-5 animate-spin" />
+                                        ) : (
+                                            'Inviter'
+                                        )}
+                                    </button>
+                                </div>
                             </div>
-                            <div className="flex-1">
-                                <p className="text-sm font-medium text-blue-900 mb-1">À propos du partage</p>
-                                <p className="text-sm text-blue-700">
-                                    Le collaborateur invité recevra un email avec un lien d'invitation.
-                                    Il pourra <strong>accepter</strong> ou <strong>décliner</strong> l'invitation.
-                                </p>
+
+                            {/* Lien de partage */}
+                            <div className="space-y-4">
+                                <label className="text-sm font-bold text-gray-700 dark:text-gray-300 flex items-center gap-2">
+                                    <Link2 className="w-4 h-4" />
+                                    Lien de partage rapide
+                                </label>
+                                <div className="flex gap-2">
+                                    <div className="flex-1 relative">
+                                        <input
+                                            type="text"
+                                            value={shareLink}
+                                            readOnly
+                                            className="w-full px-4 py-3.5 pr-12 bg-gray-50/50 dark:bg-gray-900/30 border border-gray-100 dark:border-gray-800 rounded-2xl text-gray-500 dark:text-gray-400 text-sm font-mono select-all"
+                                        />
+                                        <Link2 className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400/50" />
+                                    </div>
+                                    <button
+                                        onClick={handleCopyLink}
+                                        className="px-6 py-3.5 bg-white/50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700 text-gray-700 dark:text-gray-200 rounded-2xl hover:bg-white dark:hover:bg-gray-700 transition-all flex items-center gap-2 font-bold shadow-sm"
+                                    >
+                                        {copied ? (
+                                            <>
+                                                <Check className="w-5 h-5 text-green-600" />
+                                                <span>Copié</span>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Copy className="w-5 h-5" />
+                                                <span>Copier</span>
+                                            </>
+                                        )}
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Liste des invités */}
+                            <div className="space-y-4">
+                                <div className="flex items-center justify-between">
+                                    <label className="text-sm font-bold text-gray-700 dark:text-gray-300 flex items-center gap-2">
+                                        <Users className="w-4 h-4" />
+                                        Collaborateurs actifs
+                                    </label>
+                                    {isLoadingInvitations && <Loader2 className="w-4 h-4 animate-spin text-gray-400" />}
+                                </div>
+
+                                <div className="grid gap-3">
+                                    {invitations.length === 0 ? (
+                                        <div className="text-center py-10 bg-gray-50/50 dark:bg-gray-900/20 rounded-3xl border-2 border-dashed border-gray-100 dark:border-gray-800">
+                                            <Users className="w-10 h-10 text-gray-300 dark:text-gray-700 mx-auto mb-3" />
+                                            <p className="text-sm text-gray-400 dark:text-gray-500 font-medium">Aucun collaborateur invité</p>
+                                        </div>
+                                    ) : (
+                                        invitations.map((inv) => (
+                                            <div key={inv.id} className="flex items-center justify-between p-4 bg-white/40 dark:bg-gray-800/40 border border-gray-100 dark:border-gray-700/50 rounded-2xl transition-all hover:border-[#99334C]/30 group">
+                                                <div className="flex items-center gap-4">
+                                                    <div className="w-10 h-10 bg-[#99334C]/10 dark:bg-[#99334C]/20 rounded-xl flex items-center justify-center text-sm font-black text-[#99334C] dark:text-[#ff4d7d]">
+                                                        {inv.guest_email.slice(0, 2).toUpperCase()}
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-sm font-bold text-gray-900 dark:text-white">{inv.guest_email}</p>
+                                                        <p className="text-xs text-gray-500 dark:text-gray-400 font-medium uppercase tracking-wider">{inv.role?.toLowerCase() || 'Editor'}</p>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center gap-4">
+                                                    <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${inv.status === 'Accepted' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
+                                                        inv.status === 'Pending' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' :
+                                                            'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-400'
+                                                        }`}>
+                                                        {inv.status === 'Accepted' ? 'Actif' :
+                                                            inv.status === 'Pending' ? 'En attente' :
+                                                                inv.status}
+                                                    </span>
+
+                                                    {inv.status === 'Pending' && (
+                                                        <button
+                                                            onClick={() => handleRevoke(inv.invitation_token, inv.id)}
+                                                            disabled={revokingId === inv.id}
+                                                            className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-xl transition-all opacity-0 group-hover:opacity-100"
+                                                            title="Révoquer l'invitation"
+                                                        >
+                                                            {revokingId === inv.id ? (
+                                                                <Loader2 className="w-4 h-4 animate-spin" />
+                                                            ) : (
+                                                                <Trash2 className="w-4 h-4" />
+                                                            )}
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        ))
+                                    )}
+                                </div>
                             </div>
                         </div>
-                    </div>
-                </div>
 
-                {/* Footer */}
-                <div className="flex justify-end gap-3 p-6 border-t border-gray-200 bg-gray-50 rounded-b-2xl">
-                    <button
-                        onClick={onClose}
-                        className="px-6 py-2.5 border border-gray-300 text-gray-700 rounded-xl hover:bg-white transition-all font-medium"
-                    >
-                        Fermer
-                    </button>
+                        {/* Footer */}
+                        <div className="flex justify-end gap-3 p-6 border-t border-gray-100 dark:border-gray-700/50 bg-gray-50/50 dark:bg-gray-900/30 backdrop-blur-md">
+                            <button
+                                onClick={onClose}
+                                className="px-8 py-3 bg-white/50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 rounded-2xl hover:bg-white dark:hover:bg-gray-700 transition-all font-bold shadow-sm"
+                            >
+                                Fermer
+                            </button>
+                        </div>
+                    </GlassPanel>
                 </div>
-            </div>
-        </div>
+            )}
+        </AnimatePresence>
     );
 };
 

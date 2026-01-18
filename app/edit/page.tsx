@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { ChevronDown, ChevronRight, Plus, Eye, Share2, Save, Loader2, AlertCircle, Home, X, Bot, Command } from 'lucide-react';
+import { ChevronDown, ChevronRight, Plus, Eye, Share2, Save, Loader2, AlertCircle, Home, X, Bot, Command, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import RichTooltip from '@/components/UI/RichTooltip';
 import TableOfContents from '@/components/Editor/TableOfContents';
@@ -21,8 +21,10 @@ import { useRealtimeSync } from '@/hooks/useRealtimeSync';
 import pLimit from 'p-limit';
 import { FaHome } from 'react-icons/fa';
 import toast from 'react-hot-toast';
-import { CommandPalette } from '@/components/Editor/CommandPalette';
 import { EditorSkeleton, TOCSkeleton } from '@/components/UI/SkeletonScreens';
+import { motion, AnimatePresence } from 'framer-motion';
+import { TactileButton } from '@/components/UI/TactileButton';
+import { useEditorCommands } from '@/hooks/useEditorCommands';
 
 const XCCM2Editor = () => {
   const searchParams = useSearchParams();
@@ -96,12 +98,39 @@ const XCCM2Editor = () => {
   const [sidebarWidth, setSidebarWidth] = useState(320);
   const [isResizing, setIsResizing] = useState(false);
   const [isZenMode, setIsZenMode] = useState(false);
+  const lastRenamedTo = useRef<string | null>(null);
+
+  // Modal de confirmation de suppression
+  const [deleteModalConfig, setDeleteModalConfig] = useState<{
+    isOpen: boolean;
+    isDeleting: boolean;
+    type: string;
+    id: string;
+    title: string;
+  }>({
+    isOpen: false,
+    isDeleting: false,
+    type: '',
+    id: '',
+    title: ''
+  });
 
   const toggleZenMode = () => {
     setIsZenMode(prev => !prev);
     // When entering Zen Mode, close right panel if open
     if (!isZenMode) setRightPanel(null);
   };
+
+  // Command Palette & Global Shortcuts
+
+
+  useEditorCommands({
+    onSave: () => handleSave(),
+    onPreview: () => router.push(`/preview?projectName=${projectName}`),
+    onShare: () => setShowShareOverlay(true),
+    onExport: () => router.push(`/preview?projectName=${projectName}`),
+    onToggleZen: toggleZenMode,
+  });
 
   const isToolbarDisabled = React.useMemo(() => {
     // Désactiver si Chapter ou Paragraph est sélectionné (mais pas Notion)
@@ -116,9 +145,23 @@ const XCCM2Editor = () => {
 
   useEffect(() => {
     if (projectName) {
+      // Si on vient de renommer le projet, on ne recharge pas avec l'ancien nom
+      if (lastRenamedTo.current && projectName !== lastRenamedTo.current) {
+        console.log("⏭️ Skipping loadProject because of recent rename to:", lastRenamedTo.current);
+        return;
+      }
       loadProject();
+      // Reset le ref après un load (qu'il soit skip ou non)
+      lastRenamedTo.current = null;
     }
   }, [projectName]);
+
+  // Sync currentContext when project name changes
+  useEffect(() => {
+    if (projectData?.pr_name && currentContext && currentContext.projectName !== projectData.pr_name) {
+      setCurrentContext(prev => prev ? { ...prev, projectName: projectData.pr_name } : null);
+    }
+  }, [projectData?.pr_name]);
 
   // Handler stable pour le temps réel
   const handleStructureChange = React.useCallback((event: string, data: any) => {
@@ -134,8 +177,8 @@ const XCCM2Editor = () => {
 
   // ⚡ Real-time sync via WebSockets
   useRealtimeSync({
-    projectName: projectName || '',
-    enabled: !!projectName,
+    projectName: projectData?.pr_name || projectName || '',
+    enabled: !!(projectData?.pr_name || projectName),
     onStructureChange: handleStructureChange
   });
 
@@ -229,9 +272,10 @@ const XCCM2Editor = () => {
   };
 
   const handleAddComment = async (content: string) => {
-    if (!projectName) return;
+    const activeName = projectData?.pr_name || projectName;
+    if (!activeName) return;
     try {
-      const newComment = await commentService.addComment(projectName, content);
+      const newComment = await commentService.addComment(activeName, content);
       setComments(prev => [newComment, ...prev]);
     } catch (err: any) {
       toast.error("Erreur lors de l'ajout du commentaire: " + err.message);
@@ -239,9 +283,10 @@ const XCCM2Editor = () => {
   };
 
   const handleDeleteComment = async (commentId: string) => {
-    if (!projectName) return;
+    const activeName = projectData?.pr_name || projectName;
+    if (!activeName) return;
     try {
-      await commentService.deleteComment(projectName, commentId);
+      await commentService.deleteComment(activeName, commentId);
       setComments(prev => prev.filter(c => c.comment_id !== commentId));
     } catch (err: any) {
       toast.error("Erreur lors de la suppression du commentaire: " + err.message);
@@ -251,16 +296,30 @@ const XCCM2Editor = () => {
   const handleUpdateProjectSettings = async (data: Partial<Project>) => {
     if (!projectData || !projectName) return;
     try {
+      // Si on renomme, on sauve le nouveau nom pour éviter un reload sur l'ancien
+      if (data.pr_name && data.pr_name !== projectName) {
+        lastRenamedTo.current = data.pr_name;
+      }
+
       const updated = await projectService.updateProject(projectName, data);
       setProjectData(updated);
 
       // Si le nom a changé, mettre à jour l'URL
       if (data.pr_name && data.pr_name !== projectName) {
+        console.log("🔄 Project renamed. Updating URL...");
+        // Utiliser window.history.replaceState pour un changement immédiat avant que router.replace ne s'installe
+        const newUrl = window.location.pathname + '?projectName=' + encodeURIComponent(data.pr_name);
+        window.history.replaceState(null, '', newUrl);
+
         router.replace(`/edit?projectName=${encodeURIComponent(data.pr_name)}`);
+        toast.success("Projet renommé avec succès");
+      } else {
+        toast.success("Paramètres mis à jour");
       }
     } catch (err: any) {
       console.error("Erreur update settings:", err);
       toast.error("Erreur lors de la mise à jour des paramètres: " + err.message);
+      lastRenamedTo.current = null; // Reset en cas d'erreur
     }
   };
 
@@ -580,36 +639,49 @@ const XCCM2Editor = () => {
 
           if (item.type === 'part') {
             const nextNum = getNextNumAndInc('part', context);
-            const uniqueTitle = `${item.content} ${nextNum}`;
+            const baseTitle = item.content || item.part_title || "Nouvelle Partie";
+            // On utilise le titre tel quel si possible, sinon on ajoute un suffixe
+            const uniqueTitle = structure.some(p => p.part_title === baseTitle)
+              ? `${baseTitle} ${nextNum}`
+              : baseTitle;
 
             createdItem = await limit(() => structureService.createPart(projectData.pr_name, {
               part_title: uniqueTitle,
               part_number: nextNum
             }));
 
-            // Mise à jour locale OPTIMISTE
-            setStructure(prev => [...prev, { ...createdItem, chapters: [] }]);
+            // Mise à jour locale OPTIMISTE (avec check doublon)
+            setStructure(prev => {
+              if (prev.some(p => p.part_id === createdItem.part_id)) return prev;
+              return [...prev, { ...createdItem, chapters: [] }];
+            });
 
             context = { partTitle: createdItem.part_title, partId: createdItem.part_id };
 
           } else if (item.type === 'chapter') {
             if (!context.partTitle) throw new Error("Chapitre sans partie parente");
             const nextNum = getNextNumAndInc('chapter', context);
+            const baseTitle = item.content || item.chapter_title || "Nouveau Chapitre";
+            const part = structure.find(p => p.part_title === context.partTitle);
+            const uniqueTitle = part?.chapters?.some(c => c.chapter_title === baseTitle)
+              ? `${baseTitle} ${nextNum}`
+              : baseTitle;
 
             createdItem = await limit(() => structureService.createChapter(projectData.pr_name, context.partTitle, {
-              chapter_title: `${item.content} ${nextNum}`,
+              chapter_title: uniqueTitle,
               chapter_number: nextNum
             }));
 
             // Mise à jour locale OPTIMISTE
             setStructure(prev => {
-              const newSt = [...prev];
-              const p = newSt.find(x => x.part_title === context.partTitle);
-              if (p) {
-                if (!p.chapters) p.chapters = [];
-                p.chapters.push({ ...createdItem, paragraphs: [] });
-              }
-              return newSt;
+              return prev.map(p => {
+                if (p.part_title !== context.partTitle) return p;
+                const chapters = p.chapters ? [...p.chapters] : [];
+                if (!chapters.some(c => c.chapter_id === createdItem.chapter_id)) {
+                  chapters.push({ ...createdItem, paragraphs: [] });
+                }
+                return { ...p, chapters };
+              });
             });
 
             context = { ...context, chapterTitle: createdItem.chapter_title };
@@ -617,22 +689,34 @@ const XCCM2Editor = () => {
           } else if (item.type === 'paragraph') {
             if (!context.chapterTitle) throw new Error("Impossible de créer un paragraphe : Aucun chapitre parent sélectionné.");
             const nextNum = getNextNumAndInc('paragraph', context);
+            const baseTitle = item.content || item.para_name || "Nouveau Paragraphe";
+            const part = structure.find(p => p.part_title === context.partTitle);
+            const chapter = part?.chapters?.find(c => c.chapter_title === context.chapterTitle);
+            const uniqueTitle = chapter?.paragraphs?.some(pg => pg.para_name === baseTitle)
+              ? `${baseTitle} ${nextNum}`
+              : baseTitle;
 
             createdItem = await limit(() => structureService.createParagraph(projectData.pr_name, context.partTitle, context.chapterTitle, {
-              para_name: `${item.content} ${nextNum}`,
+              para_name: uniqueTitle,
               para_number: nextNum
             }));
 
             // Mise à jour locale OPTIMISTE
             setStructure(prev => {
-              const newSt = [...prev];
-              const p = newSt.find(x => x.part_title === context.partTitle);
-              const c = p?.chapters?.find(y => y.chapter_title === context.chapterTitle);
-              if (c) {
-                if (!c.paragraphs) c.paragraphs = [];
-                c.paragraphs.push({ ...createdItem, notions: [] });
-              }
-              return newSt;
+              return prev.map(p => {
+                if (p.part_title !== context.partTitle) return p;
+                return {
+                  ...p,
+                  chapters: (p.chapters || []).map(c => {
+                    if (c.chapter_title !== context.chapterTitle) return c;
+                    const paragraphs = c.paragraphs ? [...c.paragraphs] : [];
+                    if (!paragraphs.some(pg => pg.para_id === createdItem.para_id)) {
+                      paragraphs.push({ ...createdItem, notions: [] });
+                    }
+                    return { ...c, paragraphs };
+                  })
+                };
+              });
             });
 
             context = { ...context, paraName: createdItem.para_name };
@@ -640,26 +724,44 @@ const XCCM2Editor = () => {
           } else if (item.type === 'notion') {
             if (!context.paraName) throw new Error("Impossible de créer une notion : Aucun paragraphe parent sélectionné.");
             const nextNum = getNextNumAndInc('notion', context);
+            const baseTitle = item.content || item.notion_name || "Nouvelle Notion";
+            const part = structure.find(p => p.part_title === context.partTitle);
+            const chapter = part?.chapters?.find(c => c.chapter_title === context.chapterTitle);
+            const para = chapter?.paragraphs?.find(pg => pg.para_name === context.paraName);
+            const uniqueTitle = para?.notions?.some(n => n.notion_name === baseTitle)
+              ? `${baseTitle} ${nextNum}`
+              : baseTitle;
 
             createdItem = await limit(() => structureService.createNotion(projectData.pr_name, context.partTitle, context.chapterTitle, context.paraName, {
-              notion_name: `${item.content} ${nextNum}`,
+              notion_name: uniqueTitle,
               notion_number: nextNum,
-              notion_content: "<p>Contenu importé...</p>"
+              notion_content: item.notion_content || "<p>Contenu importé...</p>"
             }));
 
             // Mise à jour locale OPTIMISTE
             setStructure(prev => {
-              const newSt = [...prev];
-              const p = newSt.find(x => x.part_title === context.partTitle);
-              const c = p?.chapters?.find(y => y.chapter_title === context.chapterTitle);
-              const para = c?.paragraphs?.find(z => z.para_name === context.paraName);
-              if (para) {
-                if (!para.notions) para.notions = [];
-                para.notions.push(createdItem);
-                // Auto-expand
-                setExpandedItems(ex => ({ ...ex, [`paragraph-${para.para_id}`]: true }));
-              }
-              return newSt;
+              return prev.map(p => {
+                if (p.part_title !== context.partTitle) return p;
+                return {
+                  ...p,
+                  chapters: (p.chapters || []).map(c => {
+                    if (c.chapter_title !== context.chapterTitle) return c;
+                    return {
+                      ...c,
+                      paragraphs: (c.paragraphs || []).map(para => {
+                        if (para.para_name !== context.paraName) return para;
+                        const notions = para.notions ? [...para.notions] : [];
+                        if (!notions.some(n => n.notion_id === createdItem.notion_id)) {
+                          notions.push(createdItem);
+                          // Auto-expand
+                          setExpandedItems(ex => ({ ...ex, [`paragraph-${para.para_id}`]: true }));
+                        }
+                        return { ...para, notions };
+                      })
+                    };
+                  })
+                };
+              });
             });
 
             if (!firstNotionFound.current) {
@@ -1113,18 +1215,48 @@ const XCCM2Editor = () => {
   const handleDelete = async (type: string, id: string) => {
     if (!projectData) return;
 
-    // Confirmation avant suppression
-    const confirmMsg = type === 'part'
-      ? 'Êtes-vous sûr de vouloir supprimer cette partie et tous ses enfants?'
-      : type === 'chapter'
-        ? 'Êtes-vous sûr de vouloir supprimer ce chapitre et tous ses enfants?'
-        : type === 'paragraph'
-          ? 'Êtes-vous sûr de vouloir supprimer ce paragraphe et toutes ses notions?'
-          : 'Êtes-vous sûr de vouloir supprimer cette notion?';
+    // Récupérer le nom/titre de l'item pour le modal
+    let itemTitle = "";
+    if (type === 'part') {
+      itemTitle = structure.find(p => p.part_id === id)?.part_title || "";
+    } else if (type === 'chapter') {
+      for (const p of structure) {
+        const c = p.chapters?.find(ch => ch.chapter_id === id);
+        if (c) { itemTitle = c.chapter_title; break; }
+      }
+    } else if (type === 'paragraph') {
+      for (const p of structure) {
+        for (const c of p.chapters || []) {
+          const pg = c.paragraphs?.find(para => para.para_id === id);
+          if (pg) { itemTitle = pg.para_name; break; }
+        }
+      }
+    } else if (type === 'notion') {
+      for (const p of structure) {
+        for (const c of p.chapters || []) {
+          for (const pg of c.paragraphs || []) {
+            const n = pg.notions?.find(no => no.notion_id === id);
+            if (n) { itemTitle = n.notion_name; break; }
+          }
+        }
+      }
+    }
 
-    if (!window.confirm(confirmMsg)) return;
+    setDeleteModalConfig({
+      isOpen: true,
+      isDeleting: false,
+      type,
+      id,
+      title: itemTitle
+    });
+  };
+
+  const confirmDelete = async () => {
+    const { type, id } = deleteModalConfig;
+    if (!projectData || !id || deleteModalConfig.isDeleting) return;
 
     try {
+      setDeleteModalConfig(prev => ({ ...prev, isDeleting: true }));
       setError('');
 
       // Trouver l'item et récupérer sa hiérarchie
@@ -1175,17 +1307,13 @@ const XCCM2Editor = () => {
       // Rafraîchir la structure
       await loadProject(true);
 
-      // Toast succès
-      const successMsg = document.createElement('div');
-      successMsg.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 flex items-center gap-2 animate-in slide-in-from-right';
-      successMsg.textContent = "Supprimé avec succès !";
-      document.body.appendChild(successMsg);
-      setTimeout(() => document.body.removeChild(successMsg), 3000);
+      setDeleteModalConfig({ isOpen: false, isDeleting: false, type: '', id: '', title: '' });
+      toast.success("Supprimé avec succès !");
 
     } catch (err: any) {
       console.error("Erreur suppression:", err);
-      setError("Erreur lors de la suppression : " + err.message);
-      alert("Erreur: " + err.message);
+      toast.error("Erreur lors de la suppression : " + err.message);
+      setDeleteModalConfig(prev => ({ ...prev, isDeleting: false }));
     }
   };
 
@@ -1265,6 +1393,9 @@ const XCCM2Editor = () => {
     } catch (err: any) {
       console.error('❌ Erreur déplacement:', err);
       setError(`Erreur: ${err.message}`);
+      if (err.details) {
+        console.error('🔍 Détails backend:', err.details);
+      }
 
       // Toast erreur
       const errorMsg = document.createElement('div');
@@ -1325,8 +1456,7 @@ const XCCM2Editor = () => {
       icon: <Eye size={18} />,
       category: 'Projet',
       action: () => {
-        const prName = searchParams.get('projectName');
-        if (prName) router.push(`/document/${prName}`);
+        if (projectData?.pr_name) router.push(`/document/${projectData.pr_name}`);
       }
     },
     {
@@ -1431,23 +1561,23 @@ const XCCM2Editor = () => {
                 </h1>
 
                 {currentContext && (
-                  <div className="flex items-center gap-2 text-[11px] text-gray-400 ml-5 pl-5 border-l border-gray-100 max-w-xl truncate">
+                  <div className="flex items-center gap-2 text-[11px] text-gray-400 dark:text-gray-500 ml-5 pl-5 border-l border-gray-100 dark:border-gray-700 max-w-xl truncate">
                     {currentContext.type === 'notion' ? (
                       <>
-                        <span className="hover:text-gray-700 transition-colors uppercase text-[10px] font-bold tracking-wider">{currentContext.partTitle}</span>
-                        <ChevronRight className="w-3 h-3 text-gray-300" />
-                        <span className="hover:text-gray-700 transition-colors uppercase text-[10px] font-bold tracking-wider">{currentContext.chapterTitle}</span>
-                        <ChevronRight className="w-3 h-3 text-gray-300" />
-                        <span className="hover:text-gray-700 transition-colors uppercase text-[10px] font-bold tracking-wider">{currentContext.paraName}</span>
-                        <ChevronRight className="w-3 h-3 text-gray-300" />
-                        <span className="font-bold text-[#99334C]">{currentContext.notionName}</span>
+                        <span className="hover:text-gray-700 dark:hover:text-gray-300 transition-colors uppercase text-[10px] font-bold tracking-wider">{currentContext.partTitle}</span>
+                        <ChevronRight className="w-3 h-3 text-gray-300 dark:text-gray-600" />
+                        <span className="hover:text-gray-700 dark:hover:text-gray-300 transition-colors uppercase text-[10px] font-bold tracking-wider">{currentContext.chapterTitle}</span>
+                        <ChevronRight className="w-3 h-3 text-gray-300 dark:text-gray-600" />
+                        <span className="hover:text-gray-700 dark:hover:text-gray-300 transition-colors uppercase text-[10px] font-bold tracking-wider">{currentContext.paraName}</span>
+                        <ChevronRight className="w-3 h-3 text-gray-300 dark:text-gray-600" />
+                        <span className="font-bold text-[#99334C] dark:text-[#ff9daf]">{currentContext.notionName}</span>
                       </>
                     ) : (
                       <>
                         <span className="uppercase text-[10px] font-bold tracking-wider">{t.editor.part}</span>
-                        <ChevronRight className="w-3 h-3 text-gray-300" />
-                        <span className="font-bold text-[#99334C]">{currentContext.partTitle}</span>
-                        <span className="ml-1 text-gray-400 font-normal">(Intro)</span>
+                        <ChevronRight className="w-3 h-3 text-gray-300 dark:text-gray-600" />
+                        <span className="font-bold text-[#99334C] dark:text-[#ff9daf]">{currentContext.partTitle}</span>
+                        <span className="ml-1 text-gray-400 font-normal dark:text-gray-500">(Intro)</span>
                       </>
                     )}
                   </div>
@@ -1455,33 +1585,37 @@ const XCCM2Editor = () => {
               </div>
               <div className="flex items-center gap-3">
                 <RichTooltip title="Aperçu" description="Visualiser le projet tel qu'il sera publié." shortcut="Alt+P">
-                  <button
+                  <TactileButton
+                    variant="ghost"
                     onClick={() => {
                       if (hasUnsavedChanges) handleSave(true);
                       router.push(`/preview?projectName=${encodeURIComponent(projectData?.pr_name || '')}`);
                     }}
-                    className="p-2 text-gray-500 hover:text-[#99334C] hover:bg-gray-100 rounded-lg transition-all"
+                    className="p-2 text-gray-500 hover:text-[#99334C] hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-all"
                   >
                     <Eye className="w-5 h-5" />
-                  </button>
+                  </TactileButton>
                 </RichTooltip>
 
                 <RichTooltip title="Partager" description="Inviter des collaborateurs ou publier sur la marketplace.">
-                  <button
+                  <TactileButton
+                    variant="ghost"
                     onClick={() => setShowShareOverlay(true)}
-                    className="p-2 text-gray-500 hover:text-[#99334C] hover:bg-gray-100 rounded-lg transition-all"
+                    className="p-2 text-gray-500 hover:text-[#99334C] hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-all"
                   >
                     <Share2 className="w-5 h-5" />
-                  </button>
+                  </TactileButton>
                 </RichTooltip>
                 <RichTooltip title="Enregistrer" description="Sauvegarder manuellement vos modifications." shortcut="Ctrl+S">
-                  <button
+                  <TactileButton
+                    variant="ghost"
                     onClick={() => handleSave(false)}
                     disabled={isSaving}
-                    className="p-2 text-gray-500 hover:text-[#99334C] hover:bg-gray-100 rounded-lg transition-all"
+                    isLoading={isSaving}
+                    className="p-2 text-gray-500 hover:text-[#99334C] hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-all"
                   >
-                    {isSaving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
-                  </button>
+                    {!isSaving && <Save className="w-5 h-5" />}
+                  </TactileButton>
                 </RichTooltip>
               </div>
             </div>
@@ -1593,7 +1727,7 @@ const XCCM2Editor = () => {
           project={projectData}
           structure={structure}
           currentContext={currentContext ? {
-            projectName: currentContext.projectName,
+            projectName: projectData?.pr_name || currentContext.projectName,
             partTitle: currentContext.partTitle,
             chapterTitle: currentContext.chapterTitle,
             paraName: currentContext.paraName,
@@ -1882,16 +2016,84 @@ const XCCM2Editor = () => {
         <ShareOverlay
           isOpen={showShareOverlay}
           onClose={() => setShowShareOverlay(false)}
-          projectName={projectName}
+          projectName={projectData?.pr_name || projectName || ''}
         />
-        <CommandPalette
-          isOpen={showCommandPalette}
-          onClose={() => setShowCommandPalette(false)}
-          commands={commands}
-        />
+        {/* Modal de Confirmation de Suppression */}
+        <AnimatePresence>
+          {deleteModalConfig.isOpen && (
+            <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4">
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setDeleteModalConfig(prev => ({ ...prev, isOpen: false }))}
+                className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+              />
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                className="relative bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden"
+              >
+                <div className="p-6">
+                  <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mb-4">
+                    <Trash2 className="text-red-600" size={24} />
+                  </div>
+                  <h3 className="text-xl font-bold text-gray-900 mb-2">
+                    Confirmer la suppression
+                  </h3>
+                  <p className="text-gray-600 mb-6">
+                    Êtes-vous sûr de vouloir supprimer <strong>{deleteModalConfig.title}</strong> ?
+                    {deleteModalConfig.type !== 'notion' && " Tous les éléments enfants seront également supprimés. Cette action est irréversible."}
+                  </p>
+
+                  <div className="flex gap-3">
+                    <button
+                      disabled={deleteModalConfig.isDeleting}
+                      onClick={() => setDeleteModalConfig(prev => ({ ...prev, isOpen: false }))}
+                      className="flex-1 px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-xl transition-colors disabled:opacity-50"
+                    >
+                      Annuler
+                    </button>
+                    <button
+                      disabled={deleteModalConfig.isDeleting}
+                      onClick={confirmDelete}
+                      className="flex-1 px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white font-medium rounded-xl transition-colors shadow-lg shadow-red-200 flex items-center justify-center gap-2 disabled:opacity-50"
+                    >
+                      {deleteModalConfig.isDeleting ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          Suppression...
+                        </>
+                      ) : (
+                        "Supprimer"
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
       </div >
     </>
   );
 };
 
-export default XCCM2Editor;
+// Wrapper avec Suspense pour useSearchParams
+function EditPageWrapper() {
+  return (
+    <Suspense fallback={
+      <div className="h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <Loader2 className="w-12 h-12 text-[#99334C] animate-spin mx-auto mb-4" />
+          <p className="text-gray-600">Chargement...</p>
+        </div>
+      </div>
+    }>
+      <XCCM2Editor />
+    </Suspense>
+  );
+}
+
+export default EditPageWrapper;

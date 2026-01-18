@@ -1,12 +1,27 @@
 "use client"
 
-import React, { useState, useRef } from 'react';
-import { ChevronDown, ChevronRight, Cloud, MessageSquare, Info, Settings, Eye, Bot, GripVertical, Folder, FolderOpen, Book, FileText, File } from 'lucide-react';
+import React from 'react';
+import { GripVertical, Folder, Book, FileText, File, LucideIcon } from 'lucide-react';
 import RichTooltip from '../UI/RichTooltip';
 
+export interface GranuleData {
+  id: string;
+  content: string;
+  type: 'part' | 'chapter' | 'paragraph' | 'notion';
+  icon?: string;
+  author?: string;
+  savedAt?: string;
+  children?: GranuleData[];
+}
+
+interface GranuleProps {
+  granule: GranuleData;
+  onDragStart: (e: React.DragEvent, granule: GranuleData) => void;
+}
+
 // ============= COMPOSANT: Granule (Draggable) =============
-const Granule = ({ granule, onDragStart }) => {
-  const getIcon = (iconName) => {
+const Granule: React.FC<GranuleProps> = ({ granule, onDragStart }) => {
+  const getIcon = (iconName?: string): LucideIcon => {
     switch (iconName) {
       case 'Folder': return Folder;
       case 'Book': return Book;
@@ -16,7 +31,7 @@ const Granule = ({ granule, onDragStart }) => {
     }
   };
 
-  const getColor = (type) => {
+  const getColor = (type: string): string => {
     switch (type) {
       case 'part': return '#99334C';
       case 'chapter': return '#DC3545';
@@ -57,7 +72,7 @@ const Granule = ({ granule, onDragStart }) => {
 
       {granule.children && granule.children.length > 0 && (
         <div className="pl-6 mt-2 space-y-2 border-l-2 border-gray-100 ml-4">
-          {granule.children.map((child) => (
+          {granule.children.map((child: GranuleData) => (
             <Granule key={child.id} granule={child} onDragStart={onDragStart} />
           ))}
         </div>

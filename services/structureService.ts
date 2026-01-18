@@ -492,7 +492,9 @@ class StructureService {
         throw new Error('Token invalide ou expiré.');
       }
       const error = await response.json();
-      throw new Error(error.message || 'Erreur lors du déplacement');
+      const detailedError = new Error(error.message || 'Erreur lors du déplacement') as any;
+      detailedError.details = error.details || error.error; // Suivant le format de api-response
+      throw detailedError;
     }
 
     const result = await response.json();

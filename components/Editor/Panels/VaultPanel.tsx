@@ -1,12 +1,16 @@
 "use client";
 
 import React from 'react';
-import { Lock, Heart, Clock, Folder, Book, FileText, File } from 'lucide-react';
-import Granule from '../Granule';
+import { Lock, Heart, Clock } from 'lucide-react';
+import Granule, { GranuleData } from '../Granule';
 
-const VaultPanel = ({ onDragStart }: any) => {
+interface VaultPanelProps {
+    onDragStart: (e: React.DragEvent, granule: GranuleData) => void;
+}
+
+const VaultPanel: React.FC<VaultPanelProps> = ({ onDragStart }) => {
     // Données mockées pour le coffre-fort
-    const vaultGranules = [
+    const vaultGranules: GranuleData[] = [
         {
             id: 'v1',
             type: 'notion',

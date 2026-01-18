@@ -1,4 +1,6 @@
 import { Node, mergeAttributes } from '@tiptap/core';
+import { ReactNodeViewRenderer } from '@tiptap/react';
+import { NoteBlockView } from './Views/NoteBlockView';
 
 export const NoteBlock = Node.create({
     name: 'noteblock',
@@ -32,6 +34,10 @@ export const NoteBlock = Node.create({
             ],
             ['div', { class: 'note-content' }, 0],
         ];
+    },
+
+    addNodeView() {
+        return ReactNodeViewRenderer(NoteBlockView);
     },
 
     addCommands() {

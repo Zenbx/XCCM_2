@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { documentService } from '@/services/documentService';
 import { ArrowRight } from 'lucide-react';
+import { SkeletonCourseCard, SkeletonAvatar, Skeleton } from '@/components/UI/Skeleton';
 
 import toast from 'react-hot-toast';
 import { useInView } from 'react-intersection-observer';
@@ -250,8 +251,10 @@ const LibraryPage = () => {
       <section className="py-12 px-6">
         <div className="max-w-7xl mx-auto">
           {isLoading && courses.length === 0 ? (
-            <div className="flex justify-center items-center h-64">
-              <Loader2 className="w-12 h-12 text-[#99334C] animate-spin" />
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {[...Array(6)].map((_, i) => (
+                <SkeletonCourseCard key={i} />
+              ))}
             </div>
           ) : error ? (
             <div className="flex flex-col items-center justify-center h-64 bg-red-50 border border-red-200 rounded-xl">
@@ -487,7 +490,21 @@ const TopCreatorsList = () => {
     fetchCreators();
   }, []);
 
-  if (isLoading) return <div className="flex justify-center p-8"><Loader2 className="w-8 h-8 text-[#99334C] animate-spin" /></div>;
+  if (isLoading) {
+    return (
+      <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {[...Array(4)].map((_, i) => (
+          <div key={i} className="bg-white p-6 rounded-2xl border border-gray-100 flex items-center gap-4">
+            <SkeletonAvatar size="lg" />
+            <div className="flex-1 space-y-2">
+              <Skeleton variant="text" height={16} width="70%" />
+              <Skeleton variant="text" height={12} width="40%" />
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
 
   return (
     <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">

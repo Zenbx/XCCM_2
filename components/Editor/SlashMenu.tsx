@@ -3,7 +3,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-    Type,
     Heading1,
     Heading2,
     List,
@@ -14,7 +13,6 @@ import {
     BookOpen,
     FileText,
     PlusCircle,
-    Hash,
     Maximize,
     Info,
     Sigma,
@@ -22,6 +20,7 @@ import {
     Eye,
     Code
 } from 'lucide-react';
+import GlassPanel from '../UI/GlassPanel';
 
 interface SlashCommand {
     id: string;
@@ -210,10 +209,10 @@ export const SlashMenu: React.FC<SlashMenuProps> = ({
         const handleKeyDown = (e: KeyboardEvent) => {
             if (e.key === 'ArrowDown') {
                 e.preventDefault();
-                setSelectedIndex(prev => (prev + 1) % filteredCommands.length);
+                setSelectedIndex(prev => (prev + 1) % Math.max(1, filteredCommands.length));
             } else if (e.key === 'ArrowUp') {
                 e.preventDefault();
-                setSelectedIndex(prev => (prev - 1 + filteredCommands.length) % filteredCommands.length);
+                setSelectedIndex(prev => (prev - 1 + filteredCommands.length) % Math.max(1, filteredCommands.length));
             } else if (e.key === 'Enter') {
                 e.preventDefault();
                 if (filteredCommands[selectedIndex]) {
@@ -228,7 +227,6 @@ export const SlashMenu: React.FC<SlashMenuProps> = ({
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [filteredCommands, selectedIndex, onSelect, onClose]);
 
-    // Click outside to close
     useEffect(() => {
         const handleClickOutside = (e: MouseEvent) => {
             if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
@@ -239,61 +237,65 @@ export const SlashMenu: React.FC<SlashMenuProps> = ({
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, [onClose]);
 
-    if (filteredCommands.length === 0) return null;
-
     return (
-        <motion.div
-            ref={menuRef}
-            initial={{ opacity: 0, y: 10, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.95 }}
-            className="fixed z-[999] bg-white rounded-xl shadow-2xl border border-gray-100 overflow-hidden w-72 max-h-[384px] flex flex-col"
-            style={{
-                top: position.top + 400 > (typeof window !== 'undefined' ? window.innerHeight : 1000)
-                    ? Math.max(10, position.top - 400)
-                    : position.top + 25,
-                left: Math.min(position.left, (typeof window !== 'undefined' ? window.innerWidth : 1200) - 300),
-            }}
-        >
-            <div className="p-2 bg-gray-50/50 border-b border-gray-100">
-                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-2">Actions Rapides</span>
-            </div>
+        <AnimatePresence>
+            {filteredCommands.length > 0 && (
+                <GlassPanel
+                    ref={menuRef}
+                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    className="fixed z-[999] rounded-xl overflow-hidden w-72 max-h-[384px] flex flex-col"
+                    style={{
+                        top: position.top + 400 > (typeof window !== 'undefined' ? window.innerHeight : 1000)
+                            ? Math.max(10, position.top - 400)
+                            : position.top + 25,
+                        left: Math.min(position.left, (typeof window !== 'undefined' ? window.innerWidth : 1200) - 300),
+                    }}
+                    intensity="high"
+                    blur="lg"
+                >
+                    <div className="p-2 bg-gray-50/50 dark:bg-gray-800/50 border-b border-gray-100 dark:border-gray-700/50">
+                        <span className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest px-2">Actions Rapides</span>
+                    </div>
 
-            <div className="overflow-y-auto py-1 custom-scrollbar">
-                {filteredCommands.map((cmd, index) => (
-                    <button
-                        key={cmd.id}
-                        className={`w-full px-3 py-2.5 flex items-start gap-3 transition-colors text-left ${index === selectedIndex ? 'bg-[#99334C15] border-l-2 border-[#99334C]' : 'border-l-2 border-transparent hover:bg-gray-50'
-                            }`}
-                        onClick={() => onSelect(cmd)}
-                        onMouseEnter={() => setSelectedIndex(index)}
-                    >
-                        <div className={`p-2 rounded-lg ${index === selectedIndex ? 'bg-[#99334C] text-white' : 'bg-gray-100 text-gray-500'}`}>
-                            {cmd.icon}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                            <div className="flex items-center justify-between">
-                                <span className={`text-sm font-semibold ${index === selectedIndex ? 'text-[#99334C]' : 'text-gray-700'}`}>
-                                    {cmd.label}
-                                </span>
-                                <span className="text-[10px] text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded uppercase font-medium">
-                                    {cmd.category}
-                                </span>
-                            </div>
-                            <p className="text-xs text-gray-500 truncate mt-0.5">
-                                {cmd.description}
-                            </p>
-                        </div>
-                    </button>
-                ))}
-            </div>
+                    <div className="overflow-y-auto py-1 custom-scrollbar">
+                        {filteredCommands.map((cmd, index) => (
+                            <button
+                                key={cmd.id}
+                                className={`w-full px-3 py-2.5 flex items-start gap-3 transition-colors text-left ${index === selectedIndex ? 'bg-[#99334C15] dark:bg-[#99334C20] border-l-2 border-[#99334C]' : 'border-l-2 border-transparent hover:bg-gray-50 dark:hover:bg-gray-800/50'
+                                    }`}
+                                onClick={() => onSelect(cmd)}
+                                onMouseEnter={() => setSelectedIndex(index)}
+                            >
+                                <div className={`p-2 rounded-lg ${index === selectedIndex ? 'bg-[#99334C] text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400'}`}>
+                                    {cmd.icon}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <div className="flex items-center justify-between">
+                                        <span className={`text-sm font-semibold ${index === selectedIndex ? 'text-[#99334C] dark:text-[#ff4d7d]' : 'text-gray-700 dark:text-gray-200'}`}>
+                                            {cmd.label}
+                                        </span>
+                                        <span className="text-[10px] text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded uppercase font-medium">
+                                            {cmd.category}
+                                        </span>
+                                    </div>
+                                    <p className="text-xs text-gray-500 dark:text-gray-400 truncate mt-0.5">
+                                        {cmd.description}
+                                    </p>
+                                </div>
+                            </button>
+                        ))}
+                    </div>
 
-            <div className="p-2 border-t border-gray-100 bg-gray-50/50 flex justify-between items-center">
-                <span className="text-[10px] text-gray-400 flex items-center gap-1">
-                    <kbd className="bg-white border border-gray-200 px-1 rounded shadow-sm">↑↓</kbd> Naviguer
-                    <kbd className="bg-white border border-gray-200 px-1 rounded shadow-sm">⏎</kbd> Choisir
-                </span>
-            </div>
-        </motion.div>
+                    <div className="p-2 border-t border-gray-100 dark:border-gray-700/50 bg-gray-50/50 dark:bg-gray-800/50 flex justify-between items-center">
+                        <span className="text-[10px] text-gray-400 dark:text-gray-500 flex items-center gap-1">
+                            <kbd className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 px-1 rounded shadow-sm">↑↓</kbd> Naviguer
+                            <kbd className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 px-1 rounded shadow-sm">⏎</kbd> Choisir
+                        </span>
+                    </div>
+                </GlassPanel>
+            )}
+        </AnimatePresence>
     );
 };

@@ -77,6 +77,7 @@ export function useRealtimeSync({ projectName, onStructureChange, enabled = true
                 // 4. Écouter tous les événements
                 channel.subscribe((message) => {
                     if (!mounted) return;
+                    if (!message.name) return;
                     console.log(`📡 Received realtime event: ${message.name}`, message.data);
                     stableCallback(message.name, message.data);
                 });

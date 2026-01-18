@@ -30,10 +30,12 @@ import {
   Briefcase,
   Calculator
 } from 'lucide-react';
+import clsx from 'clsx';
 import Link from 'next/link';
 import { useRouter } from "next/navigation";
 import { projectService, Project } from '@/services/projectService';
 import { structureService, getProjectStructureOptimized } from '@/services/structureService';
+import { invitationService } from '@/services/invitationService';
 import { useAuth } from '@/context/AuthContext';
 import toast from 'react-hot-toast';
 import { TEMPLATE_DATA, GENERIC_TEMPLATE } from '@/app/templates/TemplateData';
@@ -332,30 +334,62 @@ const EditHomePage = () => {
   const handleDownloadProject = async (projectName: string, projectId: string) => {
     try {
       setDownloadingProjectId(projectId);
-      const structure = await getProjectStructureOptimized(projectName);
 
-      const projectData = {
-        name: projectName,
-        exportedAt: new Date().toISOString(),
-        version: "2.0",
-        structure: structure
-      };
+      const token = (`; ${document.cookie}`).split(`; auth_token=`).pop()?.split(';').shift();
+      if (!token) throw new Error('Non authentifié');
 
-      const blob = new Blob([JSON.stringify(projectData, null, 2)], { type: 'application/json' });
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/projects/${encodeURIComponent(projectName)}/export?format=pdf`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Erreur lors de l\'exportation');
+      }
+
+      const blob = await response.blob();
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `${projectName.replace(/[^a-z0-9]/gi, '_')}_export.json`;
+      link.download = `${projectName.replace(/[^a-z0-9]/gi, '_')}.pdf`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
 
-      toast.success('Exportation réussie');
+      toast.success('Exportation PDF réussie');
     } catch (err: any) {
       toast.error(err.message || 'Erreur lors de l\'exportation');
     } finally {
       setDownloadingProjectId(null);
+    }
+  };
+
+  const [processingInvitationId, setProcessingInvitationId] = useState<string | null>(null);
+
+  const handleAcceptInvitation = async (token: string, projectId: string) => {
+    try {
+      setProcessingInvitationId(projectId);
+      await invitationService.acceptInvitation(token);
+      toast.success('Invitation acceptée !');
+      loadProjects(); // Recharger la liste
+    } catch (err: any) {
+      toast.error(err.message || "Erreur lors de l'acceptation");
+    } finally {
+      setProcessingInvitationId(null);
+    }
+  };
+
+  const handleDeclineInvitation = async (token: string, projectId: string) => {
+    try {
+      setProcessingInvitationId(projectId);
+      await invitationService.declineInvitation(token);
+      toast.success('Invitation refusée');
+      loadProjects(); // Recharger la liste
+    } catch (err: any) {
+      toast.error(err.message || "Erreur lors du refus");
+    } finally {
+      setProcessingInvitationId(null);
     }
   };
 
@@ -582,52 +616,102 @@ const EditHomePage = () => {
                       filteredProjects.map((project) => (
                         <tr
                           key={project.pr_id}
-                          onClick={() => handleOpenEditor(project.pr_name)}
-                          className="hover:bg-gray-50 transition-colors group cursor-pointer"
+                          onClick={() => project.invitation_status !== 'Pending' && handleOpenEditor(project.pr_name)}
+                          className={clsx(
+                            "hover:bg-gray-50 transition-colors group",
+                            project.invitation_status !== 'Pending' ? "cursor-pointer" : "cursor-default"
+                          )}
                         >
                           <td className="px-6 py-4">
                             <div className="flex items-center gap-3">
                               <div className="w-10 h-10 rounded-lg bg-[#99334C]/10 flex items-center justify-center">
                                 <FileText className="w-5 h-5 text-[#99334C]" />
                               </div>
-                              <span className="font-semibold text-gray-900">{project.pr_name}</span>
+                              <div className="flex flex-col">
+                                <span className="font-semibold text-gray-900">{project.pr_name}</span>
+                                {project.invitation_status && (
+                                  <span className={clsx(
+                                    "text-[10px] font-bold uppercase tracking-wider w-fit px-1.5 py-0.5 rounded",
+                                    project.invitation_status === 'Pending' ? "bg-amber-100 text-amber-600" :
+                                      project.invitation_status === 'Accepted' ? "bg-green-100 text-green-600" :
+                                        "bg-red-100 text-red-600"
+                                  )}>
+                                    {project.invitation_status === 'Pending' ? 'Invitation en attente' :
+                                      project.invitation_status === 'Accepted' ? 'Partagé avec vous' :
+                                        'Refusé'}
+                                  </span>
+                                )}
+                              </div>
                             </div>
                           </td>
                           <td className="px-6 py-4 text-gray-600">{formatDate(project.updated_at)}</td>
                           <td className="px-6 py-4 text-gray-600">{formatDate(project.created_at)}</td>
                           <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
                             <div className="flex items-center justify-center gap-2">
-                              {/* Bouton Renommer */}
-                              <button
-                                onClick={(e) => { e.stopPropagation(); clickRename(project); }}
-                                className="p-2 rounded-lg hover:bg-amber-50 text-amber-600 transition-all"
-                                title="Renommer"
-                              >
-                                <PenLine className="w-5 h-5" />
-                              </button>
+                              {project.invitation_status === 'Pending' ? (
+                                <div className="flex gap-2">
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      if (project.invitation_token) handleAcceptInvitation(project.invitation_token, project.pr_id);
+                                    }}
+                                    disabled={processingInvitationId === project.pr_id}
+                                    className="flex items-center gap-1 px-3 py-1.5 bg-green-600 text-white rounded-lg text-xs font-bold hover:bg-green-700 transition-all shadow-sm disabled:opacity-50"
+                                  >
+                                    {processingInvitationId === project.pr_id ? (
+                                      <Loader2 className="w-3 h-3 animate-spin" />
+                                    ) : (
+                                      <CheckCircle className="w-3 h-3" />
+                                    )}
+                                    Accepter
+                                  </button>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      if (project.invitation_token) handleDeclineInvitation(project.invitation_token, project.pr_id);
+                                    }}
+                                    disabled={processingInvitationId === project.pr_id}
+                                    className="flex items-center gap-1 px-3 py-1.5 bg-red-50 text-red-600 border border-red-100 rounded-lg text-xs font-bold hover:bg-red-100 transition-all disabled:opacity-50"
+                                  >
+                                    <X className="w-3 h-3" />
+                                    Refuser
+                                  </button>
+                                </div>
+                              ) : (
+                                <>
+                                  {/* Bouton Renommer */}
+                                  <button
+                                    onClick={(e) => { e.stopPropagation(); clickRename(project); }}
+                                    className="p-2 rounded-lg hover:bg-amber-50 text-amber-600 transition-all"
+                                    title="Renommer"
+                                  >
+                                    <PenLine className="w-5 h-5" />
+                                  </button>
 
-                              {/* Bouton Télécharger */}
-                              <button
-                                onClick={(e) => { e.stopPropagation(); handleDownloadProject(project.pr_name, project.pr_id); }}
-                                disabled={downloadingProjectId === project.pr_id}
-                                className="p-2 rounded-lg hover:bg-blue-50 text-blue-600 transition-all disabled:opacity-50"
-                                title="Télécharger (JSON)"
-                              >
-                                {downloadingProjectId === project.pr_id ? (
-                                  <Loader2 className="w-5 h-5 animate-spin" />
-                                ) : (
-                                  <Download className="w-5 h-5" />
-                                )}
-                              </button>
+                                  {/* Bouton Télécharger */}
+                                  <button
+                                    onClick={(e) => { e.stopPropagation(); handleDownloadProject(project.pr_name, project.pr_id); }}
+                                    disabled={downloadingProjectId === project.pr_id}
+                                    className="p-2 rounded-lg hover:bg-blue-50 text-blue-600 transition-all disabled:opacity-50"
+                                    title="Télécharger (PDF)"
+                                  >
+                                    {downloadingProjectId === project.pr_id ? (
+                                      <Loader2 className="w-5 h-5 animate-spin" />
+                                    ) : (
+                                      <Download className="w-5 h-5" />
+                                    )}
+                                  </button>
 
-                              {/* Bouton Supprimer */}
-                              <button
-                                onClick={(e) => { e.stopPropagation(); clickDelete(project); }}
-                                className="p-2 rounded-lg hover:bg-red-50 text-red-600 transition-all"
-                                title="Supprimer"
-                              >
-                                <Trash2 className="w-5 h-5" />
-                              </button>
+                                  {/* Bouton Supprimer */}
+                                  <button
+                                    onClick={(e) => { e.stopPropagation(); clickDelete(project); }}
+                                    className="p-2 rounded-lg hover:bg-red-50 text-red-600 transition-all"
+                                    title="Supprimer"
+                                  >
+                                    <Trash2 className="w-5 h-5" />
+                                  </button>
+                                </>
+                              )}
                             </div>
                           </td>
                         </tr>

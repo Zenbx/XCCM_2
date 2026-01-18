@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { ArrowLeft, Eye, EyeOff, Loader2 } from 'lucide-react';
 import { Facebook, Instagram, Twitter } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -58,13 +58,16 @@ const LoginPage = () => {
   };
 
   const handleGoogleLogin = () => {
-    console.log('Connexion avec Google');
-    // TODO: OAuth Google
+    const apiBase = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001').trim();
+    const callbackUrl = `${window.location.origin}/auth/callback`;
+    window.location.href = `${apiBase}/api/auth/signin/google?callbackUrl=${encodeURIComponent(callbackUrl)}`;
   };
 
   const handleMicrosoftLogin = () => {
-    console.log('Connexion avec Microsoft');
-    // TODO: OAuth Microsoft
+    const apiBase = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001').trim();
+    const callbackUrl = `${window.location.origin}/auth/callback`;
+    // Microsoft uses azure-ad as provider name in next-auth config
+    window.location.href = `${apiBase}/api/auth/signin/azure-ad?callbackUrl=${encodeURIComponent(callbackUrl)}`;
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -313,4 +316,17 @@ const LoginPage = () => {
   );
 };
 
-export default LoginPage;
+// Wrapper avec Suspense pour useSearchParams
+function LoginPageWrapper() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-white">
+        <Loader2 className="w-10 h-10 text-[#99334C] animate-spin" />
+      </div>
+    }>
+      <LoginPage />
+    </Suspense>
+  );
+}
+
+export default LoginPageWrapper;
