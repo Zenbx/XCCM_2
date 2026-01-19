@@ -27,7 +27,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
 
   const isAuthenticated = !!user;
-  const isAdmin = user?.role === 'admin';
+  /* 
+   * LOGIQUE ADMIN
+   * - Role 'admin' explicit
+   * - OU pas de rôle défini (Legacy Support pour les premiers inscrits)
+   */
+  const isAdmin = user?.role === 'admin' || !user?.role;
 
   useEffect(() => {
     checkAuth();

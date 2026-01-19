@@ -23,16 +23,19 @@ import {
     ChevronDown
 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { useAuth } from '@/context/AuthContext';
 import { projectService } from '@/services/projectService';
 import { structureService, Part } from '@/services/structureService';
 import { publishService } from '@/services/publishService';
 import { exportService } from '@/services/exportService';
+import { templateService } from '@/services/templateService';
 import toast from 'react-hot-toast';
 import { renderBlockContent } from '@/utils/block-renderer';
 import * as katex from 'katex';
 import 'katex/dist/katex.min.css';
 
 const PreviewPage = () => {
+    const { user } = useAuth();
     const searchParams = useSearchParams();
     const router = useRouter();
     const projectName = searchParams.get('projectName');
@@ -47,6 +50,14 @@ const PreviewPage = () => {
     const [isPublishing, setIsPublishing] = useState(false);
     const [publishSuccess, setPublishSuccess] = useState<{ doc_id: string; doc_name: string } | null>(null);
     const [snapshotName, setSnapshotName] = useState('');
+
+    // Template States
+    const [showTemplateDialog, setShowTemplateDialog] = useState(false);
+    const [templateData, setTemplateData] = useState({ name: '', description: '', category: '' });
+    const [isCreatingTemplate, setIsCreatingTemplate] = useState(false);
+
+    // Determine ownership
+    const isOwner = projectData?.owner_id && user?.user_id && projectData.owner_id === user.user_id;
 
     // Phase 3: Marketplace & Vault States
     const [showCollectModal, setShowCollectModal] = useState(false);
@@ -109,33 +120,12 @@ const PreviewPage = () => {
             const project = await projectService.getProjectByName(projectName!);
             setProjectData(project);
 
-            // 2. Fetch Parts List first (Fast)
-            const parts = await structureService.getParts(projectName!);
+            // 2. Fetch Full Structure (Optimized)
+            // Replace recursive manual fetching with single API call
+            const fullStructure = await structureService.getProjectStructureOptimized(projectName!);
 
-            // Initialize progress
-            setLoadingProgress({ current: 0, total: parts.length });
-
-            // Use p-limit from service or simple Promise.all with manual throttling if needed.
-            // Since structureService.fillPartDetails is robust, we can map over parts.
-            // We want to update progress after EACH part returns.
-
-            const pLimit = (await import('p-limit')).default;
-            const limit = pLimit(3); // Fetch 3 parts details in parallel max
-
-            const loadedParts: Part[] = [];
-
-            const promises = parts.map(part => limit(async () => {
-                try {
-                    const filledPart = await structureService.fillPartDetails(projectName!, { ...part });
-                    loadedParts.push(filledPart);
-                } catch (e) {
-                    console.error(`Error loading part ${part.part_title}`, e);
-                    loadedParts.push(part); // Push empty part on error to keep structure
-                } finally {
-                    // Update progress
-                    setLoadingProgress(prev => prev ? { ...prev, current: prev.current + 1 } : null);
-                }
-            }));
+            setStructure(fullStructure);
+            setLoadingProgress({ current: 100, total: 100 });
 
             await Promise.all(promises);
 
@@ -213,6 +203,34 @@ const PreviewPage = () => {
             toast.error(`Erreur lors de l'export DOCX: ${error instanceof Error ? error.message : 'Erreur inconnue'}`);
         } finally {
             setIsExporting(false);
+        }
+    };
+
+    const handleCreateTemplate = async () => {
+        if (!projectName) return;
+        if (!templateData.name.trim()) {
+            toast.error('Le nom du template est requis');
+            return;
+        }
+
+        setIsCreatingTemplate(true);
+
+        try {
+            await templateService.convertProjectToTemplate(projectName, {
+                template_name: templateData.name,
+                description: templateData.description,
+                category: templateData.category || projectData?.category,
+                is_public: true
+            });
+
+            toast.success('Template créé avec succès !');
+            setShowTemplateDialog(false);
+            setTemplateData({ name: '', description: '', category: '' });
+        } catch (error: any) {
+            console.error('Erreur lors de la création du template:', error);
+            toast.error(error.message || 'Erreur lors de la création du template');
+        } finally {
+            setIsCreatingTemplate(false);
         }
     };
 
@@ -807,10 +825,11 @@ const PreviewPage = () => {
                             <div className="p-2">
                                 <button
                                     onClick={() => setShowFormatDialog(true)}
-                                    disabled={isPublishing}
-                                    className="w-full flex items-center gap-3 p-3 hover:bg-[#99334C]/5 rounded-lg transition-colors group text-left disabled:opacity-50"
+                                    disabled={isPublishing || !isOwner}
+                                    title={!isOwner ? "Seul le propriétaire peut publier ce projet" : ""}
+                                    className={`w-full flex items-center gap-3 p-3 rounded-lg transition-colors group text-left disabled:opacity-50 ${!isOwner ? 'cursor-not-allowed bg-gray-50' : 'hover:bg-[#99334C]/5'}`}
                                 >
-                                    <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                                    <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${!isOwner ? 'bg-gray-200 text-gray-400' : 'bg-blue-100 text-blue-600 group-hover:bg-blue-600 group-hover:text-white'}`}>
                                         {isPublishing ? <Loader2 size={18} className="animate-spin" /> : <Share2 size={18} />}
                                     </div>
                                     <div>
@@ -818,6 +837,7 @@ const PreviewPage = () => {
                                             {isPublishing ? 'Publication...' : 'Publier en ligne'}
                                         </div>
                                         <div className="text-xs text-gray-500">Rendre accessible via lien public</div>
+                                        {!isOwner && <div className="text-[10px] text-red-500 font-medium">Réservé au propriétaire</div>}
                                     </div>
                                 </button>
 
@@ -865,6 +885,24 @@ const PreviewPage = () => {
                                         <div className="text-xs text-gray-500">Lancer l'impression locale</div>
                                     </div>
                                 </button>
+
+                                <div className="border-t border-gray-100 my-2"></div>
+
+                                <button
+                                    onClick={() => { setShowTemplateDialog(true); setShowPublishMenu(false); }}
+                                    disabled={!isOwner}
+                                    title={!isOwner ? "Seul le propriétaire peut publier comme template" : ""}
+                                    className={`w-full flex items-center gap-3 p-3 rounded-lg transition-colors group text-left ${!isOwner ? 'opacity-50 cursor-not-allowed bg-gray-50' : 'hover:bg-[#99334C]/5'}`}
+                                >
+                                    <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${!isOwner ? 'bg-gray-200 text-gray-400' : 'bg-purple-100 text-purple-600 group-hover:bg-purple-600 group-hover:text-white'}`}>
+                                        <FolderPlus size={18} />
+                                    </div>
+                                    <div>
+                                        <div className="font-medium text-gray-800">Publier en tant que template</div>
+                                        <div className="text-xs text-gray-500">Réutilisable pour de nouveaux projets</div>
+                                        {!isOwner && <div className="text-[10px] text-red-500 font-medium">Réservé au propriétaire</div>}
+                                    </div>
+                                </button>
                             </div>
                         </div>
                     )}
@@ -873,7 +911,7 @@ const PreviewPage = () => {
 
             {/* Format Selection Dialog */}
             {showFormatDialog && (
-                <div className="fixed inset-0 z-40 bg-black/50 flex items-center justify-center">
+                <div className="fixed inset-0 z-60 bg-black/50 flex items-center justify-center">
                     <div className="bg-white rounded-xl shadow-2xl p-8 max-w-sm w-full mx-4">
                         <h2 className="text-2xl font-bold text-gray-900 mb-4">Choisir le format de publication</h2>
                         <p className="text-gray-600 text-sm mb-6">Sélectionnez le format dans lequel vous souhaitez publier votre document.</p>
@@ -979,6 +1017,67 @@ const PreviewPage = () => {
                                 className="flex-1 px-4 py-2 bg-gradient-to-r from-[#99334C] to-[#DC3545] text-white rounded-lg hover:shadow-lg transition-all font-medium"
                             >
                                 Voir la bibliothèque
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Template Creation Dialog */}
+            {showTemplateDialog && (
+                <div className="fixed inset-0 z-40 bg-black/50 flex items-center justify-center" onClick={() => setShowTemplateDialog(false)}>
+                    <div className="bg-white rounded-xl shadow-2xl p-8 max-w-md w-full mx-4" onClick={(e) => e.stopPropagation()}>
+                        <h2 className="text-2xl font-bold text-gray-900 mb-4">Créer un Template</h2>
+                        <p className="text-gray-600 text-sm mb-6">Transformez votre projet en modèle réutilisable pour de futurs cours.</p>
+
+                        <div className="space-y-4 mb-6">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Nom du template *</label>
+                                <input
+                                    type="text"
+                                    value={templateData.name}
+                                    onChange={(e) => setTemplateData({ ...templateData, name: e.target.value })}
+                                    placeholder="Ex: Structure de Cours Standard"
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#99334C] focus:border-transparent"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                                <textarea
+                                    value={templateData.description}
+                                    onChange={(e) => setTemplateData({ ...templateData, description: e.target.value })}
+                                    placeholder="Décrivez brièvement ce template..."
+                                    rows={3}
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#99334C] focus:border-transparent"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Catégorie</label>
+                                <input
+                                    type="text"
+                                    value={templateData.category}
+                                    onChange={(e) => setTemplateData({ ...templateData, category: e.target.value })}
+                                    placeholder={projectData?.category || "Ex: Sciences"}
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#99334C] focus:border-transparent"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => setShowTemplateDialog(false)}
+                                disabled={isCreatingTemplate}
+                                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium disabled:opacity-50"
+                            >
+                                Annuler
+                            </button>
+                            <button
+                                onClick={handleCreateTemplate}
+                                disabled={isCreatingTemplate || !templateData.name.trim()}
+                                className="flex-1 px-4 py-2 bg-gradient-to-r from-[#99334C] to-[#DC3545] text-white rounded-lg hover:shadow-lg transition-all font-medium disabled:opacity-50 flex items-center justify-center gap-2"
+                            >
+                                {isCreatingTemplate && <Loader2 size={16} className="animate-spin" />}
+                                Créer le template
                             </button>
                         </div>
                     </div>

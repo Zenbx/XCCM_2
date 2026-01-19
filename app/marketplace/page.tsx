@@ -1,13 +1,20 @@
 "use client";
 
-import React, { useState, useMemo } from 'react';
-import { Search, Star, Download, Users, TrendingUp, X, Eye, BookOpen, Layers, Layout, MessageSquare } from 'lucide-react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { Search, Star, Download, Users, TrendingUp, X, Eye, BookOpen, Layers, Layout, MessageSquare, Loader2, AlertCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { marketplaceService, MarketplaceItem } from '@/services/marketplaceService';
+import { vaultService } from '@/services/vaultService';
+import toast from 'react-hot-toast';
 
 const MarketplacePage = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [filterType, setFilterType] = useState('all');
-    const [selectedGranule, setSelectedGranule] = useState<any>(null);
+    const [selectedGranule, setSelectedGranule] = useState<MarketplaceItem | null>(null);
+    const [items, setItems] = useState<MarketplaceItem[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+    const [downloadingId, setDownloadingId] = useState<string | null>(null);
 
     const categories = [
         { id: 'all', label: 'Tous les granules', icon: <Layers size={16} /> },
@@ -17,61 +24,56 @@ const MarketplacePage = () => {
         { id: 'notion', label: 'Notions', icon: <MessageSquare size={16} /> },
     ];
 
-    const products = [
-        {
-            id: 1,
-            title: "Pack Algèbre Linéaire",
-            description: "Un ensemble complet de chapitres sur les espaces vectoriels et matrices.",
-            type: "part",
-            author: "Prof. Martin",
-            downloads: 1205,
-            rating: 4.8,
-            price: "Gratuit",
-            content: "<h3>Espaces Vectoriels</h3><p>Définition d'un espace vectoriel par les 8 axiomes fondamentaux...</p><h4>Bases et Dimension</h4><p>Théorème de la base incomplète et dimension finie.</p>"
-        },
-        {
-            id: 2,
-            title: "Introduction à la Chimie Organique",
-            description: "Notions fondamentales sur les molécules organiques et réactions.",
-            type: "chapter",
-            author: "Dr. Lavoisier",
-            downloads: 850,
-            rating: 4.5,
-            price: "Gratuit",
-            content: "<h3>La liaison Carbone-Carbone</h3><p>Hybridation sp3, sp2 et sp du carbone.</p><h4>Alcènes et Alcynes</h4><p>Réactions d'addition électrophile sur les doubles liaisons.</p>"
-        },
-        {
-            id: 3,
-            title: "Algorithmes de Tri Avancés",
-            description: "QuickSort, MergeSort et analyses de complexité.",
-            type: "notion",
-            author: "Ada Tech",
-            downloads: 2100,
-            rating: 4.9,
-            price: "Gratuit",
-            content: "<h3>Analyse du QuickSort</h3><p>Le pivotement et la récursivité. Complexité moyenne en O(n log n).</p>"
-        },
-        {
-            id: 4,
-            title: "Analyse Syntaxique",
-            description: "Cours complet sur les parseurs LL(1) et LR(1).",
-            type: "paragraph",
-            author: "Prof. Turing",
-            downloads: 940,
-            rating: 4.7,
-            price: "Gratuit",
-            content: "<h3>Grammaires Hors-Contexte</h3><p>Utilisation des automates à pile pour l'analyse syntaxique.</p>"
-        }
-    ];
+    useEffect(() => {
+        fetchItems();
+    }, []);
 
-    const filteredProducts = useMemo(() => {
-        return products.filter(p => {
+    const fetchItems = async () => {
+        try {
+            setIsLoading(true);
+            const data = await marketplaceService.getItems();
+            setItems(data);
+        } catch (err: any) {
+            setError(err.message || 'Erreur de chargement');
+            toast.error('Impossible de charger le marketplace');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleDownload = async (item: MarketplaceItem) => {
+        if (downloadingId) return;
+        setDownloadingId(item.id);
+        try {
+            // 1. Record download
+            await marketplaceService.recordDownload(item.id);
+
+            // 2. Add to Vault
+            await vaultService.addToVault({
+                type: item.type,
+                title: item.title,
+                original_id: item.id, // Using marketplace ID as original ID reference
+                content: item.content,
+                source_doc_name: `Marketplace - ${item.seller.firstname} ${item.seller.lastname}`
+            });
+
+            toast.success('Ajouté à votre Coffre-fort !');
+        } catch (err: any) {
+            toast.error('Erreur lors du téléchargement');
+            console.error(err);
+        } finally {
+            setDownloadingId(null);
+        }
+    };
+
+    const filteredItems = useMemo(() => {
+        return items.filter(p => {
             const matchesSearch = p.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                p.description.toLowerCase().includes(searchTerm.toLowerCase());
+                (p.description || '').toLowerCase().includes(searchTerm.toLowerCase());
             const matchesType = filterType === 'all' || p.type === filterType;
             return matchesSearch && matchesType;
         });
-    }, [searchTerm, filterType]);
+    }, [items, searchTerm, filterType]);
 
     return (
         <div className="min-h-screen bg-[#FDFCFB] flex flex-col">
@@ -133,7 +135,7 @@ const MarketplacePage = () => {
                             <div className="w-20 h-20 rounded-full bg-[#99334C]/10 flex items-center justify-center text-[#99334C] mb-4">
                                 <Layers size={40} />
                             </div>
-                            <h2 className="text-2xl font-black text-gray-900">+5,000</h2>
+                            <h2 className="text-2xl font-black text-gray-900">{items.length > 0 ? `+${items.length * 15}` : '...'}</h2>
                             <p className="text-gray-500 font-medium">Granules partagés</p>
                         </div>
                     </motion.div>
@@ -168,64 +170,90 @@ const MarketplacePage = () => {
                 </section>
 
                 {/* Products Grid */}
-                <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                    {filteredProducts.map((product) => (
-                        <motion.div
-                            key={product.id}
-                            whileHover={{ y: -8 }}
-                            className="bg-white rounded-[2rem] overflow-hidden border border-gray-100 shadow-xl hover:shadow-2xl transition-all group flex flex-col"
-                        >
-                            <div className="p-8 flex-1">
-                                <div className="flex items-center justify-between mb-6">
-                                    <span className="bg-[#99334C]/10 text-[#99334C] px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest">
-                                        {product.type}
-                                    </span>
-                                    <div className="flex items-center gap-1 text-yellow-400 font-bold text-sm">
-                                        <Star size={14} fill="currentColor" /> {product.rating}
+                {isLoading ? (
+                    <div className="flex justify-center py-20">
+                        <Loader2 className="w-12 h-12 text-[#99334C] animate-spin" />
+                    </div>
+                ) : error ? (
+                    <div className="text-center py-20">
+                        <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+                        <h3 className="text-xl font-bold text-gray-900 mb-2">Erreur de chargement</h3>
+                        <p className="text-gray-500">{error}</p>
+                        <button onClick={fetchItems} className="mt-4 text-[#99334C] font-bold hover:underline">Réessayer</button>
+                    </div>
+                ) : (
+                    <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                        {filteredItems.map((product) => (
+                            <motion.div
+                                key={product.id}
+                                whileHover={{ y: -8 }}
+                                className="bg-white rounded-[2rem] overflow-hidden border border-gray-100 shadow-xl hover:shadow-2xl transition-all group flex flex-col"
+                            >
+                                <div className="p-8 flex-1">
+                                    <div className="flex items-center justify-between mb-6">
+                                        <span className="bg-[#99334C]/10 text-[#99334C] px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest">
+                                            {product.type}
+                                        </span>
+                                        <div className="flex items-center gap-1 text-yellow-400 font-bold text-sm">
+                                            {product.rating ? (
+                                                <><Star size={14} fill="currentColor" /> {product.rating}</>
+                                            ) : (
+                                                <span className="text-gray-400 text-xs font-normal">Nouveau</span>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    <h3 className="text-xl font-bold text-gray-900 mb-3 group-hover:text-[#99334C] transition-colors line-clamp-1">
+                                        {product.title}
+                                    </h3>
+                                    <p className="text-gray-500 text-sm mb-6 line-clamp-3 leading-relaxed">
+                                        {product.description || 'Aucune description disponible.'}
+                                    </p>
+
+                                    <div className="flex items-center gap-3 mb-6">
+                                        <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-400">
+                                            <Users size={16} />
+                                        </div>
+                                        <span className="text-xs text-gray-500 font-bold">{product.seller.firstname} {product.seller.lastname}</span>
+                                    </div>
+                                    <div className="flex flex-wrap gap-2 mb-4">
+                                        {product.tags.slice(0, 3).map((tag, i) => (
+                                            <span key={i} className="text-[10px] bg-gray-50 text-gray-500 px-2 py-1 rounded-md">{tag}</span>
+                                        ))}
                                     </div>
                                 </div>
 
-                                <h3 className="text-xl font-bold text-gray-900 mb-3 group-hover:text-[#99334C] transition-colors line-clamp-1">
-                                    {product.title}
-                                </h3>
-                                <p className="text-gray-500 text-sm mb-6 line-clamp-3 leading-relaxed">
-                                    {product.description}
-                                </p>
-
-                                <div className="flex items-center gap-3 mb-6">
-                                    <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-400">
-                                        <Users size={16} />
+                                <div className="p-8 pt-0 mt-auto">
+                                    <div className="flex items-center gap-3 pt-6 border-t border-gray-50">
+                                        <button
+                                            onClick={() => setSelectedGranule(product)}
+                                            className="flex-1 flex items-center justify-center gap-2 bg-gray-50 text-gray-700 px-5 py-3 rounded-xl font-bold text-sm hover:bg-[#99334C]/10 hover:text-[#99334C] transition-all"
+                                        >
+                                            <Eye size={18} /> Voir
+                                        </button>
+                                        <button
+                                            onClick={() => handleDownload(product)}
+                                            disabled={downloadingId === product.id}
+                                            className="flex items-center justify-center gap-2 bg-[#99334C] text-white px-5 py-3 rounded-xl font-bold text-sm hover:opacity-90 transition-all shadow-lg shadow-[#99334C]/20 disabled:opacity-50"
+                                        >
+                                            {downloadingId === product.id ? <Loader2 size={18} className="animate-spin" /> : <Download size={18} />}
+                                        </button>
                                     </div>
-                                    <span className="text-xs text-gray-500 font-bold">{product.author}</span>
                                 </div>
-                            </div>
+                            </motion.div>
+                        ))}
 
-                            <div className="p-8 pt-0 mt-auto">
-                                <div className="flex items-center gap-3 pt-6 border-t border-gray-50">
-                                    <button
-                                        onClick={() => setSelectedGranule(product)}
-                                        className="flex-1 flex items-center justify-center gap-2 bg-gray-50 text-gray-700 px-5 py-3 rounded-xl font-bold text-sm hover:bg-[#99334C]/10 hover:text-[#99334C] transition-all"
-                                    >
-                                        <Eye size={18} /> Voir le contenu
-                                    </button>
-                                    <button className="flex items-center justify-center gap-2 bg-[#99334C] text-white px-5 py-3 rounded-xl font-bold text-sm hover:opacity-90 transition-all shadow-lg shadow-[#99334C]/20">
-                                        <Download size={18} />
-                                    </button>
+                        {filteredItems.length === 0 && (
+                            <div className="col-span-full py-20 text-center">
+                                <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gray-50 text-gray-300 mb-4">
+                                    <Search size={40} />
                                 </div>
+                                <h3 className="text-xl font-bold text-gray-900 mb-2">Aucun granule trouvé</h3>
+                                <p className="text-gray-500">Essayez d'autres termes de recherche ou changez de catégorie.</p>
                             </div>
-                        </motion.div>
-                    ))}
-
-                    {filteredProducts.length === 0 && (
-                        <div className="col-span-full py-20 text-center">
-                            <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gray-50 text-gray-300 mb-4">
-                                <Search size={40} />
-                            </div>
-                            <h3 className="text-xl font-bold text-gray-900 mb-2">Aucun granule trouvé</h3>
-                            <p className="text-gray-500">Essayez d'autres termes de recherche ou changez de catégorie.</p>
-                        </div>
-                    )}
-                </section>
+                        )}
+                    </section>
+                )}
             </main>
 
             {/* Content Preview Modal */}
@@ -263,14 +291,14 @@ const MarketplacePage = () => {
                             <div className="p-10 overflow-y-auto flex-1 bg-[#FDFCFB]">
                                 <div
                                     className="prose prose-lg max-w-none text-gray-700"
-                                    dangerouslySetInnerHTML={{ __html: selectedGranule.content }}
+                                    dangerouslySetInnerHTML={{ __html: selectedGranule.content || '<p class="text-gray-400 italic">Aucun aperçu disponible.</p>' }}
                                 />
                             </div>
 
                             <div className="p-8 border-t border-gray-100 bg-white flex items-center justify-between">
                                 <div className="text-sm">
                                     <span className="text-gray-400">Auteur:</span>
-                                    <span className="ml-1 font-bold text-gray-900">{selectedGranule.author}</span>
+                                    <span className="ml-1 font-bold text-gray-900">{selectedGranule.seller.firstname} {selectedGranule.seller.lastname}</span>
                                 </div>
                                 <div className="flex gap-3">
                                     <button
@@ -279,8 +307,13 @@ const MarketplacePage = () => {
                                     >
                                         Fermer
                                     </button>
-                                    <button className="bg-[#99334C] text-white px-8 py-3 rounded-xl font-bold text-sm hover:opacity-90 transition-all shadow-lg shadow-[#99334C]/20 flex items-center gap-2">
-                                        <Download size={18} /> Télécharger
+                                    <button
+                                        onClick={() => handleDownload(selectedGranule)}
+                                        disabled={downloadingId === selectedGranule.id}
+                                        className="bg-[#99334C] text-white px-8 py-3 rounded-xl font-bold text-sm hover:opacity-90 transition-all shadow-lg shadow-[#99334C]/20 flex items-center gap-2 disabled:opacity-50"
+                                    >
+                                        {downloadingId === selectedGranule.id ? <Loader2 size={18} className="animate-spin" /> : <Download size={18} />}
+                                        Télécharger
                                     </button>
                                 </div>
                             </div>

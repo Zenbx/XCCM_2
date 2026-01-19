@@ -1,13 +1,15 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { UserPresence } from '@/hooks/useSynapseSync';
+import { Editor } from '@tiptap/react';
 
 interface CollaborativeCursorsProps {
     users: UserPresence[];
     currentUserId: string;
     containerRef: React.RefObject<HTMLElement>;
+    editor?: Editor | null; // Ajout de l'éditeur pour calculer les positions
 }
 
 /**
@@ -20,6 +22,7 @@ export const CollaborativeCursors: React.FC<CollaborativeCursorsProps> = ({
     users,
     currentUserId,
     containerRef,
+    editor,
 }) => {
     // Filtrer l'utilisateur courant
     const otherUsers = users.filter(user => user.id !== currentUserId);
@@ -34,6 +37,7 @@ export const CollaborativeCursors: React.FC<CollaborativeCursorsProps> = ({
                         key={user.id}
                         user={user}
                         containerRef={containerRef}
+                        editor={editor}
                     />
                 )
             ))}
@@ -44,12 +48,67 @@ export const CollaborativeCursors: React.FC<CollaborativeCursorsProps> = ({
 interface CursorOverlayProps {
     user: UserPresence;
     containerRef: React.RefObject<HTMLElement>;
+    editor?: Editor | null;
 }
 
-const CursorOverlay: React.FC<CursorOverlayProps> = ({ user }) => {
-    // Note: Dans une implémentation réelle, la position du curseur serait
-    // calculée à partir des coordonnées du document ProseMirror
-    // Pour l'instant, c'est un placeholder visuel
+const CursorOverlay: React.FC<CursorOverlayProps> = ({ user, containerRef, editor }) => {
+    const [position, setPosition] = useState<{ top: number; left: number } | null>(null);
+
+    // Calcul de la position du curseur à partir de ProseMirror
+    const updateCursorPosition = useCallback(() => {
+        if (!editor || !user.cursor || !containerRef.current) {
+            return;
+        }
+
+        try {
+            const { anchor } = user.cursor;
+
+            // Vérifier que la position est valide
+            if (anchor < 0 || anchor > editor.state.doc.content.size) {
+                return;
+            }
+
+            // Obtenir les coordonnées du curseur dans le document
+            const resolvedPos = editor.state.doc.resolve(anchor);
+            const coords = editor.view.coordsAtPos(anchor);
+
+            if (!coords) return;
+
+            // Obtenir les coordonnées du conteneur
+            const containerRect = containerRef.current.getBoundingClientRect();
+
+            // Calculer la position relative au conteneur
+            const relativeTop = coords.top - containerRect.top + containerRef.current.scrollTop;
+            const relativeLeft = coords.left - containerRect.left + containerRef.current.scrollLeft;
+
+            setPosition({
+                top: relativeTop,
+                left: relativeLeft,
+            });
+        } catch (error) {
+            console.warn('[CollaborativeCursors] Erreur calcul position:', error);
+            // Fallback position si erreur
+            setPosition({ top: 100, left: 200 });
+        }
+    }, [editor, user.cursor, containerRef]);
+
+    // Mettre à jour la position quand le curseur change
+    useEffect(() => {
+        updateCursorPosition();
+    }, [updateCursorPosition, user.cursor]);
+
+    // Mettre à jour la position au scroll
+    useEffect(() => {
+        const container = containerRef.current;
+        if (!container) return;
+
+        const handleScroll = () => updateCursorPosition();
+        container.addEventListener('scroll', handleScroll);
+        return () => container.removeEventListener('scroll', handleScroll);
+    }, [containerRef, updateCursorPosition]);
+
+    // Si pas de position calculée, ne rien afficher
+    if (!position) return null;
 
     return (
         <motion.div
@@ -59,9 +118,8 @@ const CursorOverlay: React.FC<CursorOverlayProps> = ({ user }) => {
             transition={{ duration: 0.15 }}
             className="pointer-events-none absolute z-50"
             style={{
-                // Position serait calculée dynamiquement
-                top: 100,
-                left: 200,
+                top: position.top,
+                left: position.left,
             }}
         >
             {/* Curseur */}

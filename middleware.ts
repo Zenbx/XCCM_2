@@ -46,11 +46,18 @@ export async function middleware(request: NextRequest) {
 
   if (token) {
     try {
-      const secret = new TextEncoder().encode(process.env.JWT_SECRET || 'your-secret-key');
+      // Validation du secret JWT
+      if (!process.env.JWT_SECRET) {
+        console.error('❌ JWT_SECRET non défini dans les variables d\'environnement');
+        // Rediriger vers login si le secret n'est pas configuré
+        return NextResponse.redirect(new URL('/login', request.url));
+      }
+
+      const secret = new TextEncoder().encode(process.env.JWT_SECRET);
       const { payload } = await jwtVerify(token, secret);
 
       const userId = payload.userId as string;
-      const userRole = payload.role as string; // Supposant que le rôle est dans le payload
+      const userRole = payload.role as string; // Note: le role doit être ajouté au JWT backend
 
       if (!userId) {
         throw new Error('userId manquant dans le payload');

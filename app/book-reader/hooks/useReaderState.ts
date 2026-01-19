@@ -23,14 +23,9 @@ export const useReaderState = (docId: string | null) => {
     const recordView = useCallback(async () => {
         if (!docId) return;
         try {
-            const token = localStorage.getItem('auth_token');
-            if (!token) return;
-
             await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/documents/${docId}/view`, {
                 method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
+                headers: getAuthHeaders()
             });
         } catch (error) {
             console.error("Error recording view", error);

@@ -11,7 +11,8 @@ import {
   Info,
   Brain,
   Bot,
-  ChevronRight
+  ChevronRight,
+  BookOpen
 } from 'lucide-react';
 import RichTooltip from '@/components/UI/RichTooltip';
 
@@ -22,6 +23,8 @@ import VaultPanel from './Panels/VaultPanel';
 import CommentsPanel from './Panels/CommentsPanel';
 import InfoPanel from './Panels/InfoPanel';
 import SettingsPanel from './Panels/SettingsPanel';
+import TutorialPanel from './Panels/TutorialPanel';
+import SocraticPanel from './Panels/SocraticPanel';
 
 const RightPanel = ({
   activePanel,
@@ -46,7 +49,8 @@ const RightPanel = ({
     { id: 'socratic', icon: Brain, title: 'Socrate AI', description: 'Recevez des conseils pédagogiques personnalisés sur votre contenu.' },
     { id: 'comments', icon: MessageSquare, title: 'Commentaires', description: 'Collaborez et discutez des modifications avec votre équipe.' },
     { id: 'info', icon: Info, title: 'Informations', description: 'Détails techniques et métadonnées du projet actuel.' },
-    { id: 'settings', icon: Settings, title: 'Paramètres', description: 'Configurez les options d\'export et de publication du projet.' }
+    { id: 'settings', icon: Settings, title: 'Paramètres', description: 'Configurez les options d\'export et de publication du projet.' },
+    { id: 'tutorial', icon: BookOpen, title: 'Tutoriel', description: 'Apprenez à utiliser les commandes slash et les raccourcis de l\'éditeur.' }
   ];
 
   return (
@@ -134,16 +138,9 @@ const RightPanel = ({
               )}
               {activePanel === 'info' && <InfoPanel project={project} structure={structure} />}
               {activePanel === 'settings' && <SettingsPanel project={project} onUpdateProject={onUpdateProject} />}
+              {activePanel === 'tutorial' && <TutorialPanel />}
               {activePanel === 'socratic' && (
-                <div className="p-8 text-center">
-                  <div className="p-4 bg-[#99334C]/5 rounded-2xl mb-4 inline-block">
-                    <Brain size={40} className="text-[#99334C]" />
-                  </div>
-                  <h4 className="font-bold text-lg mb-2">Socrate AI</h4>
-                  <p className="text-gray-500 text-sm">
-                    L'analyse Socratic est active en permanence. Utilisez le bouton flottant "Bot" en bas à gauche pour voir les retours détaillés.
-                  </p>
-                </div>
+                <SocraticPanel content={currentContext?.notionContent || ''} />
               )}
             </div>
           </motion.div>

@@ -41,24 +41,29 @@ export interface Notion {
  * ⚡ OPTIMISÉ: Récupère la structure complète du projet en 1 seul appel
  * Remplace les multiples appels à getParts() + fillPartDetails()
  */
-export async function getProjectStructureOptimized(projectName: string): Promise<Part[]> {
-  const response = await fetch(
-    `${API_BASE_URL}/api/projects/${encodeURIComponent(projectName)}/structure`,
-    {
-      headers: getAuthHeaders(),
-    }
-  );
-
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || 'Erreur lors de la récupération de la structure');
-  }
-
-  const data = await response.json();
-  return data.data.structure;
-}
 
 class StructureService {
+  /**
+   * ⚡ OPTIMISÉ: Récupère la structure complète du projet en 1 seul appel
+   * Remplace les multiples appels à getParts() + fillPartDetails()
+   */
+  async getProjectStructureOptimized(projectName: string): Promise<Part[]> {
+    const response = await fetch(
+      `${API_BASE_URL}/api/projects/${encodeURIComponent(projectName)}/structure`,
+      {
+        headers: getAuthHeaders(),
+      }
+    );
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Erreur lors de la récupération de la structure');
+    }
+
+    const data = await response.json();
+    return data.data.structure;
+  }
+
   // ============= PARTS =============
   async createPart(projectName: string, data: { part_title: string; part_intro?: string; part_number: number }): Promise<Part> {
     const response = await fetch(

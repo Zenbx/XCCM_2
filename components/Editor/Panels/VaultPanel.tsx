@@ -1,31 +1,44 @@
 "use client";
 
-import React from 'react';
-import { Lock, Heart, Clock } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Lock, Heart, Clock, Loader2 } from 'lucide-react';
 import Granule, { GranuleData } from '../Granule';
+import { vaultService, VaultItem } from '@/services/vaultService';
+import toast from 'react-hot-toast';
 
 interface VaultPanelProps {
     onDragStart: (e: React.DragEvent, granule: GranuleData) => void;
 }
 
 const VaultPanel: React.FC<VaultPanelProps> = ({ onDragStart }) => {
-    // Données mockées pour le coffre-fort
-    const vaultGranules: GranuleData[] = [
-        {
-            id: 'v1',
-            type: 'notion',
-            content: 'Ma Notion Préférée',
-            icon: 'File',
-            savedAt: '2 jours'
-        },
-        {
-            id: 'v2',
-            type: 'paragraph',
-            content: 'Structure Paragraph Standard',
-            icon: 'FileText',
-            savedAt: '1 semaine'
+    const [vaultItems, setVaultItems] = useState<VaultItem[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        loadVaultItems();
+    }, []);
+
+    const loadVaultItems = async () => {
+        try {
+            setIsLoading(true);
+            const items = await vaultService.getVaultItems();
+            setVaultItems(items);
+        } catch (error: any) {
+            console.error('Error loading vault items:', error);
+            toast.error('Erreur lors du chargement du coffre-fort');
+        } finally {
+            setIsLoading(false);
         }
-    ];
+    };
+
+    // Convertir VaultItem en GranuleData pour le drag & drop
+    const vaultGranules: GranuleData[] = vaultItems.map(item => ({
+        id: item.id,
+        type: item.type as any,
+        content: item.title,
+        icon: item.type === 'notion' ? 'File' : item.type === 'paragraph' ? 'FileText' : 'Folder',
+        savedAt: new Date(item.added_at).toLocaleDateString('fr-FR')
+    }));
 
     return (
         <div className="flex flex-col h-full">
@@ -47,7 +60,12 @@ const VaultPanel: React.FC<VaultPanelProps> = ({ onDragStart }) => {
             </div>
 
             <div className="flex-1 overflow-y-auto space-y-3 pr-2 custom-scrollbar">
-                {vaultGranules.length > 0 ? (
+                {isLoading ? (
+                    <div className="text-center py-10">
+                        <Loader2 className="w-8 h-8 text-[#99334C] mx-auto mb-3 animate-spin" />
+                        <p className="text-gray-400 text-sm">Chargement...</p>
+                    </div>
+                ) : vaultGranules.length > 0 ? (
                     vaultGranules.map((granule) => (
                         <div key={granule.id}>
                             <Granule granule={granule} onDragStart={onDragStart} />
@@ -57,9 +75,7 @@ const VaultPanel: React.FC<VaultPanelProps> = ({ onDragStart }) => {
                     <div className="text-center py-10 border-2 border-dashed border-gray-100 rounded-2xl">
                         <Lock className="w-12 h-12 text-gray-100 mx-auto mb-3" />
                         <p className="text-gray-400 text-sm">Votre coffre-fort est vide</p>
-                        <button className="mt-4 text-xs text-[#99334C] font-bold hover:underline">
-                            Comment ajouter des granules ?
-                        </button>
+                        <p className="text-xs text-gray-400 mt-2">Ajoutez des granules depuis le Book Reader</p>
                     </div>
                 )}
             </div>

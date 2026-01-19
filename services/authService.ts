@@ -173,6 +173,56 @@ class AuthService {
       sessionStorage.removeItem('user'); // Nettoyage legacy
     }
   }
+  async getAllUsers(): Promise<User[]> {
+    const token = this.getAuthToken();
+    if (!token) throw new Error('Non authentifié');
+
+    const response = await fetch(`${API_BASE_URL}/api/users`, {
+      method: 'GET',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(error.message || 'Erreur lors de la récupération des utilisateurs');
+    }
+
+    const data = await response.json();
+    return data.data;
+  }
+
+  async deleteUser(userId: string): Promise<void> {
+    const token = this.getAuthToken();
+    if (!token) throw new Error('Non authentifié');
+
+    const response = await fetch(`${API_BASE_URL}/api/users/${userId}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(error.message || 'Erreur lors de la suppression');
+    }
+  }
+
+  async updateUserRole(userId: string, role: string): Promise<void> {
+    const token = this.getAuthToken();
+    if (!token) throw new Error('Non authentifié');
+
+    const response = await fetch(`${API_BASE_URL}/api/users/${userId}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify({ role })
+    });
+
+    if (!response.ok) {
+      throw new Error('Erreur lors de la mise à jour du rôle');
+    }
+  }
 }
 
 export const authService = new AuthService();

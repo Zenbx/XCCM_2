@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef } from 'react';
-import { Edit3, Trash2, Plus } from 'lucide-react';
+import { Edit3, Trash2, Plus, ShoppingBag } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import GlassPanel from '../UI/GlassPanel';
 
@@ -12,6 +12,7 @@ interface ContextMenuProps {
   onRename?: () => void;
   onDelete?: () => void;
   onAddChild?: () => void;
+  onPublishToMarketplace?: () => void;
   onClose: () => void;
   itemType?: string;
 }
@@ -23,6 +24,7 @@ const ContextMenu: React.FC<ContextMenuProps> = ({
   onRename,
   onDelete,
   onAddChild,
+  onPublishToMarketplace,
   onClose,
   itemType = 'item'
 }) => {
@@ -93,6 +95,16 @@ const ContextMenu: React.FC<ContextMenuProps> = ({
             >
               <Plus size={16} className="text-gray-400 group-hover:text-[#99334C]" />
               <span>Ajouter un enfant</span>
+            </button>
+          )}
+
+          {onPublishToMarketplace && (
+            <button
+              onClick={() => handleAction(onPublishToMarketplace)}
+              className="w-full px-4 py-2.5 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-purple-50 hover:text-purple-600 flex items-center gap-3 transition-colors group"
+            >
+              <ShoppingBag size={16} className="text-gray-400 group-hover:text-purple-600" />
+              <span>Publier sur Marketplace</span>
             </button>
           )}
 

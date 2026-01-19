@@ -66,6 +66,23 @@ const typeIcons: Record<string, string> = {
   notion: '📝'
 };
 
+const TOCSkeleton = () => (
+  <div className="p-3 space-y-4 animate-pulse opacity-60">
+    {[1, 2, 3].map((i) => (
+      <div key={i} className="space-y-2">
+        <div className="flex items-center gap-2">
+          <div className="w-4 h-4 rounded bg-gray-200" />
+          <div className="h-5 bg-gray-200 rounded w-3/4" />
+        </div>
+        <div className="pl-6 space-y-2">
+          <div className="h-4 bg-gray-100 rounded w-1/2" />
+          <div className="h-4 bg-gray-100 rounded w-2/3" />
+        </div>
+      </div>
+    ))}
+  </div>
+);
+
 // Créer un ghost image personnalisé pour le drag
 const createDragGhost = (
   type: 'part' | 'chapter' | 'paragraph' | 'notion',
@@ -265,11 +282,14 @@ interface TableOfContentsProps {
   onReorder?: (type: 'part' | 'chapter' | 'paragraph' | 'notion', parentId: string | null, items: any[]) => Promise<void>;
   onMove?: (type: 'chapter' | 'paragraph' | 'notion', itemId: string, newParentId: string) => Promise<void>;
   onDelete?: (type: 'part' | 'chapter' | 'paragraph' | 'notion', id: string) => Promise<void>;
+  onPublishToMarketplace?: (type: string, id: string, title: string) => void;
   language?: Language;
   width?: number;
   isNotionOpen?: boolean;
   pulsingId?: string | null;
+  pulsingId?: string | null;
   pendingGranule?: { type: 'part' | 'chapter' | 'paragraph' | 'notion'; content: string } | null;
+  isLoading?: boolean;
 }
 
 const TableOfContents: React.FC<TableOfContentsProps> = ({
@@ -287,15 +307,16 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
   selectedNotionId,
   selectedChapterId,
   selectedParagraphId,
-  onRename,
   onReorder,
   onMove,
   onDelete,
+  onPublishToMarketplace,
   language = 'fr',
   width = 320,
   isNotionOpen = false,
   pulsingId = null,
-  pendingGranule = null
+  pendingGranule = null,
+  isLoading = false
 }) => {
   const t = (translations[language] ?? translations.fr).toc;
   const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({});
@@ -771,7 +792,9 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
 
       {/* Contenu */}
       <div className="p-3 flex-1 overflow-y-auto space-y-2">
-        {optimisticStructure.length === 0 ? (
+        {isLoading ? (
+          <TOCSkeleton />
+        ) : optimisticStructure.length === 0 ? (
           <div className="text-center py-12 text-gray-400">
             <Folder size={48} className="mx-auto mb-3 opacity-20" />
             <p className="text-sm">Le projet est vide</p>
@@ -1124,6 +1147,37 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
         onAddChild={() => {
           if (contextMenu.type === 'part' && onCreateChapter && contextMenu.partTitle) onCreateChapter(contextMenu.partTitle);
           else if (contextMenu.type === 'chapter' && onCreateParagraph && contextMenu.partTitle && contextMenu.chapterTitle) onCreateParagraph(contextMenu.partTitle, contextMenu.chapterTitle);
+        }}
+        onPublishToMarketplace={() => {
+          if (contextMenu.id && contextMenu.type && onPublishToMarketplace) {
+            let title = '';
+            if (contextMenu.type === 'part') {
+              const part = structure.find(p => p.part_id === contextMenu.id);
+              title = part?.part_title || '';
+            } else if (contextMenu.type === 'chapter') {
+              for (const p of structure) {
+                const chap = p.chapters?.find(c => c.chapter_id === contextMenu.id);
+                if (chap) { title = chap.chapter_title; break; }
+              }
+            } else if (contextMenu.type === 'paragraph') {
+              for (const p of structure) {
+                for (const c of p.chapters || []) {
+                  const para = c.paragraphs?.find(pa => pa.para_id === contextMenu.id);
+                  if (para) { title = para.para_name; break; }
+                }
+              }
+            } else if (contextMenu.type === 'notion') {
+              for (const p of structure) {
+                for (const c of p.chapters || []) {
+                  for (const pa of c.paragraphs || []) {
+                    const notion = pa.notions?.find(n => n.notion_id === contextMenu.id);
+                    if (notion) { title = notion.notion_name; break; }
+                  }
+                }
+              }
+            }
+            onPublishToMarketplace(contextMenu.type, contextMenu.id, title);
+          }
         }}
         onDelete={handleContextMenuDelete}
         onClose={() => setContextMenu({ ...contextMenu, isOpen: false })}

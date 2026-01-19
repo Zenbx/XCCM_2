@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { 
+import {
   Settings as SettingsIcon,
   Bell,
   Shield,
@@ -20,11 +20,12 @@ import {
   Smartphone
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { getAuthHeaders } from '@/lib/apiHelper';
 
 const SettingsPage = () => {
   const { user, logout } = useAuth();
   const router = useRouter();
-  
+
   // États pour les paramètres
   const [settings, setSettings] = useState({
     // Notifications
@@ -32,16 +33,16 @@ const SettingsPage = () => {
     courseUpdates: true,
     weeklyDigest: false,
     marketingEmails: false,
-    
+
     // Confidentialité
     profilePublic: true,
     showEmail: false,
     showActivity: true,
-    
+
     // Préférences
     language: 'fr',
     theme: 'light',
-    
+
     // Sécurité
     twoFactorAuth: false,
   });
@@ -85,10 +86,7 @@ const SettingsPage = () => {
       // TODO: Appel API pour sauvegarder les paramètres
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/user/settings`, {
         method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
         body: JSON.stringify(settings),
       });
 
@@ -124,10 +122,7 @@ const SettingsPage = () => {
       // TODO: Appel API pour changer le mot de passe
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/user/password`, {
         method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
         body: JSON.stringify({
           currentPassword: passwordForm.currentPassword,
           newPassword: passwordForm.newPassword,
@@ -153,9 +148,7 @@ const SettingsPage = () => {
       // TODO: Appel API pour supprimer le compte
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/user/account`, {
         method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
-        },
+        headers: getAuthHeaders(),
       });
 
       if (!response.ok) {
@@ -208,11 +201,10 @@ const SettingsPage = () => {
                     <button
                       key={section.id}
                       onClick={() => setActiveSection(section.id)}
-                      className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
-                        activeSection === section.id
+                      className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeSection === section.id
                           ? 'bg-[#99334C] text-white'
                           : 'text-gray-700 hover:bg-gray-100'
-                      }`}
+                        }`}
                     >
                       <IconComponent className="w-5 h-5" />
                       <span className="font-medium">{section.label}</span>
@@ -387,7 +379,7 @@ const SettingsPage = () => {
                             <input
                               type={showCurrentPassword ? "text" : "password"}
                               value={passwordForm.currentPassword}
-                              onChange={(e) => setPasswordForm({...passwordForm, currentPassword: e.target.value})}
+                              onChange={(e) => setPasswordForm({ ...passwordForm, currentPassword: e.target.value })}
                               className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#99334C]/20 focus:border-[#99334C] transition-all pr-12"
                               placeholder="••••••••"
                             />
@@ -409,7 +401,7 @@ const SettingsPage = () => {
                             <input
                               type={showNewPassword ? "text" : "password"}
                               value={passwordForm.newPassword}
-                              onChange={(e) => setPasswordForm({...passwordForm, newPassword: e.target.value})}
+                              onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
                               className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#99334C]/20 focus:border-[#99334C] transition-all pr-12"
                               placeholder="••••••••"
                             />
@@ -431,7 +423,7 @@ const SettingsPage = () => {
                             <input
                               type={showConfirmPassword ? "text" : "password"}
                               value={passwordForm.confirmPassword}
-                              onChange={(e) => setPasswordForm({...passwordForm, confirmPassword: e.target.value})}
+                              onChange={(e) => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
                               className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#99334C]/20 focus:border-[#99334C] transition-all pr-12"
                               placeholder="••••••••"
                             />

@@ -1,8 +1,10 @@
 "use client";
 
-import React, { useState } from 'react';
-import { Search, Filter, ShoppingBag, Folder, Book, FileText, File } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Search, Filter, ShoppingBag, Folder, Book, FileText, File, Loader2 } from 'lucide-react';
 import Granule, { GranuleData } from '../Granule';
+import { marketplaceService, MarketplaceItem } from '@/services/marketplaceService';
+import toast from 'react-hot-toast';
 
 interface MarketplacePanelProps {
     onDragStart: (e: React.DragEvent, granule: GranuleData) => void;
@@ -13,42 +15,47 @@ type GranuleType = GranuleData['type'];
 const MarketplacePanel: React.FC<MarketplacePanelProps> = ({ onDragStart }) => {
     const [searchTerm, setSearchTerm] = useState('');
     const [filterType, setFilterType] = useState<'all' | GranuleType>('all');
+    const [items, setItems] = useState<MarketplaceItem[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
 
-    // Données mockées pour la marketplace
-    const marketplaceGranules: GranuleData[] = [
-        {
-            id: 'm1',
-            type: 'part',
-            content: 'Mathématiques: Algèbre Linéaire',
-            icon: 'Folder',
-            author: 'Jean Dupont',
-            children: []
-        },
-        {
-            id: 'm2',
-            type: 'chapter',
-            content: 'Histoire: La Révolution Française',
-            icon: 'Book',
-            author: 'Marie Curie',
-            children: []
-        },
-        {
-            id: 'm3',
-            type: 'paragraph',
-            content: 'Physique: Lois de Newton',
-            icon: 'FileText',
-            author: 'Albert E.',
-            children: []
-        },
-        {
-            id: 'm4',
-            type: 'notion',
-            content: 'Informatique: Algorithmes de tri',
-            icon: 'File',
-            author: 'Ada Lovelace',
-            children: []
+    useEffect(() => {
+        loadItems();
+    }, [filterType]);
+
+    const loadItems = async () => {
+        try {
+            setIsLoading(true);
+            const fetchedItems = await marketplaceService.getItems({
+                type: filterType === 'all' ? undefined : filterType,
+                search: searchTerm || undefined
+            });
+            setItems(fetchedItems);
+        } catch (error: any) {
+            console.error('Error loading marketplace items:', error);
+            toast.error('Erreur lors du chargement de la marketplace');
+        } finally {
+            setIsLoading(false);
         }
-    ];
+    };
+
+    const handleSearch = () => {
+        loadItems();
+    };
+
+    const handleDownload = async (item: MarketplaceItem) => {
+        await marketplaceService.recordDownload(item.id);
+    };
+
+    // Convertir MarketplaceItem en GranuleData
+    const marketplaceGranules: GranuleData[] = items.map(item => ({
+        id: item.id,
+        type: item.type as any,
+        content: item.title,
+        icon: item.type === 'notion' ? 'File' : item.type === 'paragraph' ? 'FileText' : item.type === 'chapter' ? 'Book' : 'Folder',
+        author: `${item.seller.firstname} ${item.seller.lastname}`,
+        price: item.price,
+        downloads: item.downloads
+    }));
 
     const filteredGranules = marketplaceGranules.filter(g => {
         const matchesSearch = g.content.toLowerCase().includes(searchTerm.toLowerCase());
@@ -69,8 +76,15 @@ const MarketplacePanel: React.FC<MarketplacePanelProps> = ({ onDragStart }) => {
                         placeholder="Rechercher un granule..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                         className="w-full pl-9 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-gray-700 placeholder:text-gray-400 text-sm focus:ring-2 focus:ring-[#99334C] focus:bg-white outline-none transition-all"
                     />
+                    <button
+                        onClick={handleSearch}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 px-3 py-1 bg-[#99334C] text-white rounded-lg text-xs hover:bg-[#7a283d]"
+                    >
+                        Chercher
+                    </button>
                 </div>
 
                 <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
@@ -99,9 +113,14 @@ const MarketplacePanel: React.FC<MarketplacePanelProps> = ({ onDragStart }) => {
             </div>
 
             <div className="flex-1 overflow-y-auto space-y-3 pr-2 custom-scrollbar">
-                {filteredGranules.length > 0 ? (
-                    filteredGranules.map((granule) => (
-                        <div key={granule.id}>
+                {isLoading ? (
+                    <div className="text-center py-10">
+                        <Loader2 className="w-8 h-8 text-[#99334C] mx-auto mb-3 animate-spin" />
+                        <p className="text-gray-400 text-sm">Chargement de la marketplace...</p>
+                    </div>
+                ) : marketplaceGranules.length > 0 ? (
+                    marketplaceGranules.map((granule) => (
+                        <div key={granule.id} onClick={() => items.find(i => i.id === granule.id) && handleDownload(items.find(i => i.id === granule.id)!)}>
                             <Granule granule={granule} onDragStart={onDragStart} />
                         </div>
                     ))
@@ -109,6 +128,7 @@ const MarketplacePanel: React.FC<MarketplacePanelProps> = ({ onDragStart }) => {
                     <div className="text-center py-10">
                         <ShoppingBag className="w-12 h-12 text-gray-200 mx-auto mb-3" />
                         <p className="text-gray-400 text-sm">Aucun granule trouvé</p>
+                        <p className="text-xs text-gray-400 mt-1">Essayez de modifier vos filtres</p>
                     </div>
                 )}
             </div>

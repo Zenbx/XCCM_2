@@ -15,6 +15,7 @@ import {
 import { useRouter } from 'next/navigation';
 import { getCookie } from '@/lib/cookies';
 import { vaultService, VaultItem } from '@/services/vaultService';
+import { getAuthHeaders } from '@/lib/apiHelper';
 import toast from 'react-hot-toast';
 
 const AccountPage = () => {
@@ -181,8 +182,8 @@ const AccountPage = () => {
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/user/profile`, {
         method: 'PUT',
         headers: {
-          'Authorization': `Bearer ${token}`,
-          // Content-Type is auto-set for FormData
+          'Authorization': (getAuthHeaders() as Record<string, string>).Authorization,
+          // Pas de Content-Type pour FormData
         },
         body: updateData,
       });

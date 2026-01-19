@@ -24,11 +24,11 @@ import EditorArea from '@/components/Editor/EditorArea';
 import RightPanel from '@/components/Editor/RightPanel';
 import ChatBotOverlay from '@/components/Editor/ChatBotOverlay';
 import ShareOverlay from '@/components/Editor/ShareOverlay';
-import { SocraticPanel } from '@/components/Socratic/SocraticPanel';
 import EditorHeader from './components/EditorHeader';
 import CreationModals from './components/Modals/CreationModals';
 import DeleteModal from './components/Modals/DeleteModal';
 import EditorSkeletonView from './components/EditorSkeletonView';
+import PublishToMarketplaceModal from '@/components/Editor/PublishToMarketplaceModal';
 
 // Services & Utils
 import { translations } from '@/services/locales';
@@ -65,6 +65,14 @@ const XCCM2Editor = () => {
   const [pulsingId, setPulsingId] = useState<string | null>(null);
   const [pendingGranule, setPendingGranule] = useState<{ type: 'part' | 'chapter' | 'paragraph' | 'notion'; content: string } | null>(null);
 
+  // Marketplace Modal State
+  const [showMarketplaceModal, setShowMarketplaceModal] = useState(false);
+  const [marketplaceGranule, setMarketplaceGranule] = useState<{
+    type: string;
+    title: string;
+    content?: string;
+  } | null>(null);
+
   // Modals Hook
   const {
     showPartModal, setShowPartModal,
@@ -81,7 +89,29 @@ const XCCM2Editor = () => {
     handleCreatePart, handleCreateChapter, handleCreateParagraph, handleCreateNotion,
     confirmCreatePart, confirmCreateChapter, confirmCreateParagraph, confirmCreateNotion,
     handleDelete, confirmDelete, setDeleteModalConfig
-  } = useEditorModals(projectName, setStructure, loadProject, setPendingGranule, setPulsingId);
+  } = useEditorModals(projectName, structure, setStructure, loadProject, setPendingGranule, setPulsingId);
+
+  // --- Handlers Editor ---
+  const handleInsertImage = () => {
+    if (!tiptapEditor) return;
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.onchange = (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          if (event.target?.result) {
+            const img = `<img src="${event.target.result}" style="max-width: 100%; height: auto; display: block; margin: 20px auto; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);" />`;
+            tiptapEditor.chain().focus().insertContent(img).run();
+          }
+        };
+        reader.readAsDataURL(file);
+      }
+    };
+    input.click();
+  };
 
   // Mock Granules for ImportPanel (Strict & Rich Hierarchy: Part > Chapter > Paragraph > Notion)
   const mockGranules = [
@@ -294,7 +324,7 @@ const XCCM2Editor = () => {
   const [isResizing, setIsResizing] = useState(false);
   const [isZenMode, setIsZenMode] = useState(false);
   const [tiptapEditor, setTiptapEditor] = useState<any>(null);
-  const [showSocraticPanel, setShowSocraticPanel] = useState(false);
+
   const editorRef = useRef<HTMLDivElement>(null);
 
   // Handlers pour la structure (TOC)
@@ -355,6 +385,21 @@ const XCCM2Editor = () => {
       toast.error("Échec du déplacement");
       loadProject(true);
     }
+  };
+
+  const handlePublishToMarketplace = (type: string, id: string, title: string) => {
+    // Récupérer le contenu si c'est une notion
+    let content = '';
+    if (type === 'notion') {
+      const notion = structure.flatMap(p => p.chapters || [])
+        .flatMap(c => c.paragraphs || [])
+        .flatMap(pa => pa.notions || [])
+        .find(n => n.notion_id === id);
+      content = notion?.notion_content || '';
+    }
+
+    setMarketplaceGranule({ type, title, content });
+    setShowMarketplaceModal(true);
   };
 
   // Socratic AI
@@ -587,6 +632,7 @@ const XCCM2Editor = () => {
                 if (document.startViewTransition) document.startViewTransition(update);
                 else update();
               }}
+              onPublishToMarketplace={handlePublishToMarketplace}
               onCreatePart={handleCreatePart}
               onCreateChapter={handleCreateChapter}
               onCreateParagraph={handleCreateParagraph}
@@ -611,6 +657,7 @@ const XCCM2Editor = () => {
               pulsingId={pulsingId}
               pendingGranule={pendingGranule}
               isNotionOpen={currentContext?.type === 'notion'}
+              isLoading={isLoading}
             />
           </aside>
           <div onMouseDown={() => setIsResizing(true)} className="w-1 cursor-col-resize hover:bg-[#99334C] transition-colors z-10" />
@@ -636,11 +683,37 @@ const XCCM2Editor = () => {
         )}
 
         <EditorToolbar
-          onFormatChange={(cmd) => tiptapEditor?.chain().focus()[cmd]().run()}
+          onInsertImage={handleInsertImage}
+          onFormatChange={(cmd) => {
+            if (!tiptapEditor) return;
+            const chain = tiptapEditor.chain().focus();
+
+            if (cmd.startsWith('color:')) {
+              chain.setColor(cmd.split(':')[1]).run();
+              return;
+            }
+
+            switch (cmd) {
+              case 'bold': chain.toggleBold().run(); break;
+              case 'italic': chain.toggleItalic().run(); break;
+              case 'underline': chain.toggleUnderline().run(); break;
+              case 'strikethrough': chain.toggleStrike().run(); break;
+              case 'justifyLeft': chain.setTextAlign('left').run(); break;
+              case 'justifyCenter': chain.setTextAlign('center').run(); break;
+              case 'justifyRight': chain.setTextAlign('right').run(); break;
+              case 'justifyFull': chain.setTextAlign('justify').run(); break;
+              case 'indent': chain.indent().run(); break;
+              case 'outdent': chain.outdent().run(); break;
+              case 'insertUnorderedList': chain.toggleBulletList().run(); break;
+              case 'insertOrderedList': chain.toggleOrderedList().run(); break;
+              case 'undo': chain.undo().run(); break;
+              case 'redo': chain.redo().run(); break;
+              default: console.warn('Unknown command:', cmd);
+            }
+          }}
           onFontChange={(e) => setTextFormat(prev => ({ ...prev, font: e.target.value }))}
           onFontSizeChange={(e) => setTextFormat(prev => ({ ...prev, fontSize: e.target.value }))}
           onChatToggle={() => setShowChatBot(prev => !prev)}
-          onInsertImage={() => toast('Bientôt disponible !')}
           textFormat={textFormat}
           disabled={(currentContext?.type === 'chapter' || currentContext?.type === 'paragraph')}
           isZenMode={isZenMode}
@@ -697,6 +770,11 @@ const XCCM2Editor = () => {
       <DeleteModal config={deleteModalConfig} onClose={() => setDeleteModalConfig(prev => ({ ...prev, isOpen: false }))} onConfirm={() => confirmDelete(structure)} />
       {showShareOverlay && <ShareOverlay projectName={projectName || ''} isOpen={showShareOverlay} onClose={() => setShowShareOverlay(false)} />}
       {showChatBot && <ChatBotOverlay isOpen={showChatBot} onClose={() => setShowChatBot(false)} currentContext={currentContext as any} editorContent={editorContent} />}
+      <PublishToMarketplaceModal
+        isOpen={showMarketplaceModal}
+        onClose={() => setShowMarketplaceModal(false)}
+        granuleData={marketplaceGranule}
+      />
 
       {isZenMode && (
         <style jsx global>{`
@@ -704,21 +782,7 @@ const XCCM2Editor = () => {
         `}</style>
       )}
 
-      {showSocraticPanel && (
-        <SocraticPanel
-          feedback={socraticFeedback}
-          bloomScore={bloomScore}
-          isAnalyzing={isAnalyzing}
-          onDismissFeedback={dismissFeedback}
-          isVisible={showSocraticPanel}
-          onClose={() => setShowSocraticPanel(false)}
-          onApplySuggestion={(id, sug) => {
-            navigator.clipboard.writeText(sug);
-            toast.success('Copié !');
-            dismissFeedback(id);
-          }}
-        />
-      )}
+
     </div>
   );
 };

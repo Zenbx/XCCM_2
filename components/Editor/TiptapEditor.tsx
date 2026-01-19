@@ -20,6 +20,7 @@ import { CodeRunnerBlock } from './Blocks/CodeRunnerBlockExtension';
 import Collaboration from '@tiptap/extension-collaboration';
 import CollaborationCursor from '@tiptap/extension-collaboration-cursor';
 import { SocraticExtension, SocraticHighlight } from '@/extensions/SocraticExtension';
+import { IndentationExtension } from '@/extensions/IndentationExtension';
 import 'katex/dist/katex.min.css';
 import '@/styles/socratic-highlights.css';
 
@@ -202,6 +203,7 @@ const TiptapEditor: React.FC<TiptapEditorProps> = (props) => {
           onSocraticHighlightClick?.(id, event);
         },
       }),
+      IndentationExtension,
       ...(hasValidCollaboration ? [
         (() => {
           console.log(`[TiptapEditor] Configuring collaboration with doc:`, effectiveDoc);

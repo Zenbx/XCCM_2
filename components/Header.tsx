@@ -24,7 +24,7 @@ const COLORS = {
 export default function Header() {
   const pathname = usePathname();
   const router = useRouter();
-  const { user, isAuthenticated, logout, isLoading } = useAuth();
+  const { user, isAuthenticated, logout, isLoading, isAdmin } = useAuth();
   const { language } = useLanguage();
 
   const t = translations[language] ?? translations.fr;
@@ -158,14 +158,16 @@ export default function Header() {
                     )}
                   </div>
                   <div className="py-2">
-                    <Link
-                      href="/admin"
-                      className="flex items-center gap-3 px-4 py-2 text-[#99334C] hover:bg-[#99334C]/5 transition-all font-bold"
-                      onClick={() => setShowUserMenu(false)}
-                    >
-                      <ShieldCheck className="w-4 h-4" />
-                      <span className="text-sm">{t.auth.admin}</span>
-                    </Link>
+                    {isAdmin && (
+                      <Link
+                        href="/admin"
+                        className="flex items-center gap-3 px-4 py-2 text-[#99334C] hover:bg-[#99334C]/5 transition-all font-bold"
+                        onClick={() => setShowUserMenu(false)}
+                      >
+                        <ShieldCheck className="w-4 h-4" />
+                        <span className="text-sm">{t.auth.admin}</span>
+                      </Link>
+                    )}
                     <Link
                       href="/account"
                       className="flex items-center gap-3 px-4 py-2 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all font-medium"
@@ -315,9 +317,11 @@ export default function Header() {
                     </div>
 
                     <div className="space-y-1">
-                      <Link href="/admin" className="flex items-center gap-3 px-4 py-2 text-[#99334C] bg-[#99334C]/5 hover:bg-[#99334C]/10 rounded-lg text-sm font-bold">
-                        <ShieldCheck size={16} /> {t.auth.admin}
-                      </Link>
+                      {isAdmin && (
+                        <Link href="/admin" className="flex items-center gap-3 px-4 py-2 text-[#99334C] bg-[#99334C]/5 hover:bg-[#99334C]/10 rounded-lg text-sm font-bold">
+                          <ShieldCheck size={16} /> {t.auth.admin}
+                        </Link>
+                      )}
                       <Link href="/account" className="flex items-center gap-3 px-4 py-2 text-gray-600 hover:bg-gray-50 rounded-lg text-sm">
                         <UserIcon size={16} /> {t.auth.account}
                       </Link>

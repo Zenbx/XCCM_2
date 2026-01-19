@@ -29,7 +29,7 @@ interface EditorToolbarProps {
   onFontChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
   onFontSizeChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
   onChatToggle: () => void;
-  onInsertImage: () => void;
+  onInsertImage?: () => void;
   textFormat: {
     font: string;
     fontSize: string;

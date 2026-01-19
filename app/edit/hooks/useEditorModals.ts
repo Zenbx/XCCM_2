@@ -4,6 +4,7 @@ import { structureService } from '@/services/structureService';
 
 export const useEditorModals = (
     projectName: string | null,
+    structure: any[], // ✅ Added structure for auto-increment
     setStructure: (parts: any) => void,
     loadProject: (silent?: boolean) => Promise<void>,
     setPendingGranule?: (pending: any) => void,
@@ -45,25 +46,39 @@ export const useEditorModals = (
     });
 
     const handleCreatePart = () => {
-        setPartFormData({ title: '', number: 1 });
+        // Auto-increment Part
+        const maxNum = structure.reduce((max, p) => Math.max(max, p.part_number || 0), 0);
+        setPartFormData({ title: '', number: maxNum + 1 });
         setShowPartModal(true);
     };
 
     const handleCreateChapter = (partTitle: string) => {
+        const part = structure.find(p => p.part_title === partTitle);
+        const maxNum = part?.chapters?.reduce((max: number, c: any) => Math.max(max, c.chapter_number || 0), 0) || 0;
+
         setModalContext({ partTitle });
-        setChapterFormData({ title: '', number: 1 });
+        setChapterFormData({ title: '', number: maxNum + 1 });
         setShowChapterModal(true);
     };
 
     const handleCreateParagraph = (partTitle: string, chapterTitle: string) => {
+        const part = structure.find(p => p.part_title === partTitle);
+        const chapter = part?.chapters?.find((c: any) => c.chapter_title === chapterTitle);
+        const maxNum = chapter?.paragraphs?.reduce((max: number, p: any) => Math.max(max, p.para_number || 0), 0) || 0;
+
         setModalContext({ partTitle, chapterTitle });
-        setParagraphFormData({ name: '', number: 1 });
+        setParagraphFormData({ name: '', number: maxNum + 1 });
         setShowParagraphModal(true);
     };
 
     const handleCreateNotion = (partTitle: string, chapterTitle: string, paraName: string) => {
+        const part = structure.find(p => p.part_title === partTitle);
+        const chapter = part?.chapters?.find((c: any) => c.chapter_title === chapterTitle);
+        const para = chapter?.paragraphs?.find((p: any) => p.para_name === paraName);
+        const maxNum = para?.notions?.reduce((max: number, n: any) => Math.max(max, n.notion_number || 0), 0) || 0;
+
         setModalContext({ partTitle, chapterTitle, paraName });
-        setNotionFormData({ name: '', number: 1 });
+        setNotionFormData({ name: '', number: maxNum + 1 });
         setShowNotionModal(true);
     };
 
