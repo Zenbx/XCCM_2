@@ -3,24 +3,19 @@
 import React, { useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import {
-  User,
-  Mail,
+  User, Mail, X,
   Briefcase,
   Building2,
   Calendar,
   Edit3,
   Save,
-  X,
-  BookOpen,
-  Download,
-  Eye,
-  TrendingUp,
-  Award,
-  Clock,
-  Octagon
+  Award, BookOpen, Eye, Download, TrendingUp, Box, Clock,
+  ChevronRight, LogOut, Settings, Plus, Layout, Heart, Trash2
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { getCookie } from '@/lib/cookies';
+import { vaultService, VaultItem } from '@/services/vaultService';
+import toast from 'react-hot-toast';
 
 const AccountPage = () => {
   const { user, isLoading, refreshUser } = useAuth();
@@ -71,12 +66,16 @@ const AccountPage = () => {
     coursCreated: 0,
     coursViews: 0,
     coursDownloads: 0,
+    likes: 0,
     recentActivities: [] as any[],
     memberSince: user?.created_at ? new Date(user.created_at).toLocaleDateString('fr-FR', {
       month: 'long',
       year: 'numeric'
     }) : 'Récemment',
   });
+
+  const [vaultItems, setVaultItems] = useState<VaultItem[]>([]);
+  const [loadingVault, setLoadingVault] = useState(false);
 
   // Fetch stats on mount
   React.useEffect(() => {
@@ -98,6 +97,7 @@ const AccountPage = () => {
             coursCreated: data.data.totalCoursesCreated,
             coursViews: data.data.totalViewsOnPublishedCourses,
             coursDownloads: data.data.totalDownloadsOnPublishedCourses,
+            likes: data.data.totalLikesOnPublishedCourses,
             recentActivities: data.data.recentActivities || [],
           }));
         }
@@ -105,8 +105,33 @@ const AccountPage = () => {
         console.error("Error loading stats", error);
       }
     };
-    if (user) fetchStats();
+    if (user) {
+      fetchStats();
+      fetchVault();
+    }
   }, [user]);
+
+  const fetchVault = async () => {
+    try {
+      setLoadingVault(true);
+      const items = await vaultService.getVaultItems();
+      setVaultItems(items);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoadingVault(false);
+    }
+  };
+
+  const handleRemoveFromVault = async (id: string) => {
+    try {
+      await vaultService.removeFromVault(id);
+      setVaultItems(prev => prev.filter(i => i.id !== id));
+      toast.success("Élément retiré du coffre-fort");
+    } catch (err: any) {
+      toast.error(err.message || "Erreur lors de la suppression");
+    }
+  };
 
   // Mock activity (could be replaced by API if needed, but keeping simple for now)
 
@@ -487,6 +512,66 @@ const AccountPage = () => {
                 )}
               </div>
             </div>
+
+            {/* Mon Coffre-fort */}
+            <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6">
+              <h3 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+                <Box className="w-6 h-6 text-[#99334C]" />
+                Mon Coffre-fort
+              </h3>
+
+              {loadingVault ? (
+                <div className="text-center py-4 text-gray-400">Chargement...</div>
+              ) : (
+                <div className="space-y-4">
+                  {vaultItems.length > 0 ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {vaultItems.map((item) => (
+                        <div key={item.id} className="border border-gray-200 rounded-xl p-4 hover:border-[#99334C]/30 hover:bg-[#99334C]/5 transition-all group relative">
+                          <button
+                            onClick={() => handleRemoveFromVault(item.id)}
+                            className="absolute top-2 right-2 p-1.5 text-gray-400 hover:text-red-500 rounded-lg hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-all"
+                            title="Retirer du coffre-fort"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+
+                          <div className="flex items-start gap-3">
+                            <div className="p-2 bg-white rounded-lg border border-gray-100 shadow-sm text-[#99334C] shrink-0">
+                              {item.type === 'part' && <span className="text-xs font-bold">PT</span>}
+                              {item.type === 'chapter' && <span className="text-xs font-bold">CH</span>}
+                              {item.type === 'paragraph' && <span className="text-xs font-bold">PA</span>}
+                              {item.type === 'notion' && <span className="text-xs font-bold">NO</span>}
+                            </div>
+                            <div>
+                              <h4 className="font-bold text-gray-800 line-clamp-1 pr-6">{item.title}</h4>
+                              <p className="text-xs text-gray-500 mt-1">
+                                De : {item.source_doc_name || 'Inconnu'}
+                              </p>
+                              <p className="text-[10px] text-gray-400 mt-0.5">
+                                Ajouté le {new Date(item.added_at).toLocaleDateString()}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 bg-gray-50 rounded-xl border-dashed border-2 border-gray-200">
+                      <Box className="w-10 h-10 text-gray-300 mx-auto mb-2" />
+                      <p className="text-gray-500 font-medium">Votre coffre-fort est vide.</p>
+                      <p className="text-xs text-gray-400 mt-1">Collectez des granules depuis vos lectures pour les retrouver ici.</p>
+                      <button
+                        onClick={() => router.push('/library')}
+                        className="mt-4 px-4 py-2 text-sm text-[#99334C] font-medium hover:underline"
+                      >
+                        Aller à la bibliothèque
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Colonne droite - Statistiques */}
@@ -501,7 +586,7 @@ const AccountPage = () => {
               <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-1 gap-4">
                 <div className="p-4 bg-gradient-to-br from-[#99334C]/10 to-[#99334C]/5 rounded-xl text-center sm:text-left">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm text-gray-600">Cours créés</span>
+                    <span className="text-sm text-gray-600">Documents Publiés</span>
                     <BookOpen className="w-5 h-5 text-[#99334C]" />
                   </div>
                   <p className="text-3xl font-bold text-[#99334C]">{stats.coursCreated}</p>
@@ -521,6 +606,13 @@ const AccountPage = () => {
                     <Download className="w-5 h-5 text-green-600" />
                   </div>
                   <p className="text-3xl font-bold text-green-600">{stats.coursDownloads.toLocaleString()}</p>
+                </div>
+                <div className="p-4 bg-pink-50 rounded-xl text-center sm:text-left">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm text-gray-600">Likes reçus</span>
+                    <Heart className="w-5 h-5 text-pink-600" />
+                  </div>
+                  <p className="text-3xl font-bold text-pink-600">{stats.likes.toLocaleString()}</p>
                 </div>
               </div>
             </div>

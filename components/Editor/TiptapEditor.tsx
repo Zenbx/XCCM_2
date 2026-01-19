@@ -17,7 +17,11 @@ import { MathBlock } from './Blocks/MathBlock';
 import { QuizBlock } from './Blocks/QuizBlockExtension';
 import { DiscoveryHint } from './Blocks/DiscoveryHint';
 import { CodeRunnerBlock } from './Blocks/CodeRunnerBlockExtension';
+import Collaboration from '@tiptap/extension-collaboration';
+import CollaborationCursor from '@tiptap/extension-collaboration-cursor';
+import { SocraticExtension, SocraticHighlight } from '@/extensions/SocraticExtension';
 import 'katex/dist/katex.min.css';
+import '@/styles/socratic-highlights.css';
 
 // Extension d'image personnalisée
 const CustomImage = Image.extend({
@@ -124,18 +128,46 @@ interface TiptapEditorProps {
   };
   onSelectionChange?: (editor: any) => void;
   onReady?: (editor: any) => void;
+  collaboration?: {
+    provider: any;
+    documentId: string;
+    username: string;
+    colors: string[];
+    userColor: string;
+    yDoc?: any;
+  };
+  socraticFeedback?: SocraticHighlight[];
+  onSocraticHighlightClick?: (id: string, event: Event) => void;
+  yDoc?: any;
 }
 
-const TiptapEditor: React.FC<TiptapEditorProps> = ({
-  content,
-  onChange,
-  placeholder = 'Commencez à écrire...',
-  readOnly = false,
-  className = '',
-  textFormat,
-  onSelectionChange,
-  onReady
-}) => {
+const TiptapEditor: React.FC<TiptapEditorProps> = (props) => {
+  const {
+    content,
+    onChange,
+    placeholder = 'Commencez à écrire...',
+    readOnly = false,
+    className = '',
+    textFormat,
+    onSelectionChange,
+    onReady,
+    collaboration,
+    socraticFeedback = [],
+    onSocraticHighlightClick,
+    yDoc
+  } = props;
+
+  // Déterminer de manière sécurisée si on a un document valide
+  const effectiveDoc = yDoc || collaboration?.yDoc || collaboration?.provider?.document;
+  const hasValidCollaboration = !!(collaboration && collaboration.provider && effectiveDoc);
+
+  if (collaboration) {
+    console.log(`[TiptapEditor] Checking collaboration for ${collaboration.documentId}:`, {
+      hasProvider: !!collaboration.provider,
+      hasDoc: !!effectiveDoc,
+      isValid: hasValidCollaboration
+    });
+  }
   const editor = useEditor({
     immediatelyRender: false,
     extensions: [
@@ -164,8 +196,29 @@ const TiptapEditor: React.FC<TiptapEditorProps> = ({
       QuizBlock,
       DiscoveryHint,
       CodeRunnerBlock,
+      SocraticExtension.configure({
+        highlights: socraticFeedback,
+        onHighlightClick: (id, event) => {
+          onSocraticHighlightClick?.(id, event);
+        },
+      }),
+      ...(hasValidCollaboration ? [
+        (() => {
+          console.log(`[TiptapEditor] Configuring collaboration with doc:`, effectiveDoc);
+          return Collaboration.configure({
+            document: effectiveDoc,
+          });
+        })(),
+        CollaborationCursor.configure({
+          provider: collaboration!.provider,
+          user: {
+            name: collaboration!.username,
+            color: collaboration!.userColor,
+          },
+        }),
+      ] : []),
     ],
-    content: content,
+    content: collaboration ? undefined : content,
     editable: !readOnly,
     onCreate: ({ editor }) => {
       onReady?.(editor);
@@ -183,9 +236,9 @@ const TiptapEditor: React.FC<TiptapEditorProps> = ({
     },
   });
 
-  // Mettre à jour le contenu si prop change de l'extérieur
+  // Mettre à jour le contenu si prop change de l'extérieur (seulement si pas de collaboration)
   useEffect(() => {
-    if (editor && content !== editor.getHTML()) {
+    if (editor && !collaboration && content !== editor.getHTML()) {
       // Avoid "flushSync was called from inside a lifecycle method" error
       // by deferring the update to the next microtask/frame
       queueMicrotask(() => {

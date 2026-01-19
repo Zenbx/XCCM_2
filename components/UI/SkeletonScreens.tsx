@@ -66,7 +66,7 @@ export const EditorSkeleton = () => (
                     key={i}
                     variant="text"
                     height={16}
-                    width={`${Math.floor(Math.random() * 40) + 60}%`}
+                    width={`${(i * 17) % 40 + 60}%`}
                 />
             ))}
         </div>
@@ -81,7 +81,7 @@ export const EditorSkeleton = () => (
                     key={i}
                     variant="text"
                     height={16}
-                    width={`${Math.floor(Math.random() * 40) + 60}%`}
+                    width={`${(i * 13) % 40 + 60}%`}
                 />
             ))}
         </div>

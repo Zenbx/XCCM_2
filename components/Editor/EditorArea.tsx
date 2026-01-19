@@ -7,6 +7,7 @@ import { FloatingToolbar } from './FloatingToolbar';
 import { AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import TiptapEditor from './TiptapEditor'; // ✅ Import de Tiptap
+import { SocraticHighlight } from '@/extensions/SocraticExtension';
 
 interface EditorAreaProps {
   content: string;
@@ -29,6 +30,16 @@ interface EditorAreaProps {
   onAddNotion?: () => void;
   onOpenChat?: () => void;
   onSave?: () => void;
+  collaboration?: {
+    provider: any;
+    documentId: string;
+    username: string;
+    colors: string[];
+    userColor: string;
+    yDoc?: any;
+  };
+  socraticFeedback?: SocraticHighlight[];
+  onSocraticHighlightClick?: (id: string, event: Event) => void;
 }
 
 const EditorArea: React.FC<EditorAreaProps> = ({
@@ -46,7 +57,10 @@ const EditorArea: React.FC<EditorAreaProps> = ({
   onAddNotion,
   onOpenChat,
   onSave,
-  onEditorReady
+  onEditorReady,
+  collaboration,
+  socraticFeedback = [],
+  onSocraticHighlightClick,
 }) => {
   const isInitialLoad = useRef(true);
   const [internalPlaceholder, setInternalPlaceholder] = useState(placeholder);
@@ -393,18 +407,22 @@ const EditorArea: React.FC<EditorAreaProps> = ({
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
       >
-        <div className="w-full h-full p-10">
+        <div className="w-full h-full p-10" style={{ viewTransitionName: 'editor-content' }}>
           <TiptapEditor
+            key={`${collaboration?.documentId || 'static'}-${!!collaboration}`}
             content={content}
             onChange={handleTiptapUpdate}
             placeholder={internalPlaceholder}
             readOnly={readOnly}
             textFormat={textFormat}
+            collaboration={collaboration}
             onSelectionChange={handleSelectionUpdate}
             onReady={(editor) => {
               setTiptapInstance(editor);
               onEditorReady?.(editor);
             }}
+            socraticFeedback={socraticFeedback}
+            onSocraticHighlightClick={onSocraticHighlightClick}
             className="prose prose-lg max-w-none text-black dark:text-gray-100"
           />
         </div>

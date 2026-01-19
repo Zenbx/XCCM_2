@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Brain, CheckCircle2, AlertCircle, Lightbulb, Sparkles, Plus, RefreshCw } from 'lucide-react';
 import { socraticService, SocraticAuditResult } from '@/services/socraticService';
-import TactileButton from '../../UI/TactileButton';
+import { TactileButton } from '../../UI/TactileButton';
 import GlassPanel from '../../UI/GlassPanel';
 
 interface SocraticPanelProps {

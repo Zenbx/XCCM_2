@@ -49,11 +49,8 @@ const VaultPanel: React.FC<VaultPanelProps> = ({ onDragStart }) => {
             <div className="flex-1 overflow-y-auto space-y-3 pr-2 custom-scrollbar">
                 {vaultGranules.length > 0 ? (
                     vaultGranules.map((granule) => (
-                        <div key={granule.id} className="group relative bg-white border border-gray-100 rounded-xl p-1 hover:border-[#99334C]/30 hover:shadow-md transition-all">
+                        <div key={granule.id}>
                             <Granule granule={granule} onDragStart={onDragStart} />
-                            <div className="px-3 pb-2 text-[10px] text-gray-400 flex justify-between items-center">
-                                <span>Enregistré il y a {granule.savedAt}</span>
-                            </div>
                         </div>
                     ))
                 ) : (

@@ -1,4 +1,5 @@
 // services/documentService.ts
+import { getAuthHeaders } from '@/lib/apiHelper';
 
 const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001').trim();
 
@@ -16,6 +17,8 @@ export interface Document {
   category?: string;
   level?: string;
   description?: string;
+  likes?: number;
+  isLiked?: boolean;
 }
 
 // Types pour le document avec structure complete
@@ -136,6 +139,28 @@ class DocumentService {
       return result.data;
     } catch (error) {
       console.error('downloadDocument error:', error);
+      throw error;
+    }
+  }
+
+  async toggleLike(docId: string): Promise<{ likes: number, isLiked: boolean }> {
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/api/documents/${docId}/like`,
+        {
+          method: 'POST',
+          headers: getAuthHeaders()
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error('Erreur lors du like');
+      }
+
+      const result = await response.json();
+      return result.data;
+    } catch (error) {
+      console.error('toggleLike error:', error);
       throw error;
     }
   }

@@ -2,58 +2,30 @@
 
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Cloud, MessageSquare, Info, Settings, ShoppingBag, Lock, Brain } from 'lucide-react';
-import Granule from './Granule';
+import {
+  Cloud,
+  ShoppingBag,
+  Lock,
+  MessageSquare,
+  Settings,
+  Info,
+  Brain,
+  Bot,
+  ChevronRight
+} from 'lucide-react';
+import RichTooltip from '@/components/UI/RichTooltip';
+
+// Sous-composants pour chaque panneau
 import ImportPanel from './Panels/ImportPanel';
+import MarketplacePanel from './Panels/MarketplacePanel';
+import VaultPanel from './Panels/VaultPanel';
 import CommentsPanel from './Panels/CommentsPanel';
 import InfoPanel from './Panels/InfoPanel';
 import SettingsPanel from './Panels/SettingsPanel';
-import MarketplacePanel from './Panels/MarketplacePanel';
-import VaultPanel from './Panels/VaultPanel';
-import SocraticPanel from './Panels/SocraticPanel';
-
-import RichTooltip from '../UI/RichTooltip';
-
-// Animation variants pour le panneau coulissant
-const panelVariants = {
-  hidden: {
-    x: 300,
-    opacity: 0,
-  },
-  visible: {
-    x: 0,
-    opacity: 1,
-    transition: {
-      type: "spring" as const,
-      stiffness: 300,
-      damping: 30,
-    }
-  },
-  exit: {
-    x: 300,
-    opacity: 0,
-    transition: {
-      type: "spring" as const,
-      stiffness: 300,
-      damping: 30,
-    }
-  }
-};
-
-// Animation pour les icônes
-const iconVariants = {
-  idle: { scale: 1 },
-  hover: { scale: 1.1 },
-  tap: { scale: 0.95 }
-};
-
-// ============= COMPOSANT: RightPanel =============
 
 const RightPanel = ({
   activePanel,
   onToggle,
-  granules,
-  onDragStart,
   project,
   structure,
   currentContext,
@@ -62,12 +34,15 @@ const RightPanel = ({
   onAddComment,
   onDeleteComment,
   isFetchingComments,
-  onImportFile
+  onImportFile,
+  granules,
+  onDragStart = () => { }
 }: any) => {
   const panels = [
     { id: 'import', icon: Cloud, title: 'Importer Fichier', description: 'Gérez vos ressources et importez des modules de connaissance.' },
     { id: 'marketplace', icon: ShoppingBag, title: 'Marketplace', description: 'Découvrez et achetez de nouveaux contenus pédagogiques.' },
     { id: 'vault', icon: Lock, title: 'Coffre-fort', description: 'Accédez à votre bibliothèque personnelle d\'éléments sauvegardés.' },
+    { id: 'assistant', icon: Bot, title: 'Assistant IA', description: 'Utilisez l\'IA pour générer ou corriger votre contenu.' },
     { id: 'socratic', icon: Brain, title: 'Socrate AI', description: 'Recevez des conseils pédagogiques personnalisés sur votre contenu.' },
     { id: 'comments', icon: MessageSquare, title: 'Commentaires', description: 'Collaborez et discutez des modifications avec votre équipe.' },
     { id: 'info', icon: Info, title: 'Informations', description: 'Détails techniques et métadonnées du projet actuel.' },
@@ -82,64 +57,71 @@ const RightPanel = ({
       transition={{ duration: 0.3 }}
     >
       {/* Barre d'icônes - toujours visible et fixe */}
-      <div className="w-14 bg-white dark:bg-gray-900 border-l border-gray-200 dark:border-gray-800 flex flex-col items-center py-4 gap-4 z-20 shadow-sm transition-colors duration-300">
-        {panels.map(({ id, icon: Icon, title, description }) => (
-          <RichTooltip key={id} title={title} description={description} position="left">
-            <motion.button
-              onClick={() => onToggle(id)}
-              className={`p-3 rounded-xl transition-colors duration-200 ${activePanel === id
-                ? 'bg-[#99334C] text-white shadow-md'
-                : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
-                }`}
-              variants={iconVariants}
-              initial="idle"
-              whileHover="hover"
-              whileTap="tap"
-              animate={activePanel === id ? { scale: 1.05 } : { scale: 1 }}
+      <div className="w-14 bg-white dark:bg-gray-900 border-l border-gray-200 dark:border-gray-800 flex flex-col items-center py-4 gap-4 z-40 shadow-sm transition-colors duration-300">
+        {panels.map((panel) => {
+          const Icon = panel.icon;
+          const isActive = activePanel === panel.id;
+
+          return (
+            <RichTooltip
+              key={panel.id}
+              title={panel.title}
+              description={panel.description}
             >
-              <Icon size={20} strokeWidth={activePanel === id ? 2.5 : 2} />
-            </motion.button>
-          </RichTooltip>
-        ))}
+              <button
+                onClick={() => onToggle(panel.id)}
+                className={`p-2 rounded-xl transition-all duration-200 group relative ${isActive
+                  ? 'bg-[#99334C] text-white shadow-lg scale-110'
+                  : 'text-gray-500 hover:text-[#99334C] hover:bg-[#99334C]/5'
+                  }`}
+              >
+                <Icon size={24} className={isActive ? 'stroke-[2.5px]' : 'stroke-[1.5px]'} />
+                {panel.id === 'comments' && comments?.length > 0 && !isActive && (
+                  <span className="absolute top-1 right-1 w-2 h-2 bg-[#99334C] rounded-full border-2 border-white" />
+                )}
+              </button>
+            </RichTooltip>
+          );
+        })}
       </div>
 
-      {/* Panneau de contenu - s'ouvre à gauche des icônes en overlay avec animation */}
+      {/* Contenu du panneau - glisse depuis la droite */}
       <AnimatePresence mode="wait">
         {activePanel && (
           <motion.div
-            key={activePanel}
-            className="absolute right-14 top-0 h-full w-80 lg:w-96 xl:w-[28rem] bg-white dark:bg-gray-800 border-l border-gray-200 dark:border-gray-700 flex flex-col shadow-2xl z-50 transition-colors duration-300"
-            variants={panelVariants}
-            initial="hidden"
-            animate="visible"
-            exit="exit"
-            layout
+            initial={{ x: 400, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            exit={{ x: 400, opacity: 0 }}
+            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+            className="absolute right-14 top-0 bottom-0 w-[400px] border-l border-gray-100 bg-white dark:bg-gray-950 flex flex-col h-full shadow-2xl z-50 overflow-hidden"
           >
-            <motion.div
-              className="p-5 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between bg-gray-50/50 dark:bg-gray-900/50"
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 }}
-            >
-              <h3 className="font-bold text-gray-900 dark:text-gray-100">
-                {panels.find(p => p.id === activePanel)?.title}
-              </h3>
-              <motion.button
+            {/* Header du panneau */}
+            <div className="p-4 border-b border-gray-100 flex items-center justify-between bg-white/80 backdrop-blur-md sticky top-0 z-10">
+              <div className="flex items-center gap-3">
+                {(() => {
+                  const p = panels.find(p => p.id === activePanel);
+                  const Icon = p?.icon || Info;
+                  return (
+                    <>
+                      <div className="p-2 bg-[#99334C]/10 rounded-lg">
+                        <Icon size={18} className="text-[#99334C]" />
+                      </div>
+                      <h3 className="font-bold text-gray-900">{p?.title}</h3>
+                    </>
+                  );
+                })()}
+              </div>
+              <button
                 onClick={() => onToggle(activePanel)}
-                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
-                whileHover={{ scale: 1.1, rotate: 90 }}
-                whileTap={{ scale: 0.9 }}
+                className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-400 transition-colors"
               >
-                <span className="text-xl font-light">×</span>
-              </motion.button>
-            </motion.div>
-            <motion.div
-              className="p-6 flex-1 overflow-y-auto custom-scrollbar"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.15 }}
-            >
-              {activePanel === 'import' && <ImportPanel granules={granules} onDragStart={onDragStart} onImportFile={onImportFile} />}
+                <ChevronRight size={20} />
+              </button>
+            </div>
+
+            {/* Contenu dynamique */}
+            <div className="flex-1 overflow-y-auto custom-scrollbar p-4">
+              {activePanel === 'import' && <ImportPanel granules={granules || []} onDragStart={onDragStart} onImportFile={onImportFile} />}
               {activePanel === 'marketplace' && <MarketplacePanel onDragStart={onDragStart} />}
               {activePanel === 'vault' && <VaultPanel onDragStart={onDragStart} />}
               {activePanel === 'comments' && (
@@ -152,7 +134,18 @@ const RightPanel = ({
               )}
               {activePanel === 'info' && <InfoPanel project={project} structure={structure} />}
               {activePanel === 'settings' && <SettingsPanel project={project} onUpdateProject={onUpdateProject} />}
-            </motion.div>
+              {activePanel === 'socratic' && (
+                <div className="p-8 text-center">
+                  <div className="p-4 bg-[#99334C]/5 rounded-2xl mb-4 inline-block">
+                    <Brain size={40} className="text-[#99334C]" />
+                  </div>
+                  <h4 className="font-bold text-lg mb-2">Socrate AI</h4>
+                  <p className="text-gray-500 text-sm">
+                    L'analyse Socratic est active en permanence. Utilisez le bouton flottant "Bot" en bas à gauche pour voir les retours détaillés.
+                  </p>
+                </div>
+              )}
+            </div>
           </motion.div>
         )}
       </AnimatePresence>

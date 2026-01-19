@@ -6,6 +6,7 @@ import {
   Bold,
   Italic,
   Underline,
+  Strikethrough,
   AlignLeft,
   AlignCenter,
   AlignRight,
@@ -15,9 +16,14 @@ import {
   ListOrdered,
   Image as ImageIcon,
   Minimize2,
-  Maximize2
+  Maximize2,
+  IndentIncrease,
+  IndentDecrease,
+  Undo,
+  Redo
 } from 'lucide-react';
 import RichTooltip from '@/components/UI/RichTooltip';
+
 interface EditorToolbarProps {
   onFormatChange: (format: string) => void;
   onFontChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
@@ -46,7 +52,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
   onToggleZen,
 }) => {
   return (
-    <div className={`bg-white border-b border-gray-200 p-2 flex items-center gap-1 sticky top-0 z-30 transition-all duration-300 ${disabled ? 'opacity-40 pointer-events-none select-none' : ''
+    <div className={`bg-white border-b border-gray-200 p-1.5 flex items-center gap-1 transition-all duration-300 overflow-hidden ${disabled ? 'opacity-40 pointer-events-none select-none' : ''
       }`}>
 
       <RichTooltip title="Police" description="Changer la famille de police du texte sélectionné.">
@@ -77,7 +83,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
         </select>
       </RichTooltip>
 
-      <div className="w-px h-6 bg-gray-200 mx-1"></div>
+      <div className="w-[1.5px] h-6 bg-gray-300 mx-1 flex-shrink-0" />
 
       <RichTooltip title="Gras" description="Mettre le texte en évidence." shortcut="Ctrl+B">
         <button className="p-2 hover:bg-gray-100 rounded text-gray-700 transition-colors" onClick={() => onFormatChange('bold')}><Bold size={18} /></button>
@@ -91,7 +97,11 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
         <button className="p-2 hover:bg-gray-100 rounded text-gray-700 transition-colors" onClick={() => onFormatChange('underline')}><Underline size={18} /></button>
       </RichTooltip>
 
-      <div className="w-px h-6 bg-gray-200 mx-1"></div>
+      <RichTooltip title="Barré" description="Barrer le texte pour indiquer une suppression.">
+        <button className="p-2 hover:bg-gray-100 rounded text-gray-700 transition-colors" onClick={() => onFormatChange('strikethrough')}><Strikethrough size={18} /></button>
+      </RichTooltip>
+
+      <div className="w-[1.5px] h-6 bg-gray-300 mx-1 flex-shrink-0" />
 
       <RichTooltip title="Gauche" description="Aligner le texte sur la marge gauche." shortcut="Ctrl+Maj+L">
         <button className="p-2 hover:bg-gray-100 rounded text-gray-700 transition-colors" onClick={() => onFormatChange('justifyLeft')}><AlignLeft size={18} /></button>
@@ -109,7 +119,17 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
         <button className="p-2 hover:bg-gray-100 rounded text-gray-700 transition-colors" onClick={() => onFormatChange('justifyFull')}><AlignJustify size={18} /></button>
       </RichTooltip>
 
-      <div className="w-px h-6 bg-gray-200 mx-1"></div>
+      <div className="w-[1.5px] h-6 bg-gray-300 mx-1 flex-shrink-0" />
+
+      <RichTooltip title="Augmenter le retrait" description="Décaler le paragraphe vers la droite." shortcut="Tab">
+        <button className="p-2 hover:bg-gray-100 rounded text-gray-700 transition-colors" onClick={() => onFormatChange('indent')}><IndentIncrease size={18} /></button>
+      </RichTooltip>
+
+      <RichTooltip title="Diminuer le retrait" description="Décaler le paragraphe vers la gauche." shortcut="Maj+Tab">
+        <button className="p-2 hover:bg-gray-100 rounded text-gray-700 transition-colors" onClick={() => onFormatChange('outdent')}><IndentDecrease size={18} /></button>
+      </RichTooltip>
+
+      <div className="w-[1.5px] h-6 bg-gray-300 mx-1 flex-shrink-0" />
 
       <RichTooltip title="Couleur" description="Changer la couleur du texte sélectionné.">
         <div className="flex items-center gap-1.5 p-1 hover:bg-gray-100 rounded transition-colors group relative cursor-pointer">
@@ -127,7 +147,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
         </div>
       </RichTooltip>
 
-      <div className="w-px h-6 bg-gray-200 mx-1"></div>
+      <div className="w-[1.5px] h-6 bg-gray-300 mx-1 flex-shrink-0" />
 
       <RichTooltip title="Puces" description="Créer une liste non ordonnée." shortcut="Ctrl+Maj+8">
         <button className="p-2 hover:bg-gray-100 rounded text-gray-700 transition-colors" onClick={() => onFormatChange('insertUnorderedList')}><List size={18} /></button>
@@ -138,6 +158,18 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
       </RichTooltip>
 
       <div className="flex-1"></div>
+
+      <div className="w-[1.5px] h-6 bg-gray-300 mx-1 flex-shrink-0" />
+
+      <RichTooltip title="Annuler" description="Annuler la dernière action." shortcut="Ctrl+Z">
+        <button className="p-2 hover:bg-gray-100 rounded text-gray-700 transition-colors" onClick={() => onFormatChange('undo')}><Undo size={18} /></button>
+      </RichTooltip>
+
+      <RichTooltip title="Rétablir" description="Rétablir l'action annulée." shortcut="Ctrl+Y">
+        <button className="p-2 hover:bg-gray-100 rounded text-gray-700 transition-colors" onClick={() => onFormatChange('redo')}><Redo size={18} /></button>
+      </RichTooltip>
+
+      <div className="w-[1.5px] h-6 bg-gray-300 mx-1 flex-shrink-0" />
 
       <RichTooltip title={isZenMode ? "Quitter Zen" : "Mode Zen"} description="Masquer l'interface pour une concentration totale sur l'écriture." shortcut="Alt+Z">
         <button
@@ -154,6 +186,8 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
 
       {!isZenMode && (
         <>
+          <div className="w-[1.5px] h-6 bg-gray-300 mx-2 flex-shrink-0" />
+
           <RichTooltip title="Image" description="Insérer une image depuis votre appareil ou une URL.">
             <button
               className="p-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
@@ -163,15 +197,6 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
             </button>
           </RichTooltip>
 
-          <RichTooltip title="Assistant IA" description="Utiliser l'intelligence artificielle pour générer, reformuler ou corriger votre contenu." shortcut="Ctrl+K">
-            <button
-              className="px-4 py-1.5 rounded-lg text-white flex items-center gap-2 text-sm hover:opacity-90 shadow-sm transition-all hover:shadow-md ml-2"
-              style={{ background: 'linear-gradient(135deg, #99334C 0%, #7a283d 100%)' }}
-              onClick={onChatToggle}
-            >
-              <Bot size={16} /> Assistant
-            </button>
-          </RichTooltip>
         </>
       )}
     </div>

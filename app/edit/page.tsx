@@ -1,30 +1,40 @@
 "use client";
 
-import React, { useState, useRef, useEffect, Suspense } from 'react';
+import React, { useState, useRef, useEffect, Suspense, useMemo, useCallback } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { ChevronDown, ChevronRight, Plus, Eye, Share2, Save, Loader2, AlertCircle, Home, X, Bot, Command, Trash2 } from 'lucide-react';
-import Link from 'next/link';
-import RichTooltip from '@/components/UI/RichTooltip';
+import {
+  Loader2, AlertCircle, Bot
+} from 'lucide-react';
+import toast from 'react-hot-toast';
+
+// Custom Hooks
+import { useLanguage } from '@/context/LanguageContext';
+import { useAuth } from '@/context/AuthContext';
+import { useRealtimeSync } from '@/hooks/useRealtimeSync';
+import { useSynapseSync } from '@/hooks/useSynapseSync';
+import { useEditorCommands } from '@/hooks/useEditorCommands';
+import { useSocraticAnalysis } from '@/hooks/useSocraticAnalysis';
+import { useEditorState } from './hooks/useEditorState';
+import { useEditorModals } from './hooks/useEditorModals';
+
+// Components
 import TableOfContents from '@/components/Editor/TableOfContents';
 import EditorToolbar from '@/components/Editor/EditorToolBar';
 import EditorArea from '@/components/Editor/EditorArea';
 import RightPanel from '@/components/Editor/RightPanel';
 import ChatBotOverlay from '@/components/Editor/ChatBotOverlay';
-import { projectService, Project } from '@/services/projectService';
-import { commentService } from '@/services/commentService';
-import { Language, translations } from '@/services/locales';
-import { useLanguage } from '@/context/LanguageContext';
-import LanguageToggle from '@/components/LanguageToggle';
-import { structureService, Part, Chapter, Paragraph, Notion, getProjectStructureOptimized } from '@/services/structureService';
 import ShareOverlay from '@/components/Editor/ShareOverlay';
-import { useRealtimeSync } from '@/hooks/useRealtimeSync';
-import pLimit from 'p-limit';
-import { FaHome } from 'react-icons/fa';
-import toast from 'react-hot-toast';
-import { EditorSkeleton, TOCSkeleton } from '@/components/UI/SkeletonScreens';
-import { motion, AnimatePresence } from 'framer-motion';
-import { TactileButton } from '@/components/UI/TactileButton';
-import { useEditorCommands } from '@/hooks/useEditorCommands';
+import { SocraticPanel } from '@/components/Socratic/SocraticPanel';
+import EditorHeader from './components/EditorHeader';
+import CreationModals from './components/Modals/CreationModals';
+import DeleteModal from './components/Modals/DeleteModal';
+import EditorSkeletonView from './components/EditorSkeletonView';
+
+// Services & Utils
+import { translations } from '@/services/locales';
+import { structureService } from '@/services/structureService';
+import { commentService } from '@/services/commentService';
+import '../../styles/view-transitions.css';
 
 const XCCM2Editor = () => {
   const searchParams = useSearchParams();
@@ -32,2068 +42,691 @@ const XCCM2Editor = () => {
   const projectName = searchParams.get('projectName');
   const { language } = useLanguage();
   const t = translations[language] ?? translations.fr;
+  const { user: authUser } = useAuth();
 
-  const [projectData, setProjectData] = useState<Project | null>(null);
-  const [comments, setComments] = useState<any[]>([]);
-  const [isFetchingComments, setIsFetchingComments] = useState(false);
-  const [structure, setStructure] = useState<Part[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
-  const [isImporting, setIsImporting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [rightPanel, setRightPanel] = useState<string | null>(null);
-  const [textFormat, setTextFormat] = useState({
-    font: 'Calibri',
-    fontSize: '11',
-    color: '#000000'
-  });
+  // Core State Hook
+  const {
+    projectData,
+    comments, setComments,
+    structure, setStructure,
+    isLoading, setIsLoading,
+    isSaving, setIsSaving,
+    isImporting,
+    error,
+    currentContext, setCurrentContext,
+    editorContent, setEditorContent,
+    hasUnsavedChanges, setHasUnsavedChanges,
+    textFormat, setTextFormat,
+    loadProject,
+    handleUpdateProjectSettings
+  } = useEditorState(projectName);
 
-  const [currentContext, setCurrentContext] = useState<{
-    type: 'part' | 'chapter' | 'paragraph' | 'notion'; // Support tous les types de granules
-    projectName: string;
-    partTitle: string;
-    // Optionnels selon le type
-    chapterTitle?: string;
-    chapterId?: string;
-    paraName?: string;
-    paraId?: string;
-    notionName?: string;
-    notion?: Notion | null;
-    part?: Part | null;
-  } | null>(null);
+  // Feedback States
+  const [pulsingId, setPulsingId] = useState<string | null>(null);
+  const [pendingGranule, setPendingGranule] = useState<{ type: 'part' | 'chapter' | 'paragraph' | 'notion'; content: string } | null>(null);
 
-  const [editorContent, setEditorContent] = useState('');
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-  const editorRef = useRef<HTMLDivElement>(null);
+  // Modals Hook
+  const {
+    showPartModal, setShowPartModal,
+    showChapterModal, setShowChapterModal,
+    showParagraphModal, setShowParagraphModal,
+    showNotionModal, setShowNotionModal,
+    modalContext,
+    partFormData, setPartFormData,
+    chapterFormData, setChapterFormData,
+    paragraphFormData, setParagraphFormData,
+    notionFormData, setNotionFormData,
+    isCreatingPart, isCreatingChapter, isCreatingParagraph, isCreatingNotion,
+    deleteModalConfig,
+    handleCreatePart, handleCreateChapter, handleCreateParagraph, handleCreateNotion,
+    confirmCreatePart, confirmCreateChapter, confirmCreateParagraph, confirmCreateNotion,
+    handleDelete, confirmDelete, setDeleteModalConfig
+  } = useEditorModals(projectName, setStructure, loadProject, setPendingGranule, setPulsingId);
 
-  // États des modales
-  const [showPartModal, setShowPartModal] = useState(false);
-  const [showChapterModal, setShowChapterModal] = useState(false);
-  const [showParagraphModal, setShowParagraphModal] = useState(false);
-  const [showNotionModal, setShowNotionModal] = useState(false);
-
-  const [modalContext, setModalContext] = useState<{
-    partTitle?: string;
-    chapterTitle?: string;
-    paraName?: string;
-  }>({});
-
-  const [partFormData, setPartFormData] = useState({ title: '', number: 1 });
-  const [chapterFormData, setChapterFormData] = useState({ title: '', number: 1 });
-  const [paragraphFormData, setParagraphFormData] = useState({ name: '', number: 1 });
-  const [notionFormData, setNotionFormData] = useState({ name: '', number: 1 });
-
-  const [isCreatingPart, setIsCreatingPart] = useState(false);
-  const [isCreatingChapter, setIsCreatingChapter] = useState(false);
-  const [isCreatingParagraph, setIsCreatingParagraph] = useState(false);
-  const [isCreatingNotion, setIsCreatingNotion] = useState(false);
-  const [showChatBot, setShowChatBot] = useState(false);
-
-  const [expandedItems, setExpandedItems] = useState<{ [key: string]: boolean }>({});
-  const [showShareOverlay, setShowShareOverlay] = useState(false);
-  const [showCommandPalette, setShowCommandPalette] = useState(false);
-  const [tiptapEditor, setTiptapEditor] = useState<any>(null);
-
-  // Resizing states
-  const [sidebarWidth, setSidebarWidth] = useState(320);
-  const [isResizing, setIsResizing] = useState(false);
-  const [isZenMode, setIsZenMode] = useState(false);
-  const lastRenamedTo = useRef<string | null>(null);
-
-  // Modal de confirmation de suppression
-  const [deleteModalConfig, setDeleteModalConfig] = useState<{
-    isOpen: boolean;
-    isDeleting: boolean;
-    type: string;
-    id: string;
-    title: string;
-  }>({
-    isOpen: false,
-    isDeleting: false,
-    type: '',
-    id: '',
-    title: ''
-  });
-
-  const toggleZenMode = () => {
-    setIsZenMode(prev => !prev);
-    // When entering Zen Mode, close right panel if open
-    if (!isZenMode) setRightPanel(null);
-  };
-
-  // Command Palette & Global Shortcuts
-
-
-  useEditorCommands({
-    onSave: () => handleSave(),
-    onPreview: () => router.push(`/preview?projectName=${projectName}`),
-    onShare: () => setShowShareOverlay(true),
-    onExport: () => router.push(`/preview?projectName=${projectName}`),
-    onToggleZen: toggleZenMode,
-  });
-
-  const isToolbarDisabled = React.useMemo(() => {
-    // Désactiver si Chapter ou Paragraph est sélectionné (mais pas Notion)
-    return (
-      (currentContext?.type === 'chapter') ||
-      (currentContext?.type === 'paragraph')
-    );
-  }, [currentContext?.type]);
-
-  // Ref pour accéder à loadProject dans le callback stable
-  const loadProjectRef = useRef<((silent?: boolean) => Promise<void>) | null>(null);
-
-  useEffect(() => {
-    if (projectName) {
-      // Si on vient de renommer le projet, on ne recharge pas avec l'ancien nom
-      if (lastRenamedTo.current && projectName !== lastRenamedTo.current) {
-        console.log("⏭️ Skipping loadProject because of recent rename to:", lastRenamedTo.current);
-        return;
-      }
-      loadProject();
-      // Reset le ref après un load (qu'il soit skip ou non)
-      lastRenamedTo.current = null;
-    }
-  }, [projectName]);
-
-  // Sync currentContext when project name changes
-  useEffect(() => {
-    if (projectData?.pr_name && currentContext && currentContext.projectName !== projectData.pr_name) {
-      setCurrentContext(prev => prev ? { ...prev, projectName: projectData.pr_name } : null);
-    }
-  }, [projectData?.pr_name]);
-
-  // Handler stable pour le temps réel
-  const handleStructureChange = React.useCallback((event: string, data: any) => {
-    console.log('📡 Received realtime event:', event, data);
-    if (event === 'NOTION_UPDATED' || event === 'STRUCTURE_CHANGED') {
-      // Reload silencieusement la structure via le ref
-      if (loadProjectRef.current) {
-        loadProjectRef.current(true);
-        toast.success('📡 Mise à jour collaborative', { duration: 2000 });
-      }
-    }
-  }, []);
-
-  // ⚡ Real-time sync via WebSockets
-  useRealtimeSync({
-    projectName: projectData?.pr_name || projectName || '',
-    enabled: !!(projectData?.pr_name || projectName),
-    onStructureChange: handleStructureChange
-  });
-
-  useEffect(() => {
-    if (currentContext && editorContent !== currentContext.notion?.notion_content) {
-      setHasUnsavedChanges(true);
-    }
-  }, [editorContent, currentContext]);
-
-  // Handle Resizing
-  const startResizing = React.useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
-    setIsResizing(true);
-  }, []);
-
-  const stopResizing = React.useCallback(() => {
-    setIsResizing(false);
-  }, []);
-
-  const resize = React.useCallback((e: MouseEvent) => {
-    if (isResizing) {
-      const newWidth = e.clientX;
-      if (newWidth >= 220 && newWidth <= 600) {
-        setSidebarWidth(newWidth);
-      }
-    }
-  }, [isResizing]);
-
-  useEffect(() => {
-    if (isResizing) {
-      window.addEventListener('mousemove', resize);
-      window.addEventListener('mouseup', stopResizing);
-    } else {
-      window.removeEventListener('mousemove', resize);
-      window.removeEventListener('mouseup', stopResizing);
-    }
-    return () => {
-      window.removeEventListener('mousemove', resize);
-      window.removeEventListener('mouseup', stopResizing);
-    };
-  }, [isResizing, resize, stopResizing]);
-
-  /* import pLimit from 'p-limit'; // Put this at the top of file */
-
-  const loadProject = async (isSilent = false) => {
-    try {
-      if (!isSilent) setIsLoading(true);
-      setError('');
-
-      const project = await projectService.getProjectByName(projectName!);
-      setProjectData(project);
-
-      // Charger les commentaires
-      fetchComments();
-
-      // ⚡ Chargement optimisé en 1 seul appel (au lieu de N+1)
-      const parts = await getProjectStructureOptimized(project.pr_name);
-      setStructure(parts);
-
-      if (!isSilent) setIsLoading(false);
-
-    } catch (err: any) {
-      // Gestion spécifique de l'erreur d'authentification
-      if (err.message && err.message.includes('Token invalide ou expiré')) {
-        toast.error('⚠️ Votre session a expiré. Veuillez vous reconnecter.', { duration: 4000 });
-        // Redirection vers la page de connexion
-        window.location.href = '/login';
-        return;
-      }
-
-      console.error('Erreur chargement projet:', err);
-      toast.error(err.message || 'Erreur lors du chargement du projet');
-      if (!isSilent) setIsLoading(false);
-    }
-  };
-
-  // Assigner loadProject au ref pour le callback temps réel
-  loadProjectRef.current = loadProject;
-
-  const fetchComments = async () => {
-    if (!projectName) return;
-    try {
-      setIsFetchingComments(true);
-      const data = await commentService.getComments(projectName);
-      setComments(data);
-    } catch (err) {
-      console.error("Erreur fetch comments:", err);
-    } finally {
-      setIsFetchingComments(false);
-    }
-  };
-
-  const handleAddComment = async (content: string) => {
-    const activeName = projectData?.pr_name || projectName;
-    if (!activeName) return;
-    try {
-      const newComment = await commentService.addComment(activeName, content);
-      setComments(prev => [newComment, ...prev]);
-    } catch (err: any) {
-      toast.error("Erreur lors de l'ajout du commentaire: " + err.message);
-    }
-  };
-
-  const handleDeleteComment = async (commentId: string) => {
-    const activeName = projectData?.pr_name || projectName;
-    if (!activeName) return;
-    try {
-      await commentService.deleteComment(activeName, commentId);
-      setComments(prev => prev.filter(c => c.comment_id !== commentId));
-    } catch (err: any) {
-      toast.error("Erreur lors de la suppression du commentaire: " + err.message);
-    }
-  };
-
-  const handleUpdateProjectSettings = async (data: Partial<Project>) => {
-    if (!projectData || !projectName) return;
-    try {
-      // Si on renomme, on sauve le nouveau nom pour éviter un reload sur l'ancien
-      if (data.pr_name && data.pr_name !== projectName) {
-        lastRenamedTo.current = data.pr_name;
-      }
-
-      const updated = await projectService.updateProject(projectName, data);
-      setProjectData(updated);
-
-      // Si le nom a changé, mettre à jour l'URL
-      if (data.pr_name && data.pr_name !== projectName) {
-        console.log("🔄 Project renamed. Updating URL...");
-        // Utiliser window.history.replaceState pour un changement immédiat avant que router.replace ne s'installe
-        const newUrl = window.location.pathname + '?projectName=' + encodeURIComponent(data.pr_name);
-        window.history.replaceState(null, '', newUrl);
-
-        router.replace(`/edit?projectName=${encodeURIComponent(data.pr_name)}`);
-        toast.success("Projet renommé avec succès");
-      } else {
-        toast.success("Paramètres mis à jour");
-      }
-    } catch (err: any) {
-      console.error("Erreur update settings:", err);
-      toast.error("Erreur lors de la mise à jour des paramètres: " + err.message);
-      lastRenamedTo.current = null; // Reset en cas d'erreur
-    }
-  };
-
-  // Auto-save logic
-  useEffect(() => {
-    if (!hasUnsavedChanges || !currentContext) return;
-
-    const timeoutId = setTimeout(() => {
-      handleSave(true); // true = silent/auto
-    }, 2000);
-
-    return () => clearTimeout(timeoutId);
-  }, [editorContent, hasUnsavedChanges, currentContext]);
-
-  const handleSelectNotion = (context: {
-    projectName: string;
-    partTitle: string;
-    chapterTitle: string;
-    paraName: string;
-    notionName: string;
-    notion: Notion;
-  }) => {
-    // Suppression de window.confirm : auto-save gérera la sauvegarde si nécessaire avant ou après,
-    // mais ici on change de contexte, donc il faut sauvegarder AVANT de changer si on veut pas perdre.
-    // Idéalement on force le save avant switch.
-    if (hasUnsavedChanges) {
-      handleSave(true); // Save immédiat silencieux avant de changer
-    }
-
-    setCurrentContext({ ...context, type: 'notion', part: null });
-    setEditorContent(context.notion.notion_content || '');
-    setHasUnsavedChanges(false);
-  };
-
-  // Nouveau handler pour sélectionner une partie (Intro)
-  const handleSelectPart = (context: {
-    projectName: string;
-    partTitle: string;
-    part: Part;
-  }) => {
-    if (hasUnsavedChanges) {
-      handleSave(true);
-    }
-    setCurrentContext({
+  // Mock Granules for ImportPanel (Strict & Rich Hierarchy: Part > Chapter > Paragraph > Notion)
+  const mockGranules = [
+    {
+      id: 'g1',
       type: 'part',
-      projectName: context.projectName,
-      partTitle: context.partTitle,
-      part: context.part,
-      chapterTitle: undefined, paraName: undefined, notionName: undefined, notion: null
-    });
-    setEditorContent(context.part.part_intro || '');
-    setHasUnsavedChanges(false);
-  }
-
-  // Handler pour sélectionner un chapitre (pour drop de paragraphes)
-  const handleSelectChapter = (projectName: string, partTitle: string, chapterTitle: string, chapterId: string) => {
-    if (hasUnsavedChanges) {
-      handleSave(true);
-    }
-    setCurrentContext({
-      type: 'chapter',
-      projectName,
-      partTitle,
-      chapterTitle,
-      chapterId,
-      paraName: undefined,
-      paraId: undefined,
-      notionName: undefined,
-      notion: null,
-      part: null
-    });
-    setEditorContent(''); // Pas de contenu éditable pour un chapitre
-    setHasUnsavedChanges(false);
-  };
-
-  // Handler pour sélectionner un paragraphe (pour drop de notions)
-  const handleSelectParagraph = (projectName: string, partTitle: string, chapterTitle: string, paraName: string, paraId: string) => {
-    if (hasUnsavedChanges) {
-      handleSave(true);
-    }
-    setCurrentContext({
-      type: 'paragraph',
-      projectName,
-      partTitle,
-      chapterTitle,
-      paraName,
-      paraId,
-      notionName: undefined,
-      notion: null,
-      part: null
-    });
-    setEditorContent(''); // Pas de contenu éditable pour un paragraphe
-    setHasUnsavedChanges(false);
-  };
-
-  const handleSave = async (isAuto = false) => {
-    if (!currentContext) return;
-
-    try {
-      setIsSaving(true);
-      setError('');
-
-      if (currentContext.type === 'notion' && currentContext.notionName) {
-        // Sauvegarde NOTION
-        await structureService.updateNotion(
-          currentContext.projectName,
-          currentContext.partTitle,
-          currentContext.chapterTitle!,
-          currentContext.paraName!,
-          currentContext.notionName!,
-          { notion_content: editorContent }
-        );
-        // Mise à jour locale
-        if (currentContext.notion) {
-          currentContext.notion.notion_content = editorContent;
+      content: 'Partie 1: Design System & UI',
+      icon: 'Folder',
+      author: 'Equipe XCCM',
+      introduction: 'Cette partie explore les bases des systèmes de design modernes...',
+      children: [
+        {
+          id: 'c1',
+          type: 'chapter',
+          content: 'Chapitre A: Identité Visuelle',
+          icon: 'Book',
+          children: [
+            {
+              id: 'p1',
+              type: 'paragraph',
+              content: 'Logotype & Symboles',
+              icon: 'FileText',
+              children: [
+                {
+                  id: 'n1',
+                  type: 'notion',
+                  content: 'Boutons Tactiles',
+                  icon: 'File',
+                  previewContent: 'Le bouton tactile doit avoir un retour haptique visuel...'
+                }
+              ]
+            }
+          ]
+        },
+        {
+          id: 'c2',
+          type: 'chapter',
+          content: 'Chapitre B: Composants Tactiles',
+          icon: 'Book',
+          children: [
+            {
+              id: 'p2',
+              type: 'paragraph',
+              content: 'Saisie de Données',
+              icon: 'FileText',
+              children: [
+                {
+                  id: 'n2',
+                  type: 'notion',
+                  content: 'Inputs Modernes',
+                  icon: 'File',
+                  previewContent: 'Les champs de saisie doivent être optimisés pour le toucher.'
+                }
+              ]
+            }
+          ]
         }
-      } else if (currentContext.type === 'part' && currentContext.partTitle) {
-        // Sauvegarde PARTIE (Intro)
-        await structureService.updatePart(
-          currentContext.projectName,
-          currentContext.partTitle,
-          { part_intro: editorContent }
-        );
-        // Mise à jour locale
-        if (currentContext.part) {
-          currentContext.part.part_intro = editorContent;
+      ]
+    },
+    {
+      id: 'g3',
+      type: 'part',
+      content: 'Partie 3: Stratégie Pédagogique',
+      icon: 'Folder',
+      author: 'Expert EdTech',
+      introduction: 'Méthodologies avancées pour la création de parcours d\'apprentissage captivants.',
+      children: [
+        {
+          id: 'c3',
+          type: 'chapter',
+          content: 'Chapitre 1: Engagement de l\'Apprenant',
+          icon: 'Book',
+          children: [
+            {
+              id: 'p3',
+              type: 'paragraph',
+              content: 'Mécanismes de Gamification',
+              icon: 'FileText',
+              children: [
+                { id: 'n3', type: 'notion', content: 'Récompenses Immédiates', icon: 'File', previewContent: 'L\'importance du feedback visuel instantané.' },
+                { id: 'n4', type: 'notion', content: 'Progression Narrative', icon: 'File', previewContent: 'Transformer le cours en une aventure.' },
+                { id: 'n5', type: 'notion', content: 'Tableaux de Classement', icon: 'File', previewContent: 'Utiliser la saine compétition.' }
+              ]
+            },
+            {
+              id: 'p4',
+              type: 'paragraph',
+              content: 'Interactivité Cognitive',
+              icon: 'FileText',
+              children: [
+                { id: 'n6', type: 'notion', content: 'Zones Réactives', icon: 'File', previewContent: 'Encourager l\'exploration par le clic.' },
+                { id: 'n7', type: 'notion', content: 'Auto-évaluation', icon: 'File', previewContent: 'Quizz rapides intégrés au contenu.' }
+              ]
+            }
+          ]
         }
-      }
-
-      setHasUnsavedChanges(false);
-
-      if (!isAuto) {
-        toast.success('Sauvegardé !');
-      }
-
-    } catch (err: any) {
-      // Gestion spécifique de l'erreur d'authentification
-      if (err.message && err.message.includes('Token invalide ou expiré')) {
-        toast.error('⚠️ Votre session a expiré. Veuillez vous reconnecter.');
-        window.location.href = '/login';
-        return;
-      }
-
-      // Afficher erreur toast
-      toast.error(err.message || "Erreur de sauvegarde");
-    } finally {
-      setIsSaving(false);
+      ]
     }
-  };
-
-  const toggleRightPanel = (panelName: string) => {
-    setRightPanel(rightPanel === panelName ? null : panelName);
-  };
-
-  // --- Centralisation des Raccourcis Clavier Globaux ---
-  useEffect(() => {
-    const handleGlobalShortcuts = (e: KeyboardEvent) => {
-      // 1. Sauvegarde (Ctrl+S)
-      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
-        e.preventDefault();
-        handleSave(false);
-      }
-
-      // 2. Mode Zen (Alt+Z)
-      if (e.altKey && (e.key === 'z' || e.key === 'Z')) {
-        e.preventDefault();
-        toggleZenMode();
-      }
-
-      // 3. Palette de commande (Ctrl+K)
-      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
-        e.preventDefault();
-        setShowCommandPalette(true);
-      }
-
-      // 4. Formatage de base (uniquement si tiptap est présent et on n'est pas en readOnly)
-      if (!isToolbarDisabled && tiptapEditor) {
-        if ((e.ctrlKey || e.metaKey)) {
-          if (e.key === 'b') { e.preventDefault(); applyFormat('bold'); }
-          if (e.key === 'i') { e.preventDefault(); applyFormat('italic'); }
-          if (e.key === 'u') { e.preventDefault(); applyFormat('underline'); }
-        }
-      }
-    };
-
-    window.addEventListener('keydown', handleGlobalShortcuts);
-    return () => window.removeEventListener('keydown', handleGlobalShortcuts);
-  }, [tiptapEditor, isToolbarDisabled, isZenMode]); // Dépendances pour avoir les closures à jour
-
-
-  const applyFormat = (command: string) => {
-    if (!tiptapEditor) return;
-
-    const chain = tiptapEditor.chain().focus();
-
-    switch (command) {
-      case 'bold': chain.toggleBold().run(); break;
-      case 'italic': chain.toggleItalic().run(); break;
-      case 'underline': chain.toggleUnderline().run(); break;
-      case 'strikethrough': chain.toggleStrike().run(); break;
-      case 'justifyLeft': chain.setTextAlign('left').run(); break;
-      case 'justifyCenter': chain.setTextAlign('center').run(); break;
-      case 'justifyRight': chain.setTextAlign('right').run(); break;
-      case 'justifyFull': chain.setTextAlign('justify').run(); break;
-      case 'insertUnorderedList': chain.toggleBulletList().run(); break;
-      case 'insertOrderedList': chain.toggleOrderedList().run(); break;
-      default:
-        if (command.startsWith('color:')) {
-          const color = command.split(':')[1];
-          chain.setColor(color).run();
-          setTextFormat(prev => ({ ...prev, color }));
-        } else {
-          console.warn('Command not implemented for Tiptap:', command);
-        }
-    }
-  };
-
-  const handleFontChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const font = e.target.value;
-    setTextFormat(prev => ({ ...prev, font }));
-    if (tiptapEditor) {
-      tiptapEditor.chain().focus().setFontFamily(font).run();
-    }
-  };
-
-  const handleFontSizeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const fontSize = e.target.value;
-    setTextFormat(prev => ({ ...prev, fontSize }));
-    if (tiptapEditor) {
-      tiptapEditor.chain().focus().setFontSize(fontSize).run();
-    }
-  };
+  ];
 
   const handleDragStart = (e: React.DragEvent, granule: any) => {
     e.dataTransfer.setData('granule', JSON.stringify(granule));
     e.dataTransfer.effectAllowed = 'copy';
   };
 
-  // Helper pour temporiser
-  const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+  // NOUVEAU: Création récursive (Poupées Russes)
+  const handleDropGranule = async (granule: any) => {
+    if (!projectName) return;
 
-  // Remplacé par handleDropNew qui gère maintenant objets (structure) et texte
-  const handleDropNew = async (contentOrGranule: any) => {
-    // 1. Cas : Import de Structure (Objet)
-    if (typeof contentOrGranule === 'object' && contentOrGranule.type) {
-      if (!projectData) return;
+    const toastId = toast.loading(`Importation de "${granule.content}"...`);
+    setPendingGranule({ type: granule.type, content: granule.content });
 
-      try {
-        setIsImporting(true); // Feedback immédiat
+    try {
+      if (granule.type === 'part') {
+        const newPart = await structureService.createPart(projectName, {
+          part_title: granule.content,
+          part_number: structure.length + 1,
+          part_intro: granule.introduction || ''
+        });
+        setPulsingId(newPart.part_id);
 
-        // OPTIMISATION: On ne recharge pas tout le projet au début.
-        // On suppose que la structure actuelle est à jour (grâce aux websockets).
-
-        // Initialisation du contexte avec la sélection actuelle pour les drops relatifs
-        const initialContext: any = {};
-        if (currentContext) {
-          // Copier tous les champs disponibles (pour supporter drop dans Chapter, Paragraph, etc.)
-          initialContext.partTitle = currentContext.partTitle;
-          if (currentContext.chapterTitle) {
-            initialContext.chapterTitle = currentContext.chapterTitle;
-          }
-          if (currentContext.paraName) {
-            initialContext.paraName = currentContext.paraName;
+        // Récursivité: Chapitres
+        if (granule.children) {
+          for (let i = 0; i < granule.children.length; i++) {
+            const chap = granule.children[i];
+            const newChapter = await structureService.createChapter(projectName, newPart.part_title, {
+              chapter_title: chap.content,
+              chapter_number: i + 1
+            });
+            await recurseChapter(newPart.part_title, newChapter.chapter_title, chap);
           }
         }
-
-        // Compteurs LOCAUX pour cette opération d'import
-        const counters = new Map<string, number>();
-        const limit = pLimit(1); // On réduit la concurrence pour éviter les race conditions d'affichage
-
-        const getNextNumAndInc = (type: string, ctx: any) => {
-          let key = '';
-          let currentMax = 0;
-
-          if (type === 'part') {
-            key = 'root_parts';
-            if (!counters.has(key)) {
-              currentMax = structure.length > 0 ? Math.max(...structure.map(p => p.part_number || 0)) : 0;
-              counters.set(key, currentMax);
-            }
-          } else if (type === 'chapter') {
-            key = `chapters_of_${ctx.partTitle}`;
-            if (!counters.has(key)) {
-              const part = structure.find(p => p.part_title === ctx.partTitle);
-              const chapters = part?.chapters || [];
-              currentMax = chapters.length > 0 ? Math.max(...chapters.map(c => c.chapter_number || 0)) : 0;
-              counters.set(key, currentMax);
-            }
-          } else if (type === 'paragraph') {
-            key = `paras_of_${ctx.chapterTitle}`;
-            if (!counters.has(key)) {
-              const part = structure.find(p => p.part_title === ctx.partTitle);
-              const chapter = part?.chapters?.find(c => c.chapter_title === ctx.chapterTitle);
-              const paras = chapter?.paragraphs || [];
-              currentMax = paras.length > 0 ? Math.max(...paras.map(p => p.para_number || 0)) : 0;
-              counters.set(key, currentMax);
-            }
-          } else if (type === 'notion') {
-            key = `notions_of_${ctx.paraName}`;
-            if (!counters.has(key)) {
-              const part = structure.find(p => p.part_title === ctx.partTitle);
-              const chapter = part?.chapters?.find(c => c.chapter_title === ctx.chapterTitle);
-              const para = chapter?.paragraphs?.find(p => p.para_name === ctx.paraName);
-              const notions = para?.notions || [];
-              currentMax = notions.length > 0 ? Math.max(...notions.map(n => n.notion_number || 0)) : 0;
-              counters.set(key, currentMax);
-            }
-          }
-
-          const newVal = (counters.get(key) || 0) + 1;
-          counters.set(key, newVal);
-          return newVal;
-        };
-
-        const importRecursive = async (item: any, context: any) => {
-          let createdItem: any;
-
-          if (item.type === 'part') {
-            const nextNum = getNextNumAndInc('part', context);
-            const baseTitle = item.content || item.part_title || "Nouvelle Partie";
-            // On utilise le titre tel quel si possible, sinon on ajoute un suffixe
-            const uniqueTitle = structure.some(p => p.part_title === baseTitle)
-              ? `${baseTitle} ${nextNum}`
-              : baseTitle;
-
-            createdItem = await limit(() => structureService.createPart(projectData.pr_name, {
-              part_title: uniqueTitle,
-              part_number: nextNum
-            }));
-
-            // Mise à jour locale OPTIMISTE (avec check doublon)
-            setStructure(prev => {
-              if (prev.some(p => p.part_id === createdItem.part_id)) return prev;
-              return [...prev, { ...createdItem, chapters: [] }];
-            });
-
-            context = { partTitle: createdItem.part_title, partId: createdItem.part_id };
-
-          } else if (item.type === 'chapter') {
-            if (!context.partTitle) throw new Error("Chapitre sans partie parente");
-            const nextNum = getNextNumAndInc('chapter', context);
-            const baseTitle = item.content || item.chapter_title || "Nouveau Chapitre";
-            const part = structure.find(p => p.part_title === context.partTitle);
-            const uniqueTitle = part?.chapters?.some(c => c.chapter_title === baseTitle)
-              ? `${baseTitle} ${nextNum}`
-              : baseTitle;
-
-            createdItem = await limit(() => structureService.createChapter(projectData.pr_name, context.partTitle, {
-              chapter_title: uniqueTitle,
-              chapter_number: nextNum
-            }));
-
-            // Mise à jour locale OPTIMISTE
-            setStructure(prev => {
-              return prev.map(p => {
-                if (p.part_title !== context.partTitle) return p;
-                const chapters = p.chapters ? [...p.chapters] : [];
-                if (!chapters.some(c => c.chapter_id === createdItem.chapter_id)) {
-                  chapters.push({ ...createdItem, paragraphs: [] });
-                }
-                return { ...p, chapters };
-              });
-            });
-
-            context = { ...context, chapterTitle: createdItem.chapter_title };
-
-          } else if (item.type === 'paragraph') {
-            if (!context.chapterTitle) throw new Error("Impossible de créer un paragraphe : Aucun chapitre parent sélectionné.");
-            const nextNum = getNextNumAndInc('paragraph', context);
-            const baseTitle = item.content || item.para_name || "Nouveau Paragraphe";
-            const part = structure.find(p => p.part_title === context.partTitle);
-            const chapter = part?.chapters?.find(c => c.chapter_title === context.chapterTitle);
-            const uniqueTitle = chapter?.paragraphs?.some(pg => pg.para_name === baseTitle)
-              ? `${baseTitle} ${nextNum}`
-              : baseTitle;
-
-            createdItem = await limit(() => structureService.createParagraph(projectData.pr_name, context.partTitle, context.chapterTitle, {
-              para_name: uniqueTitle,
-              para_number: nextNum
-            }));
-
-            // Mise à jour locale OPTIMISTE
-            setStructure(prev => {
-              return prev.map(p => {
-                if (p.part_title !== context.partTitle) return p;
-                return {
-                  ...p,
-                  chapters: (p.chapters || []).map(c => {
-                    if (c.chapter_title !== context.chapterTitle) return c;
-                    const paragraphs = c.paragraphs ? [...c.paragraphs] : [];
-                    if (!paragraphs.some(pg => pg.para_id === createdItem.para_id)) {
-                      paragraphs.push({ ...createdItem, notions: [] });
-                    }
-                    return { ...c, paragraphs };
-                  })
-                };
-              });
-            });
-
-            context = { ...context, paraName: createdItem.para_name };
-
-          } else if (item.type === 'notion') {
-            if (!context.paraName) throw new Error("Impossible de créer une notion : Aucun paragraphe parent sélectionné.");
-            const nextNum = getNextNumAndInc('notion', context);
-            const baseTitle = item.content || item.notion_name || "Nouvelle Notion";
-            const part = structure.find(p => p.part_title === context.partTitle);
-            const chapter = part?.chapters?.find(c => c.chapter_title === context.chapterTitle);
-            const para = chapter?.paragraphs?.find(pg => pg.para_name === context.paraName);
-            const uniqueTitle = para?.notions?.some(n => n.notion_name === baseTitle)
-              ? `${baseTitle} ${nextNum}`
-              : baseTitle;
-
-            createdItem = await limit(() => structureService.createNotion(projectData.pr_name, context.partTitle, context.chapterTitle, context.paraName, {
-              notion_name: uniqueTitle,
-              notion_number: nextNum,
-              notion_content: item.notion_content || "<p>Contenu importé...</p>"
-            }));
-
-            // Mise à jour locale OPTIMISTE
-            setStructure(prev => {
-              return prev.map(p => {
-                if (p.part_title !== context.partTitle) return p;
-                return {
-                  ...p,
-                  chapters: (p.chapters || []).map(c => {
-                    if (c.chapter_title !== context.chapterTitle) return c;
-                    return {
-                      ...c,
-                      paragraphs: (c.paragraphs || []).map(para => {
-                        if (para.para_name !== context.paraName) return para;
-                        const notions = para.notions ? [...para.notions] : [];
-                        if (!notions.some(n => n.notion_id === createdItem.notion_id)) {
-                          notions.push(createdItem);
-                          // Auto-expand
-                          setExpandedItems(ex => ({ ...ex, [`paragraph-${para.para_id}`]: true }));
-                        }
-                        return { ...para, notions };
-                      })
-                    };
-                  })
-                };
-              });
-            });
-
-            if (!firstNotionFound.current) {
-              firstNotionFound.current = {
-                notion: createdItem,
-                context: { ...context, notionName: createdItem.notion_name }
-              };
-            }
-          }
-
-          if (item.children && item.children.length > 0) {
-            await Promise.all(item.children.map((child: any) => importRecursive(child, { ...context })));
-          }
-        };
-
-        const firstNotionFound = { current: null } as any;
-
-        // Lancer l'import
-        await importRecursive(contentOrGranule, { ...initialContext });
-
-        // On ne recharge PLUS tout le projet à la fin pour éviter le lag.
-        // L'état local est déjà à jour via les updates optimistes.
-        // En arrière-plan, les websockets assureront la consistance si nécessaire.
-
-        if (firstNotionFound.current) {
-          handleSelectNotion({
-            projectName: projectData.pr_name,
-            partTitle: firstNotionFound.current.context.partTitle,
-            chapterTitle: firstNotionFound.current.context.chapterTitle,
-            paraName: firstNotionFound.current.context.paraName,
-            notionName: firstNotionFound.current.context.notionName,
-            notion: firstNotionFound.current.notion
-          });
-          toast.success("Structure importée avec succès !");
-        }
-
-      } catch (err: any) {
-        console.error("Erreur import structure:", err);
-        if (err.message.includes("sans partie parente")) {
-          toast.error("Impossible de créer ce chapitre orphelin.");
-        } else if (err.message.includes("Impossible de créer une notion")) {
-          toast.error("Impossible de créer cette notion. Sélectionnez un Paragraphe cible.");
-        } else {
-          toast.error("Erreur lors de l'import : " + err.message);
-        }
-      } finally {
-        setIsImporting(false);
+      } else if (granule.type === 'chapter') {
+        const parentPart = currentContext?.partTitle || structure[structure.length - 1]?.part_title;
+        if (!parentPart) throw new Error("Aucune partie pour accueillir ce chapitre");
+        const newChapter = await structureService.createChapter(projectName, parentPart, {
+          chapter_title: granule.content,
+          chapter_number: 1
+        });
+        setPulsingId(newChapter.chapter_id);
+        await recurseChapter(parentPart, newChapter.chapter_title, granule);
+      } else if (granule.type === 'paragraph') {
+        const parentPart = currentContext?.partTitle || structure[structure.length - 1]?.part_title;
+        const parentChapter = currentContext?.chapterTitle || structure[structure.length - 1]?.chapters?.[0]?.chapter_title;
+        if (!parentPart || !parentChapter) throw new Error("Aucun chapitre pour accueillir ce paragraphe");
+        const newPara = await structureService.createParagraph(projectName, parentPart, parentChapter, {
+          para_name: granule.content,
+          para_number: 1
+        });
+        setPulsingId(newPara.para_id);
+        await recurseParagraph(parentPart, parentChapter, newPara.para_name, granule);
+      } else if (granule.type === 'notion') {
+        const parentPart = currentContext?.partTitle || structure[structure.length - 1]?.part_title;
+        const parentChapter = currentContext?.chapterTitle || structure[structure.length - 1]?.chapters?.[0]?.chapter_title;
+        const parentPara = currentContext?.paraName || structure[structure.length - 1]?.chapters?.[0]?.paragraphs?.[0]?.para_name;
+        if (!parentPart || !parentChapter || !parentPara) throw new Error("Aucun paragraphe pour accueillir cette notion");
+        const newNotion = await structureService.createNotion(projectName, parentPart, parentChapter, parentPara, {
+          notion_name: granule.content,
+          notion_content: granule.previewContent || '',
+          notion_number: 1
+        });
+        setPulsingId(newNotion.notion_id);
       }
-      return;
-    }
 
-    // 2. Cas : Drop de Contenu (Texte/Image string)
-    if (editorRef.current) {
-      if (typeof contentOrGranule === 'string') {
-        editorRef.current.innerHTML += '\n' + contentOrGranule;
-        setEditorContent(editorRef.current.innerHTML);
-        setHasUnsavedChanges(true);
+      async function recurseChapter(pTitle: string, cTitle: string, chapData: any) {
+        if (chapData.children) {
+          for (let j = 0; j < chapData.children.length; j++) {
+            const para = chapData.children[j];
+            const newPara = await structureService.createParagraph(projectName!, pTitle, cTitle, {
+              para_name: para.content,
+              para_number: j + 1
+            });
+            await recurseParagraph(pTitle, cTitle, newPara.para_name, para);
+          }
+        }
       }
-    }
-  };
 
-  // Fonctions d'ouverture des modales
-  const handleCreatePart = () => {
-    const maxNumber = structure.length > 0
-      ? Math.max(...structure.map(p => p.part_number || 0))
-      : 0;
-    setPartFormData({ title: '', number: maxNumber + 1 });
-    setShowPartModal(true);
-  };
-
-  const handleCreateChapter = (partTitle: string) => {
-    setModalContext({ partTitle });
-
-    const part = structure.find(p => p.part_title === partTitle);
-    const existingChapters = part?.chapters || [];
-    const maxNumber = existingChapters.length > 0
-      ? Math.max(...existingChapters.map(c => c.chapter_number || 0))
-      : 0;
-
-    setChapterFormData({ title: '', number: maxNumber + 1 });
-    setShowChapterModal(true);
-  };
-
-  const handleCreateParagraph = (partTitle: string, chapterTitle: string) => {
-    setModalContext({ partTitle, chapterTitle });
-
-    const part = structure.find(p => p.part_title === partTitle);
-    const chapter = part?.chapters?.find(c => c.chapter_title === chapterTitle);
-    const existingParagraphs = chapter?.paragraphs || [];
-    const maxNumber = existingParagraphs.length > 0
-      ? Math.max(...existingParagraphs.map(p => p.para_number || 0))
-      : 0;
-
-    setParagraphFormData({ name: '', number: maxNumber + 1 });
-    setShowParagraphModal(true);
-  };
-
-  const handleCreateNotion = (partTitle: string, chapterTitle: string, paraName: string) => {
-    setModalContext({ partTitle, chapterTitle, paraName });
-
-    const part = structure.find(p => p.part_title === partTitle);
-    const chapter = part?.chapters?.find(c => c.chapter_title === chapterTitle);
-    const paragraph = chapter?.paragraphs?.find(p => p.para_name === paraName);
-    const existingNotions = paragraph?.notions || [];
-
-    const maxNumber = existingNotions.length > 0
-      ? Math.max(...existingNotions.map(n => n.notion_number || 0))
-      : 0;
-
-    setNotionFormData({
-      name: '',
-      number: maxNumber + 1
-    });
-
-    setShowNotionModal(true);
-  };
-
-  // Fonctions de confirmation
-  const confirmCreatePart = async () => {
-    if (!projectData || !partFormData.title.trim() || isCreatingPart) return;
-
-    try {
-      setIsCreatingPart(true);
-      setError('');
-
-      const newPart = await structureService.createPart(projectData.pr_name, {
-        part_title: partFormData.title,
-        part_number: partFormData.number
-      });
-
-      setStructure(prevStructure => {
-        const exists = prevStructure.some(p => p.part_id === newPart.part_id);
-        if (!exists) {
-          return [...prevStructure, { ...newPart, chapters: [] }];
-        }
-        return prevStructure;
-      });
-
-      setShowPartModal(false);
-    } catch (err: any) {
-      toast.error(err.message || 'Erreur lors de la création de la partie');
-    } finally {
-      setIsCreatingPart(false);
-    }
-  };
-
-  const confirmCreateChapter = async () => {
-    if (!projectData || !modalContext.partTitle || !chapterFormData.title.trim() || isCreatingChapter) return;
-
-    try {
-      setIsCreatingChapter(true);
-      setError('');
-
-      const newChapter = await structureService.createChapter(
-        projectData.pr_name,
-        modalContext.partTitle,
-        {
-          chapter_title: chapterFormData.title,
-          chapter_number: chapterFormData.number
-        }
-      );
-
-      setStructure(prevStructure => {
-        const newStructure = [...prevStructure];
-        const part = newStructure.find(p => p.part_title === modalContext.partTitle);
-        if (part) {
-          if (!part.chapters) part.chapters = [];
-          const exists = part.chapters.some(c => c.chapter_id === newChapter.chapter_id);
-          if (!exists) {
-            part.chapters.push({ ...newChapter, paragraphs: [] });
+      async function recurseParagraph(pTitle: string, cTitle: string, paName: string, paraData: any) {
+        if (paraData.children) {
+          for (let k = 0; k < paraData.children.length; k++) {
+            const notion = paraData.children[k];
+            await structureService.createNotion(projectName!, pTitle, cTitle, paName, {
+              notion_name: notion.content,
+              notion_content: notion.previewContent || '',
+              notion_number: k + 1
+            });
           }
         }
-        return newStructure;
-      });
+      }
 
-      setShowChapterModal(false);
+      // On rafraîchit la TOC
+      await loadProject(true);
+      setPendingGranule(null);
+      toast.success('Importation réussie !', { id: toastId });
+
+      // Petit flash final sur l'id créé si dispo
+      setTimeout(() => setPulsingId(null), 1000);
+
     } catch (err: any) {
-      toast.error(err.message || 'Erreur lors de la création du chapitre');
-    } finally {
-      setIsCreatingChapter(false);
+      setPendingGranule(null);
+      toast.error("Échec de l'importation", { id: toastId });
     }
   };
 
-  const confirmCreateParagraph = async () => {
-    if (!projectData || !modalContext.partTitle || !modalContext.chapterTitle || !paragraphFormData.name.trim() || isCreatingParagraph) return;
+  // States remaining in component
+  const [rightPanel, setRightPanel] = useState<string | null>(null);
+  const [showShareOverlay, setShowShareOverlay] = useState(false);
+  const [showChatBot, setShowChatBot] = useState(false);
+  const [sidebarWidth, setSidebarWidth] = useState(320);
+  const [isResizing, setIsResizing] = useState(false);
+  const [isZenMode, setIsZenMode] = useState(false);
+  const [tiptapEditor, setTiptapEditor] = useState<any>(null);
+  const [showSocraticPanel, setShowSocraticPanel] = useState(false);
+  const editorRef = useRef<HTMLDivElement>(null);
 
+  // Handlers pour la structure (TOC)
+  const handleRenameGranule = async (type: string, id: string, newTitle: string) => {
+    if (!projectName) return;
     try {
-      setIsCreatingParagraph(true);
-      setError('');
-
-      const newParagraph = await structureService.createParagraph(
-        projectData.pr_name,
-        modalContext.partTitle,
-        modalContext.chapterTitle,
-        {
-          para_name: paragraphFormData.name,
-          para_number: paragraphFormData.number
-        }
-      );
-
-      setStructure(prevStructure => {
-        const newStructure = [...prevStructure];
-        const part = newStructure.find(p => p.part_title === modalContext.partTitle);
-        if (part?.chapters) {
-          const chapter = part.chapters.find(c => c.chapter_title === modalContext.chapterTitle);
-          if (chapter) {
-            if (!chapter.paragraphs) chapter.paragraphs = [];
-            const exists = chapter.paragraphs.some(p => p.para_id === newParagraph.para_id);
-            if (!exists) {
-              chapter.paragraphs.push({ ...newParagraph, notions: [] });
-            }
-          }
-        }
-        return newStructure;
-      });
-
-      setShowParagraphModal(false);
-    } catch (err: any) {
-      toast.error(err.message || 'Erreur lors de la création du paragraphe');
-    } finally {
-      setIsCreatingParagraph(false);
-    }
-  };
-
-  const confirmCreateNotion = async () => {
-    if (!projectData || !modalContext.partTitle || !modalContext.chapterTitle || !modalContext.paraName || !notionFormData.name.trim()) return;
-
-    if (isCreatingNotion) return;
-
-    try {
-      setIsCreatingNotion(true);
-      setError('');
-
-      const newNotion = await structureService.createNotion(
-        projectData.pr_name,
-        modalContext.partTitle,
-        modalContext.chapterTitle,
-        modalContext.paraName,
-        {
-          notion_name: notionFormData.name,
-          notion_number: notionFormData.number,
-          notion_content: 'À compléter...'
-        }
-      );
-
-      setStructure(prevStructure => {
-        const newStructure = [...prevStructure];
-        const part = newStructure.find(p => p.part_title === modalContext.partTitle);
-        if (part?.chapters) {
-          const chapter = part.chapters.find(c => c.chapter_title === modalContext.chapterTitle);
-          if (chapter?.paragraphs) {
-            const paragraph = chapter.paragraphs.find(p => p.para_name === modalContext.paraName);
-            if (paragraph) {
-              if (!paragraph.notions) paragraph.notions = [];
-
-              const exists = paragraph.notions.some(n => n.notion_id === newNotion.notion_id);
-              if (!exists) {
-                paragraph.notions.push(newNotion);
-              }
-
-              setExpandedItems(prev => ({
-                ...prev,
-                [`paragraph-${paragraph.para_id}`]: true
-              }));
-            }
-          }
-        }
-        return newStructure;
-      });
-
-      setShowNotionModal(false);
-    } catch (err: any) {
-      console.error('❌ Erreur création notion:', err);
-      toast.error(err.message || 'Erreur lors de la création de la notion');
-    } finally {
-      setIsCreatingNotion(false);
-    }
-  };
-
-  const handleRename = async (type: string, id: string, newTitle: string) => {
-    if (!projectData) return;
-    try {
-      // Trouver l'item et son contexte dans la structure
-      let part: Part | undefined;
-      let chapter: Chapter | undefined;
-      let paragraph: Paragraph | undefined;
-      let notion: Notion | undefined;
-
       if (type === 'part') {
-        part = structure.find(p => p.part_id === id);
-        if (part) {
-          await structureService.updatePart(projectData.pr_name, part.part_title, { part_title: newTitle });
-        }
+        const oldTitle = structure.find(p => p.part_id === id)?.part_title;
+        if (oldTitle) await structureService.updatePart(projectName, oldTitle, { part_title: newTitle });
       } else if (type === 'chapter') {
-        outer: for (const p of structure) {
-          chapter = p.chapters?.find(c => c.chapter_id === id);
-          if (chapter) { part = p; break outer; }
-        }
-        if (part && chapter) {
-          await structureService.updateChapter(projectData.pr_name, part.part_title, chapter.chapter_title, { chapter_title: newTitle });
-        }
+        const part = structure.find(p => p.chapters?.some(c => c.chapter_id === id));
+        const oldTitle = part?.chapters?.find(c => c.chapter_id === id)?.chapter_title;
+        if (part && oldTitle) await structureService.updateChapter(projectName, part.part_title, oldTitle, { chapter_title: newTitle });
       } else if (type === 'paragraph') {
-        outer: for (const p of structure) {
-          for (const c of p.chapters || []) {
-            paragraph = c.paragraphs?.find(pg => pg.para_id === id);
-            if (paragraph) { part = p; chapter = c; break outer; }
-          }
-        }
-        if (part && chapter && paragraph) {
-          await structureService.updateParagraph(projectData.pr_name, part.part_title, chapter.chapter_title, paragraph.para_name, { para_name: newTitle });
-        }
+        const part = structure.find(p => p.chapters?.some(c => c.paragraphs?.some(pa => pa.para_id === id)));
+        const chapter = part?.chapters?.find(c => c.paragraphs?.some(pa => pa.para_id === id));
+        const oldName = chapter?.paragraphs?.find(pa => pa.para_id === id)?.para_name;
+        if (part && chapter && oldName) await structureService.updateParagraph(projectName, part.part_title, chapter.chapter_title, oldName, { para_name: newTitle });
       } else if (type === 'notion') {
-        outer: for (const p of structure) {
-          for (const c of p.chapters || []) {
-            for (const pg of c.paragraphs || []) {
-              notion = pg.notions?.find(n => n.notion_id === id);
-              if (notion) { part = p; chapter = c; paragraph = pg; break outer; }
-            }
-          }
-        }
-        if (part && chapter && paragraph && notion) {
-          await structureService.updateNotion(projectData.pr_name, part.part_title, chapter.chapter_title, paragraph.para_name, notion.notion_name, { notion_name: newTitle });
-        }
+        const part = structure.find(p => p.chapters?.some(c => c.paragraphs?.some(pa => pa.notions?.some(n => n.notion_id === id))));
+        const chapter = part?.chapters?.find(c => c.paragraphs?.some(pa => pa.notions?.some(n => n.notion_id === id)));
+        const para = chapter?.paragraphs?.find(pa => pa.notions?.some(n => n.notion_id === id));
+        const oldName = para?.notions?.find(n => n.notion_id === id)?.notion_name;
+        if (part && chapter && para && oldName) await structureService.updateNotion(projectName, part.part_title, chapter.chapter_title, para.para_name, oldName, { notion_name: newTitle });
       }
-
-      // Rafraîchir la structure
-      await loadProject(true);
+      loadProject(true);
     } catch (err: any) {
-      console.error("Erreur renommage:", err);
-      alert("Erreur lors du renommage : " + err.message);
+      toast.error("Impossible de renommer l'élément");
     }
   };
 
-  const handleReorder = async (
-    type: 'part' | 'chapter' | 'paragraph' | 'notion',
-    parentId: string | null,
-    items: any[]
-  ) => {
-    if (!projectData) return;
-
+  const handleReorderGranule = async (type: string, parentId: string | null, items: any[]) => {
+    if (!projectName) return;
     try {
-      setError('');
-
-      console.log(`🔃 Réordonnancement ${type}s`, { parentId, count: items.length });
-
-      // Mettre à jour les numéros dans l'ordre (pLimit 1 pour éviter les race conditions)
-      const limit = pLimit(1);
-      const updatePromises = items.map((item, index) => limit(async () => {
-        const newNumber = index + 1;
-
-        try {
-          if (type === 'part') {
-            const currentNumber = item.part_number;
-            if (currentNumber !== newNumber) {
-              await structureService.updatePart(
-                projectData.pr_name,
-                item.part_title,
-                { part_number: newNumber }
-              );
-            }
-          } else if (type === 'chapter') {
-            const currentNumber = item.chapter_number;
-            if (currentNumber !== newNumber) {
-              const part = structure.find(p => p.part_id === parentId);
-              if (part) {
-                await structureService.updateChapter(
-                  projectData.pr_name,
-                  part.part_title,
-                  item.chapter_title,
-                  { chapter_number: newNumber }
-                );
-              }
-            }
-          } else if (type === 'paragraph') {
-            const currentNumber = item.para_number;
-            if (currentNumber !== newNumber) {
-              let partTitle = "";
-              let chapterTitle = "";
-              outer: for (const p of structure) {
-                const c = p.chapters?.find(ch => ch.chapter_id === parentId);
-                if (c) {
-                  partTitle = p.part_title;
-                  chapterTitle = c.chapter_title;
-                  break outer;
-                }
-              }
-              if (partTitle && chapterTitle) {
-                await structureService.updateParagraph(
-                  projectData.pr_name,
-                  partTitle,
-                  chapterTitle,
-                  item.para_name,
-                  { para_number: newNumber }
-                );
-              }
-            }
-          } else if (type === 'notion') {
-            const currentNumber = item.notion_number;
-            if (currentNumber !== newNumber) {
-              let partT = "", chapT = "", paraN = "";
-              outer: for (const p of structure) {
-                for (const c of p.chapters || []) {
-                  const para = c.paragraphs?.find(pg => pg.para_id === parentId);
-                  if (para) {
-                    partT = p.part_title;
-                    chapT = c.chapter_title;
-                    paraN = para.para_name;
-                    break outer;
-                  }
-                }
-              }
-              if (partT && chapT && paraN) {
-                await structureService.updateNotion(
-                  projectData.pr_name,
-                  partT,
-                  chapT,
-                  paraN,
-                  item.notion_name,
-                  { notion_number: newNumber }
-                );
-              }
-            }
-          }
-        } catch (err) {
-          console.error(`Erreur update ${type} #${newNumber}:`, err);
-          throw err;
-        }
-      }));
-
-      await Promise.all(updatePromises);
-
-      // Recharger silencieusement - DÉSACTIVÉ POUR PERF
-      // await loadProject(true);
-
-      // Toast succès
-      const successMsg = document.createElement('div');
-      successMsg.className = 'fixed top-4 right-4 bg-blue-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 flex items-center gap-2 animate-in slide-in-from-right';
-      successMsg.innerHTML = `<svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg> Ordre mis à jour`;
-      document.body.appendChild(successMsg);
-      setTimeout(() => document.body.removeChild(successMsg), 2000);
-
-    } catch (err: any) {
-      console.error("❌ Erreur réordonnancement:", err);
-      setError(`Erreur réordonnancement: ${err.message}`);
-
-      // Recharger quand même pour être synchro en cas d'erreur
-      await loadProject(true);
-    }
-  };
-
-  const handleDelete = async (type: string, id: string) => {
-    if (!projectData) return;
-
-    // Récupérer le nom/titre de l'item pour le modal
-    let itemTitle = "";
-    if (type === 'part') {
-      itemTitle = structure.find(p => p.part_id === id)?.part_title || "";
-    } else if (type === 'chapter') {
-      for (const p of structure) {
-        const c = p.chapters?.find(ch => ch.chapter_id === id);
-        if (c) { itemTitle = c.chapter_title; break; }
-      }
-    } else if (type === 'paragraph') {
-      for (const p of structure) {
-        for (const c of p.chapters || []) {
-          const pg = c.paragraphs?.find(para => para.para_id === id);
-          if (pg) { itemTitle = pg.para_name; break; }
-        }
-      }
-    } else if (type === 'notion') {
-      for (const p of structure) {
-        for (const c of p.chapters || []) {
-          for (const pg of c.paragraphs || []) {
-            const n = pg.notions?.find(no => no.notion_id === id);
-            if (n) { itemTitle = n.notion_name; break; }
-          }
-        }
-      }
-    }
-
-    setDeleteModalConfig({
-      isOpen: true,
-      isDeleting: false,
-      type,
-      id,
-      title: itemTitle
-    });
-  };
-
-  const confirmDelete = async () => {
-    const { type, id } = deleteModalConfig;
-    if (!projectData || !id || deleteModalConfig.isDeleting) return;
-
-    try {
-      setDeleteModalConfig(prev => ({ ...prev, isDeleting: true }));
-      setError('');
-
-      // Trouver l'item et récupérer sa hiérarchie
-      let part: Part | undefined;
-      let chapter: Chapter | undefined;
-      let paragraph: Paragraph | undefined;
-
       if (type === 'part') {
-        part = structure.find(p => p.part_id === id);
-        if (part) {
-          await structureService.deletePart(projectData.pr_name, part.part_title);
-        }
-      } else if (type === 'chapter') {
-        outer: for (const p of structure) {
-          chapter = p.chapters?.find(c => c.chapter_id === id);
-          if (chapter) { part = p; break outer; }
-        }
-        if (part && chapter) {
-          await structureService.deleteChapter(projectData.pr_name, part.part_title, chapter.chapter_title);
-        }
-      } else if (type === 'paragraph') {
-        outer: for (const p of structure) {
-          for (const c of p.chapters || []) {
-            paragraph = c.paragraphs?.find(pg => pg.para_id === id);
-            if (paragraph) { part = p; chapter = c; break outer; }
-          }
-        }
-        if (part && chapter && paragraph) {
-          await structureService.deleteParagraph(projectData.pr_name, part.part_title, chapter.chapter_title, paragraph.para_name);
-        }
-      } else if (type === 'notion') {
-        outer: for (const p of structure) {
-          for (const c of p.chapters || []) {
-            for (const pg of c.paragraphs || []) {
-              const notion = pg.notions?.find(n => n.notion_id === id);
-              if (notion) { part = p; chapter = c; paragraph = pg; break outer; }
-            }
-          }
-        }
-        if (part && chapter && paragraph) {
-          const notion = paragraph.notions?.find(n => n.notion_id === id);
-          if (notion) {
-            await structureService.deleteNotion(projectData.pr_name, part.part_title, chapter.chapter_title, paragraph.para_name, notion.notion_name);
-          }
-        }
+        await Promise.all(items.map((item, idx) =>
+          structureService.updatePart(projectName, item.part_title, { part_number: idx + 1 })
+        ));
+      } else {
+        await Promise.all(items.map((item, idx) => {
+          const itemId = item.chapter_id || item.para_id || item.notion_id;
+          return structureService.moveGranule(projectName, type as any, itemId, parentId!, idx + 1);
+        }));
       }
-
-      // Rafraîchir la structure
-      await loadProject(true);
-
-      setDeleteModalConfig({ isOpen: false, isDeleting: false, type: '', id: '', title: '' });
-      toast.success("Supprimé avec succès !");
-
+      loadProject(true);
     } catch (err: any) {
-      console.error("Erreur suppression:", err);
-      toast.error("Erreur lors de la suppression : " + err.message);
-      setDeleteModalConfig(prev => ({ ...prev, isDeleting: false }));
+      toast.error("Échec de la réorganisation");
+      loadProject(true);
     }
   };
 
+  const handleMoveGranule = async (type: string, itemId: string, newParentId: string) => {
+    if (!projectName) return;
+    try {
+      await structureService.moveGranule(projectName, type as any, itemId, newParentId);
+      loadProject(true);
+    } catch (err: any) {
+      toast.error("Échec du déplacement");
+      loadProject(true);
+    }
+  };
+
+  // Socratic AI
+  const {
+    feedback: socraticFeedback,
+    analyzeDebounced,
+    setFeedback: setSocraticFeedback,
+    bloomScore,
+    isAnalyzing,
+    analyzeContent
+  } = useSocraticAnalysis(currentContext?.type === 'notion' ? currentContext.notion?.notion_id : null);
+
+  const mappedSocraticFeedback = useMemo(() => socraticFeedback.map(f => ({
+    id: f.id,
+    from: f.sentenceStart,
+    to: f.sentenceEnd,
+    color: f.highlightColor,
+    severity: f.severity,
+    comment: f.comment
+  })), [socraticFeedback]);
+
+  const dismissFeedback = (id: string) => {
+    setSocraticFeedback(prev => prev.filter(f => f.id !== id));
+  };
+
+  // Synapse Collaboration
+  const synapseDocId = useMemo(() => {
+    if (!currentContext) return '';
+    if (currentContext.type === 'notion' && currentContext.notion?.notion_id) return `notion-${currentContext.notion.notion_id}`;
+    if (currentContext.type === 'part' && currentContext.part?.part_id) return `part-${currentContext.part.part_id}`;
+    return '';
+  }, [currentContext]);
+
+  const {
+    connectedUsers
+  } = useSynapseSync({
+    documentId: synapseDocId,
+    userId: authUser?.user_id || 'anonymous',
+    userName: `${authUser?.firstname || 'L’Auteur'} ${authUser?.lastname || ''}`.trim(),
+    serverUrl: process.env.NEXT_PUBLIC_HOCUSPOCUS_URL || 'ws://localhost:1234',
+  });
+
+  // Action: Save
+  const handleSave = async (isAuto = false) => {
+    if (!currentContext || !projectName) return;
+    try {
+      setIsSaving(true);
+      if (currentContext.type === 'notion' && currentContext.notionName) {
+        await structureService.updateNotion(projectName, currentContext.partTitle, currentContext.chapterTitle!, currentContext.paraName!, currentContext.notionName!, { notion_content: editorContent });
+        if (currentContext.notion) currentContext.notion.notion_content = editorContent;
+      } else if (currentContext.type === 'part' && currentContext.partTitle) {
+        await structureService.updatePart(projectName, currentContext.partTitle, { part_intro: editorContent });
+        if (currentContext.part) currentContext.part.part_intro = editorContent;
+      }
+      setHasUnsavedChanges(false);
+      if (!isAuto) toast.success('Sauvegardé !');
+    } catch (err: any) {
+      toast.error(err.message || "Erreur de sauvegarde");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Commands Hook
+  useEditorCommands({
+    onSave: () => handleSave(),
+    onPreview: () => router.push(`/preview?projectName=${projectName}`),
+    onShare: () => setShowShareOverlay(true),
+    onExport: () => router.push(`/preview?projectName=${projectName}`),
+    onToggleZen: () => setIsZenMode(prev => !prev),
+  });
+
+  // Real-time Structure sync
+  const handleStructureChange = useCallback((event: string) => {
+    if (event === 'NOTION_UPDATED' || event === 'STRUCTURE_CHANGED') {
+      loadProject(true);
+      toast.success('📡 Mise à jour collaborative');
+    }
+  }, [loadProject]);
+
+  useRealtimeSync({
+    projectName: projectData?.pr_name || projectName || '',
+    enabled: !!(projectData?.pr_name || projectName),
+    onStructureChange: handleStructureChange
+  });
+
+  // Lifecycle
+  useEffect(() => { loadProject(); }, [projectName]);
+
+  // Content External Sync
   useEffect(() => {
-    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      if (hasUnsavedChanges) {
-        e.preventDefault();
-        e.returnValue = '';
+    if (!structure || structure.length === 0) return;
+    if (currentContext?.type === 'notion' && currentContext.notionName) {
+      const findNotion = () => {
+        for (const part of structure) {
+          for (const chapter of part.chapters || []) {
+            for (const para of chapter.paragraphs || []) {
+              const found = para.notions?.find(n => n.notion_id === currentContext.notion?.notion_id);
+              if (found) return found;
+            }
+          }
+        }
+        return null;
+      };
+      const foundNotion = findNotion();
+      if (foundNotion) {
+        if (foundNotion.notion_content !== editorContent && !hasUnsavedChanges) {
+          setEditorContent(foundNotion.notion_content || '');
+        }
+      }
+    }
+  }, [structure]);
+
+  // Socratic Debounce
+  useEffect(() => {
+    if (editorContent && editorContent.length > 50 && !isImporting) analyzeDebounced(editorContent);
+  }, [editorContent, analyzeDebounced, isImporting]);
+
+  // Resizing Logic - Exclusive to TOC Sidebar
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isResizing) return;
+      if (e.clientX >= 200 && e.clientX <= 600) {
+        setSidebarWidth(e.clientX);
       }
     };
+    const handleMouseUp = () => setIsResizing(false);
+    if (isResizing) {
+      window.addEventListener('mousemove', handleMouseMove);
+      window.addEventListener('mouseup', handleMouseUp);
+    }
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isResizing]);
 
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-  }, [hasUnsavedChanges]);
-
-  if (isLoading) {
-    return (
-      <div className="h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <Loader2 className="w-12 h-12 text-[#99334C] animate-spin mx-auto mb-4" />
-          <p className="text-gray-600">Chargement du projet...</p>
-        </div>
-      </div>
-    );
-  }
+  if (isLoading && !projectData) return <EditorSkeletonView />;
 
   if (error && !projectData) {
     return (
       <div className="h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center max-w-md">
+        <div className="text-center max-w-md p-8 bg-white rounded-2xl shadow-xl">
           <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Erreur</h2>
           <p className="text-gray-600 mb-4">{error}</p>
-          <button
-            onClick={() => router.push('/edit-home')}
-            className="px-6 py-3 bg-[#99334C] text-white rounded-xl hover:bg-[#7a283d] transition-all"
-          >
-            Retour aux projets
-          </button>
+          <button onClick={() => router.push('/edit-home')} className="px-6 py-3 bg-[#99334C] text-white rounded-xl hover:bg-[#7a283d] transition-all">Retour</button>
         </div>
       </div>
     );
   }
 
-
-  const handleMoveGranule = async (
-    type: 'chapter' | 'paragraph' | 'notion',
-    itemId: string,
-    newParentId: string
-  ) => {
-    if (!projectData) return;
-
-    try {
-      // setIsLoading(true); // DÉSACTIVÉ POUR UI NON BLOQUANTE
-      setError('');
-
-      console.log(`🔄 Déplacement ${type} ${itemId} vers parent ${newParentId}`);
-
-      // Appel API pour déplacer le granule
-      await structureService.moveGranule(
-        projectData.pr_name,
-        type,
-        itemId,
-        newParentId
-      );
-
-      // Recharger la structure complète (silencieux) - DÉSACTIVÉ
-      // await loadProject(true);
-
-      // Toast succès
-      const successMsg = document.createElement('div');
-      successMsg.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 flex items-center gap-2 animate-in slide-in-from-right';
-      successMsg.innerHTML = `<svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg> ${type.charAt(0).toUpperCase() + type.slice(1)} déplacé(e) avec succès`;
-      document.body.appendChild(successMsg);
-      setTimeout(() => document.body.removeChild(successMsg), 3000);
-
-    } catch (err: any) {
-      console.error('❌ Erreur déplacement:', err);
-      setError(`Erreur: ${err.message}`);
-      if (err.details) {
-        console.error('🔍 Détails backend:', err.details);
-      }
-
-      // Toast erreur
-      const errorMsg = document.createElement('div');
-      errorMsg.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 flex items-center gap-2';
-      errorMsg.textContent = `Erreur: ${err.message}`;
-      document.body.appendChild(errorMsg);
-      setTimeout(() => document.body.removeChild(errorMsg), 5000);
-
-      // Rollback reload
-      await loadProject(true);
-    } finally {
-      // setIsLoading(false);
-    }
-  };
-
-  const handleInsertImage = () => {
-    if (!tiptapEditor) {
-      toast.error("L'éditeur n'est pas prêt");
-      return;
-    }
-
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'image/*';
-
-    input.onchange = (e: Event) => {
-      const target = e.target as HTMLInputElement;
-      const file = target.files?.[0];
-
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = (event) => {
-          const imageUrl = event.target?.result as string;
-          tiptapEditor.chain().focus().setImage({ src: imageUrl }).run();
-          setHasUnsavedChanges(true);
-        };
-        reader.readAsDataURL(file);
-      }
-    };
-
-    input.click();
-  };
-  // --- Command Palette Configuration (Placé ici pour éviter zone morte TDZ) ---
-  const commands = [
-    {
-      id: 'save',
-      label: 'Sauvegarder',
-      description: 'Enregistrer les modifications actuelles',
-      icon: <Save size={18} />,
-      category: 'Projet',
-      shortcut: 'Ctrl+S',
-      action: () => handleSave(false)
-    },
-    {
-      id: 'preview',
-      label: 'Aperçu',
-      description: 'Voir le rendu final du document',
-      icon: <Eye size={18} />,
-      category: 'Projet',
-      action: () => {
-        if (projectData?.pr_name) router.push(`/document/${projectData.pr_name}`);
-      }
-    },
-    {
-      id: 'share',
-      label: 'Partager',
-      description: 'Inviter des collaborateurs email',
-      icon: <Share2 size={18} />,
-      category: 'Projet',
-      action: () => setShowShareOverlay(true)
-    },
-    {
-      id: 'add-part',
-      label: 'Nouvelle Partie',
-      description: 'Créer une nouvelle section racine',
-      icon: <Plus size={18} />,
-      category: 'Structure',
-      action: handleCreatePart
-    },
-    {
-      id: 'ai-chat',
-      label: 'Assistant IA',
-      description: 'Ouvrir le ChatBot pédagogique',
-      icon: <Bot size={18} />,
-      category: 'Outils',
-      action: () => setShowChatBot(true)
-    },
-    {
-      id: 'home',
-      label: 'Retour Dashboard',
-      description: 'Quitter l\'éditeur',
-      icon: <Home size={18} />,
-      category: 'Navigation',
-      action: () => router.push('/edit-home')
-    }
-  ];
-
   return (
-    <>
-      <style dangerouslySetInnerHTML={{
-        __html: `
-        @media only screen and (max-width: 768px) {
-          /* Force desktop-like scale on mobile */
-          viewport { width: 1200px !important; initial-scale: 0.5 !important; }
-        }
-      ` }} />
-      <meta name="viewport" content="width=1200, initial-scale=0.5" />
-      {/* Assuming isZenMode is a state variable defined elsewhere, e.g., const [isZenMode, setIsZenMode] = useState(false); */}
-      <div className={`flex h-screen bg-gray-50 overflow-hidden ${isZenMode ? 'zen-mode-active' : ''}`}>
-        {isZenMode && (
-          <style jsx global>{`
-            header, footer { display: none !important; }
-          `}</style>
-        )}
+    <div className="h-screen flex bg-white overflow-hidden selection:bg-[#99334C]/10 w-full max-w-[100vw]">
+      {/* 1. Sidebar TOC - Pleine Hauteur (Gauche) */}
+      {!isZenMode && (
+        <>
+          <aside style={{ width: `${sidebarWidth}px` }} className="h-full flex flex-col border-r border-gray-100 bg-gray-50/30 shrink-0">
+            <TableOfContents
+              projectName={projectName || ''}
+              structure={structure}
+              width={sidebarWidth}
+              onSelectNotion={(ctx) => {
+                const update = () => {
+                  if (hasUnsavedChanges) handleSave(true);
+                  setCurrentContext({
+                    type: 'notion',
+                    projectName: projectData?.pr_name || '',
+                    partTitle: ctx.partTitle,
+                    chapterTitle: ctx.chapterTitle,
+                    paraName: ctx.paraName,
+                    notionName: ctx.notionName,
+                    notion: ctx.notion
+                  });
+                  setEditorContent(ctx.notion.notion_content || '');
+                  setHasUnsavedChanges(false);
+                };
+                // @ts-ignore
+                if (document.startViewTransition) document.startViewTransition(update);
+                else update();
+              }}
+              onSelectPart={(ctx) => {
+                const update = () => {
+                  if (hasUnsavedChanges) handleSave(true);
+                  setCurrentContext({
+                    type: 'part',
+                    projectName: projectData?.pr_name || '',
+                    partTitle: ctx.partTitle,
+                    part: ctx.part
+                  });
+                  setEditorContent(ctx.part.part_intro || '');
+                  setHasUnsavedChanges(false);
+                };
+                // @ts-ignore
+                if (document.startViewTransition) document.startViewTransition(update);
+                else update();
+              }}
+              onSelectChapter={(pName, cTitle, cId) => {
+                const update = () => {
+                  if (hasUnsavedChanges) handleSave(true);
+                  setCurrentContext({
+                    type: 'chapter',
+                    projectName: projectData?.pr_name || '',
+                    partTitle: pName,
+                    chapterTitle: cTitle,
+                    chapterId: cId
+                  });
+                  setEditorContent('');
+                  setHasUnsavedChanges(false);
+                };
+                // @ts-ignore
+                if (document.startViewTransition) document.startViewTransition(update);
+                else update();
+              }}
+              onSelectParagraph={(pName, cTitle, paName, paId) => {
+                const update = () => {
+                  if (hasUnsavedChanges) handleSave(true);
+                  setCurrentContext({
+                    type: 'paragraph',
+                    projectName: projectData?.pr_name || '',
+                    partTitle: pName,
+                    chapterTitle: cTitle,
+                    paraName: paName,
+                    paraId: paId
+                  });
+                  setEditorContent('');
+                  setHasUnsavedChanges(false);
+                };
+                // @ts-ignore
+                if (document.startViewTransition) document.startViewTransition(update);
+                else update();
+              }}
+              onCreatePart={handleCreatePart}
+              onCreateChapter={handleCreateChapter}
+              onCreateParagraph={handleCreateParagraph}
+              onCreateNotion={handleCreateNotion}
+              onRename={handleRenameGranule}
+              onReorder={handleReorderGranule}
+              onMove={handleMoveGranule}
+              onDelete={async (type, id) => {
+                const findTitle = () => {
+                  if (type === 'part') return structure.find(p => p.part_id === id)?.part_title;
+                  if (type === 'chapter') return structure.flatMap(p => p.chapters || []).find(c => c.chapter_id === id)?.chapter_title;
+                  if (type === 'paragraph') return structure.flatMap(p => p.chapters || []).flatMap(c => c.paragraphs || []).find(pa => pa.para_id === id)?.para_name;
+                  if (type === 'notion') return structure.flatMap(p => p.chapters || []).flatMap(c => c.paragraphs || []).flatMap(pa => pa.notions || []).find(n => n.notion_id === id)?.notion_name;
+                  return '';
+                };
+                handleDelete(type, id, findTitle() || '');
+              }}
+              selectedPartId={currentContext?.type === 'part' ? currentContext.part?.part_id || structure.find(p => p.part_title === currentContext.partTitle)?.part_id : undefined}
+              selectedChapterId={currentContext?.chapterId}
+              selectedParagraphId={currentContext?.paraId}
+              selectedNotionId={currentContext?.notion?.notion_id}
+              pulsingId={pulsingId}
+              pendingGranule={pendingGranule}
+              isNotionOpen={currentContext?.type === 'notion'}
+            />
+          </aside>
+          <div onMouseDown={() => setIsResizing(true)} className="w-1 cursor-col-resize hover:bg-[#99334C] transition-colors z-10" />
+        </>
+      )}
+
+      {/* 2. Centre : Header + Toolbar + Content Area (Sandwich) */}
+      <div className={`flex-1 flex flex-col min-w-0 h-full relative overflow-hidden bg-white ${isZenMode ? 'fixed inset-0 z-[100]' : ''}`}>
         {!isZenMode && (
-          <TableOfContents
-            projectName={projectData?.pr_name || ''}
-            structure={structure}
-            onSelectNotion={handleSelectNotion}
-            onSelectPart={handleSelectPart}
-            onSelectChapter={handleSelectChapter}
-            onSelectParagraph={handleSelectParagraph}
-            selectedPartId={currentContext?.part?.part_id}
-            selectedChapterId={currentContext?.chapterId}
-            selectedParagraphId={currentContext?.paraId}
-            selectedNotionId={currentContext?.notion?.notion_id}
-            onCreatePart={handleCreatePart}
-            onCreateChapter={handleCreateChapter}
-            onCreateParagraph={handleCreateParagraph}
-            onCreateNotion={handleCreateNotion}
-            onRename={handleRename}
-            onReorder={handleReorder}        // ✅ HANDLER DE RÉORDONNANCEMENT
-            onMove={handleMoveGranule}        // ✅ HANDLER DE DÉPLACEMENT
-            onDelete={handleDelete}
-            language={language}
-            width={sidebarWidth}
+          <EditorHeader
+            projectName={projectName || ''}
+            projectData={projectData}
+            currentContext={currentContext}
+            t={t}
+            hasUnsavedChanges={hasUnsavedChanges}
+            onSave={handleSave}
+            onShare={() => setShowShareOverlay(true)}
+            onPreview={() => router.push(`/preview?projectName=${encodeURIComponent(projectData?.pr_name || '')}`)}
+            isSaving={isSaving}
+            connectedUsers={connectedUsers}
+            authUser={authUser}
           />
         )}
 
-        {/* Resizer Handle */}
-        {!isZenMode && (
-          <div
-            className="w-1.5 h-full cursor-col-resize hover:bg-[#99334C]/20 active:bg-[#99334C]/40 transition-colors z-20 flex-shrink-0 -ml-0.5"
-            onMouseDown={startResizing}
-          />
-        )}
+        <EditorToolbar
+          onFormatChange={(cmd) => tiptapEditor?.chain().focus()[cmd]().run()}
+          onFontChange={(e) => setTextFormat(prev => ({ ...prev, font: e.target.value }))}
+          onFontSizeChange={(e) => setTextFormat(prev => ({ ...prev, fontSize: e.target.value }))}
+          onChatToggle={() => setShowChatBot(prev => !prev)}
+          onInsertImage={() => toast('Bientôt disponible !')}
+          textFormat={textFormat}
+          disabled={(currentContext?.type === 'chapter' || currentContext?.type === 'paragraph')}
+          isZenMode={isZenMode}
+          onToggleZen={() => setIsZenMode(prev => !prev)}
+        />
 
-        <div className={`flex-1 flex flex-col transition-all duration-500 ease-in-out ${isZenMode ? 'max-w-4xl mx-auto w-full shadow-2xl my-4 rounded-xl overflow-hidden border border-gray-100 bg-white' : ''}`}>
-          {!isZenMode && (
-            <div className="bg-white border-b border-gray-200 flex items-center justify-between px-4 py-2">
-              <div className="flex items-center gap-4">
-                <RichTooltip title="Accueil" description="Retourner à la gestion de vos projets." shortcut="Alt+H">
-                  <Link
-                    href="/edit-home"
-                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-gray-600 hover:text-[#99334C]"
-                  >
-                    <Home className="w-5 h-5" />
-                  </Link>
-                </RichTooltip>
-
-                <h1 className="text-lg font-bold text-gray-900 border-l pl-4 border-gray-200">
-                  {projectData?.pr_name}
-                </h1>
-
-                {currentContext && (
-                  <div className="flex items-center gap-2 text-[11px] text-gray-400 dark:text-gray-500 ml-5 pl-5 border-l border-gray-100 dark:border-gray-700 max-w-xl truncate">
-                    {currentContext.type === 'notion' ? (
-                      <>
-                        <span className="hover:text-gray-700 dark:hover:text-gray-300 transition-colors uppercase text-[10px] font-bold tracking-wider">{currentContext.partTitle}</span>
-                        <ChevronRight className="w-3 h-3 text-gray-300 dark:text-gray-600" />
-                        <span className="hover:text-gray-700 dark:hover:text-gray-300 transition-colors uppercase text-[10px] font-bold tracking-wider">{currentContext.chapterTitle}</span>
-                        <ChevronRight className="w-3 h-3 text-gray-300 dark:text-gray-600" />
-                        <span className="hover:text-gray-700 dark:hover:text-gray-300 transition-colors uppercase text-[10px] font-bold tracking-wider">{currentContext.paraName}</span>
-                        <ChevronRight className="w-3 h-3 text-gray-300 dark:text-gray-600" />
-                        <span className="font-bold text-[#99334C] dark:text-[#ff9daf]">{currentContext.notionName}</span>
-                      </>
-                    ) : (
-                      <>
-                        <span className="uppercase text-[10px] font-bold tracking-wider">{t.editor.part}</span>
-                        <ChevronRight className="w-3 h-3 text-gray-300 dark:text-gray-600" />
-                        <span className="font-bold text-[#99334C] dark:text-[#ff9daf]">{currentContext.partTitle}</span>
-                        <span className="ml-1 text-gray-400 font-normal dark:text-gray-500">(Intro)</span>
-                      </>
-                    )}
-                  </div>
-                )}
-              </div>
-              <div className="flex items-center gap-3">
-                <RichTooltip title="Aperçu" description="Visualiser le projet tel qu'il sera publié." shortcut="Alt+P">
-                  <TactileButton
-                    variant="ghost"
-                    onClick={() => {
-                      if (hasUnsavedChanges) handleSave(true);
-                      router.push(`/preview?projectName=${encodeURIComponent(projectData?.pr_name || '')}`);
-                    }}
-                    className="p-2 text-gray-500 hover:text-[#99334C] hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-all"
-                  >
-                    <Eye className="w-5 h-5" />
-                  </TactileButton>
-                </RichTooltip>
-
-                <RichTooltip title="Partager" description="Inviter des collaborateurs ou publier sur la marketplace.">
-                  <TactileButton
-                    variant="ghost"
-                    onClick={() => setShowShareOverlay(true)}
-                    className="p-2 text-gray-500 hover:text-[#99334C] hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-all"
-                  >
-                    <Share2 className="w-5 h-5" />
-                  </TactileButton>
-                </RichTooltip>
-                <RichTooltip title="Enregistrer" description="Sauvegarder manuellement vos modifications." shortcut="Ctrl+S">
-                  <TactileButton
-                    variant="ghost"
-                    onClick={() => handleSave(false)}
-                    disabled={isSaving}
-                    isLoading={isSaving}
-                    className="p-2 text-gray-500 hover:text-[#99334C] hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-all"
-                  >
-                    {!isSaving && <Save className="w-5 h-5" />}
-                  </TactileButton>
-                </RichTooltip>
-              </div>
-            </div>
-          )}
-
-          <EditorToolbar
-            textFormat={textFormat}
-            onFormatChange={applyFormat}
-            onFontChange={handleFontChange}
-            onFontSizeChange={handleFontSizeChange}
-            onChatToggle={() => setShowChatBot(!showChatBot)}
-            onInsertImage={handleInsertImage}
-            disabled={isToolbarDisabled}
-            isZenMode={isZenMode}
-            onToggleZen={toggleZenMode}
-          />
-
-          {isImporting ? (
-            <EditorSkeleton />
-          ) : currentContext ? (
+        <main className="flex-1 overflow-y-auto bg-gray-50/50 p-4 lg:p-12">
+          <div className="max-w-4xl mx-auto min-h-full">
             <EditorArea
               content={editorContent}
               textFormat={textFormat}
               onChange={setEditorContent}
-              onEditorReady={setTiptapEditor} // Passer l'instance de l'éditeur au parent
-              onDrop={handleDropNew} // Utilise la nouvelle méthode
+              onEditorReady={setTiptapEditor}
+              onDrop={handleDropGranule}
               editorRef={editorRef}
-              isImporting={isImporting}
-              readOnly={currentContext.type === 'chapter' || currentContext.type === 'paragraph'}
-              onAddPart={handleCreatePart}
-              onAddChapter={() => handleCreateChapter(currentContext.partTitle)}
-              onAddParagraph={() => {
-                if (currentContext.type === 'chapter' || currentContext.type === 'paragraph') {
-                  handleCreateParagraph(currentContext.partTitle, currentContext.chapterTitle || '');
-                } else {
-                  toast.error("Veuillez d'abord sélectionner un chapitre");
-                }
-              }}
-              onAddNotion={() => {
-                if (currentContext.type === 'paragraph') {
-                  handleCreateNotion(currentContext.partTitle, currentContext.chapterTitle || '', currentContext.paraName || '');
-                } else {
-                  toast.error("Veuillez d'abord sélectionner un paragraphe");
-                }
-              }}
-              onOpenChat={() => setShowChatBot(true)}
-              onSave={() => handleSave(false)}
-              placeholder={
-                currentContext.type === 'part'
-                  ? t.editor.partPlaceholder
-                  : currentContext.type === 'chapter'
-                    ? t.editor.chapterPlaceholder
-                    : currentContext.type === 'paragraph'
-                      ? t.editor.paragraphPlaceholder
-                      : currentContext.type === 'notion'
-                        ? t.editor.notionPlaceholder
-                        : t.editor.selectPrompt
-              }
+              socraticFeedback={mappedSocraticFeedback as any}
             />
-          ) : (
-            <div className="flex-1 flex items-center justify-center text-gray-500">
-              <div className="text-center">
-                <p className="text-lg mb-2">Sélectionnez une notion ou une partie pour commencer à éditer</p>
-                <p className="text-sm">ou utilisez la table des matières à gauche</p>
-              </div>
-            </div>
-          )}
-        </div >
+          </div>
+        </main>
+      </div>
 
+      {/* 3. RightPanel - Pleine Hauteur (Droite) */}
+      {!isZenMode && (
         <RightPanel
           activePanel={rightPanel}
-          onToggle={toggleRightPanel}
-          granules={[
-            {
-              id: 'p1',
-              type: 'part',
-              content: 'Partie 1: Fondamentaux',
-              icon: 'Folder',
-              children: [
-                {
-                  id: 'c1',
-                  type: 'chapter',
-                  content: 'Chapitre 1: Introduction',
-                  icon: 'Book',
-                  children: [
-                    {
-                      id: 'pg1',
-                      type: 'paragraph',
-                      content: 'Paragraphe 1.1: Concepts',
-                      icon: 'FileText',
-                      children: [
-                        { id: 'n1', type: 'notion', content: 'Notion 1: Définition', icon: 'File' },
-                        { id: 'n2', type: 'notion', content: 'Notion 2: Exemples', icon: 'File' }
-                      ]
-                    }
-                  ]
-                }
-              ]
-            },
-            {
-              id: 'p2',
-              type: 'part',
-              content: 'Partie 2: Avancé',
-              icon: 'Folder',
-              children: []
+          onToggle={(id: string) => {
+            if (id === 'assistant') {
+              setShowChatBot(prev => !prev);
+              return;
             }
-          ]}
-          onDragStart={handleDragStart}
+            setRightPanel(prev => prev === id ? null : id);
+          }}
+          comments={comments}
+          onAddComment={async (c: any) => {
+            const newC = await commentService.addComment(projectName!, c);
+            setComments(prev => [newC, ...prev]);
+          }}
+          onDeleteComment={async (id: string) => {
+            await commentService.deleteComment(projectName!, id);
+            setComments(prev => prev.filter(c => c.comment_id !== id));
+          }}
           project={projectData}
           structure={structure}
-          currentContext={currentContext ? {
-            projectName: projectData?.pr_name || currentContext.projectName,
-            partTitle: currentContext.partTitle,
-            chapterTitle: currentContext.chapterTitle,
-            paraName: currentContext.paraName,
-            notionName: currentContext.notionName
-          } : undefined}
-          onUpdateProject={handleUpdateProjectSettings}
-          comments={comments}
-          onAddComment={handleAddComment}
-          onDeleteComment={handleDeleteComment}
-          isFetchingComments={isFetchingComments}
-          onImportFile={handleDropNew}
+          currentContext={currentContext}
+          onUpdateProject={(data: any) => handleUpdateProjectSettings(data, router)}
+          onImportFile={() => toast('Importation bientôt disponible')}
+          granules={mockGranules}
+          onDragStart={handleDragStart}
         />
+      )}
 
+      {/* Modals & Overlays */}
+      <CreationModals {...{ showPartModal, setShowPartModal, showChapterModal, setShowChapterModal, showParagraphModal, setShowParagraphModal, showNotionModal, setShowNotionModal, modalContext, partFormData, setPartFormData, chapterFormData, setChapterFormData, paragraphFormData, setParagraphFormData, notionFormData, setNotionFormData, isCreatingPart, isCreatingChapter, isCreatingParagraph, isCreatingNotion, handleCreatePart, handleCreateChapter, handleCreateParagraph, handleCreateNotion, confirmCreatePart, confirmCreateChapter, confirmCreateParagraph, confirmCreateNotion }} />
+      <DeleteModal config={deleteModalConfig} onClose={() => setDeleteModalConfig(prev => ({ ...prev, isOpen: false }))} onConfirm={() => confirmDelete(structure)} />
+      {showShareOverlay && <ShareOverlay projectName={projectName || ''} isOpen={showShareOverlay} onClose={() => setShowShareOverlay(false)} />}
+      {showChatBot && <ChatBotOverlay isOpen={showChatBot} onClose={() => setShowChatBot(false)} currentContext={currentContext as any} editorContent={editorContent} />}
 
+      {isZenMode && (
+        <style jsx global>{`
+          header { display: none !important; }
+        `}</style>
+      )}
 
-        <ChatBotOverlay
-          isOpen={showChatBot}
-          onClose={() => setShowChatBot(false)}
-          currentContext={currentContext ? {
-            projectName: projectData?.pr_name || '',
-            partTitle: currentContext.partTitle,
-            chapterTitle: currentContext.chapterTitle || '',
-            paraName: currentContext.paraName || '',
-            notionName: currentContext.notionName || ''
-          } : null}
-          editorContent={editorContent}
+      {showSocraticPanel && (
+        <SocraticPanel
+          feedback={socraticFeedback}
+          bloomScore={bloomScore}
+          isAnalyzing={isAnalyzing}
+          onDismissFeedback={dismissFeedback}
+          isVisible={showSocraticPanel}
+          onClose={() => setShowSocraticPanel(false)}
+          onApplySuggestion={(id, sug) => {
+            navigator.clipboard.writeText(sug);
+            toast.success('Copié !');
+            dismissFeedback(id);
+          }}
         />
-
-        {/* MODALE PARTIE */}
-        {
-          showPartModal && (
-            <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in">
-              <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl">
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-2xl font-bold text-gray-900">Nouvelle Partie</h3>
-                  <button onClick={() => setShowPartModal(false)} className="text-gray-400 hover:text-gray-600">
-                    <X className="w-6 h-6" />
-                  </button>
-                </div>
-
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Titre de la partie</label>
-                    <input
-                      type="text"
-                      value={partFormData.title}
-                      onChange={(e) => setPartFormData(prev => ({ ...prev, title: e.target.value }))}
-                      placeholder="Ex: Introduction"
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#99334C] text-gray-900 outline-none"
-                      autoFocus
-                    />
-                    <p className="mt-1 text-xs text-gray-500">Min. 3 caractères</p>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Numéro</label>
-                    <input
-                      type="number"
-                      value={partFormData.number}
-                      onChange={(e) => setPartFormData(prev => ({ ...prev, number: parseInt(e.target.value) || 1 }))}
-                      min="1"
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#99334C] text-gray-900"
-                    />
-                  </div>
-                </div>
-
-                <div className="flex gap-3 mt-6">
-                  <button
-                    onClick={() => setShowPartModal(false)}
-                    className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50"
-                  >
-                    Annuler
-                  </button>
-                  <button
-                    onClick={confirmCreatePart}
-                    disabled={isCreatingPart || partFormData.title.trim().length < 3}
-                    className="flex-1 px-4 py-3 bg-[#99334C] text-white rounded-xl hover:bg-[#7a283d] disabled:opacity-50 flex justify-center items-center gap-2"
-                  >
-                    {isCreatingPart && <Loader2 className="w-4 h-4 animate-spin" />}
-                    Créer
-                  </button>
-                </div>
-              </div>
-            </div>
-          )
-        }
-
-        {/* MODALE CHAPITRE */}
-        {
-          showChapterModal && (
-            <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in">
-              <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl">
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-2xl font-bold text-gray-900">Nouveau Chapitre</h3>
-                  <button onClick={() => setShowChapterModal(false)} className="text-gray-400 hover:text-gray-600">
-                    <X className="w-6 h-6" />
-                  </button>
-                </div>
-
-                <div className="mb-3 text-sm text-gray-600">
-                  Dans la partie : <span className="font-semibold text-[#99334C]">{modalContext.partTitle}</span>
-                </div>
-
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Titre du chapitre</label>
-                    <input
-                      type="text"
-                      value={chapterFormData.title}
-                      onChange={(e) => setChapterFormData(prev => ({ ...prev, title: e.target.value }))}
-                      placeholder="Ex: Concepts fondamentaux"
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#99334C] text-gray-900 outline-none"
-                      autoFocus
-                    />
-                    <p className="mt-1 text-xs text-gray-500">Min. 3 caractères</p>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Numéro</label>
-                    <input
-                      type="number"
-                      value={chapterFormData.number}
-                      onChange={(e) => setChapterFormData(prev => ({ ...prev, number: parseInt(e.target.value) || 1 }))}
-                      min="1"
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#99334C] text-gray-900"
-                    />
-                  </div>
-                </div>
-
-                <div className="flex gap-3 mt-6">
-                  <button
-                    onClick={() => setShowChapterModal(false)}
-                    className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50"
-                  >
-                    Annuler
-                  </button>
-                  <button
-                    onClick={confirmCreateChapter}
-                    disabled={isCreatingChapter || chapterFormData.title.trim().length < 3}
-                    className="flex-1 px-4 py-3 bg-[#99334C] text-white rounded-xl hover:bg-[#7a283d] disabled:opacity-50 flex justify-center items-center gap-2"
-                  >
-                    {isCreatingChapter && <Loader2 className="w-4 h-4 animate-spin" />}
-                    Créer
-                  </button>
-                </div>
-              </div>
-            </div>
-          )
-        }
-
-        {/* MODALE PARAGRAPHE */}
-        {
-          showParagraphModal && (
-            <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-              <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl">
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-2xl font-bold text-gray-900">Nouveau Paragraphe</h3>
-                  <button onClick={() => setShowParagraphModal(false)} className="text-gray-400 hover:text-gray-600">
-                    <X className="w-6 h-6" />
-                  </button>
-                </div>
-
-                <div className="mb-3 text-sm text-gray-600">
-                  Dans : <span className="font-semibold text-[#99334C]">{modalContext.partTitle} / {modalContext.chapterTitle}</span>
-                </div>
-
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Nom du paragraphe</label>
-                    <input
-                      type="text"
-                      value={paragraphFormData.name}
-                      onChange={(e) => setParagraphFormData(prev => ({ ...prev, name: e.target.value }))}
-                      placeholder="Ex: Définitions"
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#99334C] text-gray-900 outline-none"
-                      autoFocus
-                    />
-                    <p className="mt-1 text-xs text-gray-500">Min. 3 caractères</p>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Numéro</label>
-                    <input
-                      type="number"
-                      min="1"
-                      value={paragraphFormData.number}
-                      onChange={(e) => setParagraphFormData(prev => ({
-                        ...prev,
-                        number: parseInt(e.target.value) || 1
-                      }))}
-                      placeholder="1"
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#99334C] text-gray-900"
-                    />
-                  </div>
-                </div>
-
-                <div className="flex gap-3 mt-6">
-                  <button
-                    onClick={() => setShowParagraphModal(false)}
-                    className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50"
-                  >
-                    Annuler
-                  </button>
-                  <button
-                    onClick={confirmCreateParagraph}
-                    disabled={isCreatingParagraph || paragraphFormData.name.trim().length < 3}
-                    className="flex-1 px-4 py-3 bg-[#99334C] text-white rounded-xl hover:bg-[#7a283d] disabled:opacity-50 flex justify-center items-center gap-2"
-                  >
-                    {isCreatingParagraph && <Loader2 className="w-4 h-4 animate-spin" />}
-                    Créer
-                  </button>
-                </div>
-              </div>
-            </div>
-          )
-        }
-
-
-        {/* MODALE NOTION */}
-        {
-          showNotionModal && (
-            <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in">
-              <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl">
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-2xl font-bold text-gray-900">Nouvelle Notion</h3>
-                  <button onClick={() => setShowNotionModal(false)} className="text-gray-400 hover:text-gray-600">
-                    <X className="w-6 h-6" />
-                  </button>
-                </div>
-
-                <div className="mb-3 text-sm text-gray-600">
-                  Dans : <span className="font-semibold text-[#99334C]">{modalContext.partTitle} / {modalContext.chapterTitle} / {modalContext.paraName}</span>
-                </div>
-
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Nom de la notion</label>
-                    <input
-                      type="text"
-                      value={notionFormData.name}
-                      onChange={(e) => setNotionFormData(prev => ({ ...prev, name: e.target.value }))}
-                      placeholder="Ex: Théorème de Pythagore"
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#99334C] text-gray-900 outline-none"
-                      autoFocus
-                    />
-                    <p className="mt-1 text-xs text-gray-500">Min. 3 caractères</p>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Numéro</label>
-                    <input
-                      type="number"
-                      min="1"
-                      value={notionFormData.number}
-                      onChange={(e) => setNotionFormData(prev => ({
-                        ...prev,
-                        number: parseInt(e.target.value) || 1
-                      }))}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#99334C] text-gray-900"
-                    />
-                  </div>
-                </div>
-
-                <div className="flex gap-3 mt-6">
-                  <button
-                    onClick={() => setShowNotionModal(false)}
-                    className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50"
-                  >
-                    Annuler
-                  </button>
-                  <button
-                    onClick={confirmCreateNotion}
-                    disabled={isCreatingNotion || notionFormData.name.trim().length < 3}
-                    className="flex-1 px-4 py-3 bg-[#99334C] text-white rounded-xl hover:bg-[#7a283d] disabled:opacity-50 flex justify-center items-center gap-2"
-                  >
-                    {isCreatingNotion && <Loader2 className="w-4 h-4 animate-spin" />}
-                    Créer
-                  </button>
-                </div>
-              </div>
-            </div>
-          )
-        }
-
-        {/* Overlay de partage */}
-        <ShareOverlay
-          isOpen={showShareOverlay}
-          onClose={() => setShowShareOverlay(false)}
-          projectName={projectData?.pr_name || projectName || ''}
-        />
-        {/* Modal de Confirmation de Suppression */}
-        <AnimatePresence>
-          {deleteModalConfig.isOpen && (
-            <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4">
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                onClick={() => setDeleteModalConfig(prev => ({ ...prev, isOpen: false }))}
-                className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-              />
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95, y: 20 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                className="relative bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden"
-              >
-                <div className="p-6">
-                  <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mb-4">
-                    <Trash2 className="text-red-600" size={24} />
-                  </div>
-                  <h3 className="text-xl font-bold text-gray-900 mb-2">
-                    Confirmer la suppression
-                  </h3>
-                  <p className="text-gray-600 mb-6">
-                    Êtes-vous sûr de vouloir supprimer <strong>{deleteModalConfig.title}</strong> ?
-                    {deleteModalConfig.type !== 'notion' && " Tous les éléments enfants seront également supprimés. Cette action est irréversible."}
-                  </p>
-
-                  <div className="flex gap-3">
-                    <button
-                      disabled={deleteModalConfig.isDeleting}
-                      onClick={() => setDeleteModalConfig(prev => ({ ...prev, isOpen: false }))}
-                      className="flex-1 px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-xl transition-colors disabled:opacity-50"
-                    >
-                      Annuler
-                    </button>
-                    <button
-                      disabled={deleteModalConfig.isDeleting}
-                      onClick={confirmDelete}
-                      className="flex-1 px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white font-medium rounded-xl transition-colors shadow-lg shadow-red-200 flex items-center justify-center gap-2 disabled:opacity-50"
-                    >
-                      {deleteModalConfig.isDeleting ? (
-                        <>
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                          Suppression...
-                        </>
-                      ) : (
-                        "Supprimer"
-                      )}
-                    </button>
-                  </div>
-                </div>
-              </motion.div>
-            </div>
-          )}
-        </AnimatePresence>
-      </div >
-    </>
+      )}
+    </div>
   );
 };
 
-// Wrapper avec Suspense pour useSearchParams
-function EditPageWrapper() {
+export default function EditPage() {
   return (
-    <Suspense fallback={
-      <div className="h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <Loader2 className="w-12 h-12 text-[#99334C] animate-spin mx-auto mb-4" />
-          <p className="text-gray-600">Chargement...</p>
-        </div>
-      </div>
-    }>
+    <Suspense fallback={<EditorSkeletonView />}>
       <XCCM2Editor />
     </Suspense>
   );
 }
-
-export default EditPageWrapper;

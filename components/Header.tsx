@@ -62,8 +62,11 @@ export default function Header() {
     setTimeout(() => setShowUserMenu(false), 200);
   };
 
+  // Hide header on specific routes that manage their own layout/header
+  if (pathname?.startsWith('/book-reader')) return null;
+
   return (
-    <header className="w-full bg-white/80 dark:bg-gray-900/80 backdrop-blur-md shadow-sm border-b border-gray-100 dark:border-gray-800 sticky top-0 z-100">
+    <header className="w-full bg-white/80 dark:bg-gray-900/80 backdrop-blur-md shadow-sm border-b border-gray-100 dark:border-gray-800 sticky top-0 z-50">
       <nav className="mx-auto flex max-w-[1400px] items-center justify-between px-4 py-2 relative min-h-[60px] lg:min-h-[70px]">
 
         {/* --- LOGO --- */}
@@ -81,7 +84,7 @@ export default function Header() {
         </div>
 
         {/* --- NAVIGATION DESKTOP --- */}
-        <div className="hidden lg:flex flex-1 justify-center px-4">
+        <div className="hidden lg:flex flex-1 justify-start px-8 ml-8">
           <ul className="flex items-center gap-1 xl:gap-2">
             {!isLoading && LINKS.filter(link => !link.authOnly || isAuthenticated).map(link => {
               const isActive = pathname === link.href;

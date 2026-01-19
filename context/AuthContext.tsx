@@ -36,6 +36,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const checkAuth = async () => {
     setIsLoading(true);
     try {
+      // Essayer de charger rapidement depuis le cache local d'abord
+      const cachedUser = typeof window !== 'undefined'
+        ? localStorage.getItem('xccm2_user')
+        : null;
+
+      if (cachedUser) {
+        try {
+          const parsed = JSON.parse(cachedUser);
+          setUser(parsed);
+          // Continuer à vérifier en arrière-plan
+          setIsLoading(false);
+        } catch {
+          // Cache invalide, ignorer
+        }
+      }
+
+      // Vérifier avec l'API pour s'assurer que la session est valide
       const userData = await authService.getCurrentUser();
       setUser(userData);
     } catch (error) {

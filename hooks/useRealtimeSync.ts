@@ -18,8 +18,11 @@ export function useRealtimeSync({ projectName, onStructureChange, enabled = true
     const isConnectedRef = useRef(false);
     const channelRef = useRef<any>(null);
 
-    // Stabiliser le callback pour éviter les reconnexions
-    const stableCallback = useCallback(onStructureChange, []);
+    // Utiliser une ref pour le callback pour éviter les reconnexions tout en ayant la version la plus fraîche
+    const callbackRef = useRef(onStructureChange);
+    useEffect(() => {
+        callbackRef.current = onStructureChange;
+    }, [onStructureChange]);
 
     useEffect(() => {
         if (!enabled || !projectName) return;
@@ -79,7 +82,7 @@ export function useRealtimeSync({ projectName, onStructureChange, enabled = true
                     if (!mounted) return;
                     if (!message.name) return;
                     console.log(`📡 Received realtime event: ${message.name}`, message.data);
-                    stableCallback(message.name, message.data);
+                    callbackRef.current(message.name, message.data);
                 });
 
                 console.log(`✅ Subscribed to channel: project:${projectName}`);
@@ -114,5 +117,5 @@ export function useRealtimeSync({ projectName, onStructureChange, enabled = true
                 }
             }
         };
-    }, [projectName, enabled, stableCallback]);
+    }, [projectName, enabled]);
 }

@@ -6,6 +6,9 @@ import { Loader2 } from 'lucide-react';
 import { setCookie } from '@/lib/cookies';
 import toast from 'react-hot-toast';
 
+const USER_STORAGE_KEY = 'xccm2_user';
+const TOKEN_STORAGE_KEY = 'xccm2_auth_token';
+
 const AuthCallbackPage = () => {
     const router = useRouter();
     const [error, setError] = useState<string | null>(null);
@@ -29,9 +32,10 @@ const AuthCallbackPage = () => {
                 const result = await response.json();
 
                 if (result.success && result.data.token) {
-                    // Stocker le token et l'utilisateur comme d'habitude
+                    // Stocker le token dans cookie ET localStorage pour persistance
                     setCookie('auth_token', result.data.token);
-                    sessionStorage.setItem('user', JSON.stringify(result.data.user));
+                    localStorage.setItem(TOKEN_STORAGE_KEY, result.data.token);
+                    localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(result.data.user));
 
                     toast.success('Connexion réussie !');
                     router.push('/edit-home');

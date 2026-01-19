@@ -286,6 +286,30 @@ class ProjectService {
     const result = await response.json();
     return result.data; // L'API doit renvoyer { success: true, data: { publicURL: '...' } }
   }
+  async toggleLike(projectName: string): Promise<{ likes: number; isLiked: boolean }> {
+    try {
+      const token = this.getAuthToken();
+      if (!token) throw new Error('Non authentifié');
+
+      const response = await fetch(`${API_BASE_URL}/api/projects/${encodeURIComponent(projectName)}/like`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Erreur lors du like');
+      }
+
+      const result = await response.json();
+      return result.data;
+    } catch (error) {
+      console.error('Erreur toggleLike:', error);
+      throw error;
+    }
+  }
 }
 
 export const projectService = new ProjectService();
