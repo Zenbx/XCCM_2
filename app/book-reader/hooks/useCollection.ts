@@ -2,7 +2,7 @@ import { useState, useCallback } from 'react';
 import toast from 'react-hot-toast';
 import { vaultService } from '@/services/vaultService';
 import { projectService, Project } from '@/services/projectService';
-import { structureService, getProjectStructureOptimized, Part } from '@/services/structureService';
+import { structureService, Part } from '@/services/structureService';
 
 export const useCollection = (docId: string | null, currentDoc: any) => {
     const [showCollectModal, setShowCollectModal] = useState(false);
@@ -60,7 +60,8 @@ export const useCollection = (docId: string | null, currentDoc: any) => {
         setNavigationPath([]);
         setIsLoadingStructure(true);
         try {
-            const structure = await getProjectStructureOptimized(project.pr_name);
+            // Fix: Call method on instance instead of imported named function
+            const structure = await structureService.getProjectStructureOptimized(project.pr_name);
             setProjectStructure(structure);
         } catch (err) {
             toast.error("Erreur lors du chargement de la structure");

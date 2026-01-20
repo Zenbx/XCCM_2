@@ -34,7 +34,7 @@ import clsx from 'clsx';
 import Link from 'next/link';
 import { useRouter } from "next/navigation";
 import { projectService, Project } from '@/services/projectService';
-import { structureService, getProjectStructureOptimized } from '@/services/structureService';
+import { structureService } from '@/services/structureService';
 import { invitationService } from '@/services/invitationService';
 import { useAuth } from '@/context/AuthContext';
 import toast from 'react-hot-toast';
