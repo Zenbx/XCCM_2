@@ -245,7 +245,7 @@ const TiptapEditor: React.FC<TiptapEditorProps> = (props) => {
       // by deferring the update to the next microtask/frame
       queueMicrotask(() => {
         if (editor && !editor.isDestroyed) {
-          editor.commands.setContent(content, { emitUpdate: false });
+          editor.commands.setContent(content, false);
         }
       });
     }

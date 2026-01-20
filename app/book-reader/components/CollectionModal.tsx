@@ -19,6 +19,7 @@ interface CollectionModalProps {
     isLoadingProjects: boolean;
     isLoadingStructure: boolean;
     navigationPath: any[];
+    setNavigationPath: (path: any[]) => void;
     onNavigateIn: (item: any, type: string) => void;
     onNavigateBack: () => void;
     onConfirmVault: () => void;
@@ -29,7 +30,7 @@ interface CollectionModalProps {
 const CollectionModal: React.FC<CollectionModalProps> = ({
     isOpen, onClose, granule, step, setStep, projects, onSelectProject,
     selectedProject, projectStructure, isLoadingProjects, isLoadingStructure,
-    navigationPath, onNavigateIn, onNavigateBack, onConfirmVault, onConfirmProject, isInserting
+    navigationPath, setNavigationPath, onNavigateIn, onNavigateBack, onConfirmVault, onConfirmProject, isInserting
 }) => {
     if (!isOpen || !granule) return null;
 

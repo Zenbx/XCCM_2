@@ -47,6 +47,7 @@ const BookReaderPageContent = () => {
     isInserting,
     modalStep, setModalStep,
     navigationPath,
+    setNavigationPath,
     handleCollect,
     confirmCollectToVault,
     handleSelectProject,
@@ -110,7 +111,7 @@ const BookReaderPageContent = () => {
         tocOpen={tocOpen}
         setTocOpen={setTocOpen}
         docName={data.document.doc_name}
-        author={data.project.author}
+        author={data.project.author || ''}
         pages={data.document.pages}
         fontSize={fontSize}
         setFontSize={setFontSize}
@@ -136,7 +137,7 @@ const BookReaderPageContent = () => {
             toggleChapter={toggleChapter}
             scrollToSection={scrollToSection}
             activeSection={activeSection}
-            projectAuthor={data.project.author}
+            projectAuthor={data.project.author || ''}
             docPages={data.document.pages}
             publishedAt={data.document.published_at}
             consultations={data.document.consult}
@@ -170,6 +171,7 @@ const BookReaderPageContent = () => {
         isLoadingProjects={isLoadingProjects}
         isLoadingStructure={isLoadingStructure}
         navigationPath={navigationPath}
+        setNavigationPath={setNavigationPath}
         onNavigateIn={handleNavigateIn}
         onNavigateBack={handleNavigateBack}
         onConfirmVault={confirmCollectToVault}

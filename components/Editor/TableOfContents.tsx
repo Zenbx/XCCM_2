@@ -287,7 +287,6 @@ interface TableOfContentsProps {
   width?: number;
   isNotionOpen?: boolean;
   pulsingId?: string | null;
-  pulsingId?: string | null;
   pendingGranule?: { type: 'part' | 'chapter' | 'paragraph' | 'notion'; content: string } | null;
   isLoading?: boolean;
 }
@@ -307,6 +306,7 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
   selectedNotionId,
   selectedChapterId,
   selectedParagraphId,
+  onRename,
   onReorder,
   onMove,
   onDelete,

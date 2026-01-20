@@ -2,9 +2,10 @@ import React from 'react';
 import {
     List, ChevronDown, ChevronRight, User, FileText, Calendar, Eye, Download
 } from 'lucide-react';
+import { Part, Chapter, Paragraph } from '@/services/documentService';
 
 interface ReaderTOCProps {
-    structure: any[];
+    structure: Part[];
     expandedParts: Record<string, boolean>;
     togglePart: (id: string) => void;
     expandedChapters: Record<string, boolean>;
@@ -36,7 +37,7 @@ const ReaderTOC: React.FC<ReaderTOCProps> = ({
             </div>
 
             <nav className="space-y-2">
-                {structure.map((part, partIndex) => (
+                {structure.map((part: Part, partIndex) => (
                     <div key={part.part_id} className="mb-2">
                         <div className="flex items-center">
                             <button
@@ -63,7 +64,7 @@ const ReaderTOC: React.FC<ReaderTOCProps> = ({
 
                         {expandedParts[part.part_id] && part.chapters.length > 0 && (
                             <div className="ml-6 mt-1 border-l-2 border-gray-100">
-                                {part.chapters.map((chapter) => (
+                                {part.chapters.map((chapter: Chapter) => (
                                     <div key={chapter.chapter_id}>
                                         <div className="flex items-center">
                                             {chapter.paragraphs.length > 0 && (
@@ -91,7 +92,7 @@ const ReaderTOC: React.FC<ReaderTOCProps> = ({
 
                                         {expandedChapters[chapter.chapter_id] && chapter.paragraphs.length > 0 && (
                                             <div className="ml-6 border-l border-gray-100">
-                                                {chapter.paragraphs.map((para) => (
+                                                {chapter.paragraphs.map((para: Paragraph) => (
                                                     <button
                                                         key={para.para_id}
                                                         onClick={() => scrollToSection(para.para_id)}

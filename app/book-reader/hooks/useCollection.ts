@@ -132,6 +132,7 @@ export const useCollection = (docId: string | null, currentDoc: any) => {
         isInserting,
         modalStep, setModalStep,
         navigationPath,
+        setNavigationPath,
         handleCollect,
         confirmCollectToVault,
         handleSelectProject,
