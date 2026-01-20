@@ -19,7 +19,7 @@ import {
   Award,
   TrendingUp
 } from 'lucide-react';
-import router from 'next/router';
+import { useRouter } from 'next/navigation';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAuth } from '@/context/AuthContext';
 import { translations } from '@/services/locales';
@@ -28,6 +28,7 @@ import toast from 'react-hot-toast';
 import { Loader2 } from 'lucide-react';
 
 const AboutPage = () => {
+  const router = useRouter();
   const [contactForm, setContactForm] = useState({
     nom: '',
     email: '',
@@ -80,16 +81,16 @@ const AboutPage = () => {
 
       // Incrémenter la position de scroll
       scrollPositionRef.current += scrollSpeed;
-      
+
       // Calculer les limites de défilement
       const maxScroll = container.scrollWidth - container.clientWidth;
-      
+
       // Si on atteint la fin, revenir au début avec transition fluide
       if (scrollPositionRef.current >= maxScroll) {
         // Dupliquer le contenu visuellement pour un effet de boucle infinie
         scrollPositionRef.current = 0;
       }
-      
+
       // Appliquer le scroll de manière fluide
       container.scrollLeft = scrollPositionRef.current;
 
@@ -529,9 +530,9 @@ const AboutPage = () => {
             {/* Gradient de fade sur les bords */}
             <div className="absolute left-0 top-0 bottom-0 w-20 bg-gradient-to-r from-white dark:from-gray-950 to-transparent z-10 pointer-events-none"></div>
             <div className="absolute right-0 top-0 bottom-0 w-20 bg-gradient-to-l from-white dark:from-gray-950 to-transparent z-10 pointer-events-none"></div>
-            
+
             {/* Container avec défilement automatique optimisé */}
-            <div 
+            <div
               ref={scrollContainerRef}
               className="overflow-x-auto overflow-y-hidden pb-4 custom-scrollbar team-scroll-container"
             >
@@ -545,30 +546,30 @@ const AboutPage = () => {
                     {/* Photo de profil avec overlay */}
                     <div className="relative h-48 overflow-hidden">
                       {member.photo ? (
-                        <div 
+                        <div
                           className="absolute inset-0 bg-cover bg-center bg-no-repeat transform group-hover:scale-110 transition-transform duration-500"
-                          style={{ 
+                          style={{
                             backgroundImage: `url(${member.photo})`,
                           }}
                         />
                       ) : (
                         <div className="absolute inset-0 bg-gradient-to-br from-gray-300 to-gray-400" />
                       )}
-                      
+
                       <div className="absolute inset-0 bg-gradient-to-br from-[#99334C]/40 to-[#99334C]/60 transition-all group-hover:from-[#99334C]/30 group-hover:to-[#99334C]/50" />
-                      
+
                       <div className="absolute inset-0 flex items-center justify-center">
                         <div className="w-20 h-20 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center opacity-60 group-hover:opacity-0 transition-opacity duration-300">
                           <Users className="w-10 h-10 text-white" />
                         </div>
                       </div>
-                      
+
                       {/* Overlay au hover avec les actions */}
                       <div className="absolute inset-0 bg-[#99334C]/90 opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center justify-center gap-4">
                         {member.email && (
-                          <a 
-                            href={`mailto:${member.email}`} 
-                            className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white/30 transition-all transform hover:scale-110" 
+                          <a
+                            href={`mailto:${member.email}`}
+                            className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white/30 transition-all transform hover:scale-110"
                             title={t.about.contact.email}
                             onClick={(e) => e.stopPropagation()}
                           >
@@ -576,11 +577,11 @@ const AboutPage = () => {
                           </a>
                         )}
                         {member.github && (
-                          <a 
-                            href={member.github} 
-                            target="_blank" 
-                            rel="noopener noreferrer" 
-                            className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white/30 transition-all transform hover:scale-110" 
+                          <a
+                            href={member.github}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white/30 transition-all transform hover:scale-110"
                             title="GitHub"
                             onClick={(e) => e.stopPropagation()}
                           >
@@ -601,7 +602,7 @@ const AboutPage = () => {
                 ))}
               </div>
             </div>
-            
+
             {/* Indicateur de scroll amélioré */}
             <div className="flex justify-center mt-6 gap-3">
               <div className="text-sm text-gray-500 dark:text-gray-400 flex items-center gap-3 bg-gray-50 dark:bg-gray-800 px-4 py-2 rounded-full">
