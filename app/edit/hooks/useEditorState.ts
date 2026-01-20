@@ -66,7 +66,7 @@ export const useEditorState = (projectName: string | null) => {
 
             const project = await projectService.getProjectByName(projectName);
             setProjectData(project);
-            setLikes(project.likes || 0);
+            setLikes(0);
 
             fetchComments();
 

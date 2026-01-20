@@ -127,18 +127,6 @@ const PreviewPage = () => {
             setStructure(fullStructure);
             setLoadingProgress({ current: 100, total: 100 });
 
-            await Promise.all(promises);
-
-            // Sort parts to ensure order is preserved despite async completion
-            loadedParts.sort((a, b) => {
-                // Assuming part_number exists or original index.
-                // Using parts.indexOf(originalPart) strategy is safer if IDs match.
-                // Simple sort by part_id or rely on original list order:
-                return parts.findIndex(p => p.part_id === a.part_id) - parts.findIndex(p => p.part_id === b.part_id);
-            });
-
-            setStructure(loadedParts);
-
         } catch (err) {
             console.error(err);
         } finally {

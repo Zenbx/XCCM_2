@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import toast from 'react-hot-toast';
 import { documentService, DocumentWithStructure } from '@/services/documentService';
+import { getAuthHeaders } from '@/lib/apiHelper';
 
 export const useReaderState = (docId: string | null) => {
     const [data, setData] = useState<DocumentWithStructure | null>(null);

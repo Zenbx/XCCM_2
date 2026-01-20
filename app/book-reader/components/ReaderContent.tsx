@@ -1,10 +1,11 @@
 import React from 'react';
 import { BookOpen, User, Archive } from 'lucide-react';
+import { Part, Chapter, Paragraph, Notion } from '@/services/documentService';
 
 interface ReaderContentProps {
     doc: any;
     project: any;
-    structure: any[];
+    structure: Part[];
     fontSize: number;
     onCollect: (granule: any) => void;
 }
@@ -59,7 +60,7 @@ const ReaderContent: React.FC<ReaderContentProps> = ({
                             <p>Ce document ne contient pas encore de contenu.</p>
                         </div>
                     ) : (
-                        structure.map((part, partIndex) => (
+                        structure.map((part: Part, partIndex) => (
                             <section key={part.part_id} id={part.part_id} className="mb-16 scroll-mt-24">
                                 <div className="mb-8 pb-6 border-b-2 border-[#99334C]/20">
                                     <span className="inline-block px-4 py-1.5 bg-[#99334C] text-white text-sm font-bold rounded-full mb-4">
@@ -85,7 +86,7 @@ const ReaderContent: React.FC<ReaderContentProps> = ({
                                     />
                                 )}
 
-                                {part.chapters.map((chapter) => (
+                                {part.chapters.map((chapter: Chapter) => (
                                     <div key={chapter.chapter_id} id={chapter.chapter_id} className="mb-12 scroll-mt-24">
                                         <h3 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-6 flex items-center gap-3">
                                             <span className="text-[#99334C]/40 font-normal">#</span>
@@ -99,7 +100,7 @@ const ReaderContent: React.FC<ReaderContentProps> = ({
                                             </button>
                                         </h3>
 
-                                        {chapter.paragraphs.map((para) => (
+                                        {chapter.paragraphs.map((para: Paragraph) => (
                                             <div key={para.para_id} id={para.para_id} className="mb-10 scroll-mt-24">
                                                 <h4 className="text-xl lg:text-2xl font-bold text-gray-800 mb-4 flex items-center gap-3">
                                                     {para.para_name}
@@ -112,7 +113,7 @@ const ReaderContent: React.FC<ReaderContentProps> = ({
                                                     </button>
                                                 </h4>
 
-                                                {para.notions.map((notion) => (
+                                                {para.notions.map((notion: Notion) => (
                                                     <div key={notion.notion_id} id={notion.notion_id} className="mb-8">
                                                         {notion.notion_name && (
                                                             <h5 className="text-sm uppercase tracking-wide text-gray-500 font-bold mb-3 border-b border-gray-100 pb-2 inline-flex items-center gap-2">
