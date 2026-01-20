@@ -46,7 +46,7 @@ export default function RootLayout({
       >
         <Providers>
           <Header />
-          <div className="pt-[60px] lg:pt-[70px]" style={{ position: 'relative', zIndex: 1 }}>
+          <div className="pt-[60px] lg:pt-[70px]" style={{ position: 'relative' }}>
             {children}
           </div>
           <Footer />

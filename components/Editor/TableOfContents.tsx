@@ -341,6 +341,58 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
     setOptimisticStructure(structure);
   }, [structure]);
 
+  // ✅ Auto-Expand Logic (quand un nouvel item est créé/pulsing)
+  React.useEffect(() => {
+    if (!pulsingId || !structure) return;
+
+    const newExpanded = { ...expandedItems };
+    let changed = false;
+
+    structure.forEach(part => {
+      // 1. Is it the part itself?
+      if (part.part_id === pulsingId) {
+        // No parent to expand
+      }
+
+      // 2. Is it a chapter?
+      if (part.chapters) {
+        part.chapters.forEach(chap => {
+          if (chap.chapter_id === pulsingId) {
+            newExpanded[`part-${part.part_id}`] = true;
+            changed = true;
+          }
+
+          // 3. Is it a paragraph?
+          if (chap.paragraphs) {
+            chap.paragraphs.forEach(para => {
+              if (para.para_id === pulsingId) {
+                newExpanded[`part-${part.part_id}`] = true;
+                newExpanded[`chapter-${chap.chapter_id}`] = true;
+                changed = true;
+              }
+
+              // 4. Is it a notion?
+              if (para.notions) {
+                para.notions.forEach(notion => {
+                  if (notion.notion_id === pulsingId) {
+                    newExpanded[`part-${part.part_id}`] = true;
+                    newExpanded[`chapter-${chap.chapter_id}`] = true;
+                    newExpanded[`paragraph-${para.para_id}`] = true;
+                    changed = true;
+                  }
+                });
+              }
+            });
+          }
+        });
+      }
+    });
+
+    if (changed) {
+      setExpandedItems(prev => ({ ...prev, ...newExpanded }));
+    }
+  }, [pulsingId, structure]);
+
   // Drag & Drop states
   const [draggedItem, setDraggedItem] = useState<{
     type: 'part' | 'chapter' | 'paragraph' | 'notion';
@@ -817,7 +869,7 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
               <div key={part.part_id} className="relative group/part">
                 <div
                   className={`flex items-center gap-2 py-2 px-2 hover:bg-gray-50 rounded-lg cursor-pointer transition-colors
-                  ${selectedPartId === part.part_id ? 'bg-[#99334C]/15' : ''}
+                  ${selectedPartId === part.part_id ? 'bg-[#99334C] text-white shadow-sm' : ''}
                   ${pulsingId === part.part_id ? 'animate-pulse ring-2 ring-[#99334C]' : ''}
                   ${getDropStyle('part', part.part_id)}`}
                   draggable={true}
@@ -842,9 +894,9 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
                   </button>
 
                   {expandedItems[`part-${part.part_id}`] ? (
-                    <FolderOpen size={18} className="stroke-[1.5px]" color={getIconColor('part')} />
+                    <FolderOpen size={18} className="stroke-[1.5px]" color={selectedPartId === part.part_id ? '#fff' : getIconColor('part')} />
                   ) : (
-                    <Folder size={18} className="stroke-[1.5px]" color={getIconColor('part')} />
+                    <Folder size={18} className="stroke-[1.5px]" color={selectedPartId === part.part_id ? '#fff' : getIconColor('part')} />
                   )}
 
                   {editingId === `part-${part.part_id}` ? (
@@ -859,7 +911,7 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
                     />
                   ) : (
                     <div
-                      className={`text-sm font-semibold truncate flex-1 ${selectedPartId === part.part_id ? 'text-[#99334C]' : 'text-gray-800'}`}
+                      className={`text-sm font-semibold truncate flex-1 ${selectedPartId === part.part_id ? 'text-white' : 'text-gray-800'}`}
                       onClick={(e) => {
                         e.stopPropagation();
                         onSelectPart?.({ projectName, partTitle: part.part_title, part });
@@ -902,7 +954,7 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
                         >
                           <div
                             className={`flex items-center gap-2 py-1.5 px-2 hover:bg-gray-50 rounded-lg cursor-pointer group transition-all
-                              ${selectedChapterId === chapter.chapter_id ? 'bg-[#99334C]/15' : ''}
+                              ${selectedChapterId === chapter.chapter_id ? 'bg-[#99334C] text-white shadow-sm' : ''}
                               ${pulsingId === chapter.chapter_id ? 'animate-pulse ring-2 ring-[#99334C]' : ''}
                               ${getDropStyle('chapter', chapter.chapter_id)}`}
                             draggable={true}
@@ -927,9 +979,9 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
                             </button>
 
                             {expandedItems[`chapter-${chapter.chapter_id}`] ? (
-                              <FolderOpen size={16} className="stroke-[1.5px]" color={getIconColor('chapter')} />
+                              <FolderOpen size={16} className="stroke-[1.5px]" color={selectedChapterId === chapter.chapter_id ? '#fff' : getIconColor('chapter')} />
                             ) : (
-                              <Folder size={16} className="stroke-[1.5px]" color={getIconColor('chapter')} />
+                              <Folder size={16} className="stroke-[1.5px]" color={selectedChapterId === chapter.chapter_id ? '#fff' : getIconColor('chapter')} />
                             )}
 
                             {editingId === `chapter-${chapter.chapter_id}` ? (
@@ -944,7 +996,7 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
                               />
                             ) : (
                               <span
-                                className={`text-sm truncate flex-1 font-medium cursor-pointer hover:underline ${selectedChapterId === chapter.chapter_id ? 'text-[#99334C]' : 'text-gray-700'}`}
+                                className={`text-sm truncate flex-1 font-medium cursor-pointer hover:underline ${selectedChapterId === chapter.chapter_id ? 'text-white' : 'text-gray-700'}`}
                                 onClick={() => {
                                   onSelectChapter?.(projectName, part.part_title, chapter.chapter_title, chapter.chapter_id);
                                   toggleExpand(`chapter-${chapter.chapter_id}`);
@@ -973,7 +1025,7 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
                                 <div key={paragraph.para_id} className="relative group/para">
                                   <div
                                     className={`flex items-center gap-2 py-1.5 px-2 hover:bg-gray-50 rounded-lg cursor-pointer group transition-all
-                                      ${selectedParagraphId === paragraph.para_id ? 'bg-[#99334C]/15' : ''}
+                                      ${selectedParagraphId === paragraph.para_id ? 'bg-[#99334C] text-white shadow-sm' : ''}
                                       ${pulsingId === paragraph.para_id ? 'animate-pulse ring-2 ring-[#99334C]' : ''}
                                       ${getDropStyle('paragraph', paragraph.para_id)}`}
                                     draggable={true}
@@ -998,9 +1050,9 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
                                     </button>
 
                                     {expandedItems[`paragraph-${paragraph.para_id}`] ? (
-                                      <FolderOpen size={16} className="stroke-[1.5px]" color={getIconColor('paragraph')} />
+                                      <FolderOpen size={16} className="stroke-[1.5px]" color={selectedParagraphId === paragraph.para_id ? '#fff' : getIconColor('paragraph')} />
                                     ) : (
-                                      <Folder size={16} className="stroke-[1.5px]" color={getIconColor('paragraph')} />
+                                      <Folder size={16} className="stroke-[1.5px]" color={selectedParagraphId === paragraph.para_id ? '#fff' : getIconColor('paragraph')} />
                                     )}
 
                                     {editingId === `paragraph-${paragraph.para_id}` ? (
@@ -1015,7 +1067,7 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
                                       />
                                     ) : (
                                       <span
-                                        className={`text-sm truncate flex-1 cursor-pointer hover:underline ${selectedParagraphId === paragraph.para_id ? 'text-[#99334C]' : 'text-gray-600'}`}
+                                        className={`text-sm truncate flex-1 cursor-pointer hover:underline ${selectedParagraphId === paragraph.para_id ? 'text-white' : 'text-gray-600'}`}
                                         onClick={() => {
                                           onSelectParagraph?.(projectName, part.part_title, chapter.chapter_title, paragraph.para_name, paragraph.para_id);
                                           toggleExpand(`paragraph-${paragraph.para_id}`);
@@ -1044,7 +1096,7 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
                                         <div
                                           key={notion.notion_id}
                                           className={`flex items-center gap-2 py-1.5 px-2 rounded-lg cursor-pointer w-full text-left transition-all group
-                                            ${selectedNotionId === notion.notion_id ? 'bg-[#99334C]/15 text-[#99334C]' : 'text-gray-500 hover:text-gray-900 hover:bg-gray-50'} 
+                                            ${selectedNotionId === notion.notion_id ? 'bg-[#99334C] text-white shadow-sm' : 'text-gray-500 hover:text-gray-900 hover:bg-gray-50'} 
                                             ${pulsingId === notion.notion_id ? 'animate-pulse ring-2 ring-[#99334C]' : ''}
                                             ${getDropStyle('notion', notion.notion_id)}`}
                                           draggable
@@ -1071,7 +1123,7 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
                                           onContextMenu={(e) => handleContextMenu(e, 'notion', notion.notion_id, { partTitle: part.part_title, chapterTitle: chapter.chapter_title, paraName: paragraph.para_name })}
                                         >
                                           <span className="text-gray-300 opacity-0 group-hover:opacity-100 cursor-grab"><GripVertical size={14} /></span>
-                                          <FileText size={14} className="shrink-0" color={selectedNotionId === notion.notion_id ? '#99334C' : getIconColor('notion')} />
+                                          <FileText size={14} className="shrink-0" color={selectedNotionId === notion.notion_id ? '#fff' : getIconColor('notion')} />
                                           <span className={`text-sm truncate ${selectedNotionId === notion.notion_id ? 'font-medium' : ''}`}>{notion.notion_name}</span>
                                         </div>
                                       ))}
@@ -1182,7 +1234,7 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
         onDelete={handleContextMenuDelete}
         onClose={() => setContextMenu({ ...contextMenu, isOpen: false })}
       />
-    </div>
+    </div >
   );
 };
 

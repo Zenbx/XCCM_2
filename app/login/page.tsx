@@ -59,13 +59,15 @@ const LoginPage = () => {
 
   const handleGoogleLogin = () => {
     const apiBase = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001').trim();
-    const callbackUrl = `${window.location.origin}/auth/callback`;
+    // Redirect to Backend Bridge instead of Frontend Callback to handle cross-origin cookies
+    const callbackUrl = `${apiBase}/api/auth/bridge`;
     window.location.href = `${apiBase}/api/auth/signin/google?callbackUrl=${encodeURIComponent(callbackUrl)}`;
   };
 
   const handleMicrosoftLogin = () => {
     const apiBase = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001').trim();
-    const callbackUrl = `${window.location.origin}/auth/callback`;
+    // Redirect to Backend Bridge instead of Frontend Callback to handle cross-origin cookies
+    const callbackUrl = `${apiBase}/api/auth/bridge`;
     // Microsoft uses azure-ad as provider name in next-auth config
     window.location.href = `${apiBase}/api/auth/signin/azure-ad?callbackUrl=${encodeURIComponent(callbackUrl)}`;
   };
