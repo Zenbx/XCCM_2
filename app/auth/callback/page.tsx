@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import React, { useEffect, useState, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 import { setCookie } from '@/lib/cookies';
 import toast from 'react-hot-toast';
@@ -9,19 +9,30 @@ import toast from 'react-hot-toast';
 const USER_STORAGE_KEY = 'xccm2_user';
 const TOKEN_STORAGE_KEY = 'xccm2_auth_token';
 
-const AuthCallbackPage = () => {
+const AuthCallbackContent = () => {
     const router = useRouter();
+    const searchParams = useSearchParams();
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
         const fetchToken = async () => {
             try {
-                const apiBase = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001').trim();
+                // 1. Check for Token from Bridge (Query Param)
+                const bridgeToken = searchParams.get('token');
+                if (bridgeToken) {
+                    setCookie('auth_token', bridgeToken);
+                    localStorage.setItem(TOKEN_STORAGE_KEY, bridgeToken);
+                    // Decode token or fetch me to get user info if needed, or just proceed
+                    // For now we trust the token is valid and let edit-home fetch the user
+                    toast.success('Connexion réussie !');
+                    router.push('/edit-home');
+                    return;
+                }
 
-                // Appeler la route bridge du backend pour récupérer le JWT
+                // 2. Fallback: Old Flow (Fetch from API)
+                const apiBase = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001').trim();
                 const response = await fetch(`${apiBase}/api/auth/session-token`, {
                     method: 'GET',
-                    // Inclure les cookies car NextAuth utilise des cookies de session sur le domaine de l'API
                     credentials: 'include',
                 });
 
@@ -32,7 +43,6 @@ const AuthCallbackPage = () => {
                 const result = await response.json();
 
                 if (result.success && result.data.token) {
-                    // Stocker le token dans cookie ET localStorage pour persistance
                     setCookie('auth_token', result.data.token);
                     localStorage.setItem(TOKEN_STORAGE_KEY, result.data.token);
                     localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(result.data.user));
@@ -46,16 +56,12 @@ const AuthCallbackPage = () => {
                 console.error("Erreur callback SSO:", err);
                 setError(err.message || "Une erreur est survenue lors de la connexion SSO");
                 toast.error("Échec de la connexion SSO");
-
-                // Rediriger vers le login après un court délai
-                setTimeout(() => {
-                    router.push('/login');
-                }, 3000);
+                setTimeout(() => { router.push('/login'); }, 3000);
             }
         };
 
         fetchToken();
-    }, [router]);
+    }, [router, searchParams]);
 
     return (
         <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50">
@@ -83,6 +89,14 @@ const AuthCallbackPage = () => {
                 )}
             </div>
         </div>
+    );
+};
+
+const AuthCallbackPage = () => {
+    return (
+        <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><Loader2 className="w-10 h-10 text-[#99334C] animate-spin" /></div>}>
+            <AuthCallbackContent />
+        </Suspense>
     );
 };
 

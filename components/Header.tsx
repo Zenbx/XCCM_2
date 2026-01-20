@@ -66,8 +66,8 @@ export default function Header() {
   if (pathname?.startsWith('/book-reader')) return null;
 
   return (
-    <header className="w-full bg-white/80 dark:bg-gray-900/80 backdrop-blur-md shadow-sm border-b border-gray-100 dark:border-gray-800 sticky top-0 z-50">
-      <nav className="mx-auto flex max-w-[1400px] items-center justify-between px-4 py-2 relative min-h-[60px] lg:min-h-[70px]">
+    <header className="w-full bg-white dark:bg-gray-900 shadow-md border-b border-gray-100 dark:border-gray-800 fixed top-0 left-0 right-0" style={{ zIndex: 999999 }}>
+      <nav className="mx-auto flex max-w-[1400px] items-center justify-between px-4 py-2 min-h-[60px] lg:min-h-[70px]">
 
         {/* --- LOGO --- */}
         <div className="flex-shrink-0">
@@ -148,7 +148,8 @@ export default function Header() {
                 <motion.div
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="absolute right-0 mt-2 w-72 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-100 dark:border-gray-700 py-2 z-100"
+                  className="absolute right-0 mt-2 w-72 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-100 dark:border-gray-700 py-2"
+                  style={{ zIndex: 1000000 }}
                 >
                   <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-700">
                     <p className="font-semibold text-gray-900 dark:text-white">{user.firstname} {user.lastname}</p>
@@ -250,7 +251,8 @@ export default function Header() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setIsMobileMenuOpen(false)}
-              className="fixed inset-0 bg-black/20 backdrop-blur-sm z-50 lg:hidden"
+              className="fixed inset-0 bg-black/20 backdrop-blur-sm lg:hidden"
+              style={{ zIndex: 1000000 }}
             />
 
             {/* Panneau Latéral */}
@@ -259,7 +261,8 @@ export default function Header() {
               animate={{ x: 0 }}
               exit={{ x: "100%" }}
               transition={{ type: "spring", damping: 25, stiffness: 200 }}
-              className="fixed inset-y-0 right-0 w-[280px] bg-white shadow-2xl z-50 flex flex-col lg:hidden overflow-y-auto"
+              className="fixed inset-y-0 right-0 w-[280px] bg-white shadow-2xl flex flex-col lg:hidden overflow-y-auto"
+              style={{ zIndex: 1000001 }}
             >
               <div className="p-4 border-b border-gray-100 flex items-center justify-between">
                 <span className="font-bold text-lg" style={{ color: COLORS.primary }}>Menu</span>

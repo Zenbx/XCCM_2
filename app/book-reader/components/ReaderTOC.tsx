@@ -82,7 +82,7 @@ const ReaderTOC: React.FC<ReaderTOCProps> = ({
                                             <button
                                                 onClick={() => scrollToSection(chapter.chapter_id)}
                                                 className={`flex-1 text-left px-3 py-1.5 rounded-lg text-sm transition-colors ${activeSection === chapter.chapter_id
-                                                    ? 'text-[#99334C] font-medium bg-[#99334C]/5'
+                                                    ? 'bg-[#99334C] text-white font-medium shadow-sm'
                                                     : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                                                     }`}
                                             >
@@ -96,8 +96,8 @@ const ReaderTOC: React.FC<ReaderTOCProps> = ({
                                                     <button
                                                         key={para.para_id}
                                                         onClick={() => scrollToSection(para.para_id)}
-                                                        className={`block w-full text-left px-3 py-1 text-xs transition-colors ${activeSection === para.para_id
-                                                            ? 'text-[#99334C] font-medium'
+                                                        className={`block w-full text-left px-3 py-1 text-xs transition-colors rounded ${activeSection === para.para_id
+                                                            ? 'bg-[#99334C] text-white font-medium'
                                                             : 'text-gray-500 hover:text-gray-700'
                                                             }`}
                                                     >

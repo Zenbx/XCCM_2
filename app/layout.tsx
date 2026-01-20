@@ -42,10 +42,13 @@ export default function RootLayout({
     <html lang="en">
       <body
         className={`${poppins.variable} ${geistSans.variable} ${geistMono.variable} antialiased`}
+        style={{ position: 'relative' }}
       >
         <Providers>
           <Header />
-          {children}
+          <div className="pt-[60px] lg:pt-[70px]" style={{ position: 'relative' }}>
+            {children}
+          </div>
           <Footer />
         </Providers>
       </body>
