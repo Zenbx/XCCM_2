@@ -1,7 +1,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { projectService, Project } from '@/services/projectService';
 import { commentService } from '@/services/commentService';
-import { structureService, Part, Notion, getProjectStructureOptimized } from '@/services/structureService';
+import { structureService, Part, Notion } from '@/services/structureService';
 import { translations } from '@/services/locales';
 import { useLanguage } from '@/context/LanguageContext';
 import toast from 'react-hot-toast';
@@ -70,7 +70,7 @@ export const useEditorState = (projectName: string | null) => {
 
             fetchComments();
 
-            const parts = await getProjectStructureOptimized(project.pr_name);
+            const parts = await structureService.getProjectStructureOptimized(project.pr_name);
             setStructure(parts);
 
             if (!isSilent) setIsLoading(false);
