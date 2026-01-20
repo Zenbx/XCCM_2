@@ -1,0 +1,301 @@
+"use client";
+
+import React, { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+    Heading1,
+    Heading2,
+    List,
+    ListOrdered,
+    Image as ImageIcon,
+    Bot,
+    Layout,
+    BookOpen,
+    FileText,
+    PlusCircle,
+    Maximize,
+    Info,
+    Sigma,
+    HelpCircle,
+    Eye,
+    Code
+} from 'lucide-react';
+import GlassPanel from '../UI/GlassPanel';
+
+interface SlashCommand {
+    id: string;
+    label: string;
+    description: string;
+    icon: React.ReactNode;
+    action: () => void;
+    category: string;
+    aliases?: string[];
+}
+
+interface SlashMenuProps {
+    position: { top: number; left: number };
+    onClose: () => void;
+    onSelect: (command: SlashCommand) => void;
+    filter: string;
+}
+
+export const SlashMenu: React.FC<SlashMenuProps> = ({
+    position,
+    onClose,
+    onSelect,
+    filter
+}) => {
+    const [selectedIndex, setSelectedIndex] = useState(0);
+    const menuRef = useRef<HTMLDivElement>(null);
+
+    const commands: SlashCommand[] = [
+        {
+            id: 'h1',
+            label: 'Titre 1',
+            description: 'Grand titre de section',
+            icon: <Heading1 size={18} />,
+            action: () => { },
+            category: 'Formatage',
+            aliases: ['h1', 't1', 'titre1']
+        },
+        {
+            id: 'h2',
+            label: 'Titre 2',
+            description: 'Sous-titre moyen',
+            icon: <Heading2 size={18} />,
+            action: () => { },
+            category: 'Formatage',
+            aliases: ['h2', 't2', 'titre2']
+        },
+        {
+            id: 'ul',
+            label: 'Liste à puces',
+            description: 'Liste non-ordonnée simple',
+            icon: <List size={18} />,
+            action: () => { },
+            category: 'Formatage',
+            aliases: ['ul', 'liste', 'bullet']
+        },
+        {
+            id: 'ol',
+            label: 'Liste numérotée',
+            description: 'Liste ordonnée séquentielle',
+            icon: <ListOrdered size={18} />,
+            action: () => { },
+            category: 'Formatage',
+            aliases: ['ol', 'num', 'ordered']
+        },
+        {
+            id: 'image',
+            label: 'Image',
+            description: 'Insérer une image depuis votre PC',
+            icon: <ImageIcon size={18} />,
+            action: () => { },
+            category: 'Média',
+            aliases: ['img', 'image', 'photo', 'pic']
+        },
+        {
+            id: 'ai',
+            label: 'Assistant IA',
+            description: 'Demander à l\'IA de rédiger',
+            icon: <Bot size={18} />,
+            action: () => { },
+            category: 'Avancé',
+            aliases: ['ai', 'ia', 'bot', 'chat', 'gen']
+        },
+        {
+            id: 'part',
+            label: 'Nouvelle Partie',
+            description: 'Ajouter une Part structurelle',
+            icon: <Layout size={18} />,
+            action: () => { },
+            category: 'Structure',
+            aliases: ['part', 'partie', 'p']
+        },
+        {
+            id: 'chapter',
+            label: 'Nouveau Chapitre',
+            description: 'Ajouter un Chapitre au plan',
+            icon: <BookOpen size={18} />,
+            action: () => { },
+            category: 'Structure',
+            aliases: ['chap', 'chapter', 'chapitre', 'c']
+        },
+        {
+            id: 'paragraph',
+            label: 'Nouveau Paragraphe',
+            description: 'Ajouter une section de texte',
+            icon: <PlusCircle size={18} />,
+            action: () => { },
+            category: 'Structure',
+            aliases: ['para', 'p', 'paragraph', 'paragraphe']
+        },
+        {
+            id: 'notion',
+            label: 'Nouvelle Notion',
+            description: 'Ajouter un grain de contenu',
+            icon: <FileText size={18} />,
+            action: () => { },
+            category: 'Structure',
+            aliases: ['notion', 'n', 'grain', 'concept']
+        },
+        {
+            id: 'capture',
+            label: 'Zone de Capture',
+            description: 'Encadré pour capture d\'écran',
+            icon: <Maximize size={18} />,
+            action: () => { },
+            category: 'Design',
+            aliases: ['capt', 'capture', 'zone', 'screen']
+        },
+        {
+            id: 'note',
+            label: 'Bloc Note',
+            description: 'Encadré bleu pour remarques',
+            icon: <Info size={18} />,
+            action: () => { },
+            category: 'Design',
+            aliases: ['note', 'info', 'remarque', 'bloc']
+        },
+        {
+            id: 'math',
+            label: 'Mathématiques',
+            description: 'Formule LaTeX (KaTeX)',
+            icon: <Sigma size={18} />,
+            action: () => { },
+            category: 'Pédagogie',
+            aliases: ['math', 'latex', 'sigma', 'formule', 'eq']
+        },
+        {
+            id: 'quiz',
+            label: 'Quiz Rapide',
+            description: 'Question à choix multiples',
+            icon: <HelpCircle size={18} />,
+            action: () => { },
+            category: 'Pédagogie',
+            aliases: ['quiz', 'qcm', 'question', 'exam']
+        },
+        {
+            id: 'hint',
+            label: 'Indice / Découverte',
+            description: 'Bloc pliable pour révéler des infos',
+            icon: <Eye size={18} />,
+            action: () => { },
+            category: 'Pédagogie',
+            aliases: ['hint', 'indice', 'discovery', 'secret']
+        },
+        {
+            id: 'code',
+            label: 'Code Interactif',
+            description: 'Bloc de code avec exécution',
+            icon: <Code size={18} />,
+            action: () => { },
+            category: 'Pédagogie',
+            aliases: ['code', 'js', 'script', 'run']
+        }
+    ];
+
+    const filteredCommands = commands.filter(cmd =>
+        cmd.label.toLowerCase().includes(filter.toLowerCase()) ||
+        cmd.category.toLowerCase().includes(filter.toLowerCase()) ||
+        cmd.aliases?.some(alias => alias.toLowerCase().includes(filter.toLowerCase()))
+    );
+
+    useEffect(() => {
+        setSelectedIndex(0);
+    }, [filter]);
+
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                setSelectedIndex(prev => (prev + 1) % Math.max(1, filteredCommands.length));
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                setSelectedIndex(prev => (prev - 1 + filteredCommands.length) % Math.max(1, filteredCommands.length));
+            } else if (e.key === 'Enter') {
+                e.preventDefault();
+                if (filteredCommands[selectedIndex]) {
+                    onSelect(filteredCommands[selectedIndex]);
+                }
+            } else if (e.key === 'Escape') {
+                onClose();
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [filteredCommands, selectedIndex, onSelect, onClose]);
+
+    useEffect(() => {
+        const handleClickOutside = (e: MouseEvent) => {
+            if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+                onClose();
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [onClose]);
+
+    return (
+        <AnimatePresence>
+            {filteredCommands.length > 0 && (
+                <GlassPanel
+                    ref={menuRef}
+                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    className="fixed z-[999] rounded-xl overflow-hidden w-72 max-h-[384px] flex flex-col"
+                    style={{
+                        top: position.top + 400 > (typeof window !== 'undefined' ? window.innerHeight : 1000)
+                            ? Math.max(10, position.top - 400)
+                            : position.top + 25,
+                        left: Math.min(position.left, (typeof window !== 'undefined' ? window.innerWidth : 1200) - 300),
+                    }}
+                    intensity="high"
+                    blur="lg"
+                >
+                    <div className="p-2 bg-gray-50/50 dark:bg-gray-800/50 border-b border-gray-100 dark:border-gray-700/50">
+                        <span className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest px-2">Actions Rapides</span>
+                    </div>
+
+                    <div className="overflow-y-auto py-1 custom-scrollbar">
+                        {filteredCommands.map((cmd, index) => (
+                            <button
+                                key={cmd.id}
+                                className={`w-full px-3 py-2.5 flex items-start gap-3 transition-colors text-left ${index === selectedIndex ? 'bg-[#99334C15] dark:bg-[#99334C20] border-l-2 border-[#99334C]' : 'border-l-2 border-transparent hover:bg-gray-50 dark:hover:bg-gray-800/50'
+                                    }`}
+                                onClick={() => onSelect(cmd)}
+                                onMouseEnter={() => setSelectedIndex(index)}
+                            >
+                                <div className={`p-2 rounded-lg ${index === selectedIndex ? 'bg-[#99334C] text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400'}`}>
+                                    {cmd.icon}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <div className="flex items-center justify-between">
+                                        <span className={`text-sm font-semibold ${index === selectedIndex ? 'text-[#99334C] dark:text-[#ff4d7d]' : 'text-gray-700 dark:text-gray-200'}`}>
+                                            {cmd.label}
+                                        </span>
+                                        <span className="text-[10px] text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded uppercase font-medium">
+                                            {cmd.category}
+                                        </span>
+                                    </div>
+                                    <p className="text-xs text-gray-500 dark:text-gray-400 truncate mt-0.5">
+                                        {cmd.description}
+                                    </p>
+                                </div>
+                            </button>
+                        ))}
+                    </div>
+
+                    <div className="p-2 border-t border-gray-100 dark:border-gray-700/50 bg-gray-50/50 dark:bg-gray-800/50 flex justify-between items-center">
+                        <span className="text-[10px] text-gray-400 dark:text-gray-500 flex items-center gap-1">
+                            <kbd className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 px-1 rounded shadow-sm">↑↓</kbd> Naviguer
+                            <kbd className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 px-1 rounded shadow-sm">⏎</kbd> Choisir
+                        </span>
+                    </div>
+                </GlassPanel>
+            )}
+        </AnimatePresence>
+    );
+};

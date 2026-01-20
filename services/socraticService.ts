@@ -1,0 +1,48 @@
+import { authService } from './authService';
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+
+export interface SocraticAuditResult {
+    clarityScore: number;
+    bloomLevel: string;
+    engagementScore: number;
+    suggestions: string[];
+    recommendedBlocks: string[];
+}
+
+export const socraticService = {
+    auditContent: async (content: string): Promise<SocraticAuditResult> => {
+        const token = authService.getAuthToken();
+        if (!token) throw new Error('Non authentifié');
+
+        console.log(`[Socratic Service] Hitting URL: ${API_URL}/api/ai/audit`);
+        const res = await fetch(`${API_URL}/api/ai/audit`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ content })
+        });
+
+        console.log(`[Socratic Service] Response Status: ${res.status}`);
+
+        if (!res.ok) {
+            let errorData;
+            try {
+                errorData = await res.json();
+            } catch (e) {
+                // Should be text if not json
+                const textBody = await res.text();
+                console.error('[Socratic Service] Non-JSON Error Response:', textBody);
+                throw new Error(`Erreur HTTP ${res.status}: ${textBody.substring(0, 50)}...`);
+            }
+
+            console.error('[Socratic Service] Error Body:', errorData);
+            throw new Error(errorData.message || `Erreur lors de l'audit pédagogique (${res.status})`);
+        }
+
+        const data = await res.json();
+        return data.data;
+    }
+};

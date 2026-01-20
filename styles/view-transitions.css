@@ -1,0 +1,113 @@
+/* View Transitions API - Smooth Navigation */
+
+/* Enable View Transitions globally */
+@view-transition {
+    navigation: auto;
+}
+
+/* Base transition for all content */
+::view-transition-old(root),
+::view-transition-new(root) {
+    animation-duration: 350ms;
+    animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Editor content transitions */
+::view-transition-old(editor-content),
+::view-transition-new(editor-content) {
+    animation-duration: 400ms;
+    animation-timing-function: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+/* Slide from right (new notion) */
+::view-transition-new(editor-content) {
+    animation-name: slide-from-right;
+}
+
+/* Slide to left (old notion) */
+::view-transition-old(editor-content) {
+    animation-name: slide-to-left;
+}
+
+/* Zoom in from TOC for hierarchical navigation */
+::view-transition-new(editor-zoom) {
+    animation-name: zoom-fade-in;
+    animation-duration: 500ms;
+}
+
+::view-transition-old(editor-zoom) {
+    animation-name: fade-out;
+    animation-duration: 300ms;
+}
+
+/* Breadcrumb transitions */
+::view-transition-old(breadcrumb),
+::view-transition-new(breadcrumb) {
+    animation-duration: 250ms;
+    animation-timing-function: ease-out;
+}
+
+/* Keyframes */
+@keyframes slide-from-right {
+    from {
+        transform: translateX(30px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes slide-to-left {
+    from {
+        transform: translateX(0);
+        opacity: 1;
+    }
+
+    to {
+        transform: translateX(-30px);
+        opacity: 0;
+    }
+}
+
+@keyframes zoom-fade-in {
+    from {
+        transform: scale(0.95);
+        opacity: 0;
+    }
+
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+@keyframes fade-out {
+    from {
+        opacity: 1;
+    }
+
+    to {
+        opacity: 0;
+    }
+}
+
+/* Respect user preferences */
+@media (prefers-reduced-motion: reduce) {
+
+    ::view-transition-old(*),
+    ::view-transition-new(*) {
+        animation-duration: 0.01ms !important;
+        animation-delay: 0ms !important;
+    }
+}
+
+/* TOC item highlight during transition */
+[data-transitioning="true"] {
+    background: linear-gradient(90deg, rgba(153, 51, 76, 0.05) 0%, rgba(153, 51, 76, 0) 100%);
+    border-left: 3px solid #99334C;
+    padding-left: 8px;
+    transition: all 200ms ease-out;
+}
