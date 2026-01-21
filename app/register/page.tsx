@@ -132,13 +132,15 @@ const RegisterPage = () => {
 
 
   const handleGoogleSignup = () => {
-    console.log('Inscription avec Google');
-    // TODO: OAuth Google
+    const apiBase = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001').trim();
+    const callbackUrl = `${apiBase}/api/auth/bridge`;
+    window.location.href = `${apiBase}/api/auth/signin/google?callbackUrl=${encodeURIComponent(callbackUrl)}`;
   };
 
   const handleMicrosoftSignup = () => {
-    console.log('Inscription avec Microsoft');
-    // TODO: OAuth Microsoft
+    const apiBase = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001').trim();
+    const callbackUrl = `${apiBase}/api/auth/bridge`;
+    window.location.href = `${apiBase}/api/auth/signin/azure-ad?callbackUrl=${encodeURIComponent(callbackUrl)}`;
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
