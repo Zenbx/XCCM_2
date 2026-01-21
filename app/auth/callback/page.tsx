@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { useAuth } from '@/context/AuthContext';
 import { Loader2 } from 'lucide-react';
 import { setCookie } from '@/lib/cookies';
 import toast from 'react-hot-toast';
@@ -12,7 +13,9 @@ const TOKEN_STORAGE_KEY = 'xccm2_auth_token';
 const AuthCallbackContent = () => {
     const router = useRouter();
     const searchParams = useSearchParams();
+    const { refreshUser } = useAuth();
     const [error, setError] = useState<string | null>(null);
+    const isRegister = searchParams.get('mode') === 'register';
 
     useEffect(() => {
         const fetchToken = async () => {
@@ -22,9 +25,11 @@ const AuthCallbackContent = () => {
                 if (bridgeToken) {
                     setCookie('auth_token', bridgeToken);
                     localStorage.setItem(TOKEN_STORAGE_KEY, bridgeToken);
-                    // Decode token or fetch me to get user info if needed, or just proceed
-                    // For now we trust the token is valid and let edit-home fetch the user
-                    toast.success('Connexion réussie !');
+
+                    // IMPORTANT: Refresh Auth Context to update Header UI immediately
+                    await refreshUser();
+
+                    toast.success(isRegister ? 'Inscription réussie ! Bienvenue !' : 'Connexion réussie !');
                     router.push('/edit-home');
                     return;
                 }
@@ -48,7 +53,10 @@ const AuthCallbackContent = () => {
                     localStorage.setItem(TOKEN_STORAGE_KEY, result.data.token);
                     localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(result.data.user));
 
-                    toast.success('Connexion réussie !');
+                    // IMPORTANT: Refresh Auth Context
+                    await refreshUser();
+
+                    toast.success(isRegister ? 'Inscription réussie ! Bienvenue !' : 'Connexion réussie !');
                     router.push('/edit-home');
                 } else {
                     console.error("Token result unexpected:", result);
@@ -63,7 +71,7 @@ const AuthCallbackContent = () => {
         };
 
         fetchToken();
-    }, [router, searchParams]);
+    }, [router, searchParams, refreshUser]);
 
     return (
         <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50">
@@ -71,8 +79,12 @@ const AuthCallbackContent = () => {
                 {!error ? (
                     <>
                         <Loader2 className="w-12 h-12 text-[#99334C] animate-spin mx-auto mb-4" />
-                        <h1 className="text-2xl font-bold text-gray-900 mb-2">Finalisation de la connexion</h1>
-                        <p className="text-gray-600">Veuillez patienter pendant que nous préparons votre espace...</p>
+                        <h1 className="text-2xl font-bold text-gray-900 mb-2">
+                            {isRegister ? "Création de votre compte" : "Finalisation de la connexion"}
+                        </h1>
+                        <p className="text-gray-600">
+                            {isRegister ? "Veuillez patienter pendant que nous créons votre profil..." : "Veuillez patienter pendant que nous préparons votre espace..."}
+                        </p>
                     </>
                 ) : (
                     <>

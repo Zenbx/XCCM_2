@@ -27,6 +27,9 @@ const LoginPage = () => {
     if (error) {
       if (error === 'SessionMissing') toast.error("La session d'authentification a expiré.");
       else if (error === 'UserNotFound') toast.error("Aucun compte trouvé avec cet e-mail.");
+      else if (error === 'google' || error === 'microsoft' || error === 'OAuthCallback') {
+        toast.error(`Erreur d'authentification ${error}. Veuillez réessayer.`);
+      }
       else toast.error("Une erreur est survenue lors de l'authentification.");
     }
   }, [searchParams]);
@@ -66,14 +69,14 @@ const LoginPage = () => {
   const handleGoogleLogin = () => {
     const apiBase = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001').trim();
     // Redirect to Backend Bridge instead of Frontend Callback to handle cross-origin cookies
-    const callbackUrl = `${apiBase}/api/auth/bridge`;
+    const callbackUrl = `${apiBase}/api/auth/bridge?mode=login`;
     window.location.href = `${apiBase}/api/auth/signin/google?callbackUrl=${encodeURIComponent(callbackUrl)}`;
   };
 
   const handleMicrosoftLogin = () => {
     const apiBase = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001').trim();
     // Redirect to Backend Bridge instead of Frontend Callback to handle cross-origin cookies
-    const callbackUrl = `${apiBase}/api/auth/bridge`;
+    const callbackUrl = `${apiBase}/api/auth/bridge?mode=login`;
     // Microsoft uses azure-ad as provider name in next-auth config
     window.location.href = `${apiBase}/api/auth/signin/azure-ad?callbackUrl=${encodeURIComponent(callbackUrl)}`;
   };
