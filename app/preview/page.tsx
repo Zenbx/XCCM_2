@@ -50,6 +50,7 @@ const PreviewPage = () => {
     const [isPublishing, setIsPublishing] = useState(false);
     const [publishSuccess, setPublishSuccess] = useState<{ doc_id: string; doc_name: string } | null>(null);
     const [snapshotName, setSnapshotName] = useState('');
+    const [coverImageUrl, setCoverImageUrl] = useState('');
 
     // Template States
     const [showTemplateDialog, setShowTemplateDialog] = useState(false);
@@ -145,7 +146,7 @@ const PreviewPage = () => {
         setShowPublishMenu(false);
 
         try {
-            const result = await publishService.publishProject(projectName, publishFormat, snapshotName);
+            const result = await publishService.publishProject(projectName, publishFormat, snapshotName, coverImageUrl);
             setPublishSuccess({
                 doc_id: result.doc_id,
                 doc_name: result.doc_name
@@ -598,10 +599,11 @@ const PreviewPage = () => {
         bodyContent += `
             <div class="page title-page">
                 <div class="title-bar"></div>
+                ${coverImageUrl ? `<img src="${coverImageUrl}" style="max-width: 100%; max-height: 300px; object-fit: contain; margin-bottom: 32px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);" />` : ''}
                 <h1>${projectName?.toUpperCase() || 'DOCUMENT'}</h1>
                 <p class="subtitle">Document de Composition</p>
                 <div class="title-footer">
-                    <div class="icon-circle">📄</div>
+                    <div class="icon-circle">${coverImageUrl ? '�️' : '�📄'}</div>
                     <p class="footer-text">Généré par XCCM 2</p>
                     <p class="footer-date">${new Date().toLocaleDateString()}</p>
                 </div>
@@ -954,6 +956,22 @@ const PreviewPage = () => {
                             </p>
                         </div>
 
+                        <div className="mb-6">
+                            <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                Image de couverture (URL)
+                            </label>
+                            <input
+                                type="text"
+                                value={coverImageUrl}
+                                onChange={(e) => setCoverImageUrl(e.target.value)}
+                                placeholder="https://exemple.com/image.jpg"
+                                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-700 focus:ring-2 focus:ring-[#99334C]/20 focus:border-[#99334C] transition-all"
+                            />
+                            <p className="text-[10px] text-gray-400 mt-1 italic">
+                                Optionnel. Remplace l'icône de base sur la première page.
+                            </p>
+                        </div>
+
                         <div className="flex gap-3">
                             <button
                                 onClick={() => setShowFormatDialog(false)}
@@ -1080,13 +1098,16 @@ const PreviewPage = () => {
                     {/* PAGE DE TITRE */}
                     <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-12 mb-8 min-h-[842px] flex flex-col items-center justify-center text-center page-break-after-always">
                         <div className="w-24 h-1 bg-[#99334C] mb-8"></div>
+                        {coverImageUrl && (
+                            <img src={coverImageUrl} alt="Couverture" className="max-w-full max-h-72 object-contain mb-8 rounded-xl shadow-lg border border-gray-100" />
+                        )}
                         <h1 className="text-5xl font-bold text-gray-900 mb-6 tracking-tight">
                             {projectData?.pr_name || projectName}
                         </h1>
                         <p className="text-xl text-gray-500 uppercase tracking-widest font-light">Document de Composition</p>
                         <div className="mt-20 flex flex-col items-center">
                             <div className="w-12 h-12 rounded-full bg-[#99334C] flex items-center justify-center text-white mb-4">
-                                <FileText size={24} />
+                                {coverImageUrl ? <Share2 size={24} /> : <FileText size={24} />}
                             </div>
                             <p className="text-gray-400 text-sm">Généré par XCCM 2</p>
                             <p className="text-gray-400 text-xs mt-1">{new Date().toLocaleDateString()}</p>

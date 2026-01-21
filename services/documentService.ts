@@ -17,6 +17,8 @@ export interface Document {
   category?: string;
   level?: string;
   description?: string;
+  tags?: string[];
+  cover_image?: string | null;
   likes?: number;
   isLiked?: boolean;
 }

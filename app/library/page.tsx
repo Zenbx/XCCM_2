@@ -38,7 +38,7 @@ const LibraryPage = () => {
       try {
         const { documents, hasMore: moreAvailable } = await documentService.getPublishedDocuments(page, 20);
 
-        setCourses(prev => page === 1 ? documents : [...prev, documents]);
+        setCourses(prev => page === 1 ? documents : [...prev, ...documents]);
         setHasMore(moreAvailable);
       } catch (err: any) {
         setError(err.message || "Erreur lors de la recuperation des documents.");
@@ -281,10 +281,18 @@ const LibraryPage = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
                   {filteredCourses.map((course) => (
                     <div key={course.doc_id} className="bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all border border-gray-100 group">
-                      <div className="relative h-48 bg-gradient-to-br from-[#99334C]/20 to-[#99334C]/40 overflow-hidden">
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <BookOpen className="w-16 h-16 text-[#99334C] opacity-50" />
-                        </div>
+                      <div className="relative h-48 bg-gray-100 overflow-hidden">
+                        {course.cover_image ? (
+                          <img
+                            src={course.cover_image}
+                            alt={course.doc_name}
+                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-gradient-to-br from-[#99334C]/20 to-[#99334C]/40 flex items-center justify-center">
+                            <BookOpen className="w-16 h-16 text-[#99334C] opacity-50" />
+                          </div>
+                        )}
                         <div className="absolute inset-0 bg-[#99334C]/90 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center gap-4">
                           <button
                             onClick={() => handleViewCourse(course.doc_id)}
@@ -370,8 +378,18 @@ const LibraryPage = () => {
                 <div className="space-y-4">
                   {filteredCourses.map((course) => (
                     <div key={course.doc_id} className="bg-white rounded-xl shadow-md hover:shadow-lg transition-all border border-gray-100 p-6 flex flex-col sm:flex-row gap-6">
-                      <div className="w-32 h-32 bg-gradient-to-br from-[#99334C]/20 to-[#99334C]/40 rounded-xl flex items-center justify-center flex-shrink-0">
-                        <BookOpen className="w-10 h-10 text-[#99334C] opacity-60" />
+                      <div className="w-32 h-32 rounded-xl flex-shrink-0 overflow-hidden border border-gray-100 shadow-sm">
+                        {course.cover_image ? (
+                          <img
+                            src={course.cover_image}
+                            alt={course.doc_name}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-gradient-to-br from-[#99334C]/10 to-[#99334C]/30 flex items-center justify-center">
+                            <BookOpen className="w-10 h-10 text-[#99334C] opacity-60" />
+                          </div>
+                        )}
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-start justify-between gap-4">
