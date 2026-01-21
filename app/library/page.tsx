@@ -251,7 +251,7 @@ const LibraryPage = () => {
       <section className="py-12 px-6">
         <div className="max-w-7xl mx-auto">
           {isLoading && courses.length === 0 ? (
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
               {[...Array(6)].map((_, i) => (
                 <SkeletonCourseCard key={i} />
               ))}
@@ -278,7 +278,7 @@ const LibraryPage = () => {
               </div>
 
               {viewMode === 'grid' ? (
-                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
                   {filteredCourses.map((course) => (
                     <div key={course.doc_id} className="bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all border border-gray-100 group">
                       <div className="relative h-48 bg-gradient-to-br from-[#99334C]/20 to-[#99334C]/40 overflow-hidden">
@@ -369,7 +369,7 @@ const LibraryPage = () => {
                 /* List View */
                 <div className="space-y-4">
                   {filteredCourses.map((course) => (
-                    <div key={course.doc_id} className="bg-white rounded-xl shadow-md hover:shadow-lg transition-all border border-gray-100 p-6 flex gap-6">
+                    <div key={course.doc_id} className="bg-white rounded-xl shadow-md hover:shadow-lg transition-all border border-gray-100 p-6 flex flex-col sm:flex-row gap-6">
                       <div className="w-32 h-32 bg-gradient-to-br from-[#99334C]/20 to-[#99334C]/40 rounded-xl flex items-center justify-center flex-shrink-0">
                         <BookOpen className="w-10 h-10 text-[#99334C] opacity-60" />
                       </div>
@@ -492,7 +492,7 @@ const TopCreatorsList = () => {
 
   if (isLoading) {
     return (
-      <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {[...Array(4)].map((_, i) => (
           <div key={i} className="bg-white p-6 rounded-2xl border border-gray-100 flex items-center gap-4">
             <SkeletonAvatar size="lg" />
@@ -507,7 +507,7 @@ const TopCreatorsList = () => {
   }
 
   return (
-    <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
       {creators.map((creator, index) => (
         <div
           key={creator.id}

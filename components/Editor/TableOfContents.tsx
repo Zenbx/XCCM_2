@@ -906,7 +906,7 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
               <div key={part.part_id} className="relative group/part">
                 <div
                   className={`flex items-center gap-2 py-2 px-2 hover:bg-gray-50 rounded-lg cursor-pointer transition-colors
-                  ${selectedPartId === part.part_id ? 'bg-[#99334C]/25 text-[#99334C] shadow-sm' : ''}
+                  ${selectedPartId === part.part_id ? 'bg-[#99334C]/15 text-[#99334C] shadow-sm border-l-4 border-l-[#99334C] rounded-r-lg' : 'rounded-lg'}
                   ${pulsingId === part.part_id ? 'animate-pulse ring-2 ring-[#99334C]' : ''}
                   ${getDropStyle('part', part.part_id)}`}
                   draggable={true}
@@ -972,243 +972,251 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
                   )}
                 </div>
 
-                {expandedItems[`part-${part.part_id}`] && part.chapters && (
-                  <AnimatePresence>
-                    <motion.div
-                      className="pl-6 mt-1 space-y-1 relative before:absolute before:left-3 before:top-0 before:bottom-0 before:w-px before:bg-gray-100"
-                      initial="hidden"
-                      animate="visible"
-                      variants={expandVariants}
-                    >
-                      {part.chapters.map((chapter, idx) => (
-                        <motion.div
-                          key={chapter.chapter_id}
-                          className="relative group/chapter"
-                          custom={idx}
-                          initial="hidden"
-                          animate="visible"
-                          variants={itemVariants}
-                        >
-                          <div
-                            className={`flex items-center gap-2 py-1.5 px-2 hover:bg-gray-50 rounded-lg cursor-pointer group transition-all
-                              ${selectedChapterId === chapter.chapter_id ? 'bg-[#99334C]/25 text-[#99334C] shadow-sm' : ''}
+                {
+                  expandedItems[`part-${part.part_id}`] && part.chapters && (
+                    <AnimatePresence>
+                      <motion.div
+                        className="pl-6 mt-1 space-y-1 relative before:absolute before:left-3 before:top-0 before:bottom-0 before:w-px before:bg-gray-100"
+                        initial="hidden"
+                        animate="visible"
+                        variants={expandVariants}
+                      >
+                        {part.chapters.map((chapter, idx) => (
+                          <motion.div
+                            key={chapter.chapter_id}
+                            className="relative group/chapter"
+                            custom={idx}
+                            initial="hidden"
+                            animate="visible"
+                            variants={itemVariants}
+                          >
+                            <div
+                              className={`flex items-center gap-2 py-1.5 px-2 hover:bg-gray-50 rounded-lg cursor-pointer group transition-all
+                              ${selectedChapterId === chapter.chapter_id ? 'bg-[#99334C]/15 text-[#99334C] shadow-sm border-l-4 border-l-[#99334C] rounded-r-lg' : 'rounded-lg'}
                               ${pulsingId === chapter.chapter_id ? 'animate-pulse ring-2 ring-[#99334C]' : ''}
                               ${getDropStyle('chapter', chapter.chapter_id)}`}
-                            draggable={true}
-                            onDragStart={(e) => handleDragStart(e, 'chapter', chapter, part.part_id)}
-                            onDragOver={(e) => handleDragOver(e, 'chapter', chapter.chapter_id, part.part_id)}
-                            onDragLeave={(e) => handleDragLeave(e)}
-                            onDrop={(e) => handleDrop(e, 'chapter', chapter.chapter_id, part.part_id)}
-                            onDragEnd={handleDragEnd}
-                            onContextMenu={(e) => handleContextMenu(e, 'chapter', chapter.chapter_id, { partTitle: part.part_title, chapterTitle: chapter.chapter_title })}
-                          >
-                            <span className="text-gray-300 opacity-0 group-hover:opacity-100 cursor-grab"><GripVertical size={14} /></span>
-                            <button onClick={(e) => { e.stopPropagation(); toggleExpand(`chapter-${chapter.chapter_id}`); }} className="p-0.5 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300">
-                              {chapter.paragraphs && chapter.paragraphs.length > 0 ? (
-                                <motion.div
-                                  variants={chevronVariants}
-                                  animate={expandedItems[`chapter-${chapter.chapter_id}`] ? "expanded" : "collapsed"}
-                                  transition={{ duration: 0.2 }}
+                              draggable={true}
+                              onDragStart={(e) => handleDragStart(e, 'chapter', chapter, part.part_id)}
+                              onDragOver={(e) => handleDragOver(e, 'chapter', chapter.chapter_id, part.part_id)}
+                              onDragLeave={(e) => handleDragLeave(e)}
+                              onDrop={(e) => handleDrop(e, 'chapter', chapter.chapter_id, part.part_id)}
+                              onDragEnd={handleDragEnd}
+                              onContextMenu={(e) => handleContextMenu(e, 'chapter', chapter.chapter_id, { partTitle: part.part_title, chapterTitle: chapter.chapter_title })}
+                            >
+                              <span className="text-gray-300 opacity-0 group-hover:opacity-100 cursor-grab"><GripVertical size={14} /></span>
+                              <button onClick={(e) => { e.stopPropagation(); toggleExpand(`chapter-${chapter.chapter_id}`); }} className="p-0.5 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300">
+                                {chapter.paragraphs && chapter.paragraphs.length > 0 ? (
+                                  <motion.div
+                                    variants={chevronVariants}
+                                    animate={expandedItems[`chapter-${chapter.chapter_id}`] ? "expanded" : "collapsed"}
+                                    transition={{ duration: 0.2 }}
+                                  >
+                                    <ChevronRight size={14} />
+                                  </motion.div>
+                                ) : <div className="w-3.5" />}
+                              </button>
+
+                              {expandedItems[`chapter-${chapter.chapter_id}`] ? (
+                                <FolderOpen size={16} className="stroke-[1.5px]" color={selectedChapterId === chapter.chapter_id ? '#99334C' : getIconColor('chapter')} />
+                              ) : (
+                                <Folder size={16} className="stroke-[1.5px]" color={selectedChapterId === chapter.chapter_id ? '#99334C' : getIconColor('chapter')} />
+                              )}
+
+                              {editingId === `chapter-${chapter.chapter_id}` ? (
+                                <input
+                                  autoFocus
+                                  className="text-sm font-medium flex-1 bg-white border border-[#DC3545] rounded px-1 outline-none text-gray-700"
+                                  value={tempTitle}
+                                  onChange={(e) => setTempTitle(e.target.value)}
+                                  onBlur={() => submitRename('chapter', chapter.chapter_id)}
+                                  onKeyDown={(e) => handleKeyDown(e, 'chapter', chapter.chapter_id)}
+                                  onClick={(e) => e.stopPropagation()}
+                                />
+                              ) : (
+                                <span
+                                  className={`text-sm truncate flex-1 font-medium cursor-pointer hover:underline ${selectedChapterId === chapter.chapter_id ? 'text-[#99334C]' : 'text-gray-700'}`}
+                                  onClick={() => {
+                                    onSelectChapter?.(projectName, part.part_title, chapter.chapter_title, chapter.chapter_id);
+                                    toggleExpand(`chapter-${chapter.chapter_id}`);
+                                  }}
+                                  onDoubleClick={(e) => startEditing(e, `chapter-${chapter.chapter_id}`, chapter.chapter_title)}
                                 >
-                                  <ChevronRight size={14} />
-                                </motion.div>
-                              ) : <div className="w-3.5" />}
-                            </button>
+                                  {chapter.chapter_number}. {chapter.chapter_title}
+                                </span>
+                              )}
 
-                            {expandedItems[`chapter-${chapter.chapter_id}`] ? (
-                              <FolderOpen size={16} className="stroke-[1.5px]" color={selectedChapterId === chapter.chapter_id ? '#99334C' : getIconColor('chapter')} />
-                            ) : (
-                              <Folder size={16} className="stroke-[1.5px]" color={selectedChapterId === chapter.chapter_id ? '#99334C' : getIconColor('chapter')} />
-                            )}
+                              {onCreateParagraph && (
+                                <RichTooltip title={t.addParagraph} description="Diviser votre chapitre en sections de contenu.">
+                                  <button
+                                    onClick={(e) => { e.stopPropagation(); onCreateParagraph(part.part_title, chapter.chapter_title); }}
+                                    className="p-1 text-gray-300 hover:text-amber-600 hover:bg-amber-50 rounded transition-all"
+                                  >
+                                    <Plus size={14} />
+                                  </button>
+                                </RichTooltip>
+                              )}
+                            </div>
 
-                            {editingId === `chapter-${chapter.chapter_id}` ? (
-                              <input
-                                autoFocus
-                                className="text-sm font-medium flex-1 bg-white border border-[#DC3545] rounded px-1 outline-none text-gray-700"
-                                value={tempTitle}
-                                onChange={(e) => setTempTitle(e.target.value)}
-                                onBlur={() => submitRename('chapter', chapter.chapter_id)}
-                                onKeyDown={(e) => handleKeyDown(e, 'chapter', chapter.chapter_id)}
-                                onClick={(e) => e.stopPropagation()}
-                              />
-                            ) : (
-                              <span
-                                className={`text-sm truncate flex-1 font-medium cursor-pointer hover:underline ${selectedChapterId === chapter.chapter_id ? 'text-[#99334C]' : 'text-gray-700'}`}
-                                onClick={() => {
-                                  onSelectChapter?.(projectName, part.part_title, chapter.chapter_title, chapter.chapter_id);
-                                  toggleExpand(`chapter-${chapter.chapter_id}`);
-                                }}
-                                onDoubleClick={(e) => startEditing(e, `chapter-${chapter.chapter_id}`, chapter.chapter_title)}
-                              >
-                                {chapter.chapter_number}. {chapter.chapter_title}
-                              </span>
-                            )}
-
-                            {onCreateParagraph && (
-                              <RichTooltip title={t.addParagraph} description="Diviser votre chapitre en sections de contenu.">
-                                <button
-                                  onClick={(e) => { e.stopPropagation(); onCreateParagraph(part.part_title, chapter.chapter_title); }}
-                                  className="p-1 text-gray-300 hover:text-amber-600 hover:bg-amber-50 rounded transition-all"
-                                >
-                                  <Plus size={14} />
-                                </button>
-                              </RichTooltip>
-                            )}
-                          </div>
-
-                          {expandedItems[`chapter-${chapter.chapter_id}`] && chapter.paragraphs && (
-                            <div className="pl-6 mt-1 space-y-1 relative before:absolute before:left-3 before:top-0 before:bottom-0 before:w-px before:bg-gray-100">
-                              {chapter.paragraphs.map(paragraph => (
-                                <div key={paragraph.para_id} className="relative group/para">
-                                  <div
-                                    className={`flex items-center gap-2 py-1.5 px-2 hover:bg-gray-50 rounded-lg cursor-pointer group transition-all
-                                      ${selectedParagraphId === paragraph.para_id ? 'bg-[#99334C]/25 text-[#99334C] shadow-sm' : ''}
+                            {
+                              expandedItems[`chapter-${chapter.chapter_id}`] && chapter.paragraphs && (
+                                <div className="pl-6 mt-1 space-y-1 relative before:absolute before:left-3 before:top-0 before:bottom-0 before:w-px before:bg-gray-100">
+                                  {chapter.paragraphs.map(paragraph => (
+                                    <div key={paragraph.para_id} className="relative group/para">
+                                      <div
+                                        className={`flex items-center gap-2 py-1.5 px-2 hover:bg-gray-50 rounded-lg cursor-pointer group transition-all
+                                      ${selectedParagraphId === paragraph.para_id ? 'bg-[#99334C]/15 text-[#99334C] shadow-sm border-l-4 border-l-[#99334C] rounded-r-lg' : 'rounded-lg'}
                                       ${pulsingId === paragraph.para_id ? 'animate-pulse ring-2 ring-[#99334C]' : ''}
                                       ${getDropStyle('paragraph', paragraph.para_id)}`}
-                                    draggable={true}
-                                    onDragStart={(e) => handleDragStart(e, 'paragraph', paragraph, chapter.chapter_id)}
-                                    onDragOver={(e) => handleDragOver(e, 'paragraph', paragraph.para_id, chapter.chapter_id)}
-                                    onDragLeave={(e) => handleDragLeave(e)}
-                                    onDrop={(e) => handleDrop(e, 'paragraph', paragraph.para_id, chapter.chapter_id)}
-                                    onDragEnd={handleDragEnd}
-                                    onContextMenu={(e) => handleContextMenu(e, 'paragraph', paragraph.para_id, { partTitle: part.part_title, chapterTitle: chapter.chapter_title, paraName: paragraph.para_name })}
-                                  >
-                                    <span className="text-gray-300 opacity-0 group-hover:opacity-100 cursor-grab"><GripVertical size={14} /></span>
-                                    <button onClick={(e) => { e.stopPropagation(); toggleExpand(`paragraph-${paragraph.para_id}`); }} className="p-0.5 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300">
-                                      {paragraph.notions && paragraph.notions.length > 0 ? (
-                                        <motion.div
-                                          variants={chevronVariants}
-                                          animate={expandedItems[`paragraph-${paragraph.para_id}`] ? "expanded" : "collapsed"}
-                                          transition={{ duration: 0.2 }}
-                                        >
-                                          <ChevronRight size={14} />
-                                        </motion.div>
-                                      ) : <div className="w-3.5" />}
-                                    </button>
-
-                                    {expandedItems[`paragraph-${paragraph.para_id}`] ? (
-                                      <FolderOpen size={16} className="stroke-[1.5px]" color={selectedParagraphId === paragraph.para_id ? '#99334C' : getIconColor('paragraph')} />
-                                    ) : (
-                                      <Folder size={16} className="stroke-[1.5px]" color={selectedParagraphId === paragraph.para_id ? '#99334C' : getIconColor('paragraph')} />
-                                    )}
-
-                                    {editingId === `paragraph-${paragraph.para_id}` ? (
-                                      <input
-                                        autoFocus
-                                        className="text-sm flex-1 bg-white border border-[#D97706] rounded px-1 outline-none text-gray-700"
-                                        value={tempTitle}
-                                        onChange={(e) => setTempTitle(e.target.value)}
-                                        onBlur={() => submitRename('paragraph', paragraph.para_id)}
-                                        onKeyDown={(e) => handleKeyDown(e, 'paragraph', paragraph.para_id)}
-                                        onClick={(e) => e.stopPropagation()}
-                                      />
-                                    ) : (
-                                      <span
-                                        className={`text-sm truncate flex-1 cursor-pointer hover:underline ${selectedParagraphId === paragraph.para_id ? 'text-[#99334C]' : 'text-gray-600'}`}
-                                        onClick={() => {
-                                          onSelectParagraph?.(projectName, part.part_title, chapter.chapter_title, paragraph.para_name, paragraph.para_id);
-                                          toggleExpand(`paragraph-${paragraph.para_id}`);
-                                        }}
-                                        onDoubleClick={(e) => startEditing(e, `paragraph-${paragraph.para_id}`, paragraph.para_name)}
+                                        draggable={true}
+                                        onDragStart={(e) => handleDragStart(e, 'paragraph', paragraph, chapter.chapter_id)}
+                                        onDragOver={(e) => handleDragOver(e, 'paragraph', paragraph.para_id, chapter.chapter_id)}
+                                        onDragLeave={(e) => handleDragLeave(e)}
+                                        onDrop={(e) => handleDrop(e, 'paragraph', paragraph.para_id, chapter.chapter_id)}
+                                        onDragEnd={handleDragEnd}
+                                        onContextMenu={(e) => handleContextMenu(e, 'paragraph', paragraph.para_id, { partTitle: part.part_title, chapterTitle: chapter.chapter_title, paraName: paragraph.para_name })}
                                       >
-                                        {paragraph.para_number}. {paragraph.para_name}
-                                      </span>
-                                    )}
-
-                                    {onCreateNotion && (
-                                      <RichTooltip title="Ajouter une notion" description="Créer une unité de contenu (texte, image, rappel) dans ce paragraphe.">
-                                        <button
-                                          onClick={(e) => { e.stopPropagation(); onCreateNotion(part.part_title, chapter.chapter_title, paragraph.para_name); }}
-                                          className="p-1 text-green-600/50 hover:text-green-600 hover:bg-green-50 rounded transition-all ml-auto"
-                                        >
-                                          <Plus size={14} />
+                                        <span className="text-gray-300 opacity-0 group-hover:opacity-100 cursor-grab"><GripVertical size={14} /></span>
+                                        <button onClick={(e) => { e.stopPropagation(); toggleExpand(`paragraph-${paragraph.para_id}`); }} className="p-0.5 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300">
+                                          {paragraph.notions && paragraph.notions.length > 0 ? (
+                                            <motion.div
+                                              variants={chevronVariants}
+                                              animate={expandedItems[`paragraph-${paragraph.para_id}`] ? "expanded" : "collapsed"}
+                                              transition={{ duration: 0.2 }}
+                                            >
+                                              <ChevronRight size={14} />
+                                            </motion.div>
+                                          ) : <div className="w-3.5" />}
                                         </button>
-                                      </RichTooltip>
-                                    )}
-                                  </div>
 
-                                  {expandedItems[`paragraph-${paragraph.para_id}`] && paragraph.notions && (
-                                    <div className="pl-8 mt-1 space-y-0.5 relative before:absolute before:left-4 before:top-0 before:bottom-0 before:w-px before:bg-gray-100">
-                                      {paragraph.notions.map((notion) => (
-                                        <div
-                                          key={notion.notion_id}
-                                          className={`flex items-center gap-2 py-1.5 px-2 rounded-lg cursor-pointer w-full text-left transition-all group
-                                            ${selectedNotionId === notion.notion_id ? 'bg-[#99334C]/25 text-[#99334C] shadow-sm' : 'text-gray-500 hover:text-gray-900 hover:bg-gray-50'} 
+                                        {expandedItems[`paragraph-${paragraph.para_id}`] ? (
+                                          <FolderOpen size={16} className="stroke-[1.5px]" color={selectedParagraphId === paragraph.para_id ? '#99334C' : getIconColor('paragraph')} />
+                                        ) : (
+                                          <Folder size={16} className="stroke-[1.5px]" color={selectedParagraphId === paragraph.para_id ? '#99334C' : getIconColor('paragraph')} />
+                                        )}
+
+                                        {editingId === `paragraph-${paragraph.para_id}` ? (
+                                          <input
+                                            autoFocus
+                                            className="text-sm flex-1 bg-white border border-[#D97706] rounded px-1 outline-none text-gray-700"
+                                            value={tempTitle}
+                                            onChange={(e) => setTempTitle(e.target.value)}
+                                            onBlur={() => submitRename('paragraph', paragraph.para_id)}
+                                            onKeyDown={(e) => handleKeyDown(e, 'paragraph', paragraph.para_id)}
+                                            onClick={(e) => e.stopPropagation()}
+                                          />
+                                        ) : (
+                                          <span
+                                            className={`text-sm truncate flex-1 cursor-pointer hover:underline ${selectedParagraphId === paragraph.para_id ? 'text-[#99334C]' : 'text-gray-600'}`}
+                                            onClick={() => {
+                                              onSelectParagraph?.(projectName, part.part_title, chapter.chapter_title, paragraph.para_name, paragraph.para_id);
+                                              toggleExpand(`paragraph-${paragraph.para_id}`);
+                                            }}
+                                            onDoubleClick={(e) => startEditing(e, `paragraph-${paragraph.para_id}`, paragraph.para_name)}
+                                          >
+                                            {paragraph.para_number}. {paragraph.para_name}
+                                          </span>
+                                        )}
+
+                                        {onCreateNotion && (
+                                          <RichTooltip title="Ajouter une notion" description="Créer une unité de contenu (texte, image, rappel) dans ce paragraphe.">
+                                            <button
+                                              onClick={(e) => { e.stopPropagation(); onCreateNotion(part.part_title, chapter.chapter_title, paragraph.para_name); }}
+                                              className="p-1 text-green-600/50 hover:text-green-600 hover:bg-green-50 rounded transition-all ml-auto"
+                                            >
+                                              <Plus size={14} />
+                                            </button>
+                                          </RichTooltip>
+                                        )}
+                                      </div>
+
+                                      {
+                                        expandedItems[`paragraph-${paragraph.para_id}`] && paragraph.notions && (
+                                          <div className="pl-8 mt-1 space-y-0.5 relative before:absolute before:left-4 before:top-0 before:bottom-0 before:w-px before:bg-gray-100">
+                                            {paragraph.notions.map((notion) => (
+                                              <div
+                                                key={notion.notion_id}
+                                                className={`flex items-center gap-2 py-1.5 px-2 rounded-lg cursor-pointer w-full text-left transition-all group
+                                            ${selectedNotionId === notion.notion_id ? 'bg-[#99334C]/15 text-[#99334C] shadow-sm border-l-4 border-l-[#99334C] rounded-r-lg' : 'text-gray-500 hover:text-gray-900 hover:bg-gray-50 rounded-lg'} 
                                             ${pulsingId === notion.notion_id ? 'animate-pulse ring-2 ring-[#99334C]' : ''}
                                             ${getDropStyle('notion', notion.notion_id)}`}
-                                          draggable
-                                          onDragStart={(e) => handleDragStart(e, 'notion', notion, paragraph.para_id)}
-                                          onDragOver={(e) => handleDragOver(e, 'notion', notion.notion_id, paragraph.para_id)}
-                                          onDragLeave={(e) => handleDragLeave(e)}
-                                          onDrop={(e) => handleDrop(e, 'notion', notion.notion_id, paragraph.para_id)}
-                                          onDragEnd={handleDragEnd}
-                                          onMouseEnter={() => {
-                                            // ✅ Prefetch on hover with 100ms delay
-                                            const timerId = setTimeout(() => {
-                                              prefetchNotion(projectName, part.part_title, chapter.chapter_title, paragraph.para_name, notion.notion_name);
-                                            }, 100);
-                                            hoverTimers.current[notion.notion_id] = timerId;
-                                          }}
-                                          onMouseLeave={() => {
-                                            // Clear hover timer if user leaves before delay
-                                            if (hoverTimers.current[notion.notion_id]) {
-                                              clearTimeout(hoverTimers.current[notion.notion_id]);
-                                              delete hoverTimers.current[notion.notion_id];
-                                            }
-                                          }}
-                                          onClick={() => onSelectNotion({ projectName, partTitle: part.part_title, chapterTitle: chapter.chapter_title, paraName: paragraph.para_name, notionName: notion.notion_name, notion })}
-                                          onContextMenu={(e) => handleContextMenu(e, 'notion', notion.notion_id, { partTitle: part.part_title, chapterTitle: chapter.chapter_title, paraName: paragraph.para_name })}
-                                        >
-                                          <span className="text-gray-300 opacity-0 group-hover:opacity-100 cursor-grab"><GripVertical size={14} /></span>
-                                          <FileText size={14} className="shrink-0" color={selectedNotionId === notion.notion_id ? '#99334C' : getIconColor('notion')} />
-                                          <span className={`text-sm truncate ${selectedNotionId === notion.notion_id ? 'font-medium' : ''}`}>{notion.notion_name}</span>
-                                        </div>
-                                      ))}
-                                      {/* End zone Notions */}
-                                      <div
-                                        className={`h-2 transition-all ${dropTarget?.id === `paragraph-${paragraph.para_id}-notions-end` ? 'bg-[#99334C]/10 border border-[#99334C]/20 h-6' : 'opacity-0'}`}
-                                        onDragOver={(e) => handleDragOver(e, 'paragraph', `paragraph-${paragraph.para_id}-notions-end`, paragraph.para_id)}
-                                        onDrop={(e) => handleDrop(e, 'notion', `paragraph-${paragraph.para_id}-notions-end`, paragraph.para_id)}
-                                      />
+                                                draggable
+                                                onDragStart={(e) => handleDragStart(e, 'notion', notion, paragraph.para_id)}
+                                                onDragOver={(e) => handleDragOver(e, 'notion', notion.notion_id, paragraph.para_id)}
+                                                onDragLeave={(e) => handleDragLeave(e)}
+                                                onDrop={(e) => handleDrop(e, 'notion', notion.notion_id, paragraph.para_id)}
+                                                onDragEnd={handleDragEnd}
+                                                onMouseEnter={() => {
+                                                  // ✅ Prefetch on hover with 100ms delay
+                                                  const timerId = setTimeout(() => {
+                                                    prefetchNotion(projectName, part.part_title, chapter.chapter_title, paragraph.para_name, notion.notion_name);
+                                                  }, 100);
+                                                  hoverTimers.current[notion.notion_id] = timerId;
+                                                }}
+                                                onMouseLeave={() => {
+                                                  // Clear hover timer if user leaves before delay
+                                                  if (hoverTimers.current[notion.notion_id]) {
+                                                    clearTimeout(hoverTimers.current[notion.notion_id]);
+                                                    delete hoverTimers.current[notion.notion_id];
+                                                  }
+                                                }}
+                                                onClick={() => onSelectNotion({ projectName, partTitle: part.part_title, chapterTitle: chapter.chapter_title, paraName: paragraph.para_name, notionName: notion.notion_name, notion })}
+                                                onContextMenu={(e) => handleContextMenu(e, 'notion', notion.notion_id, { partTitle: part.part_title, chapterTitle: chapter.chapter_title, paraName: paragraph.para_name })}
+                                              >
+                                                <span className="text-gray-300 opacity-0 group-hover:opacity-100 cursor-grab"><GripVertical size={14} /></span>
+                                                <FileText size={14} className="shrink-0" color={selectedNotionId === notion.notion_id ? '#99334C' : getIconColor('notion')} />
+                                                <span className={`text-sm truncate ${selectedNotionId === notion.notion_id ? 'font-medium' : ''}`}>{notion.notion_name}</span>
+                                              </div>
+                                            ))}
+                                            {/* End zone Notions */}
+                                            <div
+                                              className={`h-2 transition-all ${dropTarget?.id === `paragraph-${paragraph.para_id}-notions-end` ? 'bg-[#99334C]/10 border border-[#99334C]/20 h-6' : 'opacity-0'}`}
+                                              onDragOver={(e) => handleDragOver(e, 'paragraph', `paragraph-${paragraph.para_id}-notions-end`, paragraph.para_id)}
+                                              onDrop={(e) => handleDrop(e, 'notion', `paragraph-${paragraph.para_id}-notions-end`, paragraph.para_id)}
+                                            />
+                                          </div>
+                                        )
+                                      }
                                     </div>
-                                  )}
+                                  ))}
+                                  {/* End zone Paragraphs */}
+                                  <div
+                                    className={`h-2 transition-all ${dropTarget?.id === `chapter-${chapter.chapter_id}-paragraphs-end` ? 'bg-[#D97706]/10 border border-[#D97706]/30 h-6 rounded' : 'opacity-0'}`}
+                                    onDragOver={(e) => handleDragOver(e, 'chapter', `chapter-${chapter.chapter_id}-paragraphs-end`, chapter.chapter_id)}
+                                    onDrop={(e) => handleDrop(e, 'paragraph', `chapter-${chapter.chapter_id}-paragraphs-end`, chapter.chapter_id)}
+                                  />
                                 </div>
-                              ))}
-                              {/* End zone Paragraphs */}
-                              <div
-                                className={`h-2 transition-all ${dropTarget?.id === `chapter-${chapter.chapter_id}-paragraphs-end` ? 'bg-[#D97706]/10 border border-[#D97706]/30 h-6 rounded' : 'opacity-0'}`}
-                                onDragOver={(e) => handleDragOver(e, 'chapter', `chapter-${chapter.chapter_id}-paragraphs-end`, chapter.chapter_id)}
-                                onDrop={(e) => handleDrop(e, 'paragraph', `chapter-${chapter.chapter_id}-paragraphs-end`, chapter.chapter_id)}
-                              />
-                            </div>
-                          )}
-                        </motion.div>
-                      ))}
-                      {/* End zone Chapters */}
-                      <div
-                        className={`h-2 transition-all ${dropTarget?.id === `part-${part.part_id}-chapters-end` ? 'bg-[#DC3545]/10 border border-[#DC3545]/30 h-6 rounded' : 'opacity-0'}`}
-                        onDragOver={(e) => handleDragOver(e, 'part', `part-${part.part_id}-chapters-end`, part.part_id)}
-                        onDrop={(e) => handleDrop(e, 'chapter', `part-${part.part_id}-chapters-end`, part.part_id)}
-                      />
-                    </motion.div>
-                  </AnimatePresence>
-                )}
+                              )
+                            }
+                          </motion.div>
+                        ))}
+                        {/* End zone Chapters */}
+                        <div
+                          className={`h-2 transition-all ${dropTarget?.id === `part-${part.part_id}-chapters-end` ? 'bg-[#DC3545]/10 border border-[#DC3545]/30 h-6 rounded' : 'opacity-0'}`}
+                          onDragOver={(e) => handleDragOver(e, 'part', `part-${part.part_id}-chapters-end`, part.part_id)}
+                          onDrop={(e) => handleDrop(e, 'chapter', `part-${part.part_id}-chapters-end`, part.part_id)}
+                        />
+                      </motion.div>
+                    </AnimatePresence>
+                  )
+                }
               </div>
             ))}
 
             {/* Placeholder de création pulsant */}
-            {pendingGranule && pendingGranule.type === 'part' && (
-              <div className="flex items-center gap-2 py-2 px-2 bg-gray-50/50 rounded-lg animate-pulse border-2 border-dashed border-[#99334C]/30">
-                <span className="text-gray-300"><GripVertical size={14} /></span>
-                <div className="w-5 h-5 rounded bg-[#99334C]/20" />
-                <div className="h-4 bg-gray-200 rounded w-48" />
-                <div className="ml-auto flex items-center gap-1">
-                  <div className="w-2 h-2 rounded-full bg-[#99334C] animate-bounce" style={{ animationDelay: '0ms' }} />
-                  <div className="w-2 h-2 rounded-full bg-[#99334C] animate-bounce" style={{ animationDelay: '150ms' }} />
-                  <div className="w-2 h-2 rounded-full bg-[#99334C] animate-bounce" style={{ animationDelay: '300ms' }} />
+            {
+              pendingGranule && pendingGranule.type === 'part' && (
+                <div className="flex items-center gap-2 py-2 px-2 bg-gray-50/50 rounded-lg animate-pulse border-2 border-dashed border-[#99334C]/30">
+                  <span className="text-gray-300"><GripVertical size={14} /></span>
+                  <div className="w-5 h-5 rounded bg-[#99334C]/20" />
+                  <div className="h-4 bg-gray-200 rounded w-48" />
+                  <div className="ml-auto flex items-center gap-1">
+                    <div className="w-2 h-2 rounded-full bg-[#99334C] animate-bounce" style={{ animationDelay: '0ms' }} />
+                    <div className="w-2 h-2 rounded-full bg-[#99334C] animate-bounce" style={{ animationDelay: '150ms' }} />
+                    <div className="w-2 h-2 rounded-full bg-[#99334C] animate-bounce" style={{ animationDelay: '300ms' }} />
+                  </div>
                 </div>
-              </div>
-            )}
+              )
+            }
           </>
         )}
 
@@ -1271,7 +1279,7 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
         onDelete={handleContextMenuDelete}
         onClose={() => setContextMenu({ ...contextMenu, isOpen: false })}
       />
-    </div >
+    </div>
   );
 };
 
