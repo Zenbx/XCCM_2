@@ -232,23 +232,36 @@ const XCCM2Editor = () => {
       let dropParaName = '';
 
       if (targetType === 'part') {
-        dropPartTitle = structure.find(p => p.part_id === targetId)?.part_title || '';
+        const part = structure.find(p => p.part_id === targetId);
+        dropPartTitle = part?.part_title || '';
+        // Si on drop une notion sur une partie, on cherche le premier chapitre et paragraphe
+        if (granule.type === 'notion') {
+          const firstChap = part?.chapters?.[0];
+          dropChapterTitle = firstChap?.chapter_title || '';
+          dropParaName = firstChap?.paragraphs?.[0]?.para_name || '';
+        }
       } else if (targetType === 'chapter') {
         const part = structure.find(p => p.part_id === targetParentId);
         dropPartTitle = part?.part_title || '';
-        dropChapterTitle = part?.chapters?.find(c => c.chapter_id === targetId)?.chapter_title || '';
+        const chapter = part?.chapters?.find(c => c.chapter_id === targetId);
+        dropChapterTitle = chapter?.chapter_title || '';
+        // Si on drop une notion sur un chapitre, on cherche le premier paragraphe
+        if (granule.type === 'notion') {
+          dropParaName = chapter?.paragraphs?.[0]?.para_name || '';
+        }
       } else if (targetType === 'paragraph') {
-        // Pour les paragraphes, le targetParentId est le chapter_id
         for (const p of structure) {
-          const c = p.chapters?.find(ch => ch.chapter_id === targetParentId);
-          if (c) {
+          const ch = p.chapters?.find(c => c.chapter_id === targetParentId);
+          if (ch) {
             dropPartTitle = p.part_title;
-            dropChapterTitle = c.chapter_title;
-            dropParaName = c.paragraphs?.find(pa => pa.para_id === targetId)?.para_name || '';
+            dropChapterTitle = ch.chapter_title;
+            dropParaName = ch.paragraphs?.find(pa => pa.para_id === targetId)?.para_name || '';
             break;
           }
         }
       }
+
+      console.log("[Drop] Resolved Parents:", { dropPartTitle, dropChapterTitle, dropParaName });
 
       if (granule.type === 'part') {
         const nextPartNum = structure.length + 1;
@@ -270,10 +283,9 @@ const XCCM2Editor = () => {
           }
         }
       } else if (granule.type === 'chapter') {
-        const parentPart = dropPartTitle || currentContext?.partTitle || structure[structure.length - 1]?.part_title || "Partie 1";
+        const parentPart = dropPartTitle || currentContext?.partTitle || structure[structure.length - 1]?.part_title || (structure.length > 0 ? structure[0].part_title : "Partie 1");
 
-        // Trouver le nombre actuel de chapitres pour l'auto-incrément
-        const partObj = structure.find(p => p.part_title === parentPart);
+        const partObj = structure.find(p => p.part_title.toLowerCase().trim() === parentPart.toLowerCase().trim());
         const nextChapNum = (partObj?.chapters?.length || 0) + 1;
 
         const newChapter = await structureService.createChapter(projectName, parentPart, {
@@ -283,10 +295,12 @@ const XCCM2Editor = () => {
         setPulsingId(newChapter.chapter_id);
         await recurseChapter(parentPart, newChapter.chapter_title, granule);
       } else if (granule.type === 'paragraph') {
-        const parentPart = dropPartTitle || currentContext?.partTitle || structure[structure.length - 1]?.part_title || "Partie 1";
-        const parentChapter = dropChapterTitle || currentContext?.chapterTitle || structure.find(p => p.part_title === parentPart)?.chapters?.[0]?.chapter_title || "Chapitre 1";
+        const parentPart = dropPartTitle || currentContext?.partTitle || structure[structure.length - 1]?.part_title || (structure.length > 0 ? structure[0].part_title : "Partie 1");
 
-        const chapObj = structure.find(p => p.part_title === parentPart)?.chapters?.find(c => c.chapter_title === parentChapter);
+        const partObj = structure.find(p => p.part_title.toLowerCase().trim() === parentPart.toLowerCase().trim());
+        const parentChapter = dropChapterTitle || currentContext?.chapterTitle || partObj?.chapters?.[0]?.chapter_title || "Chapitre 1";
+
+        const chapObj = partObj?.chapters?.find(c => c.chapter_title.toLowerCase().trim() === parentChapter.toLowerCase().trim());
         const nextParaNum = (chapObj?.paragraphs?.length || 0) + 1;
 
         const newPara = await structureService.createParagraph(projectName, parentPart, parentChapter, {
@@ -296,16 +310,22 @@ const XCCM2Editor = () => {
         setPulsingId(newPara.para_id);
         await recurseParagraph(parentPart, parentChapter, newPara.para_name, granule);
       } else if (granule.type === 'notion') {
-        const parentPart = dropPartTitle || currentContext?.partTitle || structure[structure.length - 1]?.part_title || "Partie 1";
-        const parentChapter = dropChapterTitle || currentContext?.chapterTitle || structure.find(p => p.part_title === parentPart)?.chapters?.[0]?.chapter_title || "Chapitre 1";
-        const parentPara = dropParaName || currentContext?.paraName || structure.find(p => p.part_title === parentPart)?.chapters?.find(c => c.chapter_title === parentChapter)?.paragraphs?.[0]?.para_name || "Paragraphe 1";
+        const parentPart = dropPartTitle || currentContext?.partTitle || structure[structure.length - 1]?.part_title || (structure.length > 0 ? structure[0].part_title : "Partie 1");
 
-        const paraObj = structure.find(p => p.part_title === parentPart)?.chapters?.find(c => c.chapter_title === parentChapter)?.paragraphs?.find(pa => pa.para_name === parentPara);
+        const partObj = structure.find(p => p.part_title.toLowerCase().trim() === parentPart.toLowerCase().trim());
+        const parentChapter = dropChapterTitle || currentContext?.chapterTitle || partObj?.chapters?.[0]?.chapter_title || "Chapitre 1";
+
+        const chapObj = partObj?.chapters?.find(c => c.chapter_title.toLowerCase().trim() === parentChapter.toLowerCase().trim());
+        const parentPara = dropParaName || currentContext?.paraName || chapObj?.paragraphs?.[0]?.para_name || "Paragraphe 1";
+
+        const paraObj = chapObj?.paragraphs?.find(pa => pa.para_name.toLowerCase().trim() === parentPara.toLowerCase().trim());
         const nextNotionNum = (paraObj?.notions?.length || 0) + 1;
+
+        console.log("[Drop Notion] Sending request with:", { parentPart, parentChapter, parentPara, name: granule.content });
 
         const newNotion = await structureService.createNotion(projectName, parentPart, parentChapter, parentPara, {
           notion_name: granule.content,
-          notion_content: granule.previewContent || '',
+          notion_content: granule.previewContent || granule.content || '',
           notion_number: nextNotionNum
         });
         setPulsingId(newNotion.notion_id);
@@ -468,7 +488,9 @@ const XCCM2Editor = () => {
 
   const {
     connectedUsers,
-    localClientId
+    localClientId,
+    provider,
+    yDoc
   } = useSynapseSync({
     documentId: synapseDocId,
     userId: authUser?.user_id || 'anonymous',
@@ -476,12 +498,26 @@ const XCCM2Editor = () => {
     serverUrl: process.env.NEXT_PUBLIC_HOCUSPOCUS_URL || 'ws://localhost:1234',
   });
 
+  const collaborationData = useMemo(() => {
+    if (!synapseDocId || !provider || !yDoc) return undefined;
+    return {
+      provider,
+      documentId: synapseDocId,
+      username: `${authUser?.firstname || 'L’Auteur'} ${authUser?.lastname || ''}`.trim(),
+      userColor: '#99334C', // Default color
+      colors: ['#99334C', '#2563EB', '#10B981', '#F59E0B'],
+      yDoc
+    };
+  }, [synapseDocId, provider, yDoc, authUser]);
+
   // Action: Save
   const handleSave = async (isAuto = false) => {
     if (!currentContext || !projectName) return;
+    console.log(`[Save] Saving ${currentContext.type} "${currentContext.notionName || currentContext.partTitle}"...`, { isAuto, contentLength: editorContent.length });
     try {
       setIsSaving(true);
       if (currentContext.type === 'notion' && currentContext.notionName) {
+        console.log(`[Save] Updating Notion: ${currentContext.notionName} in ${currentContext.paraName}`);
         await structureService.updateNotion(projectName, currentContext.partTitle, currentContext.chapterTitle!, currentContext.paraName!, currentContext.notionName!, { notion_content: editorContent });
         if (currentContext.notion) currentContext.notion.notion_content = editorContent;
       } else if (currentContext.type === 'part' && currentContext.partTitle) {
@@ -786,6 +822,7 @@ const XCCM2Editor = () => {
               onEditorReady={setTiptapEditor}
               onDrop={handleDropGranule}
               editorRef={editorRef}
+              collaboration={collaborationData}
               socraticFeedback={mappedSocraticFeedback as any}
             />
           </div>
