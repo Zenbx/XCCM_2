@@ -15,6 +15,7 @@ import {
 import { useRouter } from 'next/navigation';
 import { getCookie } from '@/lib/cookies';
 import { vaultService, VaultItem } from '@/services/vaultService';
+import { authService } from '@/services/authService';
 import { getAuthHeaders } from '@/lib/apiHelper';
 import toast from 'react-hot-toast';
 
@@ -82,7 +83,7 @@ const AccountPage = () => {
   React.useEffect(() => {
     const fetchStats = async () => {
       try {
-        const token = localStorage.getItem('auth_token');
+        const token = authService.getAuthToken();
         if (!token) return;
 
         const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/user/stats`, {
@@ -100,6 +101,10 @@ const AccountPage = () => {
             coursDownloads: data.data.totalDownloadsOnPublishedCourses,
             likes: data.data.totalLikesOnPublishedCourses,
             recentActivities: data.data.recentActivities || [],
+            memberSince: data.data.createdAt ? new Date(data.data.createdAt).toLocaleDateString('fr-FR', {
+              month: 'long',
+              year: 'numeric'
+            }) : prev.memberSince,
           }));
         }
       } catch (error) {
