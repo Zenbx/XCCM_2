@@ -906,7 +906,7 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
               <div key={part.part_id} className="relative group/part">
                 <div
                   className={`flex items-center gap-2 py-2 px-2 hover:bg-gray-50 rounded-lg cursor-pointer transition-colors
-                  ${selectedPartId === part.part_id ? 'bg-[#99334C]/15 text-[#99334C] shadow-sm border-l-4 border-l-[#99334C] rounded-r-lg' : 'rounded-lg'}
+                  ${selectedPartId === part.part_id ? 'bg-[#99334C]/15 text-[#99334C] shadow-sm rounded-lg' : 'rounded-lg'}
                   ${pulsingId === part.part_id ? 'animate-pulse ring-2 ring-[#99334C]' : ''}
                   ${getDropStyle('part', part.part_id)}`}
                   draggable={true}
@@ -992,7 +992,7 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
                           >
                             <div
                               className={`flex items-center gap-2 py-1.5 px-2 hover:bg-gray-50 rounded-lg cursor-pointer group transition-all
-                              ${selectedChapterId === chapter.chapter_id ? 'bg-[#99334C]/15 text-[#99334C] shadow-sm border-l-4 border-l-[#99334C] rounded-r-lg' : 'rounded-lg'}
+                              ${selectedChapterId === chapter.chapter_id ? 'bg-[#99334C]/15 text-[#99334C] shadow-sm rounded-lg' : 'rounded-lg'}
                               ${pulsingId === chapter.chapter_id ? 'animate-pulse ring-2 ring-[#99334C]' : ''}
                               ${getDropStyle('chapter', chapter.chapter_id)}`}
                               draggable={true}
@@ -1064,7 +1064,7 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
                                     <div key={paragraph.para_id} className="relative group/para">
                                       <div
                                         className={`flex items-center gap-2 py-1.5 px-2 hover:bg-gray-50 rounded-lg cursor-pointer group transition-all
-                                      ${selectedParagraphId === paragraph.para_id ? 'bg-[#99334C]/15 text-[#99334C] shadow-sm border-l-4 border-l-[#99334C] rounded-r-lg' : 'rounded-lg'}
+                                      ${selectedParagraphId === paragraph.para_id ? 'bg-[#99334C]/15 text-[#99334C] shadow-sm rounded-lg' : 'rounded-lg'}
                                       ${pulsingId === paragraph.para_id ? 'animate-pulse ring-2 ring-[#99334C]' : ''}
                                       ${getDropStyle('paragraph', paragraph.para_id)}`}
                                         draggable={true}
@@ -1136,7 +1136,7 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
                                               <div
                                                 key={notion.notion_id}
                                                 className={`flex items-center gap-2 py-1.5 px-2 rounded-lg cursor-pointer w-full text-left transition-all group
-                                            ${selectedNotionId === notion.notion_id ? 'bg-[#99334C]/15 text-[#99334C] shadow-sm border-l-4 border-l-[#99334C] rounded-r-lg' : 'text-gray-500 hover:text-gray-900 hover:bg-gray-50 rounded-lg'} 
+                                            ${selectedNotionId === notion.notion_id ? 'bg-[#99334C]/15 text-[#99334C] shadow-sm rounded-lg' : 'text-gray-500 hover:text-gray-900 hover:bg-gray-50 rounded-lg'} 
                                             ${pulsingId === notion.notion_id ? 'animate-pulse ring-2 ring-[#99334C]' : ''}
                                             ${getDropStyle('notion', notion.notion_id)}`}
                                                 draggable
