@@ -1,5 +1,6 @@
 import React from 'react';
 import { X, Loader2 } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 interface CreationModalsProps {
     showPartModal: boolean;
@@ -82,7 +83,17 @@ const CreationModals: React.FC<CreationModalsProps> = ({
                         </div>
                         <div className="flex gap-3 mt-6">
                             <button onClick={() => setShowPartModal(false)} className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50">Annuler</button>
-                            <button onClick={confirmCreatePart} disabled={isCreatingPart || partFormData.title.length < 3} className="flex-1 px-4 py-3 bg-[#99334C] text-white rounded-xl hover:bg-[#7a283d] disabled:opacity-50 flex justify-center items-center gap-2">
+                            <button
+                                onClick={() => {
+                                    if (partFormData.title.trim().length < 3) {
+                                        toast.error("Le titre doit faire au moins 3 caractères");
+                                    } else {
+                                        confirmCreatePart();
+                                    }
+                                }}
+                                disabled={isCreatingPart}
+                                className="flex-1 px-4 py-3 bg-[#99334C] text-white rounded-xl hover:bg-[#7a283d] disabled:opacity-50 flex justify-center items-center gap-2"
+                            >
                                 {isCreatingPart && <Loader2 className="w-4 h-4 animate-spin" />} Créer
                             </button>
                         </div>
@@ -125,7 +136,17 @@ const CreationModals: React.FC<CreationModalsProps> = ({
                         </div>
                         <div className="flex gap-3 mt-6">
                             <button onClick={() => setShowChapterModal(false)} className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50">Annuler</button>
-                            <button onClick={confirmCreateChapter} disabled={isCreatingChapter || chapterFormData.title.length < 3} className="flex-1 px-4 py-3 bg-[#99334C] text-white rounded-xl hover:bg-[#7a283d] disabled:opacity-50 flex justify-center items-center gap-2">
+                            <button
+                                onClick={() => {
+                                    if (chapterFormData.title.trim().length < 3) {
+                                        toast.error("Le titre doit faire au moins 3 caractères");
+                                    } else {
+                                        confirmCreateChapter();
+                                    }
+                                }}
+                                disabled={isCreatingChapter}
+                                className="flex-1 px-4 py-3 bg-[#99334C] text-white rounded-xl hover:bg-[#7a283d] disabled:opacity-50 flex justify-center items-center gap-2"
+                            >
                                 {isCreatingChapter && <Loader2 className="w-4 h-4 animate-spin" />} Créer
                             </button>
                         </div>
@@ -168,7 +189,17 @@ const CreationModals: React.FC<CreationModalsProps> = ({
                         </div>
                         <div className="flex gap-3 mt-6">
                             <button onClick={() => setShowParagraphModal(false)} className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50">Annuler</button>
-                            <button onClick={confirmCreateParagraph} disabled={isCreatingParagraph || paragraphFormData.name.length < 3} className="flex-1 px-4 py-3 bg-[#99334C] text-white rounded-xl hover:bg-[#7a283d] disabled:opacity-50 flex justify-center items-center gap-2">
+                            <button
+                                onClick={() => {
+                                    if (paragraphFormData.name.trim().length < 3) {
+                                        toast.error("Le nom doit faire au moins 3 caractères");
+                                    } else {
+                                        confirmCreateParagraph();
+                                    }
+                                }}
+                                disabled={isCreatingParagraph}
+                                className="flex-1 px-4 py-3 bg-[#99334C] text-white rounded-xl hover:bg-[#7a283d] disabled:opacity-50 flex justify-center items-center gap-2"
+                            >
                                 {isCreatingParagraph && <Loader2 className="w-4 h-4 animate-spin" />} Créer
                             </button>
                         </div>
@@ -211,7 +242,17 @@ const CreationModals: React.FC<CreationModalsProps> = ({
                         </div>
                         <div className="flex gap-3 mt-6">
                             <button onClick={() => setShowNotionModal(false)} className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50">Annuler</button>
-                            <button onClick={confirmCreateNotion} disabled={isCreatingNotion || notionFormData.name.length < 3} className="flex-1 px-4 py-3 bg-[#99334C] text-white rounded-xl hover:bg-[#7a283d] disabled:opacity-50 flex justify-center items-center gap-2">
+                            <button
+                                onClick={() => {
+                                    if (notionFormData.name.trim().length < 3) {
+                                        toast.error("Le nom doit faire au moins 3 caractères");
+                                    } else {
+                                        confirmCreateNotion();
+                                    }
+                                }}
+                                disabled={isCreatingNotion}
+                                className="flex-1 px-4 py-3 bg-[#99334C] text-white rounded-xl hover:bg-[#7a283d] disabled:opacity-50 flex justify-center items-center gap-2"
+                            >
                                 {isCreatingNotion && <Loader2 className="w-4 h-4 animate-spin" />} Créer
                             </button>
                         </div>
