@@ -8,6 +8,7 @@ import { Awareness } from 'y-protocols/awareness';
 // Types pour la présence utilisateur
 export interface UserPresence {
     id: string;
+    clientId: number;
     name: string;
     color: string;
     cursor?: {
@@ -47,6 +48,7 @@ export interface SynapseSyncResult {
     // Présence
     connectedUsers: UserPresence[];
     localUser: UserPresence | null;
+    localClientId: number | null;
 
     // Actions
     updateCursor: (anchor: number, head: number) => void;
@@ -119,9 +121,10 @@ export function useSynapseSync(options: SynapseSyncOptions): SynapseSyncResult {
     const [isSynced, setIsSynced] = useState(false);
     const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'disconnected' | 'error'>('disconnected');
     const [connectedUsers, setConnectedUsers] = useState<UserPresence[]>([]);
+    const [localClientId, setLocalClientId] = useState<number | null>(null);
 
-    // Utilisateur local
-    const localUser: UserPresence = {
+    // Utilisateur local (sans clientId initial car il n'est pas encore connu)
+    const localUserBase = {
         id: userId,
         name: userName,
         color: userColor,
@@ -171,6 +174,11 @@ export function useSynapseSync(options: SynapseSyncOptions): SynapseSyncResult {
 
         providerRef.current = provider;
 
+        // Stocker le clientId local
+        if (provider.awareness) {
+            setLocalClientId(provider.awareness.clientID);
+        }
+
         // Configurer l'awareness (présence)
         const awareness = provider.awareness;
         if (!awareness) {
@@ -179,11 +187,13 @@ export function useSynapseSync(options: SynapseSyncOptions): SynapseSyncResult {
         }
 
         // Définir l'état local de l'utilisateur
-        awareness.setLocalStateField('user', {
-            id: userId,
-            name: userName,
-            color: userColor,
-        });
+        if (awareness) {
+            awareness.setLocalStateField('user', {
+                id: userId,
+                name: userName,
+                color: userColor,
+            });
+        }
 
         // Écouter les changements d'awareness
         const handleAwarenessChange = () => {
@@ -193,7 +203,8 @@ export function useSynapseSync(options: SynapseSyncOptions): SynapseSyncResult {
             states.forEach((state, clientId) => {
                 if (state.user) {
                     users.push({
-                        id: state.user.id || String(clientId),
+                        id: state.user.id || 'anonymous',
+                        clientId: clientId,
                         name: state.user.name || 'Anonyme',
                         color: state.user.color || getRandomColor(),
                         cursor: state.cursor,
@@ -261,7 +272,13 @@ export function useSynapseSync(options: SynapseSyncOptions): SynapseSyncResult {
         isSynced,
         connectionStatus,
         connectedUsers,
-        localUser,
+        localUser: {
+            id: localUserBase.id,
+            name: localUserBase.name,
+            color: localUserBase.color,
+            clientId: localClientId || 0
+        },
+        localClientId,
         updateCursor,
         updateSelection,
         disconnect,

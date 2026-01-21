@@ -15,6 +15,7 @@ interface EditorHeaderProps {
     onPreview: () => void;
     isSaving: boolean;
     connectedUsers: any[];
+    localClientId: number | null;
     authUser: any;
     projectName: string;
 }
@@ -29,6 +30,7 @@ const EditorHeader: React.FC<EditorHeaderProps> = ({
     onPreview,
     isSaving,
     connectedUsers,
+    localClientId,
     authUser,
     projectName
 }) => {
@@ -96,7 +98,7 @@ const EditorHeader: React.FC<EditorHeaderProps> = ({
                 <div className="ml-2 pl-4 border-l border-gray-100 dark:border-gray-800">
                     <PresenceIndicator
                         users={connectedUsers}
-                        currentUserId={authUser?.user_id || 'anonymous'}
+                        localClientId={localClientId}
                     />
                 </div>
 
