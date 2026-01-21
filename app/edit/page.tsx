@@ -640,6 +640,7 @@ const XCCM2Editor = () => {
               onRename={handleRenameGranule}
               onReorder={handleReorderGranule}
               onMove={handleMoveGranule}
+              onExternalDrop={handleDropGranule}
               onDelete={async (type, id) => {
                 const findTitle = () => {
                   if (type === 'part') return structure.find(p => p.part_id === id)?.part_title;
