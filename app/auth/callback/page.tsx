@@ -17,8 +17,13 @@ const AuthCallbackContent = () => {
     const [error, setError] = useState<string | null>(null);
     const isRegister = searchParams.get('mode') === 'register';
 
+    const hasFetched = React.useRef(false);
+
     useEffect(() => {
         const fetchToken = async () => {
+            if (hasFetched.current) return;
+            hasFetched.current = true;
+
             try {
                 // 1. Check for Token from Bridge (Query Param)
                 const bridgeToken = searchParams.get('token');
@@ -71,7 +76,7 @@ const AuthCallbackContent = () => {
         };
 
         fetchToken();
-    }, [router, searchParams, refreshUser]);
+    }, [router, searchParams, refreshUser, isRegister]);
 
     return (
         <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50">
