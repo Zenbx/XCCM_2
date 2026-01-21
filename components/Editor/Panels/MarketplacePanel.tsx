@@ -54,7 +54,8 @@ const MarketplacePanel: React.FC<MarketplacePanelProps> = ({ onDragStart }) => {
         icon: item.type === 'notion' ? 'File' : item.type === 'paragraph' ? 'FileText' : item.type === 'chapter' ? 'Book' : 'Folder',
         author: `${item.seller.firstname} ${item.seller.lastname}`,
         price: item.price,
-        downloads: item.downloads
+        downloads: item.downloads,
+        previewContent: item.content // Stocke le JSON ou le contenu brut ici
     }));
 
     const filteredGranules = marketplaceGranules.filter(g => {
