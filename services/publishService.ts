@@ -40,7 +40,8 @@ class PublishService {
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.message || 'Erreur publication');
+        const details = error.error ? `: ${error.error}` : '';
+        throw new Error((error.message || 'Erreur publication') + details);
       }
 
       const result = await response.json();

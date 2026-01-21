@@ -899,7 +899,7 @@ const PreviewPage = () => {
 
             {/* Format Selection Dialog */}
             {showFormatDialog && (
-                <div className="fixed inset-0 z-60 bg-black/50 flex items-center justify-center">
+                <div className="fixed inset-0 z-70 bg-black/50 flex items-center justify-center">
                     <div className="bg-white rounded-xl shadow-2xl p-8 max-w-sm w-full mx-4">
                         <h2 className="text-2xl font-bold text-gray-900 mb-4">Choisir le format de publication</h2>
                         <p className="text-gray-600 text-sm mb-6">Sélectionnez le format dans lequel vous souhaitez publier votre document.</p>
