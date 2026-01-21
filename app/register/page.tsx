@@ -1,12 +1,12 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { ArrowLeft, ArrowRight, Eye, EyeOff, Check, User, Mail, Briefcase, Building2, Loader2, Camera } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import toast from 'react-hot-toast';
 
-const RegisterPage = () => {
+const RegisterContent = () => {
   const [currentStep, setCurrentStep] = useState(1);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -568,6 +568,19 @@ const RegisterPage = () => {
         </div>
       </div>
     </div>
+  );
+};
+
+// Wrapper avec Suspense pour useSearchParams
+const RegisterPage = () => {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-white">
+        <Loader2 className="w-10 h-10 text-[#99334C] animate-spin" />
+      </div>
+    }>
+      <RegisterContent />
+    </Suspense>
   );
 };
 
