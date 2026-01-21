@@ -66,7 +66,7 @@ export default function Header() {
   if (pathname?.startsWith('/book-reader')) return null;
 
   return (
-    <header className="w-full bg-white dark:bg-gray-900 shadow-md border-b border-gray-100 dark:border-gray-800 fixed top-0 left-0 right-0" style={{ zIndex: 5 }}>
+    <header className="w-full bg-white dark:bg-gray-900 shadow-md border-b border-gray-100 dark:border-gray-800 fixed top-0 left-0 right-0" style={{ zIndex: 2 }}>
       <nav className="mx-auto flex max-w-[1400px] items-center justify-between px-4 py-2 min-h-[60px] lg:min-h-[70px]">
 
         {/* --- LOGO --- */}
