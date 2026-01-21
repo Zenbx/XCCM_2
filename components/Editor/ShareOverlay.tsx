@@ -76,21 +76,31 @@ const ShareOverlay: React.FC<ShareOverlayProps> = ({ isOpen, onClose, projectNam
         }
     };
 
-    const handleRevoke = async (token: string, id: string) => {
-        if (!window.confirm('Êtes-vous sûr de vouloir révoquer cette invitation ?')) return;
+    const [confirmRevokeId, setConfirmRevokeId] = useState<string | null>(null);
+
+    const handleRevokeClick = (id: string) => {
+        setConfirmRevokeId(id);
+    };
+
+    const confirmRevoke = async () => {
+        if (!confirmRevokeId) return;
+        const invitation = invitations.find(i => i.id === confirmRevokeId);
+        if (!invitation) return;
 
         try {
-            setRevokingId(id);
+            setRevokingId(confirmRevokeId);
             setError('');
-            await invitationService.revokeInvitation(token);
+            await invitationService.revokeInvitation(invitation.invitation_token);
             setSuccess('Invitation révoquée avec succès');
-            fetchInvitations();
+            // Force delay to ensure backend consistency if needed, but usually await is enough
+            await fetchInvitations();
             setTimeout(() => setSuccess(''), 3000);
         } catch (err: any) {
             console.error('Erreur révocation:', err);
             setError(err.message || 'Erreur lors de la révocation');
         } finally {
             setRevokingId(null);
+            setConfirmRevokeId(null);
         }
     };
 
@@ -280,7 +290,7 @@ const ShareOverlay: React.FC<ShareOverlayProps> = ({ isOpen, onClose, projectNam
 
                                                     {inv.status === 'Pending' && (
                                                         <button
-                                                            onClick={() => handleRevoke(inv.invitation_token, inv.id)}
+                                                            onClick={() => handleRevokeClick(inv.id)}
                                                             disabled={revokingId === inv.id}
                                                             className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-xl transition-all opacity-0 group-hover:opacity-100"
                                                             title="Révoquer l'invitation"
@@ -309,6 +319,35 @@ const ShareOverlay: React.FC<ShareOverlayProps> = ({ isOpen, onClose, projectNam
                                 Fermer
                             </button>
                         </div>
+                        {/* Custom Confirmation Modal */}
+                        {confirmRevokeId && (
+                            <div className="absolute inset-0 z-[60] flex items-center justify-center bg-black/20 backdrop-blur-[2px] rounded-3xl">
+                                <motion.div
+                                    initial={{ scale: 0.9, opacity: 0 }}
+                                    animate={{ scale: 1, opacity: 1 }}
+                                    className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-xl max-w-sm w-full mx-4 border border-gray-100 dark:border-gray-700"
+                                >
+                                    <h4 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Révoquer l'invitation ?</h4>
+                                    <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
+                                        L'utilisateur ne pourra plus accéder au projet. Vous pourrez le réinviter plus tard.
+                                    </p>
+                                    <div className="flex justify-end gap-3">
+                                        <button
+                                            onClick={() => setConfirmRevokeId(null)}
+                                            className="px-4 py-2 text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700 rounded-xl text-sm font-medium transition-colors"
+                                        >
+                                            Annuler
+                                        </button>
+                                        <button
+                                            onClick={confirmRevoke}
+                                            className="px-4 py-2 bg-red-600 text-white hover:bg-red-700 rounded-xl text-sm font-bold shadow-lg shadow-red-600/20 transition-all"
+                                        >
+                                            Révoquer
+                                        </button>
+                                    </div>
+                                </motion.div>
+                            </div>
+                        )}
                     </GlassPanel>
                 </div>
             )}

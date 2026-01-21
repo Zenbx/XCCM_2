@@ -281,6 +281,7 @@ interface TableOfContentsProps {
   onRename?: (type: 'part' | 'chapter' | 'paragraph' | 'notion', id: string, newTitle: string) => Promise<void>;
   onReorder?: (type: 'part' | 'chapter' | 'paragraph' | 'notion', parentId: string | null, items: any[]) => Promise<void>;
   onMove?: (type: 'chapter' | 'paragraph' | 'notion', itemId: string, newParentId: string) => Promise<void>;
+  onExternalDrop?: (granule: any) => Promise<void>;
   onDelete?: (type: 'part' | 'chapter' | 'paragraph' | 'notion', id: string) => Promise<void>;
   onPublishToMarketplace?: (type: string, id: string, title: string) => void;
   language?: Language;
@@ -309,6 +310,7 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
   onRename,
   onReorder,
   onMove,
+  onExternalDrop,
   onDelete,
   onPublishToMarketplace,
   language = 'fr',
@@ -662,6 +664,20 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
 
     setDropTarget(null);
     setForbiddenTarget(null);
+
+    // ✅ NOUVEAU: Gestion du Drop Externe (Depuis RightPanel)
+    if (!draggedItem && onExternalDrop) {
+      try {
+        const granuleData = e.dataTransfer.getData('granule');
+        if (granuleData) {
+          const granule = JSON.parse(granuleData);
+          await onExternalDrop(granule);
+          return;
+        }
+      } catch (err) {
+        console.error("Erreur parsing granule drop:", err);
+      }
+    }
 
     if (!draggedItem) return;
     const { type: dragType, id: dragId, parentId: dragParentId } = draggedItem;
