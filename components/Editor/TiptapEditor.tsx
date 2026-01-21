@@ -458,6 +458,32 @@ const TiptapEditor: React.FC<TiptapEditorProps> = (props) => {
             outline: 2px solid #2563eb;
             box-shadow: 0 4px 12px rgba(37, 99, 235, 0.1);
         }
+
+        /* Presence Cursors */
+        .collaboration-cursor__caret {
+          border-left: 2px solid #0d0d0d;
+          border-right: 2px solid #0d0d0d;
+          margin-left: -1px;
+          margin-right: -1px;
+          pointer-events: none;
+          position: relative;
+          word-break: normal;
+        }
+
+        .collaboration-cursor__label {
+          border-radius: 3px 3px 3px 0;
+          color: white;
+          font-size: 12px;
+          font-style: normal;
+          font-weight: 600;
+          left: -1px;
+          line-height: normal;
+          padding: 0.1rem 0.3rem;
+          position: absolute;
+          top: -1.4em;
+          user-select: none;
+          white-space: nowrap;
+        }
       `}</style>
     </div>
   );

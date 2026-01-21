@@ -559,6 +559,17 @@ const XCCM2Editor = () => {
     if (editorContent && editorContent.length > 50 && !isImporting) analyzeDebounced(editorContent);
   }, [editorContent, analyzeDebounced, isImporting]);
 
+  // AUTO-SAVE: Debounced automatic save every 5 seconds of inactivity
+  useEffect(() => {
+    if (hasUnsavedChanges && !isSaving && !isImporting) {
+      const timer = setTimeout(() => {
+        console.log("Auto-saving...");
+        handleSave(true);
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [editorContent, hasUnsavedChanges, isSaving, isImporting]);
+
   // Resizing Logic - Exclusive to TOC Sidebar
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
@@ -768,7 +779,10 @@ const XCCM2Editor = () => {
             <EditorArea
               content={editorContent}
               textFormat={textFormat}
-              onChange={setEditorContent}
+              onChange={(val) => {
+                setEditorContent(val);
+                setHasUnsavedChanges(true);
+              }}
               onEditorReady={setTiptapEditor}
               onDrop={handleDropGranule}
               editorRef={editorRef}
