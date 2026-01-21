@@ -220,6 +220,7 @@ const XCCM2Editor = () => {
   // NOUVEAU: Création récursive (Poupées Russes)
   const handleDropGranule = async (granule: any) => {
     if (!projectName) return;
+    console.log("Dropping granule:", granule);
 
     const toastId = toast.loading(`Importation de "${granule.content}"...`);
     setPendingGranule({ type: granule.type, content: granule.content });
@@ -245,8 +246,17 @@ const XCCM2Editor = () => {
           }
         }
       } else if (granule.type === 'chapter') {
-        const parentPart = currentContext?.partTitle || structure[structure.length - 1]?.part_title;
-        if (!parentPart) throw new Error("Aucune partie pour accueillir ce chapitre");
+        let parentPart = currentContext?.partTitle || structure[structure.length - 1]?.part_title;
+
+        // Safety: if no part exists, create one
+        if (!parentPart) {
+          const autoPart = await structureService.createPart(projectName, {
+            part_title: "Partie 1",
+            part_number: 1
+          });
+          parentPart = autoPart.part_title;
+        }
+
         const newChapter = await structureService.createChapter(projectName, parentPart, {
           chapter_title: granule.content,
           chapter_number: 1
@@ -254,9 +264,19 @@ const XCCM2Editor = () => {
         setPulsingId(newChapter.chapter_id);
         await recurseChapter(parentPart, newChapter.chapter_title, granule);
       } else if (granule.type === 'paragraph') {
-        const parentPart = currentContext?.partTitle || structure[structure.length - 1]?.part_title;
-        const parentChapter = currentContext?.chapterTitle || structure[structure.length - 1]?.chapters?.[0]?.chapter_title;
-        if (!parentPart || !parentChapter) throw new Error("Aucun chapitre pour accueillir ce paragraphe");
+        let parentPart = currentContext?.partTitle || structure[structure.length - 1]?.part_title;
+        let parentChapter = currentContext?.chapterTitle || structure[structure.length - 1]?.chapters?.[0]?.chapter_title;
+
+        // Safety: if no part/chapter exists, create them
+        if (!parentPart) {
+          const autoPart = await structureService.createPart(projectName, { part_title: "Partie 1", part_number: 1 });
+          parentPart = autoPart.part_title;
+        }
+        if (!parentChapter) {
+          const autoChap = await structureService.createChapter(projectName, parentPart, { chapter_title: "Chapitre 1", chapter_number: 1 });
+          parentChapter = autoChap.chapter_title;
+        }
+
         const newPara = await structureService.createParagraph(projectName, parentPart, parentChapter, {
           para_name: granule.content,
           para_number: 1
@@ -264,10 +284,23 @@ const XCCM2Editor = () => {
         setPulsingId(newPara.para_id);
         await recurseParagraph(parentPart, parentChapter, newPara.para_name, granule);
       } else if (granule.type === 'notion') {
-        const parentPart = currentContext?.partTitle || structure[structure.length - 1]?.part_title;
-        const parentChapter = currentContext?.chapterTitle || structure[structure.length - 1]?.chapters?.[0]?.chapter_title;
-        const parentPara = currentContext?.paraName || structure[structure.length - 1]?.chapters?.[0]?.paragraphs?.[0]?.para_name;
-        if (!parentPart || !parentChapter || !parentPara) throw new Error("Aucun paragraphe pour accueillir cette notion");
+        let parentPart = currentContext?.partTitle || structure[structure.length - 1]?.part_title;
+        let parentChapter = currentContext?.chapterTitle || structure[structure.length - 1]?.chapters?.[0]?.chapter_title;
+        let parentPara = currentContext?.paraName || structure[structure.length - 1]?.chapters?.[0]?.paragraphs?.[0]?.para_name;
+
+        if (!parentPart) {
+          const autoPart = await structureService.createPart(projectName, { part_title: "Partie 1", part_number: 1 });
+          parentPart = autoPart.part_title;
+        }
+        if (!parentChapter) {
+          const autoChap = await structureService.createChapter(projectName, parentPart, { chapter_title: "Chapitre 1", chapter_number: 1 });
+          parentChapter = autoChap.chapter_title;
+        }
+        if (!parentPara) {
+          const autoPara = await structureService.createParagraph(projectName, parentPart, parentChapter, { para_name: "Paragraphe 1", para_number: 1 });
+          parentPara = autoPara.para_name;
+        }
+
         const newNotion = await structureService.createNotion(projectName, parentPart, parentChapter, parentPara, {
           notion_name: granule.content,
           notion_content: granule.previewContent || '',
