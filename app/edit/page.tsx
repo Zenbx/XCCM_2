@@ -467,7 +467,8 @@ const XCCM2Editor = () => {
   }, [currentContext]);
 
   const {
-    connectedUsers
+    connectedUsers,
+    localClientId
   } = useSynapseSync({
     documentId: synapseDocId,
     userId: authUser?.user_id || 'anonymous',
@@ -488,6 +489,8 @@ const XCCM2Editor = () => {
         if (currentContext.part) currentContext.part.part_intro = editorContent;
       }
       setHasUnsavedChanges(false);
+      // Synchronisation locale de la structure pour éviter le contenu obsolète au retour
+      setStructure([...structure]);
       if (!isAuto) toast.success('Sauvegardé !');
     } catch (err: any) {
       toast.error(err.message || "Erreur de sauvegarde");
@@ -507,9 +510,14 @@ const XCCM2Editor = () => {
 
   // Real-time Structure sync
   const handleStructureChange = useCallback((event: string) => {
-    if (event === 'NOTION_UPDATED' || event === 'STRUCTURE_CHANGED') {
+    if (event === 'NOTION_UPDATED' || event === 'STRUCTURE_CHANGED' || event === 'COMMENT_ADDED') {
       loadProject(true);
-      toast.success('📡 Mise à jour collaborative');
+      if (event === 'COMMENT_ADDED') {
+        // Optionnel: On pourrait juste recharger les commentaires, mais structure recharger c'est plus safe
+        toast.success('💬 Nouveau commentaire');
+      } else {
+        toast.success('📡 Mise à jour collaborative');
+      }
     }
   }, [loadProject]);
 
@@ -595,9 +603,9 @@ const XCCM2Editor = () => {
               projectName={projectName || ''}
               structure={structure}
               width={sidebarWidth}
-              onSelectNotion={(ctx) => {
-                const update = () => {
-                  if (hasUnsavedChanges) handleSave(true);
+              onSelectNotion={async (ctx) => {
+                const update = async () => {
+                  if (hasUnsavedChanges) await handleSave(true);
                   setCurrentContext({
                     type: 'notion',
                     projectName: projectData?.pr_name || '',
@@ -612,11 +620,11 @@ const XCCM2Editor = () => {
                 };
                 // @ts-ignore
                 if (document.startViewTransition) document.startViewTransition(update);
-                else update();
+                else await update();
               }}
-              onSelectPart={(ctx) => {
-                const update = () => {
-                  if (hasUnsavedChanges) handleSave(true);
+              onSelectPart={async (ctx) => {
+                const update = async () => {
+                  if (hasUnsavedChanges) await handleSave(true);
                   setCurrentContext({
                     type: 'part',
                     projectName: projectData?.pr_name || '',
@@ -628,11 +636,11 @@ const XCCM2Editor = () => {
                 };
                 // @ts-ignore
                 if (document.startViewTransition) document.startViewTransition(update);
-                else update();
+                else await update();
               }}
-              onSelectChapter={(pName, cTitle, cId) => {
-                const update = () => {
-                  if (hasUnsavedChanges) handleSave(true);
+              onSelectChapter={async (pName, cTitle, cId) => {
+                const update = async () => {
+                  if (hasUnsavedChanges) await handleSave(true);
                   setCurrentContext({
                     type: 'chapter',
                     projectName: projectData?.pr_name || '',
@@ -645,11 +653,11 @@ const XCCM2Editor = () => {
                 };
                 // @ts-ignore
                 if (document.startViewTransition) document.startViewTransition(update);
-                else update();
+                else await update();
               }}
-              onSelectParagraph={(pName, cTitle, paName, paId) => {
-                const update = () => {
-                  if (hasUnsavedChanges) handleSave(true);
+              onSelectParagraph={async (pName, cTitle, paName, paId) => {
+                const update = async () => {
+                  if (hasUnsavedChanges) await handleSave(true);
                   setCurrentContext({
                     type: 'paragraph',
                     projectName: projectData?.pr_name || '',
@@ -663,7 +671,7 @@ const XCCM2Editor = () => {
                 };
                 // @ts-ignore
                 if (document.startViewTransition) document.startViewTransition(update);
-                else update();
+                else await update();
               }}
               onPublishToMarketplace={handlePublishToMarketplace}
               onCreatePart={handleCreatePart}
@@ -712,6 +720,7 @@ const XCCM2Editor = () => {
             onPreview={() => router.push(`/preview?projectName=${encodeURIComponent(projectData?.pr_name || '')}`)}
             isSaving={isSaving}
             connectedUsers={connectedUsers}
+            localClientId={localClientId}
             authUser={authUser}
           />
         )}

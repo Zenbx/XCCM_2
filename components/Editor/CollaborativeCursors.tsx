@@ -151,16 +151,17 @@ const CursorOverlay: React.FC<CursorOverlayProps> = ({ user, containerRef, edito
  */
 interface PresenceIndicatorProps {
     users: UserPresence[];
-    currentUserId: string;
+    localClientId: number | null;
     maxVisible?: number;
 }
 
 export const PresenceIndicator: React.FC<PresenceIndicatorProps> = ({
     users,
-    currentUserId,
+    localClientId,
     maxVisible = 5,
 }) => {
-    const otherUsers = users.filter(user => user.id !== currentUserId);
+    // Filtrer pour obtenir les autres sessions (même si c'est le même utilisateur mais onglet différent)
+    const otherUsers = users.filter(user => user.clientId !== localClientId);
     const visibleUsers = otherUsers.slice(0, maxVisible);
     const remainingCount = otherUsers.length - maxVisible;
 
@@ -168,7 +169,7 @@ export const PresenceIndicator: React.FC<PresenceIndicatorProps> = ({
         return (
             <div className="flex items-center gap-2 text-sm text-gray-400">
                 <div className="w-2 h-2 rounded-full bg-gray-300" />
-                <span>Vous êtes seul</span>
+                <span>Seul sur ce document</span>
             </div>
         );
     }
