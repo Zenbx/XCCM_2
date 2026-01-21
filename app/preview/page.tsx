@@ -671,7 +671,7 @@ const PreviewPage = () => {
                             if (notion.notion_name) {
                                 bodyContent += `<h5>${notion.notion_name}</h5>`;
                             }
-                            bodyContent += `<div class="notion-content">${renderBlockContent(notion.notion_content)}</div>`;
+                            bodyContent += `<div class="notion-content">${renderBlockContent(notion.notion_content || '')}</div>`;
                         });
 
                         bodyContent += `</div>`;

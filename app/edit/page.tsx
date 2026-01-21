@@ -273,21 +273,32 @@ const XCCM2Editor = () => {
 
       console.log("[Drop] final resolved Context:", { dropPartTitle, dropChapterTitle, dropParaName, targetType, targetId });
 
+      // --- DÉTECTION DE CONTENU SÉRIALISÉ (MARKETPLACE) ---
+      let effectiveData = granule;
+      if (granule.previewContent && (granule.previewContent.startsWith('{') || granule.previewContent.startsWith('['))) {
+        try {
+          effectiveData = JSON.parse(granule.previewContent);
+          console.log("[Drop] Parsed serialized content:", effectiveData);
+        } catch (e) {
+          console.warn("[Drop] Failed to parse previewContent as JSON, using raw granule");
+        }
+      }
+
       if (granule.type === 'part') {
         const nextPartNum = structure.length + 1;
-        console.log("[Drop] Creating Part:", granule.content);
         const newPart = await structureService.createPart(projectName, {
-          part_title: granule.content,
+          part_title: effectiveData.part_title || effectiveData.content,
           part_number: nextPartNum,
-          part_intro: granule.introduction || ''
+          part_intro: effectiveData.part_intro || effectiveData.introduction || ''
         });
         setPulsingId(newPart.part_id);
 
-        if (granule.children) {
-          for (let i = 0; i < granule.children.length; i++) {
-            const chap = granule.children[i];
+        const chapters = effectiveData.chapters || effectiveData.children;
+        if (chapters) {
+          for (let i = 0; i < chapters.length; i++) {
+            const chap = chapters[i];
             const newChapter = await structureService.createChapter(projectName, newPart.part_title, {
-              chapter_title: chap.content,
+              chapter_title: chap.chapter_title || chap.content,
               chapter_number: i + 1
             });
             await recurseChapter(newPart.part_title, newChapter.chapter_title, chap);
@@ -295,33 +306,29 @@ const XCCM2Editor = () => {
         }
       } else if (granule.type === 'chapter') {
         const parentPart = dropPartTitle || currentContext?.partTitle || structure[structure.length - 1]?.part_title || (structure.length > 0 ? structure[0].part_title : "Partie 1");
-
         const partObj = structure.find(p => p.part_title.toLowerCase().trim() === parentPart.toLowerCase().trim());
         const nextChapNum = (partObj?.chapters?.length || 0) + 1;
 
         const newChapter = await structureService.createChapter(projectName, parentPart, {
-          chapter_title: granule.content,
+          chapter_title: effectiveData.chapter_title || effectiveData.content,
           chapter_number: nextChapNum
         });
         setPulsingId(newChapter.chapter_id);
-        await recurseChapter(parentPart, newChapter.chapter_title, granule);
+        await recurseChapter(parentPart, newChapter.chapter_title, effectiveData);
       } else if (granule.type === 'paragraph') {
         const parentPart = dropPartTitle || currentContext?.partTitle || structure[structure.length - 1]?.part_title || (structure.length > 0 ? structure[0].part_title : "Partie 1");
-
         const partObj = structure.find(p => p.part_title.toLowerCase().trim() === parentPart.toLowerCase().trim());
         const parentChapter = dropChapterTitle || currentContext?.chapterTitle || partObj?.chapters?.[0]?.chapter_title || "Chapitre 1";
-
         const chapObj = partObj?.chapters?.find(c => c.chapter_title.toLowerCase().trim() === parentChapter.toLowerCase().trim());
         const nextParaNum = (chapObj?.paragraphs?.length || 0) + 1;
 
         const newPara = await structureService.createParagraph(projectName, parentPart, parentChapter, {
-          para_name: granule.content,
+          para_name: effectiveData.para_name || effectiveData.content,
           para_number: nextParaNum
         });
         setPulsingId(newPara.para_id);
-        await recurseParagraph(parentPart, parentChapter, newPara.para_name, granule);
+        await recurseParagraph(parentPart, parentChapter, newPara.para_name, effectiveData);
       } else if (granule.type === 'notion') {
-        // Résolution robuste des parents par matching dans structure pour éviter les erreurs 404/422
         const rawPart = dropPartTitle || currentContext?.partTitle || (structure.length > 0 ? structure[0].part_title : "Partie 1");
         const partObj = structure.find(p => p.part_title.toLowerCase().trim() === rawPart.toLowerCase().trim()) || structure[0];
         const parentPart = partObj?.part_title || rawPart;
@@ -336,22 +343,20 @@ const XCCM2Editor = () => {
 
         const nextNotionNum = (paraObj?.notions?.length || 0) + 1;
 
-        console.log("[Drop] Creating Notion with context:", { parentPart, parentChapter, parentPara, nextNotionNum });
-
-        const newNotion = await structureService.createNotion(projectName, parentPart, parentChapter, parentPara, {
-          notion_name: granule.content || "Nouvelle Notion",
-          notion_content: granule.notion_content || granule.content || '',
+        await structureService.createNotion(projectName, parentPart, parentChapter, parentPara, {
+          notion_name: effectiveData.notion_name || effectiveData.content || "Nouvelle Notion",
+          notion_content: effectiveData.notion_content || effectiveData.previewContent || '',
           notion_number: nextNotionNum
         });
-        setPulsingId(newNotion.notion_id);
       }
 
       async function recurseChapter(pTitle: string, cTitle: string, chapData: any) {
-        if (chapData.children) {
-          for (let j = 0; j < chapData.children.length; j++) {
-            const para = chapData.children[j];
+        const paragraphs = chapData.paragraphs || chapData.children;
+        if (paragraphs) {
+          for (let j = 0; j < paragraphs.length; j++) {
+            const para = paragraphs[j];
             const newPara = await structureService.createParagraph(projectName!, pTitle, cTitle, {
-              para_name: para.content,
+              para_name: para.para_name || para.content,
               para_number: j + 1
             });
             await recurseParagraph(pTitle, cTitle, newPara.para_name, para);
@@ -360,12 +365,13 @@ const XCCM2Editor = () => {
       }
 
       async function recurseParagraph(pTitle: string, cTitle: string, paName: string, paraData: any) {
-        if (paraData.children) {
-          for (let k = 0; k < paraData.children.length; k++) {
-            const notion = paraData.children[k];
+        const notions = paraData.notions || paraData.children;
+        if (notions) {
+          for (let k = 0; k < notions.length; k++) {
+            const notion = notions[k];
             await structureService.createNotion(projectName!, pTitle, cTitle, paName, {
-              notion_name: notion.content,
-              notion_content: notion.previewContent || '',
+              notion_name: notion.notion_name || notion.content,
+              notion_content: notion.notion_content || notion.previewContent || '',
               notion_number: k + 1
             });
           }
@@ -456,14 +462,23 @@ const XCCM2Editor = () => {
   };
 
   const handlePublishToMarketplace = (type: string, id: string, title: string) => {
-    // Récupérer le contenu si c'est une notion
     let content = '';
+
     if (type === 'notion') {
       const notion = structure.flatMap(p => p.chapters || [])
         .flatMap(c => c.paragraphs || [])
         .flatMap(pa => pa.notions || [])
         .find(n => n.notion_id === id);
       content = notion?.notion_content || '';
+    } else if (type === 'part') {
+      const part = structure.find(p => p.part_id === id);
+      if (part) content = JSON.stringify(part);
+    } else if (type === 'chapter') {
+      const chapter = structure.flatMap(p => p.chapters || []).find(c => c.chapter_id === id);
+      if (chapter) content = JSON.stringify(chapter);
+    } else if (type === 'paragraph') {
+      const para = structure.flatMap(p => p.chapters || []).flatMap(c => c.paragraphs || []).find(p => p.para_id === id);
+      if (para) content = JSON.stringify(para);
     }
 
     setMarketplaceGranule({ type, title, content });

@@ -36,7 +36,7 @@ export default function Header() {
     { label: t.header.links.about, href: '/about', icon: <FaInfoCircle /> },
     { label: t.header.links.edit, href: '/edit-home', authOnly: true, icon: <FaEdit /> },
     { label: t.header.links.library, href: '/library', icon: <FaBook /> },
-    { label: t.header.links.marketplace, href: '/marketplace', icon: <FaStore /> },
+    { label: t.header.links.marketplace, href: '/marketplace', authOnly: true, icon: <FaStore /> },
     { label: t.header.links.help, href: '/help', icon: <FaQuestionCircle /> },
   ];
 
