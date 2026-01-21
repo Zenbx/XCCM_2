@@ -1,9 +1,10 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import {
-  Search, Filter, BookOpen, Download, Eye, Calendar, User, Tag, ChevronLeft, ChevronRight, Star, Clock, Bookmark, BookmarkCheck, TrendingUp, Grid3x3, List, Globe, Users, Loader2, AlertCircle, FileText, X
+  Search, Filter, BookOpen, Download, Eye, Calendar, User, Tag, ChevronLeft, ChevronRight, Star, Clock, Bookmark, BookmarkCheck, TrendingUp, Grid3x3, List, Globe, Users, Loader2, AlertCircle, FileText, X, Heart
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@/context/AuthContext';
 import Link from 'next/link';
 import { documentService } from '@/services/documentService';
 import { ArrowRight } from 'lucide-react';
@@ -24,6 +25,7 @@ const LibraryPage = () => {
   const [levelFilter, setLevelFilter] = useState('all');
   const [bookmarkedCourses, setBookmarkedCourses] = useState<string[]>([]);
   const router = useRouter();
+  const { isAuthenticated } = useAuth();
 
   // States pour les données dynamiques
   const [courses, setCourses] = useState<any[]>([]);
@@ -116,6 +118,37 @@ const LibraryPage = () => {
       toast.error('Erreur lors du téléchargement: ' + (err instanceof Error ? err.message : 'Erreur inconnue'));
     } finally {
       setDownloadingId(null);
+    }
+  };
+
+  const handleToggleLike = async (docId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!isAuthenticated) {
+      toast.error('Veuillez vous connecter pour liker un cours');
+      router.push('/login');
+      return;
+    }
+
+    try {
+      // Optimistic UI update
+      setCourses(prev => prev.map(c => {
+        if (c.doc_id === docId) {
+          const newIsLiked = !c.isLiked;
+          return {
+            ...c,
+            isLiked: newIsLiked,
+            likes: newIsLiked ? (c.likes || 0) + 1 : Math.max(0, (c.likes || 1) - 1)
+          };
+        }
+        return c;
+      }));
+
+      await documentService.toggleLike(docId);
+    } catch (err) {
+      // Rollback on error
+      console.error(err);
+      toast.error('Erreur lors du like');
+      // Re-fetch or manually rollback
     }
   };
 
@@ -302,7 +335,7 @@ const LibraryPage = () => {
                             <Eye className="w-6 h-6 text-white" />
                           </button>
                           <button
-                            onClick={() => handleDownloadCourse(course.doc_id)}
+                            onClick={(e) => { e.stopPropagation(); handleDownloadCourse(course.doc_id); }}
                             disabled={downloadingId === course.doc_id}
                             className="p-3 bg-white/20 backdrop-blur-sm rounded-full hover:bg-white/30 transition-all disabled:opacity-50"
                             title="Télécharger"
@@ -313,6 +346,13 @@ const LibraryPage = () => {
                               <Download className="w-6 h-6 text-white" />
                             )}
                           </button>
+                          <button
+                            onClick={(e) => handleToggleLike(course.doc_id, e)}
+                            className={`p-3 backdrop-blur-sm rounded-full transition-all ${course.isLiked ? 'bg-rose-500/80 text-white' : 'bg-white/20 text-white hover:bg-white/30'}`}
+                            title={course.isLiked ? "Je n'aime plus" : "J'aime"}
+                          >
+                            <Heart className={`w-6 h-6 ${course.isLiked ? 'fill-current' : ''}`} />
+                          </button>
                         </div>
                         <div className="absolute top-3 left-3">
                           <span className={`px-3 py-1 rounded-full text-xs font-bold ${getLevelColor(course.level)}`}>
@@ -320,7 +360,7 @@ const LibraryPage = () => {
                           </span>
                         </div>
                         <button
-                          onClick={() => toggleBookmark(course.doc_id)}
+                          onClick={(e) => { e.stopPropagation(); toggleBookmark(course.doc_id); }}
                           className="absolute top-3 right-3 p-2 bg-white/90 rounded-full hover:bg-white transition-all"
                         >
                           {bookmarkedCourses.includes(course.doc_id) ? (
@@ -354,6 +394,10 @@ const LibraryPage = () => {
                           <span className="flex items-center gap-1">
                             <Eye className="w-3 h-3" />
                             {course.consult || 0}
+                          </span>
+                          <span className={`flex items-center gap-1 ${course.isLiked ? 'text-rose-500 font-bold' : ''}`}>
+                            <Heart className={`w-3 h-3 ${course.isLiked ? 'fill-current' : ''}`} />
+                            {course.likes || 0}
                           </span>
                         </div>
 
@@ -418,16 +462,26 @@ const LibraryPage = () => {
                               Lire
                             </button>
                             <button
-                              onClick={() => handleDownloadCourse(course.doc_id)}
+                              onClick={(e) => { e.stopPropagation(); handleDownloadCourse(course.doc_id); }}
                               disabled={downloadingId === course.doc_id}
                               className="p-2 border border-gray-200 rounded-lg hover:bg-gray-50 transition-all disabled:opacity-50"
                               title="Télécharger"
                             >
                               {downloadingId === course.doc_id ? (
-                                <Loader2 className="w-5 h-5 animate-spin" />
+                                <Loader2 className="w-4 h-4 animate-spin" />
                               ) : (
                                 <Download className="w-5 h-5" />
                               )}
+                            </button>
+                            <button
+                              onClick={(e) => handleToggleLike(course.doc_id, e)}
+                              className={`p-2 border rounded-lg transition-all ${course.isLiked
+                                ? 'bg-rose-50 border-rose-200 text-rose-500'
+                                : 'border-gray-200 text-gray-400 hover:bg-gray-50'
+                                }`}
+                              title={course.isLiked ? "Je n'aime plus" : "J'aime"}
+                            >
+                              <Heart className={`w-5 h-5 ${course.isLiked ? 'fill-current' : ''}`} />
                             </button>
                           </div>
                         </div>
@@ -448,6 +502,10 @@ const LibraryPage = () => {
                             <Download className="w-4 h-4" />
                             {course.downloaded || 0} téléchargements
                           </span>
+                          <span className={`flex items-center gap-1 ${course.isLiked ? 'text-rose-500 font-medium' : ''}`}>
+                            <Heart className={`w-4 h-4 ${course.isLiked ? 'fill-current' : ''}`} />
+                            {course.likes || 0} likes
+                          </span>
                         </div>
                       </div>
                     </div>
@@ -461,28 +519,27 @@ const LibraryPage = () => {
 
       {/* Top Creators Section */}
       <section className="py-12 px-6 bg-gray-50 border-t border-gray-200">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex items-center justify-between mb-8">
-            <h2 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
-              <Star className="w-8 h-8 text-[#99334C]" />
-              Top Créateurs
-            </h2>
-            <Link
-              href="/creators"
-              className="text-[#99334C] font-bold hover:underline flex items-center gap-2"
-            >
-              Voir tout <ArrowRight className="w-4 h-4" />
-            </Link>
-            <div className="text-sm text-gray-500">
-              Les auteurs les plus actifs de la communauté
-            </div>
+        <div className="max-w-7xl mx-auto">          <div className="flex items-center justify-between mb-8">
+          <h2 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
+            <Star className="w-8 h-8 text-[#99334C]" />
+            Top Créateurs
+          </h2>
+          <Link
+            href="/creators"
+            className="text-[#99334C] font-bold hover:underline flex items-center gap-2"
+          >
+            Voir tout <ArrowRight className="w-4 h-4" />
+          </Link>
+          <div className="text-sm text-gray-500">
+            Les auteurs les plus actifs de la communauté
           </div>
+        </div>
 
           <TopCreatorsList />
         </div>
-      </section>
+      </section >
 
-    </div>
+    </div >
   );
 };
 
