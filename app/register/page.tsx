@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, ArrowRight, Eye, EyeOff, Check, User, Mail, Briefcase, Building2, Loader2, Camera } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import toast from 'react-hot-toast';
 
@@ -14,8 +14,25 @@ const RegisterPage = () => {
   const [mounted, setMounted] = useState(false);
 
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { register } = useAuth();
-  // ...
+  const redirectTo = searchParams.get('redirect');
+
+  useEffect(() => {
+    setMounted(true);
+    const error = searchParams.get('error');
+    if (error) {
+      if (error === 'google' || error === 'microsoft' || error === 'OAuthCallback') {
+        toast.error(`Erreur d'authentification ${error}. Veuillez réessayer.`);
+      } else if (error === 'SessionMissing') {
+        toast.error("La session d'authentification a expiré.");
+      } else if (error === 'BridgeError') {
+        toast.error("Un problème technique est survenu lors de la connexion.");
+      } else {
+        toast.error("Une erreur est survenue lors de l'inscription.");
+      }
+    }
+  }, [searchParams]);
   const handleSubmit = async () => {
     if (!validateStep2()) return;
 
@@ -133,13 +150,13 @@ const RegisterPage = () => {
 
   const handleGoogleSignup = () => {
     const apiBase = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001').trim();
-    const callbackUrl = `${apiBase}/api/auth/bridge`;
+    const callbackUrl = `${apiBase}/api/auth/bridge?mode=register`;
     window.location.href = `${apiBase}/api/auth/signin/google?callbackUrl=${encodeURIComponent(callbackUrl)}`;
   };
 
   const handleMicrosoftSignup = () => {
     const apiBase = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001').trim();
-    const callbackUrl = `${apiBase}/api/auth/bridge`;
+    const callbackUrl = `${apiBase}/api/auth/bridge?mode=register`;
     window.location.href = `${apiBase}/api/auth/signin/azure-ad?callbackUrl=${encodeURIComponent(callbackUrl)}`;
   };
 
