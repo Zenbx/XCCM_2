@@ -261,10 +261,21 @@ const XCCM2Editor = () => {
         }
       }
 
-      console.log("[Drop] Resolved Parents:", { dropPartTitle, dropChapterTitle, dropParaName });
+      // Fallback si on drop sur le conteneur ou si la résolution a échoué
+      if (!dropPartTitle && structure.length > 0) {
+        console.log("[Drop] Target resolution failed, falling back to first part/chapter/para");
+        dropPartTitle = currentContext?.partTitle || structure[0].part_title;
+        const partObj = structure.find(p => p.part_title === dropPartTitle) || structure[0];
+        dropChapterTitle = currentContext?.chapterTitle || partObj.chapters?.[0]?.chapter_title || '';
+        const chapObj = partObj.chapters?.find(c => c.chapter_title === dropChapterTitle) || partObj.chapters?.[0];
+        dropParaName = currentContext?.paraName || chapObj?.paragraphs?.[0]?.para_name || '';
+      }
+
+      console.log("[Drop] final resolved Context:", { dropPartTitle, dropChapterTitle, dropParaName, targetType, targetId });
 
       if (granule.type === 'part') {
         const nextPartNum = structure.length + 1;
+        console.log("[Drop] Creating Part:", granule.content);
         const newPart = await structureService.createPart(projectName, {
           part_title: granule.content,
           part_number: nextPartNum,
@@ -310,22 +321,26 @@ const XCCM2Editor = () => {
         setPulsingId(newPara.para_id);
         await recurseParagraph(parentPart, parentChapter, newPara.para_name, granule);
       } else if (granule.type === 'notion') {
-        const parentPart = dropPartTitle || currentContext?.partTitle || structure[structure.length - 1]?.part_title || (structure.length > 0 ? structure[0].part_title : "Partie 1");
+        // Résolution robuste des parents par matching dans structure pour éviter les erreurs 404/422
+        const rawPart = dropPartTitle || currentContext?.partTitle || (structure.length > 0 ? structure[0].part_title : "Partie 1");
+        const partObj = structure.find(p => p.part_title.toLowerCase().trim() === rawPart.toLowerCase().trim()) || structure[0];
+        const parentPart = partObj?.part_title || rawPart;
 
-        const partObj = structure.find(p => p.part_title.toLowerCase().trim() === parentPart.toLowerCase().trim());
-        const parentChapter = dropChapterTitle || currentContext?.chapterTitle || partObj?.chapters?.[0]?.chapter_title || "Chapitre 1";
+        const rawChap = dropChapterTitle || currentContext?.chapterTitle || (partObj?.chapters?.[0]?.chapter_title || "Chapitre 1");
+        const chapObj = partObj?.chapters?.find(c => c.chapter_title.toLowerCase().trim() === rawChap.toLowerCase().trim()) || partObj?.chapters?.[0];
+        const parentChapter = chapObj?.chapter_title || rawChap;
 
-        const chapObj = partObj?.chapters?.find(c => c.chapter_title.toLowerCase().trim() === parentChapter.toLowerCase().trim());
-        const parentPara = dropParaName || currentContext?.paraName || chapObj?.paragraphs?.[0]?.para_name || "Paragraphe 1";
+        const rawPara = dropParaName || currentContext?.paraName || (chapObj?.paragraphs?.[0]?.para_name || "Paragraphe 1");
+        const paraObj = chapObj?.paragraphs?.find(p => p.para_name.toLowerCase().trim() === rawPara.toLowerCase().trim()) || chapObj?.paragraphs?.[0];
+        const parentPara = paraObj?.para_name || rawPara;
 
-        const paraObj = chapObj?.paragraphs?.find(pa => pa.para_name.toLowerCase().trim() === parentPara.toLowerCase().trim());
         const nextNotionNum = (paraObj?.notions?.length || 0) + 1;
 
-        console.log("[Drop Notion] Sending request with:", { parentPart, parentChapter, parentPara, name: granule.content });
+        console.log("[Drop] Creating Notion with context:", { parentPart, parentChapter, parentPara, nextNotionNum });
 
         const newNotion = await structureService.createNotion(projectName, parentPart, parentChapter, parentPara, {
-          notion_name: granule.content,
-          notion_content: granule.previewContent || granule.content || '',
+          notion_name: granule.content || "Nouvelle Notion",
+          notion_content: granule.notion_content || granule.content || '',
           notion_number: nextNotionNum
         });
         setPulsingId(newNotion.notion_id);
