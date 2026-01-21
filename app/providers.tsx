@@ -20,6 +20,7 @@ const Providers = ({ children }: { children: ReactNode }) => {
             position="top-right"
             containerStyle={{
               zIndex: 99999,
+              top: 80,
             }}
             toastOptions={{
               duration: 4000,

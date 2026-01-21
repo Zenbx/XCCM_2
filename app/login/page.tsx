@@ -23,7 +23,13 @@ const LoginPage = () => {
 
   useEffect(() => {
     setMounted(true);
-  }, []);
+    const error = searchParams.get('error');
+    if (error) {
+      if (error === 'SessionMissing') toast.error("La session d'authentification a expiré.");
+      else if (error === 'UserNotFound') toast.error("Aucun compte trouvé avec cet e-mail.");
+      else toast.error("Une erreur est survenue lors de l'authentification.");
+    }
+  }, [searchParams]);
 
   const validate = () => {
     const newErrors: { email?: string; password?: string } = {};

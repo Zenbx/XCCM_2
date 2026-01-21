@@ -41,6 +41,7 @@ const AuthCallbackContent = () => {
                 }
 
                 const result = await response.json();
+                console.log("Session token result:", result);
 
                 if (result.success && result.data.token) {
                     setCookie('auth_token', result.data.token);
@@ -50,11 +51,12 @@ const AuthCallbackContent = () => {
                     toast.success('Connexion réussie !');
                     router.push('/edit-home');
                 } else {
-                    throw new Error("Token manquant dans la réponse");
+                    console.error("Token result unexpected:", result);
+                    throw new Error(result.message || "Token manquant dans la réponse du serveur");
                 }
             } catch (err: any) {
-                console.error("Erreur callback SSO:", err);
-                setError(err.message || "Une erreur est survenue lors de la connexion SSO");
+                console.error("Erreur callback SSO détaillée:", err);
+                setError(err.message || "Une erreur est survenue lors de la connexion SSO. Vérifiez que votre compte est bien créé.");
                 toast.error("Échec de la connexion SSO");
                 setTimeout(() => { router.push('/login'); }, 3000);
             }

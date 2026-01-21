@@ -51,7 +51,7 @@ const CreationModals: React.FC<CreationModalsProps> = ({
         <>
             {/* MODALE PARTIE */}
             {showPartModal && (
-                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in">
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[9999] p-4 animate-in fade-in">
                     <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl">
                         <div className="flex justify-between items-center mb-4">
                             <h3 className="text-2xl font-bold text-gray-900">Nouvelle Partie</h3>
@@ -103,7 +103,7 @@ const CreationModals: React.FC<CreationModalsProps> = ({
 
             {/* MODALE CHAPITRE */}
             {showChapterModal && (
-                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in">
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[9999] p-4 animate-in fade-in">
                     <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl">
                         <div className="flex justify-between items-center mb-4">
                             <h3 className="text-2xl font-bold text-gray-900">Nouveau Chapitre</h3>
@@ -156,7 +156,7 @@ const CreationModals: React.FC<CreationModalsProps> = ({
 
             {/* MODALE PARAGRAPHE */}
             {showParagraphModal && (
-                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[9999] p-4">
                     <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl">
                         <div className="flex justify-between items-center mb-4">
                             <h3 className="text-2xl font-bold text-gray-900">Nouveau Paragraphe</h3>
@@ -209,7 +209,7 @@ const CreationModals: React.FC<CreationModalsProps> = ({
 
             {/* MODALE NOTION */}
             {showNotionModal && (
-                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in">
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[9999] p-4 animate-in fade-in">
                     <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl">
                         <div className="flex justify-between items-center mb-4">
                             <h3 className="text-2xl font-bold text-gray-900">Nouvelle Notion</h3>
