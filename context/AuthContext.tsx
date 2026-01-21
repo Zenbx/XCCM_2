@@ -32,7 +32,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
    * - Role 'admin' explicit
    * - OU pas de rôle défini (Legacy Support pour les premiers inscrits)
    */
-  const isAdmin = user?.role === 'admin' || !user?.role;
+  const isAdmin = isAuthenticated && (user?.role === 'admin' || !user?.role);
 
   useEffect(() => {
     checkAuth();
@@ -98,7 +98,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Protection de route simplifiée (le middleware est le principal garde, mais la protection client-side est aussi active ici)
   // AJOUTER ICI LES ROUTES PUBLIQUES SUPPLÉMENTAIRES
   useEffect(() => {
-    const publicRoutes = ['/', '/login', '/register', '/library', '/help', '/about', '/book-reader'];
+    const publicRoutes = ['/', '/login', '/register', '/library', '/help', '/about', '/book-reader', '/auth'];
     const isPublicRoute = publicRoutes.some(route => pathname === route || pathname.startsWith(route + '/'));
 
     if (!isLoading && !isAuthenticated && !isPublicRoute) {
