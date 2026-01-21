@@ -217,24 +217,48 @@ const XCCM2Editor = () => {
     e.dataTransfer.effectAllowed = 'copy';
   };
 
-  // NOUVEAU: Création récursive (Poupées Russes)
-  const handleDropGranule = async (granule: any) => {
+  // NOUVEAU: Création récursive (Poupées Russes) avec ciblage amélioré
+  const handleDropGranule = async (granule: any, targetType?: string, targetId?: string, targetParentId?: string | null) => {
     if (!projectName) return;
-    console.log("Dropping granule:", granule);
+    console.log("Dropping granule with target:", { granule, targetType, targetId, targetParentId });
 
     const toastId = toast.loading(`Importation de "${granule.content}"...`);
     setPendingGranule({ type: granule.type, content: granule.content });
 
     try {
+      // Résolution du contexte de drop
+      let dropPartTitle = '';
+      let dropChapterTitle = '';
+      let dropParaName = '';
+
+      if (targetType === 'part') {
+        dropPartTitle = structure.find(p => p.part_id === targetId)?.part_title || '';
+      } else if (targetType === 'chapter') {
+        const part = structure.find(p => p.part_id === targetParentId);
+        dropPartTitle = part?.part_title || '';
+        dropChapterTitle = part?.chapters?.find(c => c.chapter_id === targetId)?.chapter_title || '';
+      } else if (targetType === 'paragraph') {
+        // Pour les paragraphes, le targetParentId est le chapter_id
+        for (const p of structure) {
+          const c = p.chapters?.find(ch => ch.chapter_id === targetParentId);
+          if (c) {
+            dropPartTitle = p.part_title;
+            dropChapterTitle = c.chapter_title;
+            dropParaName = c.paragraphs?.find(pa => pa.para_id === targetId)?.para_name || '';
+            break;
+          }
+        }
+      }
+
       if (granule.type === 'part') {
+        const nextPartNum = structure.length + 1;
         const newPart = await structureService.createPart(projectName, {
           part_title: granule.content,
-          part_number: structure.length + 1,
+          part_number: nextPartNum,
           part_intro: granule.introduction || ''
         });
         setPulsingId(newPart.part_id);
 
-        // Récursivité: Chapitres
         if (granule.children) {
           for (let i = 0; i < granule.children.length; i++) {
             const chap = granule.children[i];
@@ -246,65 +270,43 @@ const XCCM2Editor = () => {
           }
         }
       } else if (granule.type === 'chapter') {
-        let parentPart = currentContext?.partTitle || structure[structure.length - 1]?.part_title;
+        const parentPart = dropPartTitle || currentContext?.partTitle || structure[structure.length - 1]?.part_title || "Partie 1";
 
-        // Safety: if no part exists, create one
-        if (!parentPart) {
-          const autoPart = await structureService.createPart(projectName, {
-            part_title: "Partie 1",
-            part_number: 1
-          });
-          parentPart = autoPart.part_title;
-        }
+        // Trouver le nombre actuel de chapitres pour l'auto-incrément
+        const partObj = structure.find(p => p.part_title === parentPart);
+        const nextChapNum = (partObj?.chapters?.length || 0) + 1;
 
         const newChapter = await structureService.createChapter(projectName, parentPart, {
           chapter_title: granule.content,
-          chapter_number: 1
+          chapter_number: nextChapNum
         });
         setPulsingId(newChapter.chapter_id);
         await recurseChapter(parentPart, newChapter.chapter_title, granule);
       } else if (granule.type === 'paragraph') {
-        let parentPart = currentContext?.partTitle || structure[structure.length - 1]?.part_title;
-        let parentChapter = currentContext?.chapterTitle || structure[structure.length - 1]?.chapters?.[0]?.chapter_title;
+        const parentPart = dropPartTitle || currentContext?.partTitle || structure[structure.length - 1]?.part_title || "Partie 1";
+        const parentChapter = dropChapterTitle || currentContext?.chapterTitle || structure.find(p => p.part_title === parentPart)?.chapters?.[0]?.chapter_title || "Chapitre 1";
 
-        // Safety: if no part/chapter exists, create them
-        if (!parentPart) {
-          const autoPart = await structureService.createPart(projectName, { part_title: "Partie 1", part_number: 1 });
-          parentPart = autoPart.part_title;
-        }
-        if (!parentChapter) {
-          const autoChap = await structureService.createChapter(projectName, parentPart, { chapter_title: "Chapitre 1", chapter_number: 1 });
-          parentChapter = autoChap.chapter_title;
-        }
+        const chapObj = structure.find(p => p.part_title === parentPart)?.chapters?.find(c => c.chapter_title === parentChapter);
+        const nextParaNum = (chapObj?.paragraphs?.length || 0) + 1;
 
         const newPara = await structureService.createParagraph(projectName, parentPart, parentChapter, {
           para_name: granule.content,
-          para_number: 1
+          para_number: nextParaNum
         });
         setPulsingId(newPara.para_id);
         await recurseParagraph(parentPart, parentChapter, newPara.para_name, granule);
       } else if (granule.type === 'notion') {
-        let parentPart = currentContext?.partTitle || structure[structure.length - 1]?.part_title;
-        let parentChapter = currentContext?.chapterTitle || structure[structure.length - 1]?.chapters?.[0]?.chapter_title;
-        let parentPara = currentContext?.paraName || structure[structure.length - 1]?.chapters?.[0]?.paragraphs?.[0]?.para_name;
+        const parentPart = dropPartTitle || currentContext?.partTitle || structure[structure.length - 1]?.part_title || "Partie 1";
+        const parentChapter = dropChapterTitle || currentContext?.chapterTitle || structure.find(p => p.part_title === parentPart)?.chapters?.[0]?.chapter_title || "Chapitre 1";
+        const parentPara = dropParaName || currentContext?.paraName || structure.find(p => p.part_title === parentPart)?.chapters?.find(c => c.chapter_title === parentChapter)?.paragraphs?.[0]?.para_name || "Paragraphe 1";
 
-        if (!parentPart) {
-          const autoPart = await structureService.createPart(projectName, { part_title: "Partie 1", part_number: 1 });
-          parentPart = autoPart.part_title;
-        }
-        if (!parentChapter) {
-          const autoChap = await structureService.createChapter(projectName, parentPart, { chapter_title: "Chapitre 1", chapter_number: 1 });
-          parentChapter = autoChap.chapter_title;
-        }
-        if (!parentPara) {
-          const autoPara = await structureService.createParagraph(projectName, parentPart, parentChapter, { para_name: "Paragraphe 1", para_number: 1 });
-          parentPara = autoPara.para_name;
-        }
+        const paraObj = structure.find(p => p.part_title === parentPart)?.chapters?.find(c => c.chapter_title === parentChapter)?.paragraphs?.find(pa => pa.para_name === parentPara);
+        const nextNotionNum = (paraObj?.notions?.length || 0) + 1;
 
         const newNotion = await structureService.createNotion(projectName, parentPart, parentChapter, parentPara, {
           notion_name: granule.content,
           notion_content: granule.previewContent || '',
-          notion_number: 1
+          notion_number: nextNotionNum
         });
         setPulsingId(newNotion.notion_id);
       }
@@ -335,17 +337,15 @@ const XCCM2Editor = () => {
         }
       }
 
-      // On rafraîchit la TOC
       await loadProject(true);
       setPendingGranule(null);
       toast.success('Importation réussie !', { id: toastId });
-
-      // Petit flash final sur l'id créé si dispo
       setTimeout(() => setPulsingId(null), 1000);
 
     } catch (err: any) {
+      console.error("Drop error:", err);
       setPendingGranule(null);
-      toast.error("Échec de l'importation", { id: toastId });
+      toast.error("Échec de l'importation: " + (err.message || "Erreur inconnue"), { id: toastId });
     }
   };
 
