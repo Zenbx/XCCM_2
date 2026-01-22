@@ -16,6 +16,7 @@ interface AuthContextType {
   logout: () => Promise<void>;
   register: (userData: any) => Promise<void>;
   refreshUser: () => Promise<void>;
+  getAuthToken: () => string | null;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -95,6 +96,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await checkAuth();
   };
 
+  const getAuthToken = () => {
+    return authService.getAuthToken();
+  };
+
   // Protection de route raffinée
   useEffect(() => {
     const publicRoutes = ['/', '/login', '/register', '/library', '/help', '/about', '/book-reader', '/auth'];
@@ -117,7 +122,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
 
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated, isLoading, isAdmin, login, logout, register, refreshUser }}>
+    <AuthContext.Provider value={{ user, isAuthenticated, isLoading, isAdmin, login, logout, register, refreshUser, getAuthToken }}>
       {children}
     </AuthContext.Provider>
   );

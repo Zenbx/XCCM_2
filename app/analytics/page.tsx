@@ -14,6 +14,7 @@ import {
     ArrowRight
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
+import { authService } from '@/services/authService';
 import toast from 'react-hot-toast';
 import Link from 'next/link';
 
@@ -40,7 +41,7 @@ interface ProjectStats {
 }
 
 export default function UserAnalyticsPage() {
-    const { user, getAuthToken } = useAuth();
+    const { user } = useAuth();
     const router = useRouter();
     const [projects, setProjects] = useState<ProjectStats[]>([]);
     const [loading, setLoading] = useState(true);
@@ -56,7 +57,7 @@ export default function UserAnalyticsPage() {
     const fetchProjects = async () => {
         try {
             setLoading(true);
-            const token = getAuthToken();
+            const token = authService.getAuthToken();
 
             const response = await fetch(`${API_BASE_URL}/api/user/projects`, {
                 headers: {
