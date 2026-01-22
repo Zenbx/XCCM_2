@@ -170,6 +170,7 @@ class AuthService {
     if (typeof window !== 'undefined') {
       localStorage.removeItem(TOKEN_STORAGE_KEY);
       localStorage.removeItem(USER_STORAGE_KEY);
+      localStorage.removeItem('user'); // Nettoyage legacy
       sessionStorage.removeItem('user'); // Nettoyage legacy
     }
   }
