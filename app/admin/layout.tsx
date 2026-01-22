@@ -70,8 +70,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                                 key={item.href}
                                 href={item.href}
                                 className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group relative ${isActive
-                                        ? 'bg-[#99334C] text-white shadow-lg shadow-[#99334C]/20'
-                                        : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'
+                                    ? 'bg-[#99334C] text-white shadow-lg shadow-[#99334C]/20'
+                                    : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'
                                     }`}
                             >
                                 <Icon className={`w-5 h-5 ${isActive ? 'text-white' : 'text-gray-400 group-hover:text-[#99334C]'}`} />
@@ -105,44 +105,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
             {/* Main Content Area */}
             <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-                {/* Top Header */}
-                <header className="h-20 bg-white border-b border-gray-200 flex items-center justify-between px-6 md:px-10 z-20">
-                    <div className="flex items-center gap-4">
-                        <button
-                            onClick={() => setIsMobileMenuOpen(true)}
-                            className="lg:hidden p-2 hover:bg-gray-100 rounded-lg text-gray-500"
-                        >
-                            <Menu className="w-6 h-6" />
-                        </button>
-                        <div className="hidden md:flex items-center bg-gray-50 border border-gray-200 rounded-xl px-4 py-2 w-96 focus-within:ring-2 focus-within:ring-[#99334C]/20 transition-all">
-                            <Search className="w-4 h-4 text-gray-400 mr-2" />
-                            <input
-                                type="text"
-                                placeholder="Rechercher partout..."
-                                className="bg-transparent border-none outline-none text-sm w-full placeholder-gray-400"
-                            />
-                        </div>
-                    </div>
-
-                    <div className="flex items-center gap-4">
-                        <button className="relative p-2 text-gray-400 hover:text-gray-900 hover:bg-gray-50 rounded-xl transition-all">
-                            <Bell className="w-5 h-5" />
-                            <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
-                        </button>
-
-                        <div className="h-8 w-px bg-gray-200 mx-2 hidden sm:block"></div>
-
-                        <div className="flex items-center gap-3 cursor-pointer group">
-                            <div className="text-right hidden sm:block">
-                                <p className="text-sm font-bold text-gray-900 leading-none">Admin Admin</p>
-                                <p className="text-xs text-gray-400">Super Utilisateur</p>
-                            </div>
-                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#99334C] to-[#7a283d] text-white flex items-center justify-center font-bold shadow-md group-hover:scale-105 transition-transform">
-                                AD
-                            </div>
-                        </div>
-                    </div>
-                </header>
+                {/* Redundant Top Header Removed to fix stacking issues */}
 
                 {/* Content Section */}
                 <main className="flex-1 overflow-y-auto p-6 md:p-10 relative">
