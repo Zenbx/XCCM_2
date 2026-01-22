@@ -85,10 +85,10 @@ const AuthCallbackContent = () => {
                     <>
                         <Loader2 className="w-12 h-12 text-[#99334C] animate-spin mx-auto mb-4" />
                         <h1 className="text-2xl font-bold text-gray-900 mb-2">
-                            {isRegister ? "Création de votre compte" : "Finalisation de la connexion"}
+                            {isRegister ? "S'inscrire" : "Se connecter"}
                         </h1>
                         <p className="text-gray-600">
-                            {isRegister ? "Veuillez patienter pendant que nous créons votre profil..." : "Veuillez patienter pendant que nous préparons votre espace..."}
+                            {isRegister ? "Veuillez patienter pendant la création de votre compte..." : "Veuillez patienter pendant la connexion..."}
                         </p>
                     </>
                 ) : (

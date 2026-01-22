@@ -95,13 +95,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await checkAuth();
   };
 
-  // Protection de route simplifiée (le middleware est le principal garde, mais la protection client-side est aussi active ici)
-  // AJOUTER ICI LES ROUTES PUBLIQUES SUPPLÉMENTAIRES
+  // Protection de route raffinée
   useEffect(() => {
     const publicRoutes = ['/', '/login', '/register', '/library', '/help', '/about', '/book-reader', '/auth'];
     const isPublicRoute = publicRoutes.some(route => pathname === route || pathname.startsWith(route + '/'));
 
-    if (!isLoading && !isAuthenticated && !isPublicRoute) {
+    if (isLoading) return; // Ne rien faire pendant le chargement initial
+
+    if (!isAuthenticated && !isPublicRoute) {
+      // Vérifier si un token existe malgré l'absence d'objet user (gap d'hydratation)
+      const token = authService.getAuthToken();
+      if (token) {
+        console.log("⏳ Hydratation en cours (token présent mais user absent), on attend...");
+        return;
+      }
+
+      console.log("🛑 Non authentifié sur une route protégée, redirection vers /login");
       router.push('/login');
     }
   }, [isLoading, isAuthenticated, pathname, router]);
