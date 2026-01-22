@@ -4,33 +4,41 @@ import React, { useEffect, useState } from 'react';
 import {
     Users,
     Search,
-    Filter,
-    MoreHorizontal,
-    Mail,
+    RefreshCcw,
+    Loader2,
     Shield,
+    Trash2,
     UserPlus,
-    ArrowUpDown,
-    CheckCircle2,
-    XCircle,
     Clock,
-    Edit2,
-    Loader2
+    Mail,
+    UserCheck
 } from 'lucide-react';
-import { motion } from 'framer-motion';
 import { authService } from '@/services/authService';
 import toast from 'react-hot-toast';
+import { useAuth } from '@/context/AuthContext';
+import { useRouter } from 'next/navigation';
 
 export default function UserManagement() {
+    const { isAdmin, isLoading: authLoading } = useAuth();
+    const router = useRouter();
     const [searchTerm, setSearchTerm] = useState('');
     const [users, setUsers] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        fetchUsers();
-    }, []);
+        if (!authLoading) {
+            if (!isAdmin) {
+                toast.error("Accès refusé");
+                router.push('/edit-home');
+                return;
+            }
+            fetchUsers();
+        }
+    }, [authLoading, isAdmin, router]);
 
     const fetchUsers = async () => {
         try {
+            setLoading(true);
             const data = await authService.getAllUsers();
             setUsers(data || []);
         } catch (error) {
@@ -41,119 +49,124 @@ export default function UserManagement() {
         }
     };
 
+    const toggleRole = async (userId: string, currentRole: string) => {
+        const newRole = currentRole === 'admin' ? 'user' : 'admin';
+        try {
+            await authService.updateUserRole(userId, newRole);
+            toast.success("Rôle mis à jour");
+            fetchUsers();
+        } catch (error) {
+            toast.error("Échec de la mise à jour");
+        }
+    };
+
     const filteredUsers = users.filter(user =>
         user.firstname?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         user.lastname?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         user.email?.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
-    if (loading) {
+    if (authLoading || loading) {
         return (
-            <div className="min-h-[400px] flex items-center justify-center">
-                <Loader2 className="w-10 h-10 text-[#99334C] animate-spin" />
+            <div className="flex h-96 items-center justify-center">
+                <Loader2 className="animate-spin text-[#99334C]" size={40} />
             </div>
         );
     }
 
     return (
-        <div className="space-y-8 pb-10">
-            {/* Header & Actions */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div className="space-y-8">
+            <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-black text-gray-900 tracking-tight">Utilisateurs</h1>
-                    <p className="text-gray-500 mt-1 font-semibold">Gérez les membres de la plateforme et leurs accès.</p>
+                    <h1 className="text-3xl font-black text-gray-900 flex items-center gap-3">
+                        <Users className="text-[#99334C]" size={32} /> Gestion des Utilisateurs
+                    </h1>
+                    <p className="text-gray-500 font-medium">{users.length} membres enregistrés sur la plateforme.</p>
                 </div>
-                <button className="bg-[#99334C] text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 hover:scale-105 shadow-lg shadow-[#99334C]/20 transition-all">
-                    <UserPlus className="w-5 h-5" />
-                    Nouvel Utilisateur
-                </button>
-            </div>
-
-            {/* Stats Summary Panel */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-                {[
-                    { label: 'Total Membres', val: users.length.toString(), icon: Users, color: 'text-gray-900' },
-                    { label: 'Admins', val: users.filter(u => u.role === 'admin').length.toString(), icon: Shield, color: 'text-[#99334C]' },
-                    { label: 'Utilisateurs', val: users.filter(u => u.role !== 'admin').length.toString(), icon: Users, color: 'text-blue-600' },
-                ].map((s, i) => (
-                    <div key={i} className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-2xl bg-gray-50 flex items-center justify-center">
-                            <s.icon className={`w-6 h-6 ${s.color}`} />
-                        </div>
-                        <div>
-                            <p className="text-xs font-bold text-gray-400 uppercase">{s.label}</p>
-                            <h4 className="text-2xl font-black text-gray-900">{s.val}</h4>
-                        </div>
-                    </div>
-                ))}
-            </div>
-
-            {/* Table Section */}
-            <div className="bg-white rounded-[32px] border border-gray-100 shadow-sm overflow-hidden">
-                {/* Filter Bar */}
-                <div className="p-6 md:p-8 border-b border-gray-50 flex flex-col md:flex-row gap-4 items-center justify-between">
-                    <div className="relative flex-1 w-full max-w-md">
-                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <div className="flex items-center gap-3">
+                    <button
+                        onClick={fetchUsers}
+                        className="p-3 bg-white border border-gray-100 rounded-xl hover:bg-gray-50 text-gray-600 transition-all shadow-sm"
+                        title="Rafraîchir"
+                    >
+                        <RefreshCcw size={20} />
+                    </button>
+                    <div className="relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
                         <input
                             type="text"
-                            placeholder="Rechercher par nom ou email..."
+                            placeholder="Rechercher un membre..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-2 focus:ring-[#99334C]/20 outline-none transition-all placeholder-gray-400 font-semibold"
+                            className="pl-10 pr-4 py-3 bg-white border border-gray-100 rounded-xl focus:ring-2 focus:ring-[#99334C]/20 outline-none w-64 shadow-sm transition-all"
                         />
                     </div>
                 </div>
+            </header>
 
-                {/* User Table */}
+            <div className="bg-white rounded-[2rem] border border-gray-100 shadow-sm overflow-hidden">
                 <div className="overflow-x-auto">
                     <table className="w-full text-left border-collapse">
                         <thead>
-                            <tr className="bg-gray-50/50">
-                                <th className="px-8 py-5 text-xs font-black text-gray-400 uppercase tracking-widest">Utilisateur</th>
-                                <th className="px-8 py-5 text-xs font-black text-gray-400 uppercase tracking-widest">Rôle</th>
-                                <th className="px-8 py-5 text-xs font-black text-gray-400 uppercase tracking-widest">Date</th>
-                                <th className="px-8 py-5 text-center"></th>
+                            <tr className="bg-gray-50/50 border-b border-gray-50">
+                                <th className="px-6 py-5 text-xs font-black text-gray-400 uppercase tracking-widest">Utilisateur</th>
+                                <th className="px-6 py-5 text-xs font-black text-gray-400 uppercase tracking-widest">Rôle</th>
+                                <th className="px-6 py-5 text-xs font-black text-gray-400 uppercase tracking-widest">Activité</th>
+                                <th className="px-6 py-5 text-xs font-black text-gray-400 uppercase tracking-widest">Rejoint le</th>
+                                <th className="px-6 py-5 text-xs font-black text-gray-400 uppercase tracking-widest text-right">Actions</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-50">
                             {filteredUsers.map((user) => (
-                                <tr key={user.user_id} className="hover:bg-gray-50/80 transition-all group">
-                                    <td className="px-8 py-6">
+                                <tr key={user.user_id} className="hover:bg-gray-50/50 transition-colors">
+                                    <td className="px-6 py-5">
                                         <div className="flex items-center gap-4">
-                                            <div className="w-11 h-11 rounded-xl bg-[#99334C]/10 text-[#99334C] flex items-center justify-center font-bold shadow-inner">
+                                            <div className="w-10 h-10 rounded-xl bg-[#99334C]/5 text-[#99334C] flex items-center justify-center font-bold uppercase transition-transform hover:scale-105">
                                                 {user.firstname?.[0] || user.email[0]}
                                             </div>
-                                            <div className="flex flex-col">
-                                                <span className="text-gray-900 font-bold group-hover:text-[#99334C] transition-all">
-                                                    {user.firstname} {user.lastname}
-                                                </span>
-                                                <div className="flex items-center gap-1.5 text-xs text-gray-400 font-semibold">
-                                                    <Mail className="w-3 h-3" />
-                                                    {user.email}
-                                                </div>
+                                            <div>
+                                                <p className="font-bold text-gray-900">{user.firstname} {user.lastname}</p>
+                                                <p className="text-xs text-gray-400 font-medium flex items-center gap-1">
+                                                    <Mail size={12} /> {user.email}
+                                                </p>
                                             </div>
                                         </div>
                                     </td>
-                                    <td className="px-8 py-6">
-                                        <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black tracking-widest uppercase ${user.role === 'admin' ? 'bg-[#99334C] text-white shadow-md shadow-[#99334C]/20' : 'bg-gray-100 text-gray-600'
+                                    <td className="px-6 py-5">
+                                        <span className={`px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-wider ${user.role === 'admin'
+                                                ? 'bg-purple-50 text-purple-600 border border-purple-100'
+                                                : 'bg-blue-50 text-blue-600 border border-blue-100'
                                             }`}>
-                                            <Shield className="w-3 h-3" />
                                             {user.role}
+                                        </span>
+                                    </td>
+                                    <td className="px-6 py-5">
+                                        <div className="flex flex-col gap-1">
+                                            <p className="text-sm font-bold text-gray-700">{user.projectsCount} projets</p>
+                                            <p className="text-xs text-gray-400 font-medium">{user.marketplaceCount} documents</p>
                                         </div>
                                     </td>
-                                    <td className="px-8 py-6">
-                                        <div className="flex items-center gap-2 text-xs text-gray-500 font-semibold">
-                                            <Clock className="w-3.5 h-3.5" />
-                                            {new Date(user.created_at).toLocaleDateString('fr-FR', { month: 'short', year: 'numeric' })}
-                                        </div>
+                                    <td className="px-6 py-5">
+                                        <p className="text-sm font-bold text-gray-700 flex items-center gap-2">
+                                            <Clock size={14} className="text-gray-400" />
+                                            {new Date(user.created_at).toLocaleDateString('fr-FR', {
+                                                day: 'numeric',
+                                                month: 'long',
+                                                year: 'numeric'
+                                            })}
+                                        </p>
                                     </td>
-                                    <td className="px-8 py-6 text-center">
-                                        <div className="flex items-center justify-center gap-2">
-                                            <button className="p-2.5 hover:bg-white rounded-xl text-gray-400 hover:text-blue-600 shadow-sm transition-all" title="Modifier">
-                                                <Edit2 className="w-4 h-4" />
+                                    <td className="px-6 py-5 text-right">
+                                        <div className="flex items-center justify-end gap-2">
+                                            <button
+                                                onClick={() => toggleRole(user.user_id, user.role)}
+                                                className="p-2.5 text-blue-600 hover:bg-blue-50 rounded-xl transition-colors border border-transparent hover:border-blue-100"
+                                                title="Changer le rôle"
+                                            >
+                                                <UserCheck size={18} />
                                             </button>
-                                            <button className="p-2.5 hover:bg-white rounded-xl text-gray-400 hover:text-gray-900 shadow-sm transition-all">
-                                                <MoreHorizontal className="w-4 h-4" />
+                                            <button className="p-2.5 text-rose-500 hover:bg-rose-50 rounded-xl transition-colors border border-transparent hover:border-rose-100">
+                                                <Trash2 size={18} />
                                             </button>
                                         </div>
                                     </td>
@@ -161,11 +174,6 @@ export default function UserManagement() {
                             ))}
                         </tbody>
                     </table>
-                </div>
-
-                {/* Pagination Placeholder */}
-                <div className="p-8 border-t border-gray-50 flex items-center justify-between text-sm font-bold">
-                    <p className="text-gray-400">Affichage de {filteredUsers.length} utilisateurs</p>
                 </div>
             </div>
         </div>
