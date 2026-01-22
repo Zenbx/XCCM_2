@@ -41,7 +41,7 @@ export default function UserManagement() {
             setLoading(true);
             const data = await authService.getAllUsers();
             // Handle both { users: [...] } and direct [...] responses
-            const usersList = Array.isArray(data) ? data : (data?.users || data || []);
+            const usersList = Array.isArray(data) ? data : ((data as any)?.users || data || []);
             setUsers(usersList);
         } catch (error) {
             console.error('Erreur fetch users:', error);

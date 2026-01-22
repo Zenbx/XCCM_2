@@ -42,7 +42,7 @@ export default function ProjectManagement() {
             setLoading(true);
             const data = await adminService.getAllProjects();
             // Handle both { projects: [...] } and direct [...] responses
-            const projectsList = Array.isArray(data) ? data : (data?.projects || []);
+            const projectsList = Array.isArray(data) ? data : ((data as any)?.projects || []);
             setProjects(projectsList);
         } catch (error) {
             console.error('Erreur fetch projects:', error);
