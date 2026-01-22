@@ -1,7 +1,7 @@
 // services/adminService.ts
 import { authService } from './authService';
 
-const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001').trim();
+const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001').replace(/\/$/, '');
 
 class AdminService {
     /**
@@ -31,16 +31,19 @@ class AdminService {
         const token = authService.getAuthToken();
         if (!token) throw new Error('Non authentifié');
 
+        console.log('Fetching projects from:', `${API_BASE_URL}/api/admin/projects`);
         const response = await fetch(`${API_BASE_URL}/api/admin/projects`, {
             headers: { 'Authorization': `Bearer ${token}` },
         });
 
         if (!response.ok) {
             const error = await response.json().catch(() => ({}));
+            console.error('getAllProjects error:', response.status, error);
             throw new Error(error.message || 'Erreur lors de la récupération des projets');
         }
 
         const data = await response.json();
+        console.log('getAllProjects success:', data);
         return data.data;
     }
 

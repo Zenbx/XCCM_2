@@ -62,14 +62,6 @@ const AdminDashboard = () => {
 
     return (
         <div className="space-y-6">
-            <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div>
-                    <h1 className="text-2xl font-black text-gray-900 flex items-center gap-3">
-                        <Shield className="text-[#99334C]" size={28} /> Dashboard Overview
-                    </h1>
-                    <p className="text-gray-500 font-medium text-sm">État général de la plateforme XCCM2.</p>
-                </div>
-            </header>
 
             {/* Stats Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">

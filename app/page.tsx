@@ -170,7 +170,7 @@ const HomePage = () => {
                     {t.home.hero.discoverFeatures} <Zap className="w-5 h-5" />
                   </button>
                   <button
-                    onClick={() => router.push('http://localhost:3001/docs')}
+                    onClick={() => router.push('https://xccm-2-api.vercel.app/docs')}
                     className="flex items-center gap-2 text-[#99334C] dark:text-[#ff9daf] font-bold hover:underline py-4 px-2">
                     {t.home.hero.docs} <ArrowRight className="w-5 h-5" />
                   </button>
