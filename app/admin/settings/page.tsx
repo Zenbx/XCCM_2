@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { authService } from '@/services/authService';
+import { adminService } from '@/services/adminService';
 import toast from 'react-hot-toast';
 
 export default function AdminSettings() {
@@ -41,16 +42,8 @@ export default function AdminSettings() {
 
     const fetchSettings = async () => {
         try {
-            const token = authService.getAuthToken();
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/settings`, {
-                headers: { Authorization: `Bearer ${token}` },
-            });
-
-            if (!response.ok) throw new Error('Erreur chargement settings');
-
-            const result = await response.json();
-            if (result.success) {
-                const settings = result.data;
+            const settings = await adminService.getSettings();
+            if (settings) {
                 setPlatformName(settings.platformName || "XCCM 2 - Enterprise");
                 setSupportUrl(settings.supportUrl || "");
                 setMetaDescription(settings.metaDescription || "");
@@ -76,31 +69,17 @@ export default function AdminSettings() {
 
         setSaving(true);
         try {
-            const token = authService.getAuthToken();
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/settings`, {
-                method: 'PUT',
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    platformName,
-                    supportUrl,
-                    metaDescription,
-                    maintenanceMode,
-                    twoFactorRequired,
-                    detailedLogs,
-                    sessionExpiration,
-                    ipWhitelist,
-                }),
+            await adminService.saveSettings({
+                platformName,
+                supportUrl,
+                metaDescription,
+                maintenanceMode,
+                twoFactorRequired,
+                detailedLogs,
+                sessionExpiration,
+                ipWhitelist,
             });
-
-            if (!response.ok) throw new Error('Erreur sauvegarde');
-
-            const result = await response.json();
-            if (result.success) {
-                toast.success("Paramètres enregistrés avec succès!");
-            }
+            toast.success("Paramètres enregistrés avec succès!");
         } catch (error) {
             console.error('Erreur save settings:', error);
             toast.error("Erreur lors de l'enregistrement");
