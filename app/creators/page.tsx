@@ -7,10 +7,13 @@ const CreatorsPage = () => {
     const [creators, setCreators] = React.useState<any[]>([]);
     const [isLoading, setIsLoading] = React.useState(true);
 
+    // Define API URL with fallback
+    const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001').replace(/\/$/, '');
+
     React.useEffect(() => {
         const fetchCreators = async () => {
             try {
-                const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/creators/top`);
+                const response = await fetch(`${API_BASE_URL}/api/creators/top`);
                 const data = await response.json();
                 if (data.success) {
                     setCreators(data.data);
@@ -72,7 +75,7 @@ const CreatorsPage = () => {
                                     <div className="w-24 h-24 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 p-1 mb-4 shadow-inner overflow-hidden">
                                         {creator.profile_picture ? (
                                             <img
-                                                src={`${process.env.NEXT_PUBLIC_API_URL}${creator.profile_picture}`}
+                                                src={`${API_BASE_URL}${creator.profile_picture}`}
                                                 alt={creator.name}
                                                 className="w-full h-full object-cover rounded-full"
                                             />

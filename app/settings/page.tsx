@@ -26,6 +26,8 @@ const SettingsPage = () => {
   const { user, logout } = useAuth();
   const router = useRouter();
 
+  const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001').replace(/\/$/, '');
+
   // États pour les paramètres
   const [settings, setSettings] = useState({
     // Notifications
@@ -84,7 +86,7 @@ const SettingsPage = () => {
 
     try {
       // TODO: Appel API pour sauvegarder les paramètres
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/user/settings`, {
+      const response = await fetch(`${API_BASE_URL}/api/user/settings`, {
         method: 'PUT',
         headers: getAuthHeaders(),
         body: JSON.stringify(settings),
@@ -120,7 +122,7 @@ const SettingsPage = () => {
 
     try {
       // TODO: Appel API pour changer le mot de passe
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/user/password`, {
+      const response = await fetch(`${API_BASE_URL}/api/user/password`, {
         method: 'PUT',
         headers: getAuthHeaders(),
         body: JSON.stringify({
@@ -146,7 +148,7 @@ const SettingsPage = () => {
   const handleDeleteAccount = async () => {
     try {
       // TODO: Appel API pour supprimer le compte
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/user/account`, {
+      const response = await fetch(`${API_BASE_URL}/api/user/account`, {
         method: 'DELETE',
         headers: getAuthHeaders(),
       });
@@ -202,8 +204,8 @@ const SettingsPage = () => {
                       key={section.id}
                       onClick={() => setActiveSection(section.id)}
                       className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeSection === section.id
-                          ? 'bg-[#99334C] text-white'
-                          : 'text-gray-700 hover:bg-gray-100'
+                        ? 'bg-[#99334C] text-white'
+                        : 'text-gray-700 hover:bg-gray-100'
                         }`}
                     >
                       <IconComponent className="w-5 h-5" />

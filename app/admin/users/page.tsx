@@ -77,98 +77,98 @@ export default function UserManagement() {
     }
 
     return (
-        <div className="space-y-8">
+        <div className="space-y-6">
             <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-black text-gray-900 flex items-center gap-3">
-                        <Users className="text-[#99334C]" size={32} /> Gestion des Utilisateurs
+                    <h1 className="text-xl font-black text-gray-900 flex items-center gap-3">
+                        <Users className="text-[#99334C]" size={24} /> Gestion des Utilisateurs
                     </h1>
-                    <p className="text-gray-500 font-medium">{users.length} membres enregistrés sur la plateforme.</p>
+                    <p className="text-gray-500 font-medium text-xs">{users.length} membres enregistrés.</p>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
                     <button
                         onClick={fetchUsers}
-                        className="p-3 bg-white border border-gray-100 rounded-xl hover:bg-gray-50 text-gray-600 transition-all shadow-sm"
+                        className="p-2 bg-white border border-gray-100 rounded-lg hover:bg-gray-50 text-gray-600 transition-all shadow-sm"
                         title="Rafraîchir"
                     >
-                        <RefreshCcw size={20} />
+                        <RefreshCcw size={16} />
                     </button>
                     <div className="relative">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
                         <input
                             type="text"
-                            placeholder="Rechercher un membre..."
+                            placeholder="Rechercher..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="pl-10 pr-4 py-3 bg-white border border-gray-100 rounded-xl focus:ring-2 focus:ring-[#99334C]/20 outline-none w-64 shadow-sm transition-all"
+                            className="pl-9 pr-3 py-2 bg-white border border-gray-100 rounded-lg focus:ring-2 focus:ring-[#99334C]/20 outline-none w-56 text-sm shadow-sm transition-all"
                         />
                     </div>
                 </div>
             </header>
 
-            <div className="bg-white rounded-[2rem] border border-gray-100 shadow-sm overflow-hidden">
+            <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden text-sm">
                 <div className="overflow-x-auto">
                     <table className="w-full text-left border-collapse">
                         <thead>
                             <tr className="bg-gray-50/50 border-b border-gray-50">
-                                <th className="px-6 py-5 text-xs font-black text-gray-400 uppercase tracking-widest">Utilisateur</th>
-                                <th className="px-6 py-5 text-xs font-black text-gray-400 uppercase tracking-widest">Rôle</th>
-                                <th className="px-6 py-5 text-xs font-black text-gray-400 uppercase tracking-widest">Activité</th>
-                                <th className="px-6 py-5 text-xs font-black text-gray-400 uppercase tracking-widest">Rejoint le</th>
-                                <th className="px-6 py-5 text-xs font-black text-gray-400 uppercase tracking-widest text-right">Actions</th>
+                                <th className="px-4 py-3 text-[10px] font-black text-gray-400 uppercase tracking-widest">Utilisateur</th>
+                                <th className="px-4 py-3 text-[10px] font-black text-gray-400 uppercase tracking-widest">Rôle</th>
+                                <th className="px-4 py-3 text-[10px] font-black text-gray-400 uppercase tracking-widest">Activité</th>
+                                <th className="px-4 py-3 text-[10px] font-black text-gray-400 uppercase tracking-widest">Rejoint le</th>
+                                <th className="px-4 py-3 text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Actions</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-50">
                             {filteredUsers.map((user) => (
-                                <tr key={user.user_id} className="hover:bg-gray-50/50 transition-colors">
-                                    <td className="px-6 py-5">
-                                        <div className="flex items-center gap-4">
-                                            <div className="w-10 h-10 rounded-xl bg-[#99334C]/5 text-[#99334C] flex items-center justify-center font-bold uppercase transition-transform hover:scale-105">
+                                <tr key={user.user_id} className="hover:bg-gray-50/20 transition-colors">
+                                    <td className="px-4 py-3">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-8 h-8 rounded-lg bg-[#99334C]/5 text-[#99334C] flex items-center justify-center font-bold text-xs uppercase">
                                                 {user.firstname?.[0] || user.email[0]}
                                             </div>
                                             <div>
-                                                <p className="font-bold text-gray-900">{user.firstname} {user.lastname}</p>
-                                                <p className="text-xs text-gray-400 font-medium flex items-center gap-1">
-                                                    <Mail size={12} /> {user.email}
+                                                <p className="font-bold text-gray-900 text-xs">{user.firstname} {user.lastname}</p>
+                                                <p className="text-[10px] text-gray-400 font-medium truncate max-w-[150px]">
+                                                    {user.email}
                                                 </p>
                                             </div>
                                         </div>
                                     </td>
-                                    <td className="px-6 py-5">
-                                        <span className={`px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-wider ${user.role === 'admin'
-                                            ? 'bg-purple-50 text-purple-600 border border-purple-100'
-                                            : 'bg-blue-50 text-blue-600 border border-blue-100'
+                                    <td className="px-4 py-3">
+                                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${user.role === 'admin'
+                                            ? 'bg-purple-50 text-purple-600'
+                                            : 'bg-blue-50 text-blue-600'
                                             }`}>
                                             {user.role}
                                         </span>
                                     </td>
-                                    <td className="px-6 py-5">
-                                        <div className="flex flex-col gap-1">
-                                            <p className="text-sm font-bold text-gray-700">{user.projectsCount} projets</p>
-                                            <p className="text-xs text-gray-400 font-medium">{user.marketplaceCount} documents</p>
+                                    <td className="px-4 py-3">
+                                        <div className="flex flex-col">
+                                            <p className="text-xs font-bold text-gray-600">{user.projectsCount} projets</p>
+                                            <p className="text-[9px] text-gray-400 font-medium">{user.marketplaceCount} docs</p>
                                         </div>
                                     </td>
-                                    <td className="px-6 py-5">
-                                        <p className="text-sm font-bold text-gray-700 flex items-center gap-2">
-                                            <Clock size={14} className="text-gray-400" />
+                                    <td className="px-4 py-3">
+                                        <p className="text-xs font-bold text-gray-500 flex items-center gap-1.5">
+                                            <Clock size={12} className="text-gray-300" />
                                             {new Date(user.created_at).toLocaleDateString('fr-FR', {
-                                                day: 'numeric',
-                                                month: 'long',
+                                                day: '2-digit',
+                                                month: 'short',
                                                 year: 'numeric'
                                             })}
                                         </p>
                                     </td>
-                                    <td className="px-6 py-5 text-right">
-                                        <div className="flex items-center justify-end gap-2">
+                                    <td className="px-4 py-3 text-right">
+                                        <div className="flex items-center justify-end gap-1">
                                             <button
                                                 onClick={() => toggleRole(user.user_id, user.role)}
-                                                className="p-2.5 text-blue-600 hover:bg-blue-50 rounded-xl transition-colors border border-transparent hover:border-blue-100"
-                                                title="Changer le rôle"
+                                                className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                                title="Modifier rôle"
                                             >
-                                                <UserCheck size={18} />
+                                                <UserCheck size={14} />
                                             </button>
-                                            <button className="p-2.5 text-rose-500 hover:bg-rose-50 rounded-xl transition-colors border border-transparent hover:border-rose-100">
-                                                <Trash2 size={18} />
+                                            <button className="p-1.5 text-rose-500 hover:bg-rose-50 rounded-lg transition-colors">
+                                                <Trash2 size={14} />
                                             </button>
                                         </div>
                                     </td>
