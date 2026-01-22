@@ -1,43 +1,132 @@
 "use client";
 
-import React, { use } from 'react';
+import React, { use, useEffect, useState } from 'react';
 import {
     ArrowLeft,
-    Map,
-    Clock,
-    MousePointer,
-    Smartphone,
-    Monitor,
-    Globe
+    Eye,
+    Download,
+    Heart,
+    BookOpen,
+    FileText,
+    MessageSquare,
+    Loader2,
+    TrendingUp,
+    Calendar
 } from 'lucide-react';
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
+import { useAuth } from '@/context/AuthContext';
+import { useRouter } from 'next/navigation';
+import toast from 'react-hot-toast';
+
+const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001').replace(/\/$/, '');
+
+interface ProjectAnalytics {
+    project: {
+        id: string;
+        name: string;
+        created_at: string;
+        updated_at: string;
+        is_published: boolean;
+        description?: string;
+        category?: string;
+        level?: string;
+    };
+    stats: {
+        parts: number;
+        chapters: number;
+        documents: number;
+        comments: number;
+        views: number;
+        downloads: number;
+        likes: number;
+        uniqueViews: number;
+    };
+    topDocuments: Array<{
+        id: string;
+        name: string;
+        views: number;
+        downloads: number;
+        likes: number;
+    }>;
+}
 
 export default function ProjectAnalyticsPage({ params }: { params: Promise<{ id: string }> }) {
-    // Unwrapping params for Next.js 15+ (using React.use() or async await pattern if server component, 
-    // but this is client component so we use React.use() if it was a promise, 
-    // actually in standard client component params is just a prop, checking Next.js version... 
-    // Next 15 requires awaiting params.
     const { id } = use(params);
+    const { user, getAuthToken } = useAuth();
+    const router = useRouter();
+    const [analytics, setAnalytics] = useState<ProjectAnalytics | null>(null);
+    const [loading, setLoading] = useState(true);
 
-    // Mock Data
-    const project = {
-        id,
-        name: "Introduction à l'Intelligence Artificielle",
-        views: "32,450",
-        avgTime: "12m 30s",
-        completion: "68%",
-        revenue: "1,200 €"
+    useEffect(() => {
+        if (!user) {
+            router.push('/login');
+            return;
+        }
+        fetchAnalytics();
+    }, [user, id, router]);
+
+    const fetchAnalytics = async () => {
+        try {
+            setLoading(true);
+            const token = getAuthToken();
+
+            const response = await fetch(`${API_BASE_URL}/api/user/projects/${id}/analytics`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (!response.ok) {
+                if (response.status === 404) {
+                    toast.error("Projet non trouvé");
+                    router.push('/analytics');
+                    return;
+                }
+                throw new Error('Erreur lors de la récupération des analytics');
+            }
+
+            const data = await response.json();
+            setAnalytics(data.data);
+        } catch (error) {
+            console.error('Erreur fetch analytics:', error);
+            toast.error("Erreur lors du chargement des analytics");
+        } finally {
+            setLoading(false);
+        }
     };
 
+    if (loading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-gray-50">
+                <Loader2 className="animate-spin text-[#99334C]" size={40} />
+            </div>
+        );
+    }
+
+    if (!analytics) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-gray-50">
+                <div className="text-center">
+                    <p className="text-gray-500 mb-4">Projet non trouvé</p>
+                    <Link href="/analytics" className="text-[#99334C] hover:underline font-bold">
+                        Retour aux analytics
+                    </Link>
+                </div>
+            </div>
+        );
+    }
+
     return (
-        <div className="min-h-screen bg-gray-50 p-6 md:p-12">
+        <div className="min-h-screen bg-gray-50 py-12 px-6">
             <div className="max-w-7xl mx-auto">
 
                 {/* Back Button */}
-                <Link href="/analytics" className="inline-flex items-center gap-2 text-gray-500 hover:text-[#99334C] mb-8 transition-colors">
+                <Link
+                    href="/analytics"
+                    className="inline-flex items-center gap-2 text-gray-600 hover:text-[#99334C] mb-8 transition-colors font-semibold"
+                >
                     <ArrowLeft className="w-4 h-4" />
-                    Retour au Tableau de Bord
+                    Retour aux Analytics
                 </Link>
 
                 {/* Header */}
@@ -45,111 +134,161 @@ export default function ProjectAnalyticsPage({ params }: { params: Promise<{ id:
                     <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                         <div>
                             <div className="flex items-center gap-2 mb-2">
-                                <span className="bg-[#99334C]/10 text-[#99334C] px-2 py-0.5 rounded text-xs font-bold uppercase tracking-wider">Projet</span>
-                                <span className="text-gray-400 text-xs">ID: {id}</span>
+                                <span className="bg-[#99334C]/10 text-[#99334C] px-3 py-1 rounded-lg text-xs font-bold uppercase tracking-wider">
+                                    {analytics.project.is_published ? 'Publié' : 'Brouillon'}
+                                </span>
+                                {analytics.project.category && (
+                                    <span className="bg-gray-100 text-gray-600 px-3 py-1 rounded-lg text-xs font-semibold">
+                                        {analytics.project.category}
+                                    </span>
+                                )}
                             </div>
-                            <h1 className="text-3xl font-bold text-gray-900">{project.name}</h1>
+                            <h1 className="text-3xl font-bold text-gray-900">{analytics.project.name}</h1>
+                            {analytics.project.description && (
+                                <p className="text-gray-600 mt-2">{analytics.project.description}</p>
+                            )}
                         </div>
-                        <div className="flex gap-4 text-center">
-                            <div className="bg-gray-50 px-6 py-3 rounded-xl">
-                                <p className="text-gray-500 text-xs uppercase font-bold">Temps Moyen</p>
-                                <p className="text-xl font-bold text-gray-900">{project.avgTime}</p>
+                        <div className="flex items-center gap-2 text-sm text-gray-500">
+                            <Calendar size={16} />
+                            <span>Créé le {new Date(analytics.project.created_at).toLocaleDateString('fr-FR')}</span>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Stats Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                    <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
+                        <div className="flex items-center gap-3 mb-3">
+                            <div className="p-3 bg-green-50 text-green-600 rounded-lg">
+                                <Eye size={20} />
                             </div>
-                            <div className="bg-gray-50 px-6 py-3 rounded-xl">
-                                <p className="text-gray-500 text-xs uppercase font-bold">Complétion</p>
-                                <p className="text-xl font-bold text-green-600">{project.completion}</p>
+                            <div>
+                                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Vues</p>
+                                <p className="text-2xl font-black text-gray-900">{analytics.stats.views.toLocaleString()}</p>
+                            </div>
+                        </div>
+                        <p className="text-xs text-gray-500">{analytics.stats.uniqueViews} vues uniques</p>
+                    </div>
+
+                    <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
+                        <div className="flex items-center gap-3 mb-3">
+                            <div className="p-3 bg-amber-50 text-amber-600 rounded-lg">
+                                <Download size={20} />
+                            </div>
+                            <div>
+                                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Téléchargements</p>
+                                <p className="text-2xl font-black text-gray-900">{analytics.stats.downloads.toLocaleString()}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
+                        <div className="flex items-center gap-3 mb-3">
+                            <div className="p-3 bg-pink-50 text-pink-600 rounded-lg">
+                                <Heart size={20} />
+                            </div>
+                            <div>
+                                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Likes</p>
+                                <p className="text-2xl font-black text-gray-900">{analytics.stats.likes.toLocaleString()}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
+                        <div className="flex items-center gap-3 mb-3">
+                            <div className="p-3 bg-indigo-50 text-indigo-600 rounded-lg">
+                                <MessageSquare size={20} />
+                            </div>
+                            <div>
+                                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Commentaires</p>
+                                <p className="text-2xl font-black text-gray-900">{analytics.stats.comments.toLocaleString()}</p>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                {/* Content */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-
-                    {/* Engagement Heatmap Mockup */}
-                    <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
-                        <div className="flex items-center gap-2 mb-6">
-                            <MousePointer className="w-5 h-5 text-[#99334C]" />
-                            <h3 className="text-lg font-bold text-gray-900">Carte de Chaleur (Clics)</h3>
-                        </div>
-
-                        {/* Fake Heatmap Visual */}
-                        <div className="aspect-video bg-gray-100 rounded-xl relative overflow-hidden group cursor-crosshair">
-                            <div className="absolute inset-0 flex items-center justify-center text-gray-400">
-                                Prévisualisation du projet...
+                {/* Content Breakdown */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                    <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
+                        <div className="flex items-center gap-3">
+                            <div className="p-3 bg-blue-50 text-blue-600 rounded-lg">
+                                <BookOpen size={20} />
                             </div>
-                            {/* Random Heat Blobs */}
-                            <div className="absolute top-1/4 left-1/4 w-24 h-24 bg-red-500/30 blur-xl rounded-full"></div>
-                            <div className="absolute bottom-1/3 right-1/3 w-32 h-32 bg-red-500/40 blur-2xl rounded-full"></div>
-                            <div className="absolute top-1/2 left-1/2 w-16 h-16 bg-red-600/50 blur-lg rounded-full"></div>
+                            <div>
+                                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Parties</p>
+                                <p className="text-2xl font-black text-gray-900">{analytics.stats.parts}</p>
+                            </div>
                         </div>
-                        <p className="mt-4 text-sm text-gray-500 text-center">
-                            Les zones rouges indiquent les éléments les plus cliqués par vos étudiants.
-                        </p>
                     </div>
 
-                    {/* Demographics & Tech */}
-                    <div className="space-y-8">
-
-                        {/* Devices */}
-                        <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
-                            <h3 className="text-lg font-bold text-gray-900 mb-6">Appareils</h3>
-                            <div className="space-y-4">
-                                <div className="flex items-center gap-4">
-                                    <div className="p-3 bg-blue-100 text-blue-600 rounded-lg">
-                                        <Monitor className="w-5 h-5" />
-                                    </div>
-                                    <div className="flex-1">
-                                        <div className="flex justify-between mb-1">
-                                            <span className="font-semibold text-gray-700">Desktop</span>
-                                            <span className="font-bold text-gray-900">65%</span>
-                                        </div>
-                                        <div className="w-full bg-gray-100 rounded-full h-2">
-                                            <div className="bg-blue-500 h-2 rounded-full" style={{ width: '65%' }}></div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="flex items-center gap-4">
-                                    <div className="p-3 bg-purple-100 text-purple-600 rounded-lg">
-                                        <Smartphone className="w-5 h-5" />
-                                    </div>
-                                    <div className="flex-1">
-                                        <div className="flex justify-between mb-1">
-                                            <span className="font-semibold text-gray-700">Mobile</span>
-                                            <span className="font-bold text-gray-900">30%</span>
-                                        </div>
-                                        <div className="w-full bg-gray-100 rounded-full h-2">
-                                            <div className="bg-purple-500 h-2 rounded-full" style={{ width: '30%' }}></div>
-                                        </div>
-                                    </div>
-                                </div>
+                    <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
+                        <div className="flex items-center gap-3">
+                            <div className="p-3 bg-purple-50 text-purple-600 rounded-lg">
+                                <FileText size={20} />
+                            </div>
+                            <div>
+                                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Chapitres</p>
+                                <p className="text-2xl font-black text-gray-900">{analytics.stats.chapters}</p>
                             </div>
                         </div>
+                    </div>
 
-                        {/* Geography */}
-                        <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
-                            <div className="flex items-center gap-2 mb-6">
-                                <Globe className="w-5 h-5 text-green-600" />
-                                <h3 className="text-lg font-bold text-gray-900">Géographie</h3>
+                    <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
+                        <div className="flex items-center gap-3">
+                            <div className="p-3 bg-teal-50 text-teal-600 rounded-lg">
+                                <TrendingUp size={20} />
                             </div>
-                            <div className="space-y-3">
-                                {[
-                                    { country: "France", val: "45%" },
-                                    { country: "Canada", val: "20%" },
-                                    { country: "Belgique", val: "15%" },
-                                    { country: "Suisse", val: "10%" }
-                                ].map((geo) => (
-                                    <div key={geo.country} className="flex items-center justify-between border-b border-gray-50 pb-2 last:border-0">
-                                        <span className="text-gray-600">{geo.country}</span>
-                                        <span className="font-bold text-gray-900">{geo.val}</span>
-                                    </div>
+                            <div>
+                                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Documents</p>
+                                <p className="text-2xl font-black text-gray-900">{analytics.stats.documents}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Top Documents */}
+                <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+                    <div className="px-6 py-4 border-b border-gray-100">
+                        <h2 className="text-xl font-bold text-gray-900">Documents les Plus Populaires</h2>
+                    </div>
+                    <div className="overflow-x-auto">
+                        <table className="w-full">
+                            <thead className="bg-gray-50 border-b border-gray-100">
+                                <tr>
+                                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Document</th>
+                                    <th className="px-6 py-4 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">Vues</th>
+                                    <th className="px-6 py-4 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">Téléchargements</th>
+                                    <th className="px-6 py-4 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">Likes</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-100">
+                                {analytics.topDocuments.map((doc) => (
+                                    <tr key={doc.id} className="hover:bg-gray-50 transition-colors">
+                                        <td className="px-6 py-4">
+                                            <p className="font-bold text-gray-900">{doc.name}</p>
+                                        </td>
+                                        <td className="px-6 py-4 text-center">
+                                            <span className="font-bold text-gray-900">{doc.views.toLocaleString()}</span>
+                                        </td>
+                                        <td className="px-6 py-4 text-center">
+                                            <span className="font-bold text-gray-900">{doc.downloads.toLocaleString()}</span>
+                                        </td>
+                                        <td className="px-6 py-4 text-center">
+                                            <span className="font-bold text-gray-900">{doc.likes.toLocaleString()}</span>
+                                        </td>
+                                    </tr>
                                 ))}
-                            </div>
-                        </div>
-
+                                {analytics.topDocuments.length === 0 && (
+                                    <tr>
+                                        <td colSpan={4} className="px-6 py-12 text-center text-gray-500">
+                                            Aucun document publié pour ce projet.
+                                        </td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
                     </div>
                 </div>
-
             </div>
         </div>
     );

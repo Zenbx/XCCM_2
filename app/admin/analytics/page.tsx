@@ -37,6 +37,7 @@ const AnalyticsPage = () => {
     const [stats, setStats] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [timeRange, setTimeRange] = useState('30j');
+    const [projects, setProjects] = useState<any[]>([]);
 
     useEffect(() => {
         if (!isLoading) {
@@ -51,8 +52,12 @@ const AnalyticsPage = () => {
 
     const fetchAnalytics = async () => {
         try {
-            const data = await adminService.getStats();
-            setStats(data);
+            const [statsData, projectsData] = await Promise.all([
+                adminService.getStats(),
+                adminService.getAllProjects()
+            ]);
+            setStats(statsData);
+            setProjects(Array.isArray(projectsData) ? projectsData : ((projectsData as any)?.projects || []));
         } catch (error) {
             console.error('Erreur analytics:', error);
             toast.error("Erreur chargement analytics");
@@ -179,6 +184,55 @@ const AnalyticsPage = () => {
                             <Bar dataKey="value" fill="#99334C" radius={[4, 4, 0, 0]} barSize={40} />
                         </BarChart>
                     </ResponsiveContainer>
+                </div>
+            </div>
+
+            {/* Statistiques par Projet (NOUVEAU) */}
+            <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+                <div className="px-6 py-4 border-b border-gray-50">
+                    <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2">
+                        <BookOpen size={16} className="text-[#99334C]" /> Statistiques par Projet
+                    </h3>
+                </div>
+                <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse">
+                        <thead>
+                            <tr className="bg-gray-50/50 border-b border-gray-50">
+                                <th className="px-6 py-3 text-[10px] font-black text-gray-400 uppercase tracking-widest">Projet</th>
+                                <th className="px-6 py-3 text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Vues</th>
+                                <th className="px-6 py-3 text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Téléchargements</th>
+                                <th className="px-6 py-3 text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Likes</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-50">
+                            {projects.map((proj) => (
+                                <tr key={proj.id} className="hover:bg-gray-50/20 transition-colors">
+                                    <td className="px-6 py-3">
+                                        <div>
+                                            <p className="font-bold text-gray-900 text-xs">{proj.name}</p>
+                                            <p className="text-[10px] text-gray-400 font-medium">Par {proj.owner}</p>
+                                        </div>
+                                    </td>
+                                    <td className="px-6 py-3 text-right text-xs font-bold text-gray-600">
+                                        {(proj.stats?.views || 0).toLocaleString()}
+                                    </td>
+                                    <td className="px-6 py-3 text-right text-xs font-bold text-gray-600">
+                                        {(proj.stats?.downloads || 0).toLocaleString()}
+                                    </td>
+                                    <td className="px-6 py-3 text-right text-xs font-bold text-gray-600">
+                                        {(proj.stats?.likes || 0).toLocaleString()}
+                                    </td>
+                                </tr>
+                            ))}
+                            {projects.length === 0 && (
+                                <tr>
+                                    <td colSpan={4} className="px-6 py-8 text-center text-xs text-gray-400 italic">
+                                        Aucun projet trouvé.
+                                    </td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
                 </div>
             </div>
 
