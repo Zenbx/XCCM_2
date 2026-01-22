@@ -2,19 +2,29 @@
 
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Shield, Users, Database, Layout, Search, Trash2, Edit2, CheckCircle, AlertTriangle, Loader2 } from 'lucide-react';
+import {
+    Shield,
+    Users,
+    Database,
+    Layout,
+    FileText,
+    MessageSquare,
+    Heart,
+    Clock,
+    ArrowRight,
+    Loader2
+} from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { authService } from '@/services/authService';
 import toast from 'react-hot-toast';
 import { motion } from 'framer-motion';
+import Link from 'next/link';
 
 const AdminDashboard = () => {
     const { user, isAdmin, isLoading } = useAuth();
     const router = useRouter();
-    const [users, setUsers] = useState<any[]>([]);
-    const [globalStats, setGlobalStats] = useState<any>(null);
-    const [loadingUsers, setLoadingUsers] = useState(true);
-    const [searchTerm, setSearchTerm] = useState('');
+    const [stats, setStats] = useState<any>(null);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         if (!isLoading) {
@@ -34,181 +44,137 @@ const AdminDashboard = () => {
                 headers: { 'Authorization': `Bearer ${token}` },
             });
 
-            if (!response.ok) {
-                throw new Error('Erreur chargement stats');
-            }
+            if (!response.ok) throw new Error('Erreur chargement stats');
 
             const result = await response.json();
             if (result.success) {
-                setUsers(result.data.users || []);
-                setGlobalStats(result.data.global || {});
+                setStats(result.data);
             }
         } catch (error) {
             console.error('Erreur admin stats:', error);
             toast.error("Erreur chargement statistiques");
         } finally {
-            setLoadingUsers(false);
+            setLoading(false);
         }
     };
 
-    const handleDeleteUser = async (userId: string) => {
-        if (!confirm("Êtes-vous sûr de vouloir supprimer cet utilisateur ? Cette action est irréversible.")) return;
-        try {
-            await authService.deleteUser(userId);
-            setUsers(users.filter(u => u.user_id !== userId));
-            toast.success("Utilisateur supprimé");
-        } catch (error) {
-            toast.error("Erreur suppression");
-        }
-    };
-
-    const handleRoleChange = async (userId: string, newRole: string) => {
-        try {
-            await authService.updateUserRole(userId, newRole);
-            setUsers(users.map(u => u.user_id === userId ? { ...u, role: newRole } : u));
-            toast.success("Rôle mis à jour");
-        } catch (error) {
-            toast.error("Erreur mise à jour rôle");
-        }
-    };
-
-    const filteredUsers = users.filter(u =>
-        u.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        u.lastname.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        u.firstname.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-
-    if (isLoading || loadingUsers) {
-        return <div className="min-h-screen flex items-center justify-center bg-[#FDFCFB]">
-            <Loader2 className="animate-spin text-[#99334C]" size={40} />
-        </div>;
+    if (isLoading || loading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-[#FDFCFB]">
+                <Loader2 className="animate-spin text-[#99334C]" size={40} />
+            </div>
+        );
     }
 
-    return (
-        <div className="min-h-screen bg-[#FDFCFB] p-8">
-            <div className="max-w-7xl mx-auto">
-                <header className="mb-10 flex items-center justify-between">
-                    <div>
-                        <h1 className="text-4xl font-black text-gray-900 mb-2 flex items-center gap-3">
-                            <Shield className="text-[#99334C]" size={36} /> Dashboard Admin
-                        </h1>
-                        <p className="text-gray-500">Gérez les utilisateurs et le contenu de la plateforme.</p>
-                    </div>
-                </header>
+    const { global, recentUsers, recentProjects } = stats || {};
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-                    <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-4">
-                        <div className="p-4 bg-blue-50 text-blue-600 rounded-xl">
-                            <Users size={24} />
+    return (
+        <div className="space-y-10 pb-20">
+            <header>
+                <h1 className="text-4xl font-black text-gray-900 mb-2 flex items-center gap-3">
+                    <Shield className="text-[#99334C]" size={36} /> Vue d'ensemble
+                </h1>
+                <p className="text-gray-500 font-medium">État général de la plateforme XCCM2.</p>
+            </header>
+
+            {/* Stats Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                {[
+                    { label: 'Utilisateurs', val: global?.totalUsers, icon: Users, color: 'text-blue-600', bg: 'bg-blue-50' },
+                    { label: 'Projets', val: global?.totalProjects, icon: Layout, color: 'text-green-600', bg: 'bg-green-50' },
+                    { label: 'Documents', val: global?.totalDocuments, icon: FileText, color: 'text-purple-600', bg: 'bg-purple-50' },
+                    { label: 'Interactions', val: (global?.totalLikes || 0) + (global?.totalComments || 0), icon: Heart, color: 'text-rose-600', bg: 'bg-rose-50' },
+                ].map((s, i) => (
+                    <div key={i} className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm flex items-center gap-5">
+                        <div className={`p-4 ${s.bg} ${s.color} rounded-2xl`}>
+                            <s.icon size={24} />
                         </div>
                         <div>
-                            <p className="text-sm text-gray-500 font-bold">Utilisateurs</p>
-                            <p className="text-2xl font-black text-gray-900">{globalStats?.totalUsers || users.length}</p>
+                            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">{s.label}</p>
+                            <p className="text-2xl font-black text-gray-900">{s.val || 0}</p>
                         </div>
                     </div>
-                    <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-4">
-                        <div className="p-4 bg-green-50 text-green-600 rounded-xl">
-                            <Layout size={24} />
-                        </div>
-                        <div>
-                            <p className="text-sm text-gray-500 font-bold">Projets Totaux</p>
-                            <p className="text-2xl font-black text-gray-900">
-                                {globalStats?.totalProjects || users.reduce((acc, u) => acc + (u.projectsCount || 0), 0)}
-                            </p>
-                        </div>
+                ))}
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+                {/* Recent Users */}
+                <div className="bg-white rounded-[2.5rem] border border-gray-100 shadow-sm overflow-hidden flex flex-col">
+                    <div className="p-8 border-b border-gray-50 flex items-center justify-between">
+                        <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                            <Users size={20} className="text-[#99334C]" /> Dernières Inscriptions
+                        </h2>
+                        <Link href="/admin/users" className="text-sm font-bold text-[#99334C] hover:underline flex items-center gap-1">
+                            Voir tout <ArrowRight size={14} />
+                        </Link>
                     </div>
-                    <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-4">
-                        <div className="p-4 bg-purple-50 text-purple-600 rounded-xl">
-                            <Database size={24} />
-                        </div>
-                        <div>
-                            <p className="text-sm text-gray-500 font-bold">Documents Publiés</p>
-                            <p className="text-2xl font-black text-gray-900">
-                                {globalStats?.totalDocuments || users.reduce((acc, u) => acc + (u.marketplaceCount || 0), 0)}
-                            </p>
-                        </div>
+                    <div className="p-4 flex-1">
+                        {recentUsers?.length > 0 ? (
+                            <div className="space-y-2">
+                                {recentUsers.map((u: any) => (
+                                    <div key={u.user_id} className="flex items-center justify-between p-4 hover:bg-gray-50 rounded-2xl transition-all">
+                                        <div className="flex items-center gap-4">
+                                            <div className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center font-bold text-gray-500 uppercase">
+                                                {u.firstname?.[0] || u.email[0]}
+                                            </div>
+                                            <div>
+                                                <p className="font-bold text-gray-900">{u.firstname} {u.lastname}</p>
+                                                <p className="text-xs text-gray-400 font-medium">{u.email}</p>
+                                            </div>
+                                        </div>
+                                        <div className="text-right">
+                                            <p className="text-xs text-gray-400 font-bold flex items-center gap-1 justify-end">
+                                                <Clock size={12} /> {new Date(u.created_at).toLocaleDateString('fr-FR')}
+                                            </p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="h-40 flex items-center justify-center text-gray-400 font-medium italic">
+                                Aucun utilisateur récent.
+                            </div>
+                        )}
                     </div>
                 </div>
 
-                <div className="bg-white rounded-[2rem] shadow-xl border border-gray-100 overflow-hidden">
-                    <div className="p-6 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                {/* Recent Projects */}
+                <div className="bg-white rounded-[2.5rem] border border-gray-100 shadow-sm overflow-hidden flex flex-col">
+                    <div className="p-8 border-b border-gray-50 flex items-center justify-between">
                         <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-                            <Users size={20} className="text-[#99334C]" /> Liste des Utilisateurs
+                            <Layout size={20} className="text-[#99334C]" /> Projets Récents
                         </h2>
-                        <div className="relative">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
-                            <input
-                                type="text"
-                                placeholder="Rechercher..."
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                                className="pl-10 pr-4 py-2 border border-gray-200 rounded-xl focus:outline-none focus:border-[#99334C] text-sm"
-                            />
-                        </div>
+                        <Link href="/admin/projects" className="text-sm font-bold text-[#99334C] hover:underline flex items-center gap-1">
+                            Voir tout <ArrowRight size={14} />
+                        </Link>
                     </div>
-
-                    <div className="overflow-x-auto">
-                        <table className="w-full">
-                            <thead className="bg-gray-50 text-left">
-                                <tr>
-                                    <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase">Utilisateur</th>
-                                    <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase">Rôle</th>
-                                    <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase text-center">Projets</th>
-                                    <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase text-center">Marketplace</th>
-                                    <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase text-right">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-100">
-                                {filteredUsers.map((u) => (
-                                    <motion.tr
-                                        key={u.user_id}
-                                        initial={{ opacity: 0 }}
-                                        animate={{ opacity: 1 }}
-                                        className="hover:bg-gray-50/50 transition-colors"
-                                    >
-                                        <td className="px-6 py-4">
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-10 h-10 rounded-full bg-[#99334C]/10 flex items-center justify-center text-[#99334C] font-bold">
-                                                    {u.firstname[0]}{u.lastname[0]}
-                                                </div>
-                                                <div>
-                                                    <p className="font-bold text-gray-900">{u.firstname} {u.lastname}</p>
-                                                    <p className="text-xs text-gray-500">{u.email}</p>
-                                                </div>
+                    <div className="p-4 flex-1">
+                        {recentProjects?.length > 0 ? (
+                            <div className="space-y-2">
+                                {recentProjects.map((p: any) => (
+                                    <div key={p.pr_id} className="flex items-center justify-between p-4 hover:bg-gray-50 rounded-2xl transition-all">
+                                        <div className="flex items-center gap-4">
+                                            <div className="w-10 h-10 rounded-xl bg-[#99334C]/5 text-[#99334C] flex items-center justify-center">
+                                                <Database size={20} />
                                             </div>
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <select
-                                                value={u.role || 'user'}
-                                                onChange={(e) => handleRoleChange(u.user_id, e.target.value)}
-                                                className={`px-3 py-1 rounded-full text-xs font-bold border-none outline-none cursor-pointer ${(u.role === 'admin' || !u.role) // Legacy admin
-                                                    ? 'bg-purple-100 text-purple-700'
-                                                    : 'bg-gray-100 text-gray-600'
-                                                    }`}
-                                            >
-                                                <option value="user">User</option>
-                                                <option value="admin">Admin</option>
-                                            </select>
-                                        </td>
-                                        <td className="px-6 py-4 text-center font-medium text-gray-600">
-                                            {u.projectsCount}
-                                        </td>
-                                        <td className="px-6 py-4 text-center font-medium text-gray-600">
-                                            {u.marketplaceCount}
-                                        </td>
-                                        <td className="px-6 py-4 text-right">
-                                            <button
-                                                onClick={() => handleDeleteUser(u.user_id)}
-                                                className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
-                                                title="Supprimer l'utilisateur"
-                                            >
-                                                <Trash2 size={18} />
-                                            </button>
-                                        </td>
-                                    </motion.tr>
+                                            <div>
+                                                <p className="font-bold text-gray-900">{p.pr_name}</p>
+                                                <p className="text-xs text-gray-400 font-medium">Par {p.owner?.firstname} {p.owner?.lastname}</p>
+                                            </div>
+                                        </div>
+                                        <div className="text-right">
+                                            <p className="text-xs text-gray-400 font-bold flex items-center gap-1 justify-end">
+                                                <Clock size={12} /> {new Date(p.created_at).toLocaleDateString('fr-FR')}
+                                            </p>
+                                        </div>
+                                    </div>
                                 ))}
-                            </tbody>
-                        </table>
+                            </div>
+                        ) : (
+                            <div className="h-40 flex items-center justify-center text-gray-400 font-medium italic">
+                                Aucun projet récent.
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>
