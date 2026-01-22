@@ -40,7 +40,9 @@ export default function UserManagement() {
         try {
             setLoading(true);
             const data = await authService.getAllUsers();
-            setUsers(data || []);
+            // Handle both { users: [...] } and direct [...] responses
+            const usersList = Array.isArray(data) ? data : (data?.users || data || []);
+            setUsers(usersList);
         } catch (error) {
             console.error('Erreur fetch users:', error);
             toast.error("Erreur lors de la récupération des utilisateurs");
@@ -134,8 +136,8 @@ export default function UserManagement() {
                                     </td>
                                     <td className="px-6 py-5">
                                         <span className={`px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-wider ${user.role === 'admin'
-                                                ? 'bg-purple-50 text-purple-600 border border-purple-100'
-                                                : 'bg-blue-50 text-blue-600 border border-blue-100'
+                                            ? 'bg-purple-50 text-purple-600 border border-purple-100'
+                                            : 'bg-blue-50 text-blue-600 border border-blue-100'
                                             }`}>
                                             {user.role}
                                         </span>
