@@ -551,7 +551,8 @@ const TopCreatorsList = () => {
   React.useEffect(() => {
     const fetchCreators = async () => {
       try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/creators/top`);
+        const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001').replace(/\/$/, '');
+        const response = await fetch(`${API_BASE_URL}/api/creators/top`);
         const data = await response.json();
         if (data.success) {
           setCreators(data.data);

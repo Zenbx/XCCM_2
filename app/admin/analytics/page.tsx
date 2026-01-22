@@ -89,164 +89,120 @@ const AnalyticsPage = () => {
     ];
 
     return (
-        <div className="min-h-screen bg-gray-50 p-6 md:p-12">
-            <div className="max-w-7xl mx-auto">
-                {/* Header */}
-                <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
-                    <div>
-                        <h1 className="text-3xl font-bold text-gray-900 mb-1 flex items-center gap-3">
-                            <BarChart3 className="text-[#99334C]" size={32} />
-                            Analytics & Statistiques
-                        </h1>
-                        <p className="text-gray-500">Vue d'ensemble des performances de la plateforme</p>
-                    </div>
-
-                    <div className="bg-white p-1 rounded-lg border border-gray-200 flex">
-                        {['7j', '30j', '1an'].map((range) => (
-                            <button
-                                key={range}
-                                onClick={() => setTimeRange(range)}
-                                className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all ${timeRange === range
-                                    ? 'bg-[#99334C] text-white shadow-sm'
-                                    : 'text-gray-600 hover:bg-gray-50'
-                                    }`}
-                            >
-                                {range}
-                            </button>
-                        ))}
-                    </div>
+        <div className="space-y-6 max-w-7xl mx-auto pb-10">
+            {/* Header */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                    <h1 className="text-xl font-black text-gray-900 flex items-center gap-3">
+                        <BarChart3 className="text-[#99334C]" size={24} />
+                        Analytics & Statistiques
+                    </h1>
+                    <p className="text-gray-500 font-medium text-xs">Vue d'ensemble des performances de la plateforme.</p>
                 </div>
 
-                {/* KPI Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                    <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
-                        <div className="flex items-start justify-between mb-4">
-                            <div className="p-3 rounded-xl bg-blue-100">
-                                <Users className="w-6 h-6 text-blue-600" />
-                            </div>
-                            <div className="flex items-center gap-1 text-sm font-semibold px-2 py-1 rounded-full text-green-700 bg-green-50">
-                                <ArrowUpRight className="w-3 h-3" />
-                                +{((stats.global?.totalUsers || 0) * 0.15).toFixed(1)}%
-                            </div>
-                        </div>
-                        <h3 className="text-gray-500 text-sm font-medium mb-1">Total Utilisateurs</h3>
-                        <p className="text-2xl font-bold text-gray-900">{stats.global?.totalUsers || 0}</p>
-                    </div>
+                <div className="bg-white p-1 rounded-lg border border-gray-200 flex">
+                    {['7j', '30j', '1an'].map((range) => (
+                        <button
+                            key={range}
+                            onClick={() => setTimeRange(range)}
+                            className={`px-3 py-1 text-[10px] font-bold uppercase tracking-wider rounded transition-all ${timeRange === range
+                                ? 'bg-[#99334C] text-white'
+                                : 'text-gray-500 hover:bg-gray-50'
+                                }`}
+                        >
+                            {range}
+                        </button>
+                    ))}
+                </div>
+            </div>
 
-                    <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
-                        <div className="flex items-start justify-between mb-4">
-                            <div className=
-                                "p-3 rounded-xl bg-green-100">
-                                <BookOpen className="w-6 h-6 text-green-600" />
+            {/* KPI Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                {[
+                    { label: 'Total Utilisateurs', val: stats.global?.totalUsers, icon: Users, color: 'text-blue-600', bg: 'bg-blue-50', growth: 15 },
+                    { label: 'Projets Créés', val: stats.global?.totalProjects, icon: BookOpen, color: 'text-green-600', bg: 'bg-green-50', growth: 22 },
+                    { label: 'Documents Publiés', val: stats.global?.totalDocuments, icon: Download, color: 'text-purple-600', bg: 'bg-purple-50', growth: 18 },
+                    { label: 'Total Engagement', val: (stats.global?.totalLikes || 0) + (stats.global?.totalComments || 0), icon: Heart, color: 'text-pink-600', bg: 'bg-pink-50', growth: 25 },
+                ].map((kpi, i) => (
+                    <div key={i} className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+                        <div className="flex items-center justify-between mb-3">
+                            <div className={`p-2 rounded-lg ${kpi.bg} ${kpi.color}`}>
+                                <kpi.icon size={18} />
                             </div>
-                            <div className="flex items-center gap-1 text-sm font-semibold px-2 py-1 rounded-full text-green-700 bg-green-50">
-                                <ArrowUpRight className="w-3 h-3" />
-                                +{((stats.global?.totalProjects || 0) * 0.22).toFixed(1)}%
+                            <div className="text-[10px] font-bold text-green-600 bg-green-50 px-1.5 py-0.5 rounded">
+                                +{kpi.growth}%
                             </div>
                         </div>
-                        <h3 className="text-gray-500 text-sm font-medium mb-1">Projets Créés</h3>
-                        <p className="text-2xl font-bold text-gray-900">{stats.global?.totalProjects || 0}</p>
+                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-none mb-1">{kpi.label}</p>
+                        <p className="text-lg font-black text-gray-900 leading-none">{(kpi.val || 0).toLocaleString()}</p>
                     </div>
+                ))}
+            </div>
 
-                    <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
-                        <div className="flex items-start justify-between mb-4">
-                            <div className="p-3 rounded-xl bg-purple-100">
-                                <Download className="w-6 h-6 text-purple-600" />
-                            </div>
-                            <div className="flex items-center gap-1 text-sm font-semibold px-2 py-1 rounded-full text-green-700 bg-green-50">
-                                <ArrowUpRight className="w-3 h-3" />
-                                +{((stats.global?.totalDocuments || 0) * 0.18).toFixed(1)}%
-                            </div>
+            {/* Charts */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* User Growth Chart */}
+                <div className="lg:col-span-2 bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
+                    <div className="flex items-center justify-between mb-6">
+                        <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest">Croissance Utilisateurs</h3>
+                        <div className="text-[#99334C] text-[10px] font-bold flex items-center gap-1 opacity-70">
+                            <Calendar size={12} /> {timeRange}
                         </div>
-                        <h3 className="text-gray-500 text-sm font-medium mb-1">Documents Publiés</h3>
-                        <p className="text-2xl font-bold text-gray-900">{stats.global?.totalDocuments || 0}</p>
                     </div>
-
-                    <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
-                        <div className="flex items-start justify-between mb-4">
-                            <div className="p-3 rounded-xl bg-pink-100">
-                                <Heart className="w-6 h-6 text-pink-600" />
-                            </div>
-                            <div className="flex items-center gap-1 text-sm font-semibold px-2 py-1 rounded-full text-green-700 bg-green-50">
-                                <ArrowUpRight className="w-3 h-3" />
-                                +{((stats.global?.totalLikes || 0) * 0.25).toFixed(1)}%
-                            </div>
-                        </div>
-                        <h3 className="text-gray-500 text-sm font-medium mb-1">Total Likes</h3>
-                        <p className="text-2xl font-bold text-gray-900">{stats.global?.totalLikes || 0}</p>
-                    </div>
+                    <ResponsiveContainer width="100%" height={250}>
+                        <LineChart data={userGrowthData}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="#f8f8f8" vertical={false} />
+                            <XAxis dataKey="name" tick={{ fontSize: 10, fontWeight: 700 }} axisLine={false} tickLine={false} />
+                            <YAxis tick={{ fontSize: 10, fontWeight: 700 }} axisLine={false} tickLine={false} />
+                            <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.05)', fontSize: '10px' }} />
+                            <Line
+                                type="monotone"
+                                dataKey="utilisateurs"
+                                stroke="#99334C"
+                                strokeWidth={2}
+                                dot={{ fill: '#99334C', r: 3 }}
+                                activeDot={{ r: 5, strokeWidth: 0 }}
+                            />
+                        </LineChart>
+                    </ResponsiveContainer>
                 </div>
 
-                {/* Charts */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
-                    {/* User Growth Chart */}
-                    <div className="lg:col-span-2 bg-white p-8 rounded-2xl border border-gray-100 shadow-sm">
-                        <div className="flex items-center justify-between mb-8">
-                            <h3 className="text-lg font-bold text-gray-900">Croissance Utilisateurs</h3>
-                            <button className="text-[#99334C] text-sm font-semibold flex items-center gap-2 hover:bg-[#99334C]/5 px-3 py-1 rounded-lg transition-colors">
-                                <Calendar className="w-4 h-4" />
-                                {timeRange}
-                            </button>
-                        </div>
-                        <ResponsiveContainer width="100%" height={300}>
-                            <LineChart data={userGrowthData}>
-                                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                                <XAxis dataKey="name" tick={{ fontSize: 12 }} />
-                                <YAxis tick={{ fontSize: 12 }} />
-                                <Tooltip />
-                                <Legend />
-                                <Line
-                                    type="monotone"
-                                    dataKey="utilisateurs"
-                                    stroke="#99334C"
-                                    strokeWidth={3}
-                                    dot={{ fill: '#99334C', r: 4 }}
-                                />
-                            </LineChart>
-                        </ResponsiveContainer>
-                    </div>
-
-                    {/* Content Distribution */}
-                    <div className="bg-white p-8 rounded-2xl border border-gray-100 shadow-sm">
-                        <h3 className="text-lg font-bold text-gray-900 mb-6">Distribution Contenu</h3>
-                        <ResponsiveContainer width="100%" height={300}>
-                            <BarChart data={contentData}>
-                                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                                <XAxis dataKey="name" tick={{ fontSize: 12 }} />
-                                <YAxis tick={{ fontSize: 12 }} />
-                                <Tooltip />
-                                <Bar dataKey="value" fill="#99334C" radius={[8, 8, 0, 0]} />
-                            </BarChart>
-                        </ResponsiveContainer>
-                    </div>
+                {/* Content Distribution */}
+                <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
+                    <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-6">Distribution Contenu</h3>
+                    <ResponsiveContainer width="100%" height={250}>
+                        <BarChart data={contentData}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="#f8f8f8" vertical={false} />
+                            <XAxis dataKey="name" tick={{ fontSize: 10, fontWeight: 700 }} axisLine={false} tickLine={false} />
+                            <YAxis tick={{ fontSize: 10, fontWeight: 700 }} axisLine={false} tickLine={false} />
+                            <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.05)', fontSize: '10px' }} />
+                            <Bar dataKey="value" fill="#99334C" radius={[4, 4, 0, 0]} barSize={40} />
+                        </BarChart>
+                    </ResponsiveContainer>
                 </div>
+            </div>
 
-                {/* Engagement Card */}
-                <div className="bg-gradient-to-br from-[#99334C] to-[#DC3545] p-8 rounded-3xl shadow-xl text-white">
-                    <h3 className="text-2xl font-bold mb-8">Engagement Plateforme</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <div className="bg-white/10 backdrop-blur-sm p-6 rounded-2xl border border-white/20">
-                            <div className="flex items-center gap-3 mb-2">
-                                <Heart className="w-5 h-5" />
-                                <p className="text-white/70 text-sm font-bold">Likes</p>
+            {/* Engagement Card */}
+            <div className="bg-[#36454F] p-6 rounded-xl shadow-sm text-white overflow-hidden relative">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-[#99334C]/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl"></div>
+                <h3 className="text-sm font-bold mb-6 flex items-center gap-2 relative z-10">
+                    <TrendingUp className="text-[#99334C]" size={18} />
+                    Indicateurs d'Engagement
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 relative z-10">
+                    {[
+                        { label: 'Likes', val: stats.global?.totalLikes, icon: Heart },
+                        { label: 'Commentaires', val: stats.global?.totalComments, icon: MessageSquare },
+                        { label: 'Croissance moyenne', val: `+${((stats.global?.totalUsers || 0) * 0.15).toFixed(1)}%`, icon: TrendingUp },
+                    ].map((item, i) => (
+                        <div key={i} className="bg-white/5 backdrop-blur-sm p-4 rounded-lg border border-white/5">
+                            <div className="flex items-center gap-2 mb-2">
+                                <item.icon className="w-3.5 h-3.5 text-white/50" />
+                                <p className="text-white/50 text-[10px] font-bold uppercase tracking-widest">{item.label}</p>
                             </div>
-                            <p className="text-4xl font-black">{(stats.global?.totalLikes || 0).toLocaleString()}</p>
+                            <p className="text-xl font-black">{(item.val || 0).toLocaleString()}</p>
                         </div>
-                        <div className="bg-white/10 backdrop-blur-sm p-6 rounded-2xl border border-white/20">
-                            <div className="flex items-center gap-3 mb-2">
-                                <MessageSquare className="w-5 h-5" />
-                                <p className="text-white/70 text-sm font-bold">Commentaires</p>
-                            </div>
-                            <p className="text-4xl font-black">{(stats.global?.totalComments || 0).toLocaleString()}</p>
-                        </div>
-                        <div className="bg-white/10 backdrop-blur-sm p-6 rounded-2xl border border-white/20">
-                            <div className="flex items-center gap-3 mb-2">
-                                <TrendingUp className="w-5 h-5" />
-                                <p className="text-white/70 text-sm font-bold">Croissance</p>
-                            </div>
-                            <p className="text-4xl font-black">+{((stats.global?.totalUsers || 0) * 0.15).toFixed(1)}%</p>
-                        </div>
-                    </div>
+                    ))}
                 </div>
             </div>
         </div>

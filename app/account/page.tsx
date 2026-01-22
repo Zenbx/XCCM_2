@@ -78,6 +78,7 @@ const AccountPage = () => {
 
   const [vaultItems, setVaultItems] = useState<VaultItem[]>([]);
   const [loadingVault, setLoadingVault] = useState(false);
+  const [showAllActivity, setShowAllActivity] = useState(false);
 
   // Fetch stats on mount
   React.useEffect(() => {
@@ -86,12 +87,19 @@ const AccountPage = () => {
         const token = authService.getAuthToken();
         if (!token) return;
 
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/user/stats`, {
+        const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001').replace(/\/$/, '');
+
+        const response = await fetch(`${API_BASE_URL}/api/user/stats`, {
           headers: {
             'Authorization': `Bearer ${token}`,
-            'x-user-id': user?.user_id || '' // Assuming auth context provides this or token handles it on backend
+            'x-user-id': user?.user_id || ''
           }
         });
+
+        if (!response.ok) {
+          throw new Error(`Erreur HTTP: ${response.status}`);
+        }
+
         const data = await response.json();
         if (data.success) {
           setStats(prev => ({
@@ -109,6 +117,7 @@ const AccountPage = () => {
         }
       } catch (error) {
         console.error("Error loading stats", error);
+        // Ne pas afficher d'erreur visible pour l'utilisateur, garder les valeurs par défaut
       }
     };
     if (user) {
@@ -184,7 +193,9 @@ const AccountPage = () => {
         updateData.append('profile_picture', newProfilePicture);
       }
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/user/profile`, {
+      const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001').replace(/\/$/, '');
+
+      const response = await fetch(`${API_BASE_URL}/api/user/profile`, {
         method: 'PUT',
         headers: {
           'Authorization': (getAuthHeaders() as Record<string, string>).Authorization,
@@ -232,6 +243,10 @@ const AccountPage = () => {
     router.push('/login');
     return null;
   }
+
+  const displayedActivities = showAllActivity
+    ? stats.recentActivities
+    : stats.recentActivities.slice(0, 5);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white py-6 md:py-12 px-4 md:px-6">
@@ -492,27 +507,39 @@ const AccountPage = () => {
               </h3>
 
               <div className="space-y-4">
-                {stats.recentActivities && stats.recentActivities.length > 0 ? (
-                  stats.recentActivities.map((activity, index) => (
-                    <div key={index} className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-all">
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center ${activity.type === 'project' ? 'bg-blue-100' :
-                        activity.type === 'comment' ? 'bg-green-100' :
-                          activity.type === 'like' ? 'bg-red-100' : 'bg-purple-100'
-                        }`}>
-                        {activity.type === 'project' && <Briefcase className="w-5 h-5 text-blue-600" />}
-                        {activity.type === 'comment' && <Mail className="w-5 h-5 text-green-600" />}
-                        {activity.type === 'like' && <Eye className="w-5 h-5 text-red-600" />}
-                        {activity.type === 'invitation' && <Mail className="w-5 h-5 text-purple-600" />}
+                {displayedActivities.length > 0 ? (
+                  <>
+                    {displayedActivities.map((activity, index) => (
+                      <div key={index} className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-all">
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center ${activity.type === 'project' ? 'bg-blue-100' :
+                          activity.type === 'comment' ? 'bg-green-100' :
+                            activity.type === 'like' ? 'bg-red-100' : 'bg-purple-100'
+                          }`}>
+                          {activity.type === 'project' && <Briefcase className="w-5 h-5 text-blue-600" />}
+                          {activity.type === 'comment' && <Mail className="w-5 h-5 text-green-600" />}
+                          {activity.type === 'like' && <Eye className="w-5 h-5 text-red-600" />}
+                          {activity.type === 'invitation' && <Mail className="w-5 h-5 text-purple-600" />}
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-sm font-bold text-gray-900">{activity.title}</p>
+                          <p className="text-xs text-gray-500">{activity.description}</p>
+                        </div>
+                        <div className="text-xs text-gray-400 whitespace-nowrap">
+                          {new Date(activity.timestamp).toLocaleDateString()}
+                        </div>
                       </div>
-                      <div className="flex-1">
-                        <p className="text-sm font-bold text-gray-900">{activity.title}</p>
-                        <p className="text-xs text-gray-500">{activity.description}</p>
-                      </div>
-                      <div className="text-xs text-gray-400 whitespace-nowrap">
-                        {new Date(activity.timestamp).toLocaleDateString()}
-                      </div>
-                    </div>
-                  ))
+                    ))}
+
+                    {stats.recentActivities.length > 5 && (
+                      <button
+                        onClick={() => setShowAllActivity(!showAllActivity)}
+                        className="w-full py-2.5 text-sm font-semibold text-[#99334C] hover:bg-[#99334C]/5 rounded-xl transition-all border border-[#99334C]/20 flex items-center justify-center gap-2"
+                      >
+                        {showAllActivity ? 'Voir moins' : 'Voir plus'}
+                        <ChevronRight className={`w-4 h-4 transition-transform ${showAllActivity ? '-rotate-90' : 'rotate-90'}`} />
+                      </button>
+                    )}
+                  </>
                 ) : (
                   <p className="text-gray-500 text-center py-4">Aucune activité récente.</p>
                 )}

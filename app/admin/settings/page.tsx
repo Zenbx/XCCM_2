@@ -97,26 +97,28 @@ export default function AdminSettings() {
     }
 
     return (
-        <div className="space-y-10 pb-20">
+        <div className="space-y-6">
             {/* Header */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-black text-gray-900 tracking-tight">Paramètres Système</h1>
-                    <p className="text-gray-500 mt-1 font-semibold">Configurez les options globales de la plateforme XCCM2.</p>
+                    <h1 className="text-xl font-black text-gray-900 tracking-tight flex items-center gap-2">
+                        <Settings className="text-[#99334C]" size={24} /> Paramètres Système
+                    </h1>
+                    <p className="text-gray-500 font-medium text-xs">Configurez les options globales de la plateforme XCCM2.</p>
                 </div>
                 <button
                     onClick={handleSave}
                     disabled={saving}
-                    className="bg-[#99334C] text-white px-8 py-4 rounded-2xl font-bold flex items-center gap-3 hover:scale-105 shadow-xl shadow-[#99334C]/20 transition-all disabled:opacity-50"
+                    className="bg-[#99334C] text-white px-5 py-2.5 rounded-lg font-bold flex items-center gap-2 hover:bg-[#802a40] shadow-md shadow-[#99334C]/10 transition-all disabled:opacity-50 text-sm"
                 >
-                    {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
-                    {saving ? 'Enregistrement...' : 'Enregistrer les modifications'}
+                    {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                    {saving ? 'Enregistrement...' : 'Enregistrer'}
                 </button>
-            </div>
+            </header>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
                 {/* Left Sidebar Links (Mini) */}
-                <div className="lg:col-span-1 space-y-4">
+                <div className="lg:col-span-1 space-y-2">
                     {[
                         { label: 'Général', icon: Globe, active: true },
                         { label: 'Sécurité', icon: Shield, active: false },
@@ -127,91 +129,91 @@ export default function AdminSettings() {
                     ].map((item, idx) => (
                         <button
                             key={idx}
-                            className={`w-full flex items-center gap-4 px-6 py-4 rounded-2xl font-bold transition-all ${item.active
-                                ? 'bg-white text-[#99334C] shadow-md border border-gray-100'
+                            className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg font-bold transition-all text-xs ${item.active
+                                ? 'bg-white text-[#99334C] shadow-sm border border-gray-100'
                                 : 'text-gray-500 hover:bg-white/50'
                                 }`}
                         >
-                            <item.icon className={`w-5 h-5 ${item.active ? 'text-[#99334C]' : 'text-gray-400'}`} />
+                            <item.icon className={`w-4 h-4 ${item.active ? 'text-[#99334C]' : 'text-gray-400'}`} />
                             {item.label}
-                            {item.active && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-[#99334C]"></div>}
+                            {item.active && <div className="ml-auto w-1 h-1 rounded-full bg-[#99334C]"></div>}
                         </button>
                     ))}
                 </div>
 
                 {/* Settings Content Area */}
-                <div className="lg:col-span-2 space-y-8">
+                <div className="lg:col-span-3 space-y-6 text-sm">
                     {/* General Settings Card */}
-                    <div className="bg-white rounded-[32px] border border-gray-100 shadow-sm p-8 md:p-10">
-                        <h3 className="text-xl font-bold mb-8 flex items-center gap-2">
-                            <Settings className="w-5 h-5 text-[#99334C]" />
+                    <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
+                        <h3 className="text-sm font-bold mb-6 flex items-center gap-2 text-gray-900 border-b border-gray-50 pb-4">
+                            <Settings className="w-4 h-4 text-[#99334C]" />
                             Configuration Générale
                         </h3>
 
-                        <div className="space-y-10">
+                        <div className="space-y-6">
                             {/* Maintenance Mode Toggle */}
-                            <div className="flex items-center justify-between p-6 bg-gray-50 rounded-[24px]">
-                                <div className="flex items-start gap-4">
-                                    <div className={`p-3 rounded-xl ${maintenanceMode ? 'bg-amber-100' : 'bg-green-100'}`}>
-                                        <Zap className={`w-5 h-5 ${maintenanceMode ? 'text-amber-600' : 'text-green-600'}`} />
+                            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                                <div className="flex items-start gap-3">
+                                    <div className={`p-2 rounded-lg ${maintenanceMode ? 'bg-amber-100' : 'bg-green-100'}`}>
+                                        <Zap className={`w-4 h-4 ${maintenanceMode ? 'text-amber-600' : 'text-green-600'}`} />
                                     </div>
                                     <div>
-                                        <h5 className="font-bold text-gray-900">Mode Maintenance</h5>
-                                        <p className="text-sm text-gray-500 font-semibold">Désactive l'accès à la plateforme pour les utilisateurs.</p>
+                                        <h5 className="font-bold text-gray-900 text-xs">Mode Maintenance</h5>
+                                        <p className="text-[10px] text-gray-500 font-medium">Désactive l'accès à la plateforme pour les utilisateurs.</p>
                                     </div>
                                 </div>
                                 <button
                                     onClick={() => setMaintenanceMode(!maintenanceMode)}
-                                    className={`w-14 h-8 rounded-full relative transition-all duration-300 ${maintenanceMode ? 'bg-[#99334C]' : 'bg-gray-300'}`}
+                                    className={`w-10 h-5 rounded-full relative transition-all duration-300 ${maintenanceMode ? 'bg-[#99334C]' : 'bg-gray-300'}`}
                                 >
-                                    <div className={`absolute top-1 w-6 h-6 bg-white rounded-full shadow-md transition-all duration-300 ${maintenanceMode ? 'left-7' : 'left-1'}`}></div>
+                                    <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow-md transition-all duration-300 ${maintenanceMode ? 'left-5' : 'left-0.5'}`}></div>
                                 </button>
                             </div>
 
                             {/* Form Fields */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                <div className="space-y-3">
-                                    <label className="text-sm font-black text-gray-400 uppercase tracking-widest pl-1">Nom de la Plateforme</label>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="space-y-1.5">
+                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">Nom de la Plateforme</label>
                                     <input
                                         type="text"
                                         value={platformName}
                                         onChange={(e) => setPlatformName(e.target.value)}
-                                        className="w-full px-6 py-4 bg-gray-50 border border-gray-100 rounded-2xl outline-none focus:ring-2 focus:ring-[#99334C]/20 font-bold text-gray-900"
+                                        className="w-full px-4 py-2 bg-gray-50 border border-gray-100 rounded-lg outline-none focus:ring-2 focus:ring-[#99334C]/10 font-bold text-gray-900 text-xs"
                                     />
                                 </div>
-                                <div className="space-y-3">
-                                    <label className="text-sm font-black text-gray-400 uppercase tracking-widest pl-1">URL Support</label>
+                                <div className="space-y-1.5">
+                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">URL Support</label>
                                     <input
                                         type="text"
                                         value={supportUrl}
                                         onChange={(e) => setSupportUrl(e.target.value)}
-                                        className="w-full px-6 py-4 bg-gray-50 border border-gray-100 rounded-2xl outline-none focus:ring-2 focus:ring-[#99334C]/20 font-bold text-gray-900"
+                                        className="w-full px-4 py-2 bg-gray-50 border border-gray-100 rounded-lg outline-none focus:ring-2 focus:ring-[#99334C]/10 font-bold text-gray-900 text-xs"
                                     />
                                 </div>
                             </div>
 
-                            <div className="space-y-3">
-                                <label className="text-sm font-black text-gray-400 uppercase tracking-widest pl-1">Description Meta (SEO)</label>
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">Description Meta (SEO)</label>
                                 <textarea
-                                    rows={4}
+                                    rows={3}
                                     value={metaDescription}
                                     onChange={(e) => setMetaDescription(e.target.value)}
-                                    className="w-full px-6 py-4 bg-gray-50 border border-gray-100 rounded-2xl outline-none focus:ring-2 focus:ring-[#99334C]/20 font-bold text-gray-900 resize-none"
+                                    className="w-full px-4 py-2 bg-gray-50 border border-gray-100 rounded-lg outline-none focus:ring-2 focus:ring-[#99334C]/10 font-bold text-gray-900 text-xs resize-none"
                                 ></textarea>
                             </div>
                         </div>
                     </div>
 
                     {/* Security Card */}
-                    <div className="bg-[#36454F] rounded-[32px] p-8 md:p-10 text-white relative overflow-hidden group">
-                        <div className="absolute top-0 right-0 w-64 h-64 bg-[#99334C]/20 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl group-hover:bg-[#99334C]/30 transition-all duration-700"></div>
+                    <div className="bg-[#36454F] rounded-xl p-6 text-white relative overflow-hidden group border border-gray-800 shadow-sm">
+                        <div className="absolute top-0 right-0 w-48 h-48 bg-[#99334C]/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl group-hover:bg-[#99334C]/20 transition-all duration-700"></div>
 
-                        <h3 className="text-xl font-bold mb-8 flex items-center gap-2 relative z-10">
-                            <Lock className="w-5 h-5 text-[#99334C]" />
+                        <h3 className="text-sm font-bold mb-6 flex items-center gap-2 relative z-10 border-b border-white/5 pb-4">
+                            <Lock className="w-4 h-4 text-[#99334C]" />
                             Authentification & Sécurité
                         </h3>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 relative z-10">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 relative z-10">
                             {[
                                 { label: '2FA Obligatoire pour Admins', status: twoFactorRequired, setter: setTwoFactorRequired },
                                 { label: 'Logs de connexion détaillés', status: detailedLogs, setter: setDetailedLogs },
@@ -220,45 +222,45 @@ export default function AdminSettings() {
                             ].map((sec, i) => (
                                 <div
                                     key={i}
-                                    className="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/10 cursor-pointer hover:bg-white/10 transition-all"
+                                    className="flex items-center justify-between p-3 bg-white/5 rounded-lg border border-white/5 cursor-pointer hover:bg-white/10 transition-all"
                                     onClick={() => sec.setter(!sec.status)}
                                 >
-                                    <span className="text-sm font-bold text-white/80">{sec.label}</span>
+                                    <span className="text-[11px] font-bold text-white/80">{sec.label}</span>
                                     <div className={`p-1 rounded-full ${sec.status ? 'text-green-400' : 'text-gray-500'}`}>
-                                        <CheckCircle2 className="w-5 h-5" />
+                                        <CheckCircle2 className="w-4 h-4" />
                                     </div>
                                 </div>
                             ))}
                         </div>
 
-                        <div className="mt-8 p-6 bg-[#99334C] rounded-2xl flex items-center justify-between group-hover:scale-[1.02] transition-transform shadow-2xl">
-                            <div className="flex items-center gap-4">
-                                <Cloud className="w-8 h-8 opacity-50" />
+                        <div className="mt-6 p-4 bg-[#99334C] rounded-lg flex items-center justify-between transition-transform shadow-lg border border-white/10">
+                            <div className="flex items-center gap-3">
+                                <Cloud className="w-6 h-6 opacity-50" />
                                 <div>
-                                    <h5 className="font-bold">Backup Cloud Hebdomadaire</h5>
-                                    <p className="text-xs opacity-70">Dernière sauvegarde: il y a 2h</p>
+                                    <h5 className="font-bold text-xs uppercase">Backup Cloud Hebdomadaire</h5>
+                                    <p className="text-[10px] opacity-70">Dernière sauvegarde: il y a 2h</p>
                                 </div>
                             </div>
-                            <button className="px-4 py-2 bg-white text-[#99334C] rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-gray-50 transition-all">
-                                Lancer Backup
+                            <button className="px-3 py-1.5 bg-white text-[#99334C] rounded-lg font-bold text-[10px] uppercase tracking-widest hover:bg-gray-50 transition-all shadow-sm">
+                                Backup Now
                             </button>
                         </div>
                     </div>
 
-                    <div className="flex justify-end gap-4">
+                    <div className="flex justify-end gap-3 pt-4">
                         <button
                             onClick={fetchSettings}
-                            className="px-8 py-4 bg-gray-100 text-gray-500 rounded-2xl font-bold hover:bg-gray-200 transition-all"
+                            className="px-6 py-2.5 bg-gray-100 text-gray-500 rounded-lg font-bold hover:bg-gray-200 transition-all text-xs"
                         >
                             Réinitialiser
                         </button>
                         <button
                             onClick={handleSave}
                             disabled={saving}
-                            className="px-8 py-4 bg-[#99334C] text-white rounded-2xl font-bold flex items-center gap-2 shadow-lg shadow-[#99334C]/20 hover:scale-105 transition-all disabled:opacity-50"
+                            className="px-6 py-2.5 bg-[#99334C] text-white rounded-lg font-bold flex items-center gap-2 shadow-md shadow-[#99334C]/10 hover:bg-[#802a40] transition-all disabled:opacity-50 text-xs"
                         >
-                            {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <RefreshCcw className="w-5 h-5" />}
-                            {saving ? 'Déploiement...' : 'Déployer Changements'}
+                            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCcw className="w-4 h-4" />}
+                            {saving ? 'Déploiement...' : 'Déployer'}
                         </button>
                     </div>
                 </div>

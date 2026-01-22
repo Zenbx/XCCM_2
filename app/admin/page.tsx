@@ -61,69 +61,71 @@ const AdminDashboard = () => {
     const { global, recentUsers, recentProjects } = stats || {};
 
     return (
-        <div className="space-y-10 pb-20">
-            <header>
-                <h1 className="text-4xl font-black text-gray-900 mb-2 flex items-center gap-3">
-                    <Shield className="text-[#99334C]" size={36} /> Vue d'ensemble
-                </h1>
-                <p className="text-gray-500 font-medium">État général de la plateforme XCCM2.</p>
+        <div className="space-y-6">
+            <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                    <h1 className="text-2xl font-black text-gray-900 flex items-center gap-3">
+                        <Shield className="text-[#99334C]" size={28} /> Dashboard Overview
+                    </h1>
+                    <p className="text-gray-500 font-medium text-sm">État général de la plateforme XCCM2.</p>
+                </div>
             </header>
 
             {/* Stats Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 {[
                     { label: 'Utilisateurs', val: global?.totalUsers, icon: Users, color: 'text-blue-600', bg: 'bg-blue-50' },
                     { label: 'Projets', val: global?.totalProjects, icon: Layout, color: 'text-green-600', bg: 'bg-green-50' },
                     { label: 'Documents', val: global?.totalDocuments, icon: FileText, color: 'text-purple-600', bg: 'bg-purple-50' },
-                    { label: 'Interactions', val: (global?.totalLikes || 0) + (global?.totalComments || 0), icon: Heart, color: 'text-rose-600', bg: 'bg-rose-50' },
+                    { label: 'Engagement', val: (global?.totalLikes || 0) + (global?.totalComments || 0), icon: Heart, color: 'text-rose-600', bg: 'bg-rose-50' },
                 ].map((s, i) => (
-                    <div key={i} className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm flex items-center gap-5">
-                        <div className={`p-4 ${s.bg} ${s.color} rounded-2xl`}>
-                            <s.icon size={24} />
+                    <div key={i} className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm flex items-center gap-4">
+                        <div className={`p-3 ${s.bg} ${s.color} rounded-lg`}>
+                            <s.icon size={20} />
                         </div>
                         <div>
-                            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">{s.label}</p>
-                            <p className="text-2xl font-black text-gray-900">{s.val || 0}</p>
+                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-none mb-1">{s.label}</p>
+                            <p className="text-lg font-black text-gray-900 leading-none">{(s.val || 0).toLocaleString()}</p>
                         </div>
                     </div>
                 ))}
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Recent Users */}
-                <div className="bg-white rounded-[2.5rem] border border-gray-100 shadow-sm overflow-hidden flex flex-col">
-                    <div className="p-8 border-b border-gray-50 flex items-center justify-between">
-                        <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-                            <Users size={20} className="text-[#99334C]" /> Dernières Inscriptions
+                <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden flex flex-col">
+                    <div className="px-5 py-4 border-b border-gray-50 flex items-center justify-between">
+                        <h2 className="text-sm font-bold text-gray-900 flex items-center gap-2">
+                            <Users size={16} className="text-[#99334C]" /> Dernières Inscriptions
                         </h2>
-                        <Link href="/admin/users" className="text-sm font-bold text-[#99334C] hover:underline flex items-center gap-1">
-                            Voir tout <ArrowRight size={14} />
+                        <Link href="/admin/users" className="text-xs font-bold text-[#99334C] hover:underline flex items-center gap-1">
+                            Voir tout <ArrowRight size={12} />
                         </Link>
                     </div>
-                    <div className="p-4 flex-1">
+                    <div className="p-2 flex-1">
                         {recentUsers?.length > 0 ? (
-                            <div className="space-y-2">
+                            <div className="space-y-1">
                                 {recentUsers.map((u: any) => (
-                                    <div key={u.user_id} className="flex items-center justify-between p-4 hover:bg-gray-50 rounded-2xl transition-all">
-                                        <div className="flex items-center gap-4">
-                                            <div className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center font-bold text-gray-500 uppercase">
+                                    <div key={u.user_id} className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition-all">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center font-bold text-gray-500 text-xs uppercase">
                                                 {u.firstname?.[0] || u.email[0]}
                                             </div>
                                             <div>
-                                                <p className="font-bold text-gray-900">{u.firstname} {u.lastname}</p>
-                                                <p className="text-xs text-gray-400 font-medium">{u.email}</p>
+                                                <p className="text-xs font-bold text-gray-900 leading-tight">{u.firstname} {u.lastname}</p>
+                                                <p className="text-[10px] text-gray-400 font-medium leading-tight">{u.email}</p>
                                             </div>
                                         </div>
                                         <div className="text-right">
-                                            <p className="text-xs text-gray-400 font-bold flex items-center gap-1 justify-end">
-                                                <Clock size={12} /> {new Date(u.created_at).toLocaleDateString('fr-FR')}
+                                            <p className="text-[10px] text-gray-400 font-bold flex items-center gap-1 justify-end">
+                                                <Clock size={10} /> {new Date(u.created_at).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })}
                                             </p>
                                         </div>
                                     </div>
                                 ))}
                             </div>
                         ) : (
-                            <div className="h-40 flex items-center justify-center text-gray-400 font-medium italic">
+                            <div className="h-40 flex items-center justify-center text-xs text-gray-400 font-medium italic">
                                 Aucun utilisateur récent.
                             </div>
                         )}
@@ -131,39 +133,39 @@ const AdminDashboard = () => {
                 </div>
 
                 {/* Recent Projects */}
-                <div className="bg-white rounded-[2.5rem] border border-gray-100 shadow-sm overflow-hidden flex flex-col">
-                    <div className="p-8 border-b border-gray-50 flex items-center justify-between">
-                        <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-                            <Layout size={20} className="text-[#99334C]" /> Projets Récents
+                <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden flex flex-col">
+                    <div className="px-5 py-4 border-b border-gray-50 flex items-center justify-between">
+                        <h2 className="text-sm font-bold text-gray-900 flex items-center gap-2">
+                            <Layout size={16} className="text-[#99334C]" /> Projets Récents
                         </h2>
-                        <Link href="/admin/projects" className="text-sm font-bold text-[#99334C] hover:underline flex items-center gap-1">
-                            Voir tout <ArrowRight size={14} />
+                        <Link href="/admin/projects" className="text-xs font-bold text-[#99334C] hover:underline flex items-center gap-1">
+                            Voir tout <ArrowRight size={12} />
                         </Link>
                     </div>
-                    <div className="p-4 flex-1">
+                    <div className="p-2 flex-1">
                         {recentProjects?.length > 0 ? (
-                            <div className="space-y-2">
+                            <div className="space-y-1">
                                 {recentProjects.map((p: any) => (
-                                    <div key={p.pr_id} className="flex items-center justify-between p-4 hover:bg-gray-50 rounded-2xl transition-all">
-                                        <div className="flex items-center gap-4">
-                                            <div className="w-10 h-10 rounded-xl bg-[#99334C]/5 text-[#99334C] flex items-center justify-center">
-                                                <Database size={20} />
+                                    <div key={p.pr_id} className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition-all">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-8 h-8 rounded-lg bg-[#99334C]/5 text-[#99334C] flex items-center justify-center">
+                                                <Database size={14} />
                                             </div>
                                             <div>
-                                                <p className="font-bold text-gray-900">{p.pr_name}</p>
-                                                <p className="text-xs text-gray-400 font-medium">Par {p.owner?.firstname} {p.owner?.lastname}</p>
+                                                <p className="text-xs font-bold text-gray-900 leading-tight">{p.pr_name}</p>
+                                                <p className="text-[10px] text-gray-400 font-medium leading-tight">Par {p.owner?.firstname} {p.owner?.lastname}</p>
                                             </div>
                                         </div>
                                         <div className="text-right">
-                                            <p className="text-xs text-gray-400 font-bold flex items-center gap-1 justify-end">
-                                                <Clock size={12} /> {new Date(p.created_at).toLocaleDateString('fr-FR')}
+                                            <p className="text-[10px] text-gray-400 font-bold flex items-center gap-1 justify-end">
+                                                <Clock size={10} /> {new Date(p.created_at).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })}
                                             </p>
                                         </div>
                                     </div>
                                 ))}
                             </div>
                         ) : (
-                            <div className="h-40 flex items-center justify-center text-gray-400 font-medium italic">
+                            <div className="h-40 flex items-center justify-center text-xs text-gray-400 font-medium italic">
                                 Aucun projet récent.
                             </div>
                         )}

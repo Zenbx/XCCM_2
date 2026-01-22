@@ -29,7 +29,8 @@ const PublicProfilePage = () => {
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/${userId}`);
+        const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001').replace(/\/$/, '');
+        const response = await fetch(`${API_BASE_URL}/api/users/${userId}`);
         const data = await response.json();
 
         if (data.success) {
@@ -38,6 +39,7 @@ const PublicProfilePage = () => {
           setError(data.message || 'Impossible de charger le profil');
         }
       } catch (err) {
+        console.error("Erreur loading profile:", err);
         setError('Erreur lors du chargement du profil');
       } finally {
         setIsLoading(false);

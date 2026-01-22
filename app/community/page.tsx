@@ -20,10 +20,12 @@ const CommunityPage = () => {
     const [posts, setPosts] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
+    const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001').replace(/\/$/, '');
+
     React.useEffect(() => {
         const fetchFeed = async () => {
             try {
-                const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/community/feed`);
+                const response = await fetch(`${API_BASE_URL}/api/community/feed`);
                 const data = await response.json();
                 if (data.success) {
                     setPosts(data.data);
