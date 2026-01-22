@@ -592,7 +592,7 @@ const AccountPage = () => {
               <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-1 gap-4">
                 <div className="p-4 bg-gradient-to-br from-[#99334C]/10 to-[#99334C]/5 rounded-xl text-center sm:text-left">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm text-gray-600">Documents Publiés</span>
+                    <span className="text-sm text-gray-600">Mes Projets</span>
                     <BookOpen className="w-5 h-5 text-[#99334C]" />
                   </div>
                   <p className="text-3xl font-bold text-[#99334C]">{stats.coursCreated}</p>

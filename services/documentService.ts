@@ -76,9 +76,7 @@ class DocumentService {
         `${API_BASE_URL}/api/documents?page=${page}&limit=${limit}`,
         {
           method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          }
+          headers: getAuthHeaders()
         }
       );
 
@@ -103,9 +101,7 @@ class DocumentService {
         `${API_BASE_URL}/api/documents/${docId}`,
         {
           method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          }
+          headers: getAuthHeaders()
         }
       );
 
