@@ -20,7 +20,10 @@ import {
     FolderPlus,
     X,
     Box,
-    ChevronDown
+    ChevronDown,
+    AlertCircle,
+    Info,
+    ShieldCheck
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/context/AuthContext';
@@ -1111,6 +1114,22 @@ const PreviewPage = () => {
                             </div>
                             <p className="text-gray-400 text-sm">Généré par XCCM 2</p>
                             <p className="text-gray-400 text-xs mt-1">{new Date().toLocaleDateString()}</p>
+                        </div>
+                    </div>
+
+                    {/* FIDELITY WARNINGS */}
+                    <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start gap-4 mb-8 no-print">
+                        <div className="p-2 bg-amber-100 rounded-lg text-amber-700">
+                            <AlertCircle size={20} />
+                        </div>
+                        <div>
+                            <h4 className="font-bold text-amber-900 flex items-center gap-2">
+                                Fidélité de l'aperçu : 95%
+                                <span className="text-xs font-normal bg-amber-200 px-2 py-0.5 rounded-full text-amber-800">Haute fidélité</span>
+                            </h4>
+                            <p className="text-sm text-amber-800 mt-1">
+                                Cet aperçu correspond à 95% à la version finale. **Note importante :** Les blocs interactifs (Indices, Quiz, Code) seront convertis en version statique lors de la génération du PDF ou DOCX.
+                            </p>
                         </div>
                     </div>
 

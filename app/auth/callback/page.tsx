@@ -25,14 +25,19 @@ const AuthCallbackContent = () => {
             hasFetched.current = true;
 
             try {
+                console.log("[Callback] Starting fetchToken process...");
                 // 1. Check for Token from Bridge (Query Param)
                 const bridgeToken = searchParams.get('token');
+                console.log("[Callback] Token from URL:", bridgeToken ? "Present" : "Missing");
+
                 if (bridgeToken) {
                     setCookie('auth_token', bridgeToken);
                     localStorage.setItem(TOKEN_STORAGE_KEY, bridgeToken);
+                    console.log("[Callback] Token saved. Refreshing user...");
 
                     // IMPORTANT: Refresh Auth Context to update Header UI immediately
                     await refreshUser();
+                    console.log("[Callback] User refreshed. Redirecting to home...");
 
                     toast.success(isRegister ? 'Inscription réussie ! Bienvenue !' : 'Connexion réussie !');
                     router.push('/edit-home');
@@ -85,10 +90,10 @@ const AuthCallbackContent = () => {
                     <>
                         <Loader2 className="w-12 h-12 text-[#99334C] animate-spin mx-auto mb-4" />
                         <h1 className="text-2xl font-bold text-gray-900 mb-2">
-                            {isRegister ? "S'inscrire" : "Se connecter"}
+                            {isRegister ? "Création de votre compte" : "Connexion en cours"}
                         </h1>
                         <p className="text-gray-600">
-                            {isRegister ? "Veuillez patienter pendant la création de votre compte..." : "Veuillez patienter pendant la connexion..."}
+                            {isRegister ? "Veuillez patienter pendant que nous créons votre profil..." : "Veuillez patienter pendant que nous préparons votre espace..."}
                         </p>
                     </>
                 ) : (
