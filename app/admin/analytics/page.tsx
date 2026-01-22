@@ -115,8 +115,8 @@ const AnalyticsPage = () => {
                                 key={range}
                                 onClick={() => setTimeRange(range)}
                                 className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all ${timeRange === range
-                                        ? 'bg-[#99334C] text-white shadow-sm'
-                                        : 'text-gray-600 hover:bg-gray-50'
+                                    ? 'bg-[#99334C] text-white shadow-sm'
+                                    : 'text-gray-600 hover:bg-gray-50'
                                     }`}
                             >
                                 {range}
