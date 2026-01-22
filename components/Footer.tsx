@@ -28,7 +28,7 @@ const Footer = () => {
   // mais la demande spécifique était "page edit". On va inclure /edit et /edit-home par sécurité ou juste /edit.
   // "dans la page edit" => probablement l'éditeur de cours (/edit?...)
   // On va masquer pour tout ce qui commence par /edit
-  if (pathname?.startsWith('/edit')) {
+  if (pathname?.startsWith('/edit') || pathname?.startsWith('/admin')) {
     return null;
   }
 

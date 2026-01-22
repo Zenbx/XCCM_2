@@ -4,6 +4,7 @@ import React, { useState, useEffect, Suspense } from 'react';
 import { ArrowLeft, Eye, EyeOff, Loader2 } from 'lucide-react';
 import { Facebook, Instagram, Twitter } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
 import toast from 'react-hot-toast';
 
@@ -297,12 +298,12 @@ const LoginPage = () => {
             </div>
 
             <div className="text-center">
-              <a
-                href="#"
+              <Link
+                href="/forgot-password"
                 className="text-sm text-[#99334C] hover:underline font-medium"
               >
                 Mot de Passe oublié ?
-              </a>
+              </Link>
             </div>
 
             <div className="text-center pt-4 border-t border-gray-200">

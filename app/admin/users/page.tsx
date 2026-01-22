@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
     Users,
     Search,
@@ -13,21 +13,47 @@ import {
     CheckCircle2,
     XCircle,
     Clock,
-    Edit2
+    Edit2,
+    Loader2
 } from 'lucide-react';
 import { motion } from 'framer-motion';
-
-const mockUsers = [
-    { id: '1', name: 'Jeff Belekotan', email: 'jeff@example.com', role: 'ADMIN', status: 'Active', joined: '2023-10-15', projects: 12 },
-    { id: '2', name: 'Raissa Wokmeni', email: 'raissa@example.com', role: 'USER', status: 'Active', joined: '2023-11-20', projects: 5 },
-    { id: '3', name: 'Pr Batchakui', email: 'batchakui@polytech.cm', role: 'USER', status: 'Active', joined: '2023-12-05', projects: 28 },
-    { id: '4', name: 'Alain Tchakoute', email: 'alain@test.com', role: 'USER', status: 'Suspended', joined: '2024-01-10', projects: 2 },
-    { id: '5', name: 'Marie Curie', email: 'marie@science.fr', role: 'USER', status: 'Active', joined: '2024-01-12', projects: 9 },
-    { id: '6', name: 'System Bot', email: 'bot@xccm2.com', role: 'ADMIN', status: 'Active', joined: '2023-01-01', projects: 0 },
-];
+import { authService } from '@/services/authService';
+import toast from 'react-hot-toast';
 
 export default function UserManagement() {
     const [searchTerm, setSearchTerm] = useState('');
+    const [users, setUsers] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        fetchUsers();
+    }, []);
+
+    const fetchUsers = async () => {
+        try {
+            const data = await authService.getAllUsers();
+            setUsers(data || []);
+        } catch (error) {
+            console.error('Erreur fetch users:', error);
+            toast.error("Erreur lors de la récupération des utilisateurs");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const filteredUsers = users.filter(user =>
+        user.firstname?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        user.lastname?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        user.email?.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+    if (loading) {
+        return (
+            <div className="min-h-[400px] flex items-center justify-center">
+                <Loader2 className="w-10 h-10 text-[#99334C] animate-spin" />
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-8 pb-10">
@@ -46,9 +72,9 @@ export default function UserManagement() {
             {/* Stats Summary Panel */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
                 {[
-                    { label: 'Total Membres', val: '1,280', icon: Users, color: 'text-gray-900' },
-                    { label: 'En ligne', val: '43', icon: ActivityIcon, color: 'text-green-600' },
-                    { label: 'Signalements', val: '2', icon: XCircle, color: 'text-red-600' },
+                    { label: 'Total Membres', val: users.length.toString(), icon: Users, color: 'text-gray-900' },
+                    { label: 'Admins', val: users.filter(u => u.role === 'admin').length.toString(), icon: Shield, color: 'text-[#99334C]' },
+                    { label: 'Utilisateurs', val: users.filter(u => u.role !== 'admin').length.toString(), icon: Users, color: 'text-blue-600' },
                 ].map((s, i) => (
                     <div key={i} className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm flex items-center gap-4">
                         <div className="w-12 h-12 rounded-2xl bg-gray-50 flex items-center justify-center">
@@ -76,16 +102,6 @@ export default function UserManagement() {
                             className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-2 focus:ring-[#99334C]/20 outline-none transition-all placeholder-gray-400 font-semibold"
                         />
                     </div>
-                    <div className="flex items-center gap-3 w-full md:w-auto">
-                        <button className="flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-3 border border-gray-100 rounded-2xl text-gray-600 font-bold hover:bg-gray-50 transition-all">
-                            <Filter className="w-4 h-4" />
-                            Filtres
-                        </button>
-                        <button className="flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-3 border border-gray-100 rounded-2xl text-gray-600 font-bold hover:bg-gray-50 transition-all">
-                            <ArrowUpDown className="w-4 h-4" />
-                            Trier
-                        </button>
-                    </div>
                 </div>
 
                 {/* User Table */}
@@ -95,22 +111,22 @@ export default function UserManagement() {
                             <tr className="bg-gray-50/50">
                                 <th className="px-8 py-5 text-xs font-black text-gray-400 uppercase tracking-widest">Utilisateur</th>
                                 <th className="px-8 py-5 text-xs font-black text-gray-400 uppercase tracking-widest">Rôle</th>
-                                <th className="px-8 py-5 text-xs font-black text-gray-400 uppercase tracking-widest">Statut</th>
-                                <th className="px-8 py-5 text-xs font-black text-gray-400 uppercase tracking-widest">Projets</th>
-                                <th className="px-8 py-5 text-xs font-black text-gray-400 uppercase tracking-widest">Inscription</th>
+                                <th className="px-8 py-5 text-xs font-black text-gray-400 uppercase tracking-widest">Date</th>
                                 <th className="px-8 py-5 text-center"></th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-50">
-                            {mockUsers.map((user) => (
-                                <tr key={user.id} className="hover:bg-gray-50/80 transition-all group">
+                            {filteredUsers.map((user) => (
+                                <tr key={user.user_id} className="hover:bg-gray-50/80 transition-all group">
                                     <td className="px-8 py-6">
                                         <div className="flex items-center gap-4">
                                             <div className="w-11 h-11 rounded-xl bg-[#99334C]/10 text-[#99334C] flex items-center justify-center font-bold shadow-inner">
-                                                {user.name[0]}
+                                                {user.firstname?.[0] || user.email[0]}
                                             </div>
                                             <div className="flex flex-col">
-                                                <span className="text-gray-900 font-bold group-hover:text-[#99334C] transition-all">{user.name}</span>
+                                                <span className="text-gray-900 font-bold group-hover:text-[#99334C] transition-all">
+                                                    {user.firstname} {user.lastname}
+                                                </span>
                                                 <div className="flex items-center gap-1.5 text-xs text-gray-400 font-semibold">
                                                     <Mail className="w-3 h-3" />
                                                     {user.email}
@@ -119,26 +135,16 @@ export default function UserManagement() {
                                         </div>
                                     </td>
                                     <td className="px-8 py-6">
-                                        <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black tracking-widest uppercase ${user.role === 'ADMIN' ? 'bg-[#99334C] text-white shadow-md shadow-[#99334C]/20' : 'bg-gray-100 text-gray-600'
+                                        <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black tracking-widest uppercase ${user.role === 'admin' ? 'bg-[#99334C] text-white shadow-md shadow-[#99334C]/20' : 'bg-gray-100 text-gray-600'
                                             }`}>
                                             <Shield className="w-3 h-3" />
                                             {user.role}
                                         </div>
                                     </td>
                                     <td className="px-8 py-6">
-                                        <div className={`flex items-center gap-2 text-sm font-bold ${user.status === 'Active' ? 'text-green-600' : 'text-red-500'
-                                            }`}>
-                                            {user.status === 'Active' ? <CheckCircle2 className="w-4 h-4" /> : <XCircle className="w-4 h-4" />}
-                                            {user.status}
-                                        </div>
-                                    </td>
-                                    <td className="px-8 py-6">
-                                        <span className="text-sm font-bold text-gray-900">{user.projects} cours</span>
-                                    </td>
-                                    <td className="px-8 py-6">
                                         <div className="flex items-center gap-2 text-xs text-gray-500 font-semibold">
                                             <Clock className="w-3.5 h-3.5" />
-                                            {new Date(user.joined).toLocaleDateString('fr-FR', { month: 'short', year: 'numeric' })}
+                                            {new Date(user.created_at).toLocaleDateString('fr-FR', { month: 'short', year: 'numeric' })}
                                         </div>
                                     </td>
                                     <td className="px-8 py-6 text-center">
@@ -159,29 +165,9 @@ export default function UserManagement() {
 
                 {/* Pagination Placeholder */}
                 <div className="p-8 border-t border-gray-50 flex items-center justify-between text-sm font-bold">
-                    <p className="text-gray-400">Affichage de 6 sur 1,280 utilisateurs</p>
-                    <div className="flex gap-2">
-                        <button className="px-4 py-2 bg-gray-50 text-gray-400 rounded-xl cursor-not-allowed">Précédent</button>
-                        <button className="px-4 py-2 border border-gray-100 hover:bg-gray-50 rounded-xl transition-all">Suivant</button>
-                    </div>
+                    <p className="text-gray-400">Affichage de {filteredUsers.length} utilisateurs</p>
                 </div>
             </div>
         </div>
-    );
-}
-
-function ActivityIcon(props: any) {
-    return (
-        <svg
-            {...props}
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            viewBox="0 0 24 24"
-        >
-            <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
-        </svg>
     );
 }
