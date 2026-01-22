@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { authService } from '@/services/authService';
+import { adminService } from '@/services/adminService';
 import toast from 'react-hot-toast';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
@@ -39,17 +40,8 @@ const AdminDashboard = () => {
 
     const fetchAdminStats = async () => {
         try {
-            const token = authService.getAuthToken();
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/stats`, {
-                headers: { 'Authorization': `Bearer ${token}` },
-            });
-
-            if (!response.ok) throw new Error('Erreur chargement stats');
-
-            const result = await response.json();
-            if (result.success) {
-                setStats(result.data);
-            }
+            const data = await adminService.getStats();
+            setStats(data);
         } catch (error) {
             console.error('Erreur admin stats:', error);
             toast.error("Erreur chargement statistiques");

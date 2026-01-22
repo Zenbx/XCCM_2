@@ -14,6 +14,7 @@ import {
     CircleDashed
 } from 'lucide-react';
 import { authService } from '@/services/authService';
+import { adminService } from '@/services/adminService';
 import toast from 'react-hot-toast';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
@@ -39,18 +40,8 @@ export default function ProjectManagement() {
     const fetchProjects = async () => {
         try {
             setLoading(true);
-            const token = authService.getAuthToken();
-            const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
-            const response = await fetch(`${API_URL}/api/admin/projects`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-
-            if (!response.ok) throw new Error('Erreur lors de la récupération des projets');
-
-            const result = await response.json();
-            if (result.success) {
-                setProjects(result.data.projects || []);
-            }
+            const data = await adminService.getAllProjects();
+            setProjects(data.projects || []);
         } catch (error) {
             console.error('Erreur fetch projects:', error);
             toast.error("Erreur lors du chargement des projets");
@@ -138,8 +129,8 @@ export default function ProjectManagement() {
                                     </td>
                                     <td className="px-6 py-5">
                                         <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${proj.status === 'Published'
-                                                ? 'bg-green-50 text-green-600 border border-green-100'
-                                                : 'bg-amber-50 text-amber-600 border border-amber-100'
+                                            ? 'bg-green-50 text-green-600 border border-green-100'
+                                            : 'bg-amber-50 text-amber-600 border border-amber-100'
                                             }`}>
                                             {proj.status === 'Published' ? <CheckCircle2 size={12} /> : <CircleDashed size={12} />}
                                             {proj.status}
