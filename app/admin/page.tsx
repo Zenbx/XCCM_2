@@ -12,6 +12,7 @@ const AdminDashboard = () => {
     const { user, isAdmin, isLoading } = useAuth();
     const router = useRouter();
     const [users, setUsers] = useState<any[]>([]);
+    const [globalStats, setGlobalStats] = useState<any>(null);
     const [loadingUsers, setLoadingUsers] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
 
@@ -22,16 +23,29 @@ const AdminDashboard = () => {
                 router.push('/edit-home');
                 return;
             }
-            fetchUsers();
+            fetchAdminStats();
         }
     }, [isLoading, isAdmin, router]);
 
-    const fetchUsers = async () => {
+    const fetchAdminStats = async () => {
         try {
-            const data = await authService.getAllUsers();
-            setUsers(data);
+            const token = authService.getAuthToken();
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/stats`, {
+                headers: { 'Authorization': `Bearer ${token}` },
+            });
+
+            if (!response.ok) {
+                throw new Error('Erreur chargement stats');
+            }
+
+            const result = await response.json();
+            if (result.success) {
+                setUsers(result.data.users || []);
+                setGlobalStats(result.data.global || {});
+            }
         } catch (error) {
-            toast.error("Erreur chargement utilisateurs");
+            console.error('Erreur admin stats:', error);
+            toast.error("Erreur chargement statistiques");
         } finally {
             setLoadingUsers(false);
         }
@@ -89,7 +103,7 @@ const AdminDashboard = () => {
                         </div>
                         <div>
                             <p className="text-sm text-gray-500 font-bold">Utilisateurs</p>
-                            <p className="text-2xl font-black text-gray-900">{users.length}</p>
+                            <p className="text-2xl font-black text-gray-900">{globalStats?.totalUsers || users.length}</p>
                         </div>
                     </div>
                     <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-4">
@@ -99,7 +113,7 @@ const AdminDashboard = () => {
                         <div>
                             <p className="text-sm text-gray-500 font-bold">Projets Totaux</p>
                             <p className="text-2xl font-black text-gray-900">
-                                {users.reduce((acc, u) => acc + (u.projectsCount || 0), 0)}
+                                {globalStats?.totalProjects || users.reduce((acc, u) => acc + (u.projectsCount || 0), 0)}
                             </p>
                         </div>
                     </div>
@@ -108,9 +122,9 @@ const AdminDashboard = () => {
                             <Database size={24} />
                         </div>
                         <div>
-                            <p className="text-sm text-gray-500 font-bold">Marketplace Items</p>
+                            <p className="text-sm text-gray-500 font-bold">Documents Publiés</p>
                             <p className="text-2xl font-black text-gray-900">
-                                {users.reduce((acc, u) => acc + (u.marketplaceCount || 0), 0)}
+                                {globalStats?.totalDocuments || users.reduce((acc, u) => acc + (u.marketplaceCount || 0), 0)}
                             </p>
                         </div>
                     </div>
@@ -168,8 +182,8 @@ const AdminDashboard = () => {
                                                 value={u.role || 'user'}
                                                 onChange={(e) => handleRoleChange(u.user_id, e.target.value)}
                                                 className={`px-3 py-1 rounded-full text-xs font-bold border-none outline-none cursor-pointer ${(u.role === 'admin' || !u.role) // Legacy admin
-                                                        ? 'bg-purple-100 text-purple-700'
-                                                        : 'bg-gray-100 text-gray-600'
+                                                    ? 'bg-purple-100 text-purple-700'
+                                                    : 'bg-gray-100 text-gray-600'
                                                     }`}
                                             >
                                                 <option value="user">User</option>
