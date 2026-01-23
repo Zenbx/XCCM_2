@@ -28,6 +28,7 @@ const HelpCenter = () => {
   const { user } = useAuth();
   const t = useTranslations('help');
   const tc = useTranslations('common');
+  const tContact = useTranslations('contact');
 
   useEffect(() => {
     if (!searchQuery.trim()) {
@@ -103,12 +104,12 @@ const HelpCenter = () => {
 
   const handleContactSubmit = async () => {
     if (!user) {
-      toast.error(t('contactForm.fillAll'), { icon: '🔒', duration: 4000 });
+      toast.error(tContact('fillAll'), { icon: '🔒', duration: 4000 });
       return;
     }
 
     if (!contactForm.nom || !contactForm.email || !contactForm.sujet || !contactForm.description) {
-      toast.error(t('contactForm.fillAll'));
+      toast.error(tContact('fillAll'));
       return;
     }
 
@@ -120,7 +121,7 @@ const HelpCenter = () => {
         subject: contactForm.sujet,
         message: contactForm.description
       });
-      toast.success(t('contactForm.success'));
+      toast.success(tContact('success'));
       setFormSubmitted(true);
       setContactForm({ nom: '', email: '', sujet: '', description: '' });
       setTimeout(() => { setFormSubmitted(false); }, 5000);
@@ -269,16 +270,16 @@ const HelpCenter = () => {
             {/* Support Form Section */}
             {activeSection === 'support' && (
               <div className="mt-12 bg-gray-50 dark:bg-gray-900 rounded-2xl p-8 border border-gray-200 dark:border-gray-700">
-                <h3 className="text-2xl font-bold mb-6 flex items-center gap-3"><Mail className="text-[#99334C]" /> {t('contactForm.formTitle')}</h3>
+                <h3 className="text-2xl font-bold mb-6 flex items-center gap-3"><Mail className="text-[#99334C]" /> {tContact('formTitle')}</h3>
                 <div className="grid md:grid-cols-2 gap-6 mt-8">
                   <div className="space-y-6">
-                    <div><label className="block text-sm font-semibold mb-2">{t('contactForm.name')}</label><input type="text" value={contactForm.nom} onChange={e => setContactForm({ ...contactForm, nom: e.target.value })} className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-[#99334C]/20 dark:bg-gray-800" placeholder={t('contactForm.namePlaceholder')} /></div>
-                    <div><label className="block text-sm font-semibold mb-2">{t('contactForm.email')}</label><input type="email" value={contactForm.email} onChange={e => setContactForm({ ...contactForm, email: e.target.value })} className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-[#99334C]/20 dark:bg-gray-800" placeholder={t('contactForm.emailPlaceholder')} /></div>
-                    <button onClick={handleContactSubmit} disabled={isSubmitting} className="w-full bg-[#99334C] text-white py-4 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-[#7a283d] disabled:opacity-50 transition-all">{isSubmitting ? <><Loader2 className="animate-spin" /> {tc('loading')}</> : <><Send /> {t('contactForm.send')}</>}</button>
-                    {formSubmitted && <div className="p-4 bg-green-50 text-green-700 rounded-xl font-medium flex items-center gap-2"><Send size={18} /> {t('contactForm.success')}</div>}
+                    <div><label className="block text-sm font-semibold mb-2">{tContact('name')}</label><input type="text" value={contactForm.nom} onChange={e => setContactForm({ ...contactForm, nom: e.target.value })} className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-[#99334C]/20 dark:bg-gray-800" placeholder={tContact('namePlaceholder')} /></div>
+                    <div><label className="block text-sm font-semibold mb-2">{tContact('email')}</label><input type="email" value={contactForm.email} onChange={e => setContactForm({ ...contactForm, email: e.target.value })} className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-[#99334C]/20 dark:bg-gray-800" placeholder={tContact('emailPlaceholder')} /></div>
+                    <button onClick={handleContactSubmit} disabled={isSubmitting} className="w-full bg-[#99334C] text-white py-4 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-[#7a283d] disabled:opacity-50 transition-all">{isSubmitting ? <><Loader2 className="animate-spin" /> {tc('loading')}</> : <><Send /> {tContact('send')}</>}</button>
+                    {formSubmitted && <div className="p-4 bg-green-50 text-green-700 rounded-xl font-medium flex items-center gap-2"><Send size={18} /> {tContact('success')}</div>}
                   </div>
                   <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm space-y-4">
-                    <h4 className="font-bold">{t('contactForm.replyTime')}</h4>
+                    <h4 className="font-bold">{tContact('replyTime')}</h4>
                     <div className="flex items-center gap-3 text-gray-600 dark:text-gray-400"><Mail size={18} /> contact@xccm2.com</div>
                     <div className="flex items-center gap-3 text-gray-600 dark:text-gray-400"><Phone size={18} /> +237 6XX XXX XXX</div>
                   </div>

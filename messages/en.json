@@ -22,7 +22,8 @@
         "all": "All",
         "none": "None",
         "success": "Success",
-        "error": "Error"
+        "error": "Error",
+        "and": "and"
     },
     "header": {
         "links": {
@@ -115,8 +116,7 @@
                 "No card required",
                 "24/7 support"
             ]
-        },
-        "previewLabel": "Preview"
+        }
     },
     "editor": {
         "homeTitle": "Back to home",
@@ -235,24 +235,6 @@
             "subtitle": "Passionate people in education and technology united to build the best experience",
             "autoScroll": "Auto-scroll • Hover to pause"
         },
-        "contact": {
-            "sectionLabel": "Contact us",
-            "heading": "Get in touch",
-            "subtitle": "Have a question or suggestion? Please write to us.",
-            "formTitle": "Send us a message",
-            "name": "Name",
-            "email": "Email",
-            "subject": "Subject",
-            "message": "Message",
-            "send": "Send",
-            "namePlaceholder": "Your name",
-            "emailPlaceholder": "your@email.com",
-            "subjectPlaceholder": "Subject of your message",
-            "messagePlaceholder": "Write your message here...",
-            "infoTitle": "Contact information",
-            "hoursTitle": "Opening hours",
-            "closed": "Closed"
-        },
         "cta": {
             "title": "Ready to revolutionize your teaching?",
             "subtitle": "Join XCCM 2 and create exceptional pedagogical content",
@@ -311,21 +293,32 @@
                     "api": "API documentation"
                 }
             }
-        },
-        "contactForm": {
-            "formTitle": "Send us a message",
-            "name": "Name",
-            "email": "Email",
-            "subject": "Subject",
-            "description": "Description",
-            "send": "Send",
-            "namePlaceholder": "Your name",
-            "emailPlaceholder": "your@email.com",
-            "subjectPlaceholder": "Subject of your message",
-            "descriptionPlaceholder": "Describe your message here...",
-            "success": "Message sent, thanks!",
-            "fillAll": "Please fill in all fields",
-            "replyTime": "We will reply within 24-48h."
         }
+    },
+    "contact": {
+        "title": "Get in touch",
+        "subtitle": "Have a question or suggestion? Please write to us.",
+        "formTitle": "Send us a message",
+        "name": "Name",
+        "email": "Email",
+        "subject": "Subject",
+        "message": "Message",
+        "description": "Description",
+        "send": "Send",
+        "sending": "Sending...",
+        "namePlaceholder": "Your name",
+        "emailPlaceholder": "your@email.com",
+        "subjectPlaceholder": "Subject of your message",
+        "messagePlaceholder": "Write your message here...",
+        "descriptionPlaceholder": "Describe your message here...",
+        "success": "Message sent, thanks!",
+        "error": "Error sending message",
+        "authError": "You must be logged in to contact us via the form.",
+        "fillAll": "Please fill in all fields",
+        "replyTime": "We will reply within 24-48h.",
+        "infoTitle": "Contact information",
+        "hoursTitle": "Opening hours",
+        "closed": "Closed",
+        "sectionLabel": "Contact us"
     }
 }

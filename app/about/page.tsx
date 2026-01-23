@@ -17,7 +17,8 @@ import {
   Heart,
   Sparkles,
   Award,
-  TrendingUp
+  TrendingUp,
+  ArrowRight
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
@@ -29,6 +30,8 @@ import { Loader2 } from 'lucide-react';
 const AboutPage = () => {
   const router = useRouter();
   const t = useTranslations('about');
+  const tContact = useTranslations('contact');
+  const tc = useTranslations('common');
   const [contactForm, setContactForm] = useState({
     nom: '',
     email: '',
@@ -111,7 +114,7 @@ const AboutPage = () => {
 
   const handleContactSubmit = async () => {
     if (!user) {
-      toast.error("Vous devez être connecté pour nous contacter par formulaire", {
+      toast.error(tContact('authError'), {
         icon: '🔒',
         duration: 4000
       });
@@ -119,7 +122,7 @@ const AboutPage = () => {
     }
 
     if (!contactForm.nom || !contactForm.email || !contactForm.sujet || !contactForm.message) {
-      toast.error("Veuillez remplir tous les champs");
+      toast.error(tContact('fillAll'));
       return;
     }
 
@@ -131,10 +134,10 @@ const AboutPage = () => {
         subject: contactForm.sujet,
         message: contactForm.message
       });
-      toast.success(t('contactForm.success') || "Votre message a été envoyé avec succès !");
+      toast.success(tContact('success'));
       setContactForm({ nom: '', email: '', sujet: '', message: '' });
     } catch (err: any) {
-      toast.error(err.message || "Erreur lors de l'envoi du message");
+      toast.error(err.message || tContact('error'));
     } finally {
       setIsSubmitting(false);
     }
@@ -299,7 +302,7 @@ const AboutPage = () => {
                       <div className="absolute inset-0 bg-gradient-to-br from-[#99334C]/40 to-[#99334C]/60 transition-all group-hover:from-[#99334C]/30 group-hover:to-[#99334C]/50" />
                       <div className="absolute inset-0 flex items-center justify-center"><div className="w-20 h-20 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center opacity-60 group-hover:opacity-0 transition-opacity duration-300"><Users className="w-10 h-10 text-white" /></div></div>
                       <div className="absolute inset-0 bg-[#99334C]/90 opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center justify-center gap-4">
-                        {member.email && (<a href={`mailto:${member.email}`} className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white/30 transition-all transform hover:scale-110" title={t('contact.email')} onClick={(e) => e.stopPropagation()}><Mail className="w-5 h-5 text-white" /></a>)}
+                        {member.email && (<a href={`mailto:${member.email}`} className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white/30 transition-all transform hover:scale-110" title={tContact('email')} onClick={(e) => e.stopPropagation()}><Mail className="w-5 h-5 text-white" /></a>)}
                         {member.github && (<a href={member.github} target="_blank" rel="noopener noreferrer" className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white/30 transition-all transform hover:scale-110" title="GitHub" onClick={(e) => e.stopPropagation()}><Github className="w-5 h-5 text-white" /></a>)}
                       </div>
                     </div>
@@ -329,25 +332,25 @@ const AboutPage = () => {
           <div className="text-center mb-16 animate-on-scroll">
             <div className="inline-flex items-center gap-2 bg-[#99334C]/10 dark:bg-[#99334C]/20 px-4 py-2 rounded-full mb-4">
               <Mail className="w-5 h-5 text-[#99334C] dark:text-[#ff9daf]" />
-              <span className="text-sm font-semibold text-[#99334C] dark:text-[#ff9daf]">{t('contact.sectionLabel')}</span>
+              <span className="text-sm font-semibold text-[#99334C] dark:text-[#ff9daf]">{tContact('sectionLabel')}</span>
             </div>
-            <h2 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">{t('contact.heading')}</h2>
-            <p className="text-xl text-gray-600 dark:text-gray-400 max-w-3xl mx-auto">{t('contact.subtitle')}</p>
+            <h2 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">{tContact('title')}</h2>
+            <p className="text-xl text-gray-600 dark:text-gray-400 max-w-3xl mx-auto">{tContact('subtitle')}</p>
           </div>
           <div className="grid lg:grid-cols-2 gap-12">
             <div className="bg-white dark:bg-gray-800 rounded-3xl p-8 shadow-xl border border-gray-100 dark:border-gray-700 animate-on-scroll">
-              <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">{t('contact.formTitle')}</h3>
+              <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">{tContact('formTitle')}</h3>
               <div className="space-y-6">
-                <div><label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">{t('contact.name')}</label><input type="text" value={contactForm.nom} onChange={(e) => setContactForm({ ...contactForm, nom: e.target.value })} className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#99334C]/20 focus:border-[#99334C] transition-all bg-white dark:bg-gray-900 text-gray-900 dark:text-white" placeholder={t('contact.namePlaceholder')} /></div>
-                <div><label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">{t('contact.email')}</label><input type="email" value={contactForm.email} onChange={(e) => setContactForm({ ...contactForm, email: e.target.value })} className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#99334C]/20 focus:border-[#99334C] transition-all bg-white dark:bg-gray-900 text-gray-900 dark:text-white" placeholder={t('contact.emailPlaceholder')} /></div>
-                <div><label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">{t('contact.subject')}</label><input type="text" value={contactForm.sujet} onChange={(e) => setContactForm({ ...contactForm, sujet: e.target.value })} className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#99334C]/20 focus:border-[#99334C] transition-all bg-white dark:bg-gray-900 text-gray-900 dark:text-white" placeholder={t('contact.subjectPlaceholder')} /></div>
-                <div><label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">{t('contact.message')}</label><textarea value={contactForm.message} onChange={(e) => setContactForm({ ...contactForm, message: e.target.value })} rows={5} className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#99334C]/20 focus:border-[#99334C] transition-all resize-none bg-white dark:bg-gray-900 text-gray-900 dark:text-white" placeholder={t('contact.messagePlaceholder')} /></div>
-                <button onClick={handleContactSubmit} disabled={isSubmitting} className="w-full bg-[#99334C] text-white py-3 rounded-xl font-semibold hover:bg-[#7a283d] transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2 disabled:opacity-50">{isSubmitting ? (<><Loader2 className="w-5 h-5 animate-spin" /> Envoi...</>) : (<><Send className="w-5 h-5" /> {t('contact.send')}</>)}</button>
+                <div><label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">{tContact('name')}</label><input type="text" value={contactForm.nom} onChange={(e) => setContactForm({ ...contactForm, nom: e.target.value })} className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#99334C]/20 focus:border-[#99334C] transition-all bg-white dark:bg-gray-900 text-gray-900 dark:text-white" placeholder={tContact('namePlaceholder')} /></div>
+                <div><label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">{tContact('email')}</label><input type="email" value={contactForm.email} onChange={(e) => setContactForm({ ...contactForm, email: e.target.value })} className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#99334C]/20 focus:border-[#99334C] transition-all bg-white dark:bg-gray-900 text-gray-900 dark:text-white" placeholder={tContact('emailPlaceholder')} /></div>
+                <div><label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">{tContact('subject')}</label><input type="text" value={contactForm.sujet} onChange={(e) => setContactForm({ ...contactForm, sujet: e.target.value })} className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#99334C]/20 focus:border-[#99334C] transition-all bg-white dark:bg-gray-900 text-gray-900 dark:text-white" placeholder={tContact('subjectPlaceholder')} /></div>
+                <div><label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">{tContact('message')}</label><textarea value={contactForm.message} onChange={(e) => setContactForm({ ...contactForm, message: e.target.value })} rows={5} className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#99334C]/20 focus:border-[#99334C] transition-all resize-none bg-white dark:bg-gray-900 text-gray-900 dark:text-white" placeholder={tContact('messagePlaceholder')} /></div>
+                <button onClick={handleContactSubmit} disabled={isSubmitting} className="w-full bg-[#99334C] text-white py-3 rounded-xl font-semibold hover:bg-[#7a283d] transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2 disabled:opacity-50">{isSubmitting ? (<><Loader2 className="w-5 h-5 animate-spin" /> {tContact('sending')}</>) : (<><Send className="w-5 h-5" /> {tContact('send')}</>)}</button>
               </div>
             </div>
             <div className="space-y-6 animate-on-scroll" style={{ animationDelay: '0.2s' }}>
               <div className="bg-gradient-to-br from-[#99334C] to-[#7a283d] rounded-3xl p-8 text-white shadow-xl">
-                <h3 className="text-2xl font-bold mb-6">{t('contact.infoTitle')}</h3>
+                <h3 className="text-2xl font-bold mb-6">{tContact('infoTitle')}</h3>
                 <div className="space-y-6">
                   <div className="flex items-start gap-4"><div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center flex-shrink-0"><Mail className="w-6 h-6" /></div><div><p className="font-semibold mb-1">Email</p><p className="text-white/80">contact@xccm2.com</p><p className="text-white/80">support@xccm2.com</p></div></div>
                   <div className="flex items-start gap-4"><div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center flex-shrink-0"><Phone className="w-6 h-6" /></div><div><p className="font-semibold mb-1">Téléphone</p><p className="text-white/80">+237 6XX XXX XXX</p><p className="text-white/80 text-sm">Lun-Ven, 9h-18h</p></div></div>
@@ -359,7 +362,7 @@ const AboutPage = () => {
                   <a href="#" className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-lg flex items-center justify-center hover:bg-white/30 transition-all"><Github className="w-5 h-5" /></a>
                 </div></div>
               </div>
-              <div className="bg-white dark:bg-gray-800 rounded-3xl p-8 shadow-lg border border-gray-100 dark:border-gray-700"><h4 className="text-xl font-bold text-gray-900 dark:text-white mb-4">{t('contact.hoursTitle')}</h4><div className="space-y-3 text-gray-700 dark:text-gray-300"><div className="flex justify-between"><span>Lundi - Vendredi</span><span className="font-semibold">9h - 18h</span></div><div className="flex justify-between"><span>Samedi</span><span className="font-semibold">10h - 14h</span></div><div className="flex justify-between"><span>Dimanche</span><span className="text-red-500 font-semibold">{t('contact.closed')}</span></div></div></div>
+              <div className="bg-white dark:bg-gray-800 rounded-3xl p-8 shadow-lg border border-gray-100 dark:border-gray-700"><h4 className="text-xl font-bold text-gray-900 dark:text-white mb-4">{tContact('hoursTitle')}</h4><div className="space-y-3 text-gray-700 dark:text-gray-300"><div className="flex justify-between"><span>Lundi - Vendredi</span><span className="font-semibold">9h - 18h</span></div><div className="flex justify-between"><span>Samedi</span><span className="font-semibold">10h - 14h</span></div><div className="flex justify-between"><span>Dimanche</span><span className="text-red-500 font-semibold">{tContact('closed')}</span></div></div></div>
             </div>
           </div>
         </div>

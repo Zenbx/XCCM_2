@@ -11,6 +11,7 @@ import toast from 'react-hot-toast';
 import { useTranslations } from 'next-intl';
 
 const LoginPage = () => {
+  const t = useTranslations('auth');
   const tc = useTranslations('common');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -111,7 +112,7 @@ const LoginPage = () => {
             className="flex items-center gap-2 text-white/90 hover:text-white transition-colors w-fit group"
           >
             <ArrowLeft className="w-5 h-5 transition-transform group-hover:-translate-x-1" />
-            <span className="font-medium">{t('back')}</span>
+            <span className="font-medium">{tc('back')}</span>
           </button>
 
           <div className="max-w-md">
@@ -148,7 +149,7 @@ const LoginPage = () => {
           </div>
 
           <p className="text-sm text-white/70">
-            {t('clickingAccept')} <a href="#" className="underline hover:text-white">{t('privacyPolicy')}</a> {t('and')} <a href="#" className="underline hover:text-white">{t('termsOfUse')}</a>.
+            {t('clickingAccept')} <a href="#" className="underline hover:text-white">{t('privacyPolicy')}</a> {tc('and')} <a href="#" className="underline hover:text-white">{t('termsOfUse')}</a>.
           </p>
         </div>
       </div>

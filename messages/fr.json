@@ -22,7 +22,8 @@
         "all": "Tous",
         "none": "Aucun",
         "success": "Succès",
-        "error": "Erreur"
+        "error": "Erreur",
+        "and": "et"
     },
     "header": {
         "links": {
@@ -115,8 +116,7 @@
                 "Sans carte bancaire",
                 "Support 24/7"
             ]
-        },
-        "previewLabel": "Aperçu"
+        }
     },
     "editor": {
         "homeTitle": "Retour à l'accueil",
@@ -235,24 +235,6 @@
             "subtitle": "Des passionnés d'éducation et de technologie réunis pour créer la meilleure expérience",
             "autoScroll": "Défilement automatique • Survolez pour mettre en pause"
         },
-        "contact": {
-            "sectionLabel": "Contactez-nous",
-            "heading": "Nous contacter",
-            "subtitle": "Une question ? Une suggestion ? N'hésitez pas à nous écrire",
-            "formTitle": "Envoyez-nous un message",
-            "name": "Nom",
-            "email": "E-mail",
-            "subject": "Sujet",
-            "message": "Message",
-            "send": "Envoyer",
-            "namePlaceholder": "Votre nom",
-            "emailPlaceholder": "votre@email.com",
-            "subjectPlaceholder": "Objet de votre message",
-            "messagePlaceholder": "Écrivez votre message ici...",
-            "infoTitle": "Informations de contact",
-            "hoursTitle": "Horaires d'ouverture",
-            "closed": "Fermé"
-        },
         "cta": {
             "title": "Prêt à révolutionner votre enseignement ?",
             "subtitle": "Rejoignez XCCM 2 et créez des contenus pédagogiques exceptionnels",
@@ -311,21 +293,32 @@
                     "api": "Documentation API"
                 }
             }
-        },
-        "contactForm": {
-            "formTitle": "Envoyez-nous un message",
-            "name": "Nom",
-            "email": "E-mail",
-            "subject": "Sujet",
-            "description": "Description",
-            "send": "Envoyer",
-            "namePlaceholder": "Votre nom",
-            "emailPlaceholder": "votre@email.com",
-            "subjectPlaceholder": "Objet de votre message",
-            "descriptionPlaceholder": "Décrivez votre message ici...",
-            "success": "Message envoyé, merci !",
-            "fillAll": "Veuillez remplir tous les champs",
-            "replyTime": "Nous vous répondrons dans les 24-48h."
         }
+    },
+    "contact": {
+        "title": "Nous contacter",
+        "subtitle": "Une question ? Une suggestion ? N'hésitez pas à nous écrire.",
+        "formTitle": "Envoyez-nous un message",
+        "name": "Nom",
+        "email": "E-mail",
+        "subject": "Sujet",
+        "message": "Message",
+        "description": "Description",
+        "send": "Envoyer",
+        "sending": "Envoi...",
+        "namePlaceholder": "Votre nom",
+        "emailPlaceholder": "votre@email.com",
+        "subjectPlaceholder": "Objet de votre message",
+        "messagePlaceholder": "Écrivez votre message ici...",
+        "descriptionPlaceholder": "Décrivez votre message ici...",
+        "success": "Message envoyé, merci !",
+        "error": "Erreur lors de l'envoi du message",
+        "authError": "Vous devez être connecté pour nous contacter par formulaire.",
+        "fillAll": "Veuillez remplir tous les champs",
+        "replyTime": "Nous vous répondrons dans les 24-48h.",
+        "infoTitle": "Informations de contact",
+        "hoursTitle": "Horaires d'ouverture",
+        "closed": "Fermé",
+        "sectionLabel": "Contactez-nous"
     }
 }

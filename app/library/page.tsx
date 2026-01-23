@@ -520,7 +520,7 @@ const LibraryPage = () => {
 
       {/* Top Creators Section */}
       <section className="py-12 px-6 bg-gray-50 border-t border-gray-200">
-        <div className="max-w-7xl mx-auto">          <div className="flex items-center justify-between mb-8">
+        <div className="max-w-7xl mx-auto">
           <div className="flex items-center justify-between mb-8">
             <h2 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
               <Star className="w-8 h-8 text-[#99334C]" />

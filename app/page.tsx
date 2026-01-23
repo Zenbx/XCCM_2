@@ -10,6 +10,7 @@ const HomePage = () => {
   const [activeTab, setActiveTab] = useState('organizations');
   const router = useRouter();
   const t = useTranslations('home');
+  const tc = useTranslations('common');
 
   const tabs = [
     { id: 'organizations', label: t('tabs.organizations'), icon: Users },
@@ -62,12 +63,10 @@ const HomePage = () => {
 
 
           <h1 className="text-4xl md:text-6xl font-extrabold text-gray-900 dark:text-white mb-6 tracking-tight">
-            {t('hero.titleLine1')} <span className="text-[#99334C] dark:text-[#ff9daf]">{t('hero.emph1')}</span> {t('and')} <br />
+            {t('hero.titleLine1')} <span className="text-[#99334C] dark:text-[#ff9daf]">{t('hero.emph1')}</span> {tc('and')} <br />
             <span className="text-[#99334C] dark:text-[#ff9daf]">{t('hero.emph2')}</span> {t('hero.titleLine2')}
           </h1>
-          <p className="text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto mb-10">
-            {t.home.hero.subtitle}
-          </p>
+          {t('hero.subtitle')}
 
           <div className="flex flex-wrap justify-center gap-4">
             <button
@@ -216,8 +215,8 @@ const HomePage = () => {
       {/* --- SECTION FEATURES --- */}
       <section className="py-20 px-6 max-w-7xl mx-auto">
         <div className="text-center mb-16">
-          <h2 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">{t.home.features.title}</h2>
-          <p className="text-xl text-gray-600 dark:text-gray-400">{t.home.features.subtitle}</p>
+          <h2 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">{t('features.title')}</h2>
+          <p className="text-xl text-gray-600 dark:text-gray-400">{t('features.subtitle')}</p>
         </div>
 
         <div className="grid md:grid-cols-2 gap-8">
@@ -225,32 +224,32 @@ const HomePage = () => {
             <div className="bg-[#99334C]/10 dark:bg-[#99334C]/20 w-12 h-12 rounded-lg flex items-center justify-center mb-6 group-hover:bg-[#99334C] dark:group-hover:bg-[#ff9daf] transition-all">
               <FileText className="w-6 h-6 text-[#99334C] dark:text-[#ff9daf] group-hover:text-white" />
             </div>
-            <h3 className="text-2xl font-bold mb-4 text-gray-700 dark:text-gray-200">{t.home.features.composition.title}</h3>
-            <p className="text-gray-600 dark:text-gray-400">{t.home.features.composition.desc}</p>
+            <h3 className="text-2xl font-bold mb-4 text-gray-700 dark:text-gray-200">{t('features.composition.title')}</h3>
+            <p className="text-gray-600 dark:text-gray-400">{t('features.composition.desc')}</p>
           </div>
 
           <div className="border border-gray-200 dark:border-gray-700 rounded-3xl p-8 hover:border-[#99334C]/50 dark:hover:border-[#ff9daf]/50 transition-all group hover:shadow-xl dark:bg-gray-800/50">
             <div className="bg-[#99334C]/10 dark:bg-[#99334C]/20 w-12 h-12 rounded-lg flex items-center justify-center mb-6 group-hover:bg-[#99334C] dark:group-hover:bg-[#ff9daf] transition-all">
               <BookOpen className="w-6 h-6 text-[#99334C] dark:text-[#ff9daf] group-hover:text-white" />
             </div>
-            <h3 className="text-2xl font-bold mb-4 text-gray-700 dark:text-gray-200">{t.home.features.courses.title}</h3>
-            <p className="text-gray-600 dark:text-gray-400">{t.home.features.courses.desc}</p>
+            <h3 className="text-2xl font-bold mb-4 text-gray-700 dark:text-gray-200">{t('features.courses.title')}</h3>
+            <p className="text-gray-600 dark:text-gray-400">{t('features.courses.desc')}</p>
           </div>
 
           <div className="border border-gray-200 dark:border-gray-700 rounded-3xl p-8 hover:border-[#99334C]/50 dark:hover:border-[#ff9daf]/50 transition-all group hover:shadow-xl dark:bg-gray-800/50">
             <div className="bg-[#99334C]/10 dark:bg-[#99334C]/20 w-12 h-12 rounded-lg flex items-center justify-center mb-6 group-hover:bg-[#99334C] dark:group-hover:bg-[#ff9daf] transition-all">
               <Share2 className="w-6 h-6 text-[#99334C] dark:text-[#ff9daf] group-hover:text-white" />
             </div>
-            <h3 className="text-2xl font-bold mb-4 text-gray-700 dark:text-gray-200">{t.home.features.sharing.title}</h3>
-            <p className="text-gray-600 dark:text-gray-400">{t.home.features.sharing.desc}</p>
+            <h3 className="text-2xl font-bold mb-4 text-gray-700 dark:text-gray-200">{t('features.sharing.title')}</h3>
+            <p className="text-gray-600 dark:text-gray-400">{t('features.sharing.desc')}</p>
           </div>
 
           <div className="border border-gray-200 dark:border-gray-700 rounded-3xl p-8 hover:border-[#99334C]/50 dark:hover:border-[#ff9daf]/50 transition-all group hover:shadow-xl dark:bg-gray-800/50">
             <div className="bg-[#99334C]/10 dark:bg-[#99334C]/20 w-12 h-12 rounded-lg flex items-center justify-center mb-6 group-hover:bg-[#99334C] dark:group-hover:bg-[#ff9daf] transition-all">
               <Zap className="w-6 h-6 text-[#99334C] dark:text-[#ff9daf] group-hover:text-white" />
             </div>
-            <h3 className="text-2xl font-bold mb-4 text-gray-700 dark:text-gray-200">{t.home.features.performance.title}</h3>
-            <p className="text-gray-600 dark:text-gray-400">{t.home.features.performance.desc}</p>
+            <h3 className="text-2xl font-bold mb-4 text-gray-700 dark:text-gray-200">{t('features.performance.title')}</h3>
+            <p className="text-gray-600 dark:text-gray-400">{t('features.performance.desc')}</p>
           </div>
         </div>
       </section>
@@ -259,8 +258,8 @@ const HomePage = () => {
       <section className="py-20 px-6 bg-gradient-to-b from-white dark:from-gray-950 to-[#99334C]/5 dark:to-[#99334C]/10">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">{t.home.testimonials.title}</h2>
-            <p className="text-xl text-gray-600 dark:text-gray-400">{t.home.testimonials.subtitle}</p>
+            <h2 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">{t('testimonials.title')}</h2>
+            <p className="text-xl text-gray-600 dark:text-gray-400">{t('testimonials.subtitle')}</p>
           </div>
 
           <div className="grid md:grid-cols-3 gap-8">
