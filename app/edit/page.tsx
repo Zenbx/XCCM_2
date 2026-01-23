@@ -8,8 +8,8 @@ import {
 import toast from 'react-hot-toast';
 
 // Custom Hooks
-import { useLanguage } from '@/context/LanguageContext';
 import { useAuth } from '@/context/AuthContext';
+import { useTranslations } from 'next-intl';
 import { useRealtimeSync } from '@/hooks/useRealtimeSync';
 import { useSynapseSync } from '@/hooks/useSynapseSync';
 import { useEditorCommands } from '@/hooks/useEditorCommands';
@@ -31,7 +31,6 @@ import EditorSkeletonView from './components/EditorSkeletonView';
 import PublishToMarketplaceModal from '@/components/Editor/PublishToMarketplaceModal';
 
 // Services & Utils
-import { translations } from '@/services/locales';
 import { structureService } from '@/services/structureService';
 import { commentService } from '@/services/commentService';
 import '../../styles/view-transitions.css';
@@ -40,8 +39,8 @@ const XCCM2Editor = () => {
   const searchParams = useSearchParams();
   const router = useRouter();
   const projectName = searchParams.get('projectName');
-  const { language } = useLanguage();
-  const t = translations[language] ?? translations.fr;
+  const t = useTranslations('editor');
+  const tc = useTranslations('common');
   const { user: authUser } = useAuth();
 
   // Core State Hook

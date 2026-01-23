@@ -4,7 +4,8 @@ import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronRight, Plus, Folder, FolderOpen, FileText, GripVertical } from 'lucide-react';
 import { Part, Chapter, Paragraph, Notion } from '@/services/structureService';
-import { Language, translations } from '@/services/locales';
+import { Language } from '@/services/locales';
+import { useTranslations } from 'next-intl';
 import toast from 'react-hot-toast';
 import ContextMenu from './ContextMenu';
 import RichTooltip from '../UI/RichTooltip';
@@ -320,7 +321,7 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
   pendingGranule = null,
   isLoading = false
 }) => {
-  const t = (translations[language] ?? translations.fr).toc;
+  const t = useTranslations('toc');
   const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({});
   const [editingId, setEditingId] = useState<string | null>(null);
   const [tempTitle, setTempTitle] = useState("");
@@ -831,7 +832,7 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
     >
       {/* Header */}
       <div className="p-4 border-b border-gray-100 flex items-center justify-between sticky top-0 z-10 bg-white/95 backdrop-blur-sm">
-        <h2 className="text-gray-800 font-bold text-sm uppercase tracking-wider">{t.title}</h2>
+        <h2 className="text-gray-800 font-bold text-sm uppercase tracking-wider">{t('title')}</h2>
         <div className="flex items-center gap-2">
           {/* ✅ NOUVEAU: Info tooltip */}
           <RichTooltip
@@ -844,7 +845,7 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
               </svg>
             </button>
           </RichTooltip>
-          <RichTooltip title={t.addPart} description="Créer une nouvelle division principale dans votre projet.">
+          <RichTooltip title={t('addPart')} description="Créer une nouvelle division principale dans votre projet.">
             <button
               onClick={onCreatePart}
               className="p-1.5 bg-[#99334C]/10 text-[#99334C] hover:bg-[#99334C] hover:text-white rounded-md transition-all"
@@ -896,7 +897,7 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
             <p className="text-sm">Le projet est vide</p>
             {onCreatePart && (
               <button onClick={onCreatePart} className="mt-3 text-[#99334C] font-medium hover:underline text-sm">
-                {t.addPart}
+                {t('addPart')}
               </button>
             )}
             {pendingGranule && pendingGranule.type === 'part' && (
@@ -1053,7 +1054,7 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
                               )}
 
                               {onCreateParagraph && (
-                                <RichTooltip title={t.addParagraph} description="Diviser votre chapitre en sections de contenu.">
+                                <RichTooltip title={t('addParagraph')} description="Diviser votre chapitre en sections de contenu.">
                                   <button
                                     onClick={(e) => { e.stopPropagation(); onCreateParagraph(part.part_title, chapter.chapter_title); }}
                                     className="p-1 text-gray-300 hover:text-amber-600 hover:bg-amber-50 rounded transition-all"
