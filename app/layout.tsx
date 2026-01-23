@@ -33,24 +33,31 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+import { NextIntlClientProvider } from 'next-intl';
+import { getMessages } from 'next-intl/server';
+
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const messages = await getMessages();
+
   return (
     <html lang="en">
       <body
         className={`${poppins.variable} ${geistSans.variable} ${geistMono.variable} antialiased`}
         style={{ position: 'relative' }}
       >
-        <Providers>
-          <Header />
-          <div className="pt-[60px] lg:pt-[70px]" style={{ position: 'relative' }}>
-            {children}
-          </div>
-          <Footer />
-        </Providers>
+        <NextIntlClientProvider messages={messages}>
+          <Providers>
+            <Header />
+            <div className="pt-[60px] lg:pt-[70px]" style={{ position: 'relative' }}>
+              {children}
+            </div>
+            <Footer />
+          </Providers>
+        </NextIntlClientProvider>
       </body>
     </html>
   );
