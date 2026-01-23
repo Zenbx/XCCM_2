@@ -261,17 +261,17 @@ export default function Header() {
               animate={{ x: 0 }}
               exit={{ x: "100%" }}
               transition={{ type: "spring", damping: 25, stiffness: 200 }}
-              className="fixed inset-y-0 right-0 w-[280px] bg-white shadow-2xl flex flex-col lg:hidden overflow-y-auto"
+              className="fixed inset-y-0 right-0 w-[280px] bg-white dark:bg-gray-900 shadow-2xl flex flex-col lg:hidden overflow-y-auto"
               style={{ zIndex: 1000001 }}
             >
-              <div className="p-4 border-b border-gray-100 flex items-center justify-between">
+              <div className="p-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
                 <span className="font-bold text-lg" style={{ color: COLORS.primary }}>Menu</span>
-                <button onClick={() => setIsMobileMenuOpen(false)} className="p-2 text-gray-500 hover:text-red-500">
+                <button onClick={() => setIsMobileMenuOpen(false)} className="p-2 text-gray-500 hover:text-red-500 dark:text-gray-400 dark:hover:text-red-400">
                   <X size={24} />
                 </button>
               </div>
 
-              <div className="p-4 border-b border-gray-100 flex items-center gap-4 justify-between">
+              <div className="p-4 border-b border-gray-100 dark:border-gray-800 flex items-center gap-4 justify-between">
                 <LanguageToggle />
                 <ThemeToggle />
               </div>
@@ -286,23 +286,23 @@ export default function Header() {
                       href={link.href}
                       className={clsx(
                         "flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-all",
-                        isActive ? "bg-[#99334C1A]" : "hover:bg-gray-50"
+                        isActive ? "bg-[#99334C1A] dark:bg-[#99334C33]" : "hover:bg-gray-50 dark:hover:bg-gray-800"
                       )}
-                      style={{ color: isActive ? COLORS.primary : COLORS.text }}
+                      style={{ color: isActive ? COLORS.primary : undefined }}
                     >
-                      <span className="text-lg">{link.icon}</span>
-                      {link.label}
+                      <span className={clsx("text-lg", !isActive && "text-gray-600 dark:text-gray-300")}>{link.icon}</span>
+                      <span className={clsx(!isActive && "text-gray-600 dark:text-gray-300")}>{link.label}</span>
                     </Link>
                   );
                 })}
               </div>
 
               {/* Contenu Mobile : Auth / User Actions */}
-              <div className="mt-auto p-4 border-t border-gray-100">
+              <div className="mt-auto p-4 border-t border-gray-100 dark:border-gray-800">
                 {isAuthenticated && user ? (
                   <div className="flex flex-col gap-4">
                     <div className="flex items-center gap-3 px-2">
-                      <div className="w-10 h-10 rounded-full bg-[#99334C] text-white flex items-center justify-center font-bold overflow-hidden">
+                      <div className="w-10 h-10 rounded-full bg-[#99334C] text-white flex items-center justify-center font-bold overflow-hidden shadow-sm">
                         {user.profile_picture ? (
                           <img
                             src={`${process.env.NEXT_PUBLIC_API_URL}${user.profile_picture}`}
@@ -314,27 +314,27 @@ export default function Header() {
                         )}
                       </div>
                       <div className="flex flex-col">
-                        <span className="font-semibold text-gray-800">{user.firstname} {user.lastname}</span>
-                        <span className="text-xs text-gray-500 truncate max-w-[150px]">{user.email}</span>
+                        <span className="font-semibold text-gray-800 dark:text-white">{user.firstname} {user.lastname}</span>
+                        <span className="text-xs text-gray-500 dark:text-gray-400 truncate max-w-[150px]">{user.email}</span>
                       </div>
                     </div>
 
                     <div className="space-y-1">
                       {isAdmin && (
-                        <Link href="/admin" className="flex items-center gap-3 px-4 py-2 text-[#99334C] bg-[#99334C]/5 hover:bg-[#99334C]/10 rounded-lg text-sm font-bold">
+                        <Link href="/admin" className="flex items-center gap-3 px-4 py-2 text-[#99334C] dark:text-[#ff9daf] bg-[#99334C]/5 dark:bg-[#ff9daf]/10 hover:bg-[#99334C]/10 dark:hover:bg-[#ff9daf]/20 rounded-lg text-sm font-bold">
                           <ShieldCheck size={16} /> {t.auth.admin}
                         </Link>
                       )}
-                      <Link href="/account" className="flex items-center gap-3 px-4 py-2 text-gray-600 hover:bg-gray-50 rounded-lg text-sm">
+                      <Link href="/account" className="flex items-center gap-3 px-4 py-2 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg text-sm transition-colors">
                         <UserIcon size={16} /> {t.auth.account}
                       </Link>
-                      <Link href="/settings" className="flex items-center gap-3 px-4 py-2 text-gray-600 hover:bg-gray-50 rounded-lg text-sm">
+                      <Link href="/settings" className="flex items-center gap-3 px-4 py-2 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg text-sm transition-colors">
                         <Settings size={16} /> {t.auth.settings}
                       </Link>
-                      <Link href="/analytics" className="flex items-center gap-3 px-4 py-2 text-gray-600 hover:bg-gray-50 rounded-lg text-sm">
+                      <Link href="/analytics" className="flex items-center gap-3 px-4 py-2 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg text-sm transition-colors">
                         <BarChart2 size={16} /> {t.auth.analytics}
                       </Link>
-                      <button onClick={handleLogout} className="w-full flex items-center gap-3 px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg text-sm">
+                      <button onClick={handleLogout} className="w-full flex items-center gap-3 px-4 py-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg text-sm transition-colors">
                         <LogOut size={16} /> {t.auth.logout}
                       </button>
                     </div>
@@ -343,14 +343,14 @@ export default function Header() {
                   <div className="flex flex-col gap-3">
                     <Link
                       href="/login"
-                      className="w-full flex justify-center py-2.5 rounded-lg border text-sm font-medium"
+                      className="w-full flex justify-center py-2.5 rounded-lg border text-sm font-medium transition-all hover:bg-gray-50 dark:hover:bg-gray-800"
                       style={{ color: COLORS.primary, borderColor: COLORS.primary }}
                     >
                       {t.auth.login}
                     </Link>
                     <Link
                       href="/register"
-                      className="w-full flex justify-center py-2.5 rounded-lg text-white text-sm font-medium"
+                      className="w-full flex justify-center py-2.5 rounded-lg text-white text-sm font-medium transition-opacity hover:opacity-90 shadow-md"
                       style={{ backgroundColor: COLORS.primary }}
                     >
                       {t.auth.register}
@@ -359,6 +359,7 @@ export default function Header() {
                 )}
               </div>
             </motion.div>
+
           </>
         )}
       </AnimatePresence>

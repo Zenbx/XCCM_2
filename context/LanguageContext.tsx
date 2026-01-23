@@ -1,7 +1,8 @@
 'use client'
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { Language } from '@/services/locales';
+import { Language, translations } from '@/services/locales';
+import { NextIntlClientProvider } from 'next-intl';
 
 type LanguageContextType = {
   language: Language;
@@ -16,11 +17,9 @@ export const LanguageProvider = ({ children }: { children: React.ReactNode }) =>
   useEffect(() => {
     try {
       const stored = localStorage.getItem('xccm2_language') as Language | null;
-      console.log('[LanguageContext] init, stored:', stored);
       if (stored) setLanguage(stored);
       else {
         const nav = typeof navigator !== 'undefined' && navigator.language && navigator.language.startsWith('en') ? 'en' : 'fr';
-        console.log('[LanguageContext] init, navigator:', nav);
         setLanguage(nav as Language);
       }
     } catch (err) {
@@ -31,7 +30,6 @@ export const LanguageProvider = ({ children }: { children: React.ReactNode }) =>
   useEffect(() => {
     try {
       localStorage.setItem('xccm2_language', language);
-      console.log('[LanguageContext] language changed to', language);
     } catch (err) {
       // ignore
     }
@@ -39,7 +37,9 @@ export const LanguageProvider = ({ children }: { children: React.ReactNode }) =>
 
   return (
     <LanguageContext.Provider value={{ language, setLanguage }}>
-      {children}
+      <NextIntlClientProvider locale={language} messages={translations[language]}>
+        {children}
+      </NextIntlClientProvider>
     </LanguageContext.Provider>
   );
 };

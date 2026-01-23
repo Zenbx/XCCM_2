@@ -1,0 +1,96 @@
+{
+    "common": {
+        "login": "Login",
+        "register": "Register",
+        "logout": "Logout",
+        "email": "Email",
+        "password": "Password",
+        "rememberMe": "Remember me",
+        "forgotPassword": "Forgot password?",
+        "noAccount": "No account yet?",
+        "createAccount": "Create an account",
+        "orContinueWith": "Or continue with",
+        "loading": "Loading...",
+        "welcomeBack": "Welcome back!",
+        "platformDescription": "Our platform allows you to create, organize and share your educational content intuitively.",
+        "back": "Back"
+    },
+    "header": {
+        "links": {
+            "home": "Home",
+            "about": "About",
+            "edit": "Edit",
+            "library": "Library",
+            "marketplace": "Marketplace",
+            "community": "Community",
+            "help": "Help"
+        },
+        "menu": "Menu"
+    },
+    "auth": {
+        "register": "Register",
+        "login": "Login",
+        "logout": "Logout",
+        "admin": "Administration",
+        "account": "Account",
+        "settings": "Settings",
+        "analytics": "Analytics"
+    },
+    "footer": {
+        "title": "XCCM 2",
+        "newsletter": {
+            "title": "Subscribe to our Newsletter",
+            "desc": "Receive the latest news, updates and offers directly in your inbox.",
+            "subscribe": "Subscribe",
+            "emailPlaceholder": "Your email"
+        },
+        "links": {
+            "platform": "Platform",
+            "about": "About",
+            "support": "Help & Support",
+            "solutions": "Solutions"
+        },
+        "privacy": "Privacy",
+        "terms": "Terms of use",
+        "accessibility": "Accessibility",
+        "copyright": "© {year} XCCM 2. Interaction Human-Machine Project."
+    },
+    "home": {
+        "hero": {
+            "titleLine1": "Create your courses",
+            "emph1": "easily",
+            "emph2": "share",
+            "titleLine2": "your knowledge",
+            "subtitle": "XCCM 2 is your modern pedagogical creation tool: structured and user-centered.",
+            "ctaPrimary": "Get started",
+            "ctaSecondary": "Learn more",
+            "discoverFeatures": "Discover features",
+            "docs": "View documentation"
+        },
+        "tabs": {
+            "organizations": "For Organizations",
+            "home": "For Home",
+            "education": "For Education"
+        },
+        "features": {
+            "title": "Powerful features",
+            "subtitle": "Everything you need to create exceptional content",
+            "composition": {
+                "title": "For Composition",
+                "desc": "Organize your ideas into parts, chapters and notions in a hierarchical, logical way."
+            },
+            "courses": {
+                "title": "For Courses",
+                "desc": "Access a complete library and publish your content with a single click."
+            },
+            "sharing": {
+                "title": "Simplified Sharing",
+                "desc": "Share your creations with your team or the world in seconds."
+            },
+            "performance": {
+                "title": "Optimal performance",
+                "desc": "Fast, responsive UI for a smooth creation experience."
+            }
+        }
+    }
+}
