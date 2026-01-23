@@ -13,7 +13,16 @@
         "loading": "Loading...",
         "welcomeBack": "Welcome back!",
         "platformDescription": "Our platform allows you to create, organize and share your educational content intuitively.",
-        "back": "Back"
+        "back": "Back",
+        "save": "Save",
+        "cancel": "Cancel",
+        "delete": "Delete",
+        "edit": "Edit",
+        "search": "Search...",
+        "all": "All",
+        "none": "None",
+        "success": "Success",
+        "error": "Error"
     },
     "header": {
         "links": {
@@ -91,6 +100,232 @@
                 "title": "Optimal performance",
                 "desc": "Fast, responsive UI for a smooth creation experience."
             }
+        },
+        "testimonials": {
+            "title": "Trusted by",
+            "subtitle": "See what our users say about XCCM 2"
+        },
+        "ctaBlock": {
+            "title": "Ready to get started?",
+            "subtitle": "Join thousands of users already creating exceptional content with XCCM 2",
+            "primary": "Start for free",
+            "demo": "Schedule a demo",
+            "bullets": [
+                "Free to start",
+                "No card required",
+                "24/7 support"
+            ]
+        },
+        "previewLabel": "Preview"
+    },
+    "editor": {
+        "homeTitle": "Back to home",
+        "saving": "Saving...",
+        "saved": "Saved!",
+        "saveError": "Save failed",
+        "notionPlaceholder": "✏️ Start writing your notion here... (Type '/' for commands)",
+        "partPlaceholder": "📦 Drag and drop a Chapter here to add it to this Part...",
+        "chapterPlaceholder": "📄 Drag and drop a Paragraph here to add it to this Chapter...",
+        "paragraphPlaceholder": "💡 Drag and drop a Notion here to create a new notion...",
+        "selectPrompt": "Select an item to start...",
+        "updating": "Updating...",
+        "importingPrompt": "The granule will be imported and added to the table of contents...",
+        "publishPreview": "Preview / Publish",
+        "comments": "Comments",
+        "settings": "Project Settings",
+        "part": "Part",
+        "chapter": "Chapter",
+        "paragraph": "Paragraph",
+        "notion": "Notion",
+        "publish": "Publish / Share"
+    },
+    "toc": {
+        "title": "Table of Contents",
+        "addPart": "Add part",
+        "addChapter": "Add chapter",
+        "addParagraph": "Add paragraph",
+        "addNotion": "Add notion",
+        "rename": "Rename",
+        "delete": "Delete"
+    },
+    "library": {
+        "title": "University Library",
+        "subtitle": "Explore our collection of courses, exercises and pedagogical resources.",
+        "searchPlaceholder": "Search for a course, an author...",
+        "docsLoaded": "{count} documents loaded",
+        "freeAccess": "Free Access",
+        "filterCategory": "Filter by categories",
+        "allCategories": "All categories",
+        "allLevels": "All levels",
+        "levels": {
+            "Debutant": "Beginner",
+            "Intermediaire": "Intermediate",
+            "Avance": "Advanced",
+            "NA": "N/A"
+        },
+        "noCourseFound": "No course found",
+        "noCourseFoundDesc": "Try with other keywords or come back soon!",
+        "results": "{count} result{count, plural, =0 {} one {} other {s}}",
+        "read": "Read",
+        "download": "Download",
+        "pages": "{count} pages",
+        "unknownAuthor": "Unknown author",
+        "topCreators": "Top Creators",
+        "seeAll": "See all",
+        "topCreatorsDesc": "The most active authors in the community",
+        "loadError": "Loading error"
+    },
+    "about": {
+        "hero": {
+            "title": "About XCCM2",
+            "subtitle": "A digital educational platform designed to simplify creation, organization and publishing of pedagogical content online."
+        },
+        "presentation": {
+            "title": "General Presentation",
+            "intro": "XCCM 2 is a digital educational platform designed to simplify the creation, organization and publishing of pedagogical content online. It targets teachers, trainers and content creators who want to structure their courses clearly, intuitively and accessibly.",
+            "paragraph": "Designed as an authoring system, the platform allows modular course design organized into parts, chapters and notions, while offering a smooth and coherent user experience.",
+            "quote": "Developed as part of a Human‑Computer Interaction (HCI) project, XCCM 2 puts the user at the center of the design, with an emphasis on ergonomics, simplicity of use and quality of user experience."
+        },
+        "features": {
+            "creation": {
+                "title": "Simplified Creation",
+                "desc": "Create structured courses with an intuitive interface"
+            },
+            "organization": {
+                "title": "Hierarchical Organization",
+                "desc": "Organize your content into parts, chapters and notions"
+            },
+            "publishing": {
+                "title": "Fast Publishing",
+                "desc": "Publish and share your courses in one click"
+            },
+            "collaboration": {
+                "title": "Collaboration",
+                "desc": "Work as a team on your educational projects"
+            }
+        },
+        "vision": {
+            "title": "Project Vision",
+            "subtitle": "Transforming how pedagogical content is created and shared",
+            "ambitionTitle": "Our ambition",
+            "ambitionParagraph1": "Through XCCM 2, our ambition is to offer a modern educational platform that values knowledge structuring, promotes author autonomy and improves the end-users' learning experience.",
+            "ambitionParagraph2": "XCCM 2 positions itself as a reliable, scalable and human-centered educational tool, responding to the current needs of digital education.",
+            "centeredUser": "User centered"
+        },
+        "values": {
+            "innovation": {
+                "title": "Innovation",
+                "desc": "Pushing the boundaries of digital education"
+            },
+            "accessibility": {
+                "title": "Accessibility",
+                "desc": "Making education accessible to everyone"
+            },
+            "quality": {
+                "title": "Quality",
+                "desc": "Ensuring an impeccable user experience"
+            },
+            "evolution": {
+                "title": "Evolution",
+                "desc": "Adapting to the demands of modern teaching"
+            }
+        },
+        "team": {
+            "title": "Our team",
+            "subtitle": "Passionate people in education and technology united to build the best experience",
+            "autoScroll": "Auto-scroll • Hover to pause"
+        },
+        "contact": {
+            "sectionLabel": "Contact us",
+            "heading": "Get in touch",
+            "subtitle": "Have a question or suggestion? Please write to us.",
+            "formTitle": "Send us a message",
+            "name": "Name",
+            "email": "Email",
+            "subject": "Subject",
+            "message": "Message",
+            "send": "Send",
+            "namePlaceholder": "Your name",
+            "emailPlaceholder": "your@email.com",
+            "subjectPlaceholder": "Subject of your message",
+            "messagePlaceholder": "Write your message here...",
+            "infoTitle": "Contact information",
+            "hoursTitle": "Opening hours",
+            "closed": "Closed"
+        },
+        "cta": {
+            "title": "Ready to revolutionize your teaching?",
+            "subtitle": "Join XCCM 2 and create exceptional pedagogical content",
+            "primary": "Get started now"
+        }
+    },
+    "help": {
+        "title": "Help Center",
+        "searchPlaceholder": "Search...",
+        "searchResults": "Search results",
+        "noResults": "No results found for \"{query}\".",
+        "version": "Version 2.0.0",
+        "projectYear": "HCI Project 2025",
+        "sections": {
+            "documentation": {
+                "title": "Documentation",
+                "subtitle": "Discover all XCCM 2 features",
+                "subsections": {
+                    "intro": "Introduction to XCCM 2",
+                    "fonctionnalites": "Main features",
+                    "interface": "User interface",
+                    "shortcuts": "Keyboard Shortcuts",
+                    "slash-commands": "Slash Commands (/)",
+                    "organisation": "Course organization",
+                    "publication": "Publication and sharing"
+                }
+            },
+            "faq": {
+                "title": "FAQ",
+                "subtitle": "Answers to frequently asked questions",
+                "subsections": {
+                    "compte": "Account management",
+                    "creation": "Content creation",
+                    "problemes": "Common issues",
+                    "securite": "Security & privacy"
+                }
+            },
+            "guide": {
+                "title": "Author Guide",
+                "subtitle": "Learn to create quality courses",
+                "subsections": {
+                    "premier-cours": "Create your first course",
+                    "structuration": "Structure your content",
+                    "bonnes-pratiques": "Best pedagogical practices",
+                    "multimedia": "Add multimedia",
+                    "collaboration": "Work as a team"
+                }
+            },
+            "support": {
+                "title": "Technical Support",
+                "subtitle": "Get technical help",
+                "subsections": {
+                    "contact": "Contact us",
+                    "bug-report": "Report a bug",
+                    "compatibilite": "Browser compatibility",
+                    "api": "API documentation"
+                }
+            }
+        },
+        "contactForm": {
+            "formTitle": "Send us a message",
+            "name": "Name",
+            "email": "Email",
+            "subject": "Subject",
+            "description": "Description",
+            "send": "Send",
+            "namePlaceholder": "Your name",
+            "emailPlaceholder": "your@email.com",
+            "subjectPlaceholder": "Subject of your message",
+            "descriptionPlaceholder": "Describe your message here...",
+            "success": "Message sent, thanks!",
+            "fillAll": "Please fill in all fields",
+            "replyTime": "We will reply within 24-48h."
         }
     }
 }

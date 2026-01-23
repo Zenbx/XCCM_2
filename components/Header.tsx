@@ -11,33 +11,27 @@ import { useState, useEffect } from "react";
 import { LogOut, Settings, User as UserIcon, Menu, X, BarChart2, ShieldCheck } from "lucide-react";
 import LanguageToggle from '@/components/LanguageToggle';
 import { ThemeToggle } from '@/components/ThemeToggle';
-import { useLanguage } from '@/context/LanguageContext';
-import { translations } from '@/services/locales';
+import { useTranslations } from 'next-intl';
 
 const COLORS = {
   primary: "#99334C",
   text: "#4B5563",
 };
 
-// LINKS are generated per-language inside the component using translations to allow dynamic localization.
-
 export default function Header() {
   const pathname = usePathname();
   const router = useRouter();
   const { user, isAuthenticated, logout, isLoading, isAdmin } = useAuth();
-  const { language } = useLanguage();
-
-  const t = translations[language] ?? translations.fr;
-  // Debug: trace language and header label on render
-  console.log('[Header] render language=', language, 'homeLabel=', t.header?.links?.home);
+  const tHeader = useTranslations('header');
+  const tAuth = useTranslations('auth');
 
   const LINKS = [
-    { label: t.header.links.home, href: '/', icon: <FaHome /> },
-    { label: t.header.links.about, href: '/about', icon: <FaInfoCircle /> },
-    { label: t.header.links.edit, href: '/edit-home', authOnly: true, icon: <FaEdit /> },
-    { label: t.header.links.library, href: '/library', icon: <FaBook /> },
-    { label: t.header.links.marketplace, href: '/marketplace', authOnly: true, icon: <FaStore /> },
-    { label: t.header.links.help, href: '/help', icon: <FaQuestionCircle /> },
+    { label: tHeader('links.home'), href: '/', icon: <FaHome /> },
+    { label: tHeader('links.about'), href: '/about', icon: <FaInfoCircle /> },
+    { label: tHeader('links.edit'), href: '/edit-home', authOnly: true, icon: <FaEdit /> },
+    { label: tHeader('links.library'), href: '/library', icon: <FaBook /> },
+    { label: tHeader('links.marketplace'), href: '/marketplace', authOnly: true, icon: <FaStore /> },
+    { label: tHeader('links.help'), href: '/help', icon: <FaQuestionCircle /> },
   ];
 
   // État pour le menu dropdown desktop
@@ -166,7 +160,7 @@ export default function Header() {
                         onClick={() => setShowUserMenu(false)}
                       >
                         <ShieldCheck className="w-4 h-4" />
-                        <span className="text-sm">{t.auth.admin}</span>
+                        <span className="text-sm">{tAuth('admin')}</span>
                       </Link>
                     )}
                     <Link
@@ -175,7 +169,7 @@ export default function Header() {
                       onClick={() => setShowUserMenu(false)}
                     >
                       <UserIcon className="w-4 h-4" />
-                      <span className="text-sm">{t.auth.account}</span>
+                      <span className="text-sm">{tAuth('account')}</span>
                     </Link>
                     <Link
                       href="/settings"
@@ -183,7 +177,7 @@ export default function Header() {
                       onClick={() => setShowUserMenu(false)}
                     >
                       <Settings className="w-4 h-4" />
-                      <span className="text-sm">{t.auth.settings}</span>
+                      <span className="text-sm">{tAuth('settings')}</span>
                     </Link>
                     <Link
                       href="/analytics"
@@ -191,7 +185,7 @@ export default function Header() {
                       onClick={() => setShowUserMenu(false)}
                     >
                       <BarChart2 className="w-4 h-4" />
-                      <span className="text-sm">{t.auth.analytics}</span>
+                      <span className="text-sm">{tAuth('analytics')}</span>
                     </Link>
                   </div>
                   <div className="border-t border-gray-100 dark:border-gray-700 pt-2">
@@ -200,7 +194,7 @@ export default function Header() {
                       className="flex items-center gap-3 px-4 py-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/10 transition-all w-full"
                     >
                       <LogOut className="w-4 h-4" />
-                      <span className="text-sm">{t.auth.logout}</span>
+                      <span className="text-sm">{tAuth('logout')}</span>
                     </button>
                   </div>
                 </motion.div>
@@ -213,7 +207,7 @@ export default function Header() {
                 className="rounded-[8px] px-4 py-2 text-sm font-medium text-white transition-opacity hover:opacity-90 shadow-sm"
                 style={{ backgroundColor: COLORS.primary }}
               >
-                {t.auth.register}
+                {tAuth('register')}
               </Link>
               <Link
                 href="/login"
@@ -223,7 +217,7 @@ export default function Header() {
                   borderColor: COLORS.primary,
                 }}
               >
-                {t.auth.login}
+                {tAuth('login')}
               </Link>
             </>
           )}
@@ -322,20 +316,20 @@ export default function Header() {
                     <div className="space-y-1">
                       {isAdmin && (
                         <Link href="/admin" className="flex items-center gap-3 px-4 py-2 text-[#99334C] dark:text-[#ff9daf] bg-[#99334C]/5 dark:bg-[#ff9daf]/10 hover:bg-[#99334C]/10 dark:hover:bg-[#ff9daf]/20 rounded-lg text-sm font-bold">
-                          <ShieldCheck size={16} /> {t.auth.admin}
+                          <ShieldCheck size={16} /> {tAuth('admin')}
                         </Link>
                       )}
                       <Link href="/account" className="flex items-center gap-3 px-4 py-2 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg text-sm transition-colors">
-                        <UserIcon size={16} /> {t.auth.account}
+                        <UserIcon size={16} /> {tAuth('account')}
                       </Link>
                       <Link href="/settings" className="flex items-center gap-3 px-4 py-2 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg text-sm transition-colors">
-                        <Settings size={16} /> {t.auth.settings}
+                        <Settings size={16} /> {tAuth('settings')}
                       </Link>
                       <Link href="/analytics" className="flex items-center gap-3 px-4 py-2 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg text-sm transition-colors">
-                        <BarChart2 size={16} /> {t.auth.analytics}
+                        <BarChart2 size={16} /> {tAuth('analytics')}
                       </Link>
                       <button onClick={handleLogout} className="w-full flex items-center gap-3 px-4 py-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg text-sm transition-colors">
-                        <LogOut size={16} /> {t.auth.logout}
+                        <LogOut size={16} /> {tAuth('logout')}
                       </button>
                     </div>
                   </div>
@@ -346,14 +340,14 @@ export default function Header() {
                       className="w-full flex justify-center py-2.5 rounded-lg border text-sm font-medium transition-all hover:bg-gray-50 dark:hover:bg-gray-800"
                       style={{ color: COLORS.primary, borderColor: COLORS.primary }}
                     >
-                      {t.auth.login}
+                      {tAuth('login')}
                     </Link>
                     <Link
                       href="/register"
                       className="w-full flex justify-center py-2.5 rounded-lg text-white text-sm font-medium transition-opacity hover:opacity-90 shadow-md"
                       style={{ backgroundColor: COLORS.primary }}
                     >
-                      {t.auth.register}
+                      {tAuth('register')}
                     </Link>
                   </div>
                 )}
