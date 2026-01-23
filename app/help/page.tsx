@@ -11,7 +11,7 @@ const HelpCenter = () => {
   const [isMobileTocOpen, setIsMobileTocOpen] = useState(false);
 
   // Structure du contenu
-  const sections = {
+  const sections: Record<string, any> = {
     documentation: {
       title: 'Documentation',
       icon: Book,
@@ -57,7 +57,7 @@ const HelpCenter = () => {
   };
 
   // Contenu détaillé
-  const content = {
+  const content: Record<string, any> = {
     documentation: {
       intro: {
         title: 'Introduction à XCCM 2',
@@ -458,14 +458,14 @@ Limites de taux
     }
   }, []);
 
-  const scrollToSection = (subsectionId) => {
+  const scrollToSection = (subsectionId: string) => {
     const element = document.getElementById(subsectionId);
     element?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     setActiveSubSection(subsectionId);
     setIsMobileTocOpen(false);
   };
 
-  const changeSection = (sectionKey) => {
+  const changeSection = (sectionKey: string) => {
     setActiveSection(sectionKey);
     window.scrollTo({ top: 0, behavior: 'smooth' });
     const firstSubsection = sections[sectionKey].subsections[0].id;
@@ -546,17 +546,16 @@ Limites de taux
 
         <nav className="p-4">
           <div className="space-y-1">
-            {Object.entries(sections).map(([key, section]) => {
+            {Object.entries(sections).map(([key, section]: [string, any]) => {
               const SectionIcon = section.icon;
               return (
                 <button
                   key={key}
                   onClick={() => changeSection(key)}
-                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
-                    activeSection === key
-                      ? 'bg-[#99334C] text-white'
-                      : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
-                  }`}
+                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${activeSection === key
+                    ? 'bg-[#99334C] text-white'
+                    : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
+                    }`}
                 >
                   <SectionIcon size={18} />
                   <span className="font-medium">{section.title}</span>
@@ -590,7 +589,7 @@ Limites de taux
             </p>
           </div>
 
-          {currentSection?.subsections.map((subsection) => {
+          {currentSection?.subsections.map((subsection: any) => {
             const subsectionContent = content[activeSection]?.[subsection.id];
             return (
               <section
@@ -612,7 +611,7 @@ Limites de taux
         </div>
       </div>
 
-   {/* Sidebar Droite - TOC Mobile (drawer) */}
+      {/* Sidebar Droite - TOC Mobile (drawer) */}
       <div className={`
         fixed xl:relative inset-y-0 right-0 z-50
         w-72 xl:w-64 bg-white border-l border-gray-200 overflow-y-auto
@@ -633,15 +632,14 @@ Limites de taux
           </div>
           <nav>
             <ul className="space-y-2">
-              {currentSection?.subsections.map((subsection) => (
+              {currentSection?.subsections.map((subsection: any) => (
                 <li key={subsection.id}>
                   <button
                     onClick={() => scrollToSection(subsection.id)}
-                    className={`w-full text-left text-sm py-2 px-3 rounded transition-colors flex items-center gap-2 ${
-                      activeSubSection === subsection.id
-                        ? 'text-[#99334C] font-medium bg-[#99334C]/10'
-                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                    }`}
+                    className={`w-full text-left text-sm py-2 px-3 rounded transition-colors flex items-center gap-2 ${activeSubSection === subsection.id
+                      ? 'text-[#99334C] font-medium bg-[#99334C]/10'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                      }`}
                   >
                     {activeSubSection === subsection.id && (
                       <ChevronRight size={14} className="flex-shrink-0" />
