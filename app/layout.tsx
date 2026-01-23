@@ -35,6 +35,7 @@ export const metadata: Metadata = {
 
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages } from 'next-intl/server';
+import { cookies } from 'next/headers';
 
 export default async function RootLayout({
   children,
@@ -42,14 +43,16 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const messages = await getMessages();
+  const cookieStore = await cookies();
+  const locale = cookieStore.get('NEXT_LOCALE')?.value || 'fr';
 
   return (
-    <html lang="en">
+    <html lang={locale}>
       <body
         className={`${poppins.variable} ${geistSans.variable} ${geistMono.variable} antialiased`}
         style={{ position: 'relative' }}
       >
-        <NextIntlClientProvider messages={messages}>
+        <NextIntlClientProvider locale={locale} messages={messages}>
           <Providers>
             <Header />
             <div className="pt-[60px] lg:pt-[70px]" style={{ position: 'relative' }}>

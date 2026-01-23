@@ -2,13 +2,11 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import { projectService, Project } from '@/services/projectService';
 import { commentService } from '@/services/commentService';
 import { structureService, Part, Notion } from '@/services/structureService';
-import { translations } from '@/services/locales';
-import { useLanguage } from '@/context/LanguageContext';
+import { useTranslations } from 'next-intl';
 import toast from 'react-hot-toast';
 
 export const useEditorState = (projectName: string | null) => {
-    const { language } = useLanguage();
-    const t = translations[language] ?? translations.fr;
+    const t = useTranslations('editor');
 
     const [projectData, setProjectData] = useState<any | null>(null);
     const [comments, setComments] = useState<any[]>([]);

@@ -1,8 +1,8 @@
 'use client'
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { Language, translations } from '@/services/locales';
-import { NextIntlClientProvider } from 'next-intl';
+import { useRouter } from 'next/navigation';
+import { Language } from '@/services/locales';
 
 type LanguageContextType = {
   language: Language;
@@ -13,6 +13,7 @@ const LanguageContext = createContext<LanguageContextType | undefined>(undefined
 
 export const LanguageProvider = ({ children }: { children: React.ReactNode }) => {
   const [language, setLanguage] = useState<Language>('fr');
+  const router = useRouter();
 
   useEffect(() => {
     try {
@@ -31,16 +32,15 @@ export const LanguageProvider = ({ children }: { children: React.ReactNode }) =>
     try {
       localStorage.setItem('xccm2_language', language);
       document.cookie = `NEXT_LOCALE=${language}; path=/; max-age=31536000`;
+      router.refresh(); // Force server-side re-render when language changes
     } catch (err) {
       // ignore
     }
-  }, [language]);
+  }, [language, router]);
 
   return (
     <LanguageContext.Provider value={{ language, setLanguage }}>
-      <NextIntlClientProvider locale={language} messages={translations[language]}>
-        {children}
-      </NextIntlClientProvider>
+      {children}
     </LanguageContext.Provider>
   );
 };
