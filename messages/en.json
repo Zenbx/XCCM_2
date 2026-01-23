@@ -65,6 +65,8 @@
         "copyright": "© {year} XCCM 2. Interaction Human-Machine Project."
     },
     "home": {
+        "previewLabel": "Preview",
+        "visionSection": "Project Vision",
         "hero": {
             "titleLine1": "Create your courses",
             "emph1": "easily",
@@ -74,16 +76,14 @@
             "ctaPrimary": "Get started",
             "ctaSecondary": "Learn more",
             "discoverFeatures": "Discover features",
-            "docs": "View documentation"
-        },
-        "tabs": {
-            "organizations": "For Organizations",
-            "home": "For Home",
-            "education": "For Education"
+            "docs": "View documentation",
+            "productivityTitle": "Unlock productivity with"
         },
         "features": {
             "title": "Powerful features",
             "subtitle": "Everything you need to create exceptional content",
+            "homeDesc": "Create your own personal guides or share your passion with a global community from home.",
+            "educationDesc": "Simplify academic course production. Ideal for teachers looking to reduce cognitive load.",
             "composition": {
                 "title": "For Composition",
                 "desc": "Organize your ideas into parts, chapters and notions in a hierarchical, logical way."

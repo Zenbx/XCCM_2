@@ -2,21 +2,19 @@
 import React, { useState } from 'react';
 import { BookOpen, Users, GraduationCap, Sparkles, FileText, Share2, Zap, Star, ArrowRight, Check, Router } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useLanguage } from '@/context/LanguageContext';
-import { translations } from '@/services/locales';
+import { useTranslations } from 'next-intl';
 // Couleurs définies : 
 // Principal: #99334C | Fond Footer: #36454F | Accent: #99334C/30%
 
 const HomePage = () => {
   const [activeTab, setActiveTab] = useState('organizations');
   const router = useRouter();
-  const { language } = useLanguage();
-  const t = translations[language] ?? translations.fr;
+  const t = useTranslations('home');
 
   const tabs = [
-    { id: 'organizations', label: t.home.tabs.organizations, icon: Users },
-    { id: 'home', label: t.home.tabs.home, icon: BookOpen },
-    { id: 'education', label: t.home.tabs.education, icon: GraduationCap },
+    { id: 'organizations', label: t('tabs.organizations'), icon: Users },
+    { id: 'home', label: t('tabs.home'), icon: BookOpen },
+    { id: 'education', label: t('tabs.education'), icon: GraduationCap },
   ];
 
   const testimonials = [
@@ -64,8 +62,8 @@ const HomePage = () => {
 
 
           <h1 className="text-4xl md:text-6xl font-extrabold text-gray-900 dark:text-white mb-6 tracking-tight">
-            {t.home.hero.titleLine1} <span className="text-[#99334C] dark:text-[#ff9daf]">{t.home.hero.emph1}</span> et <br />
-            <span className="text-[#99334C] dark:text-[#ff9daf]">{t.home.hero.emph2}</span> {t.home.hero.titleLine2}
+            {t('hero.titleLine1')} <span className="text-[#99334C] dark:text-[#ff9daf]">{t('hero.emph1')}</span> {t('and')} <br />
+            <span className="text-[#99334C] dark:text-[#ff9daf]">{t('hero.emph2')}</span> {t('hero.titleLine2')}
           </h1>
           <p className="text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto mb-10">
             {t.home.hero.subtitle}
@@ -75,12 +73,12 @@ const HomePage = () => {
             <button
               onClick={goToEditor}
               className="bg-[#99334C] text-white px-8 py-3 rounded-full font-semibold hover:bg-[#7a283d] transition-all shadow-lg flex items-center gap-2">
-              {t.home.hero.ctaPrimary} <ArrowRight className="w-4 h-4" />
+              {t('hero.ctaPrimary')} <ArrowRight className="w-4 h-4" />
             </button>
             <button
               onClick={goToAbout}
               className="border-2 border-[#99334C] text-[#99334C] px-8 py-3 rounded-full font-semibold hover:bg-[#99334C]/10 transition-all">
-              {t.home.hero.ctaSecondary}
+              {t('hero.ctaSecondary')}
             </button>
           </div>
         </div>
@@ -152,27 +150,27 @@ const HomePage = () => {
               {/* Texte descriptif */}
               <div className="flex-1 text-left">
                 <span className="inline-block px-4 py-1 rounded-full bg-[#99334C]/10 dark:bg-[#99334C]/20 text-[#99334C] dark:text-[#ff9daf] text-sm font-bold mb-6">
-                  Vision du projet
+                  {t('visionSection')}
                 </span>
                 <h2 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-8 leading-tight">
-                  Débloquez la productivité avec <span className="text-[#99334C] dark:text-[#ff9daf]">XCCM 2</span>
+                  {t('hero.productivityTitle')} <span className="text-[#99334C] dark:text-[#ff9daf]">XCCM 2</span>
                 </h2>
                 <p className="text-xl text-gray-600 dark:text-gray-400 leading-relaxed mb-10">
-                  {activeTab === 'organizations' && t.home.features.composition.desc}
-                  {activeTab === 'home' && "Créez vos propres guides personnels ou partagez votre passion avec une communauté mondiale depuis chez vous."}
-                  {activeTab === 'education' && "Simplifiez la production de cours académiques. Idéal pour les enseignants cherchant à réduire la charge cognitive."}
+                  {activeTab === 'organizations' && t('features.composition.desc')}
+                  {activeTab === 'home' && t('features.homeDesc')}
+                  {activeTab === 'education' && t('features.educationDesc')}
                 </p>
 
                 <div className="flex flex-wrap gap-4">
                   <button
                     onClick={() => router.push('/help#fonctionnalites')}
                     className="bg-[#99334C] text-white px-8 py-4 rounded-xl font-bold shadow-lg hover:shadow-[#99334C]/30 transition-all flex items-center gap-2">
-                    {t.home.hero.discoverFeatures} <Zap className="w-5 h-5" />
+                    {t('hero.discoverFeatures')} <Zap className="w-5 h-5" />
                   </button>
                   <button
                     onClick={() => router.push('https://xccm-2-api.vercel.app/docs')}
                     className="flex items-center gap-2 text-[#99334C] dark:text-[#ff9daf] font-bold hover:underline py-4 px-2">
-                    {t.home.hero.docs} <ArrowRight className="w-5 h-5" />
+                    {t('hero.docs')} <ArrowRight className="w-5 h-5" />
                   </button>
                 </div>
               </div>
@@ -200,8 +198,8 @@ const HomePage = () => {
                       <div className="h-4 w-3/4 bg-gray-100 dark:bg-gray-700 rounded" />
                       <div className="h-4 w-1/2 bg-gray-50 dark:bg-gray-800 rounded" />
                       <div className="grid grid-cols-2 gap-4 mt-2">
-                        <div className="h-20 bg-[#99334C]/5 dark:bg-[#99334C]/10 rounded-xl border border-[#99334C]/10 dark:border-[#99334C]/20 flex items-center justify-center text-[#99334C] dark:text-[#ff9daf] font-bold text-xs">
-                          Aperçu {activeTab}
+                        <div className="h-20 bg-[#99334C]/5 dark:bg-[#99334C]/10 rounded-xl border border-[#99334C]/10 dark:border-[#99334C]/20 flex items-center justify-center text-[#99334C] dark:text-[#ff9daf] font-bold text-xs uppercase tracking-wider">
+                          {t('preview')} {activeTab}
                         </div>
                         <div className="h-20 bg-gray-50 dark:bg-gray-800 rounded-xl" />
                       </div>
@@ -298,26 +296,26 @@ const HomePage = () => {
             </div>
 
             <div className="relative z-10">
-              <h2 className="text-4xl md:text-5xl font-bold mb-6">{t.home.ctaBlock.title}</h2>
+              <h2 className="text-4xl md:text-5xl font-bold mb-6">{t('ctaBlock.title')}</h2>
               <p className="text-xl mb-10 text-white/90 max-w-2xl mx-auto">
-                {t.home.ctaBlock.subtitle}
+                {t('ctaBlock.subtitle')}
               </p>
 
               <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
                 <button
                   onClick={goToEditor}
                   className="bg-white dark:bg-gray-900 text-[#99334C] dark:text-[#ff9daf] px-8 py-4 rounded-xl font-bold shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2">
-                  {t.home.ctaBlock.primary} <ArrowRight className="w-5 h-5" />
+                  {t('ctaBlock.primary')} <ArrowRight className="w-5 h-5" />
                 </button>
                 <button
                   onClick={() => router.push('/demo')}
                   className="border-2 border-white text-white px-8 py-4 rounded-xl font-bold hover:bg-white/10 transition-all">
-                  {t.home.ctaBlock.demo}
+                  {t('ctaBlock.demo')}
                 </button>
               </div>
 
               <div className="grid md:grid-cols-3 gap-8 max-w-3xl mx-auto">
-                {t.home.ctaBlock.bullets.map((b: string, idx: number) => (
+                {t.raw('ctaBlock.bullets').map((b: string, idx: number) => (
                   <div key={idx} className="flex items-center justify-center gap-2">
                     <Check className="w-5 h-5" />
                     <span>{b}</span>
