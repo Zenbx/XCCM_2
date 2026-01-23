@@ -1,11 +1,7 @@
 "use client"
 
 import React, { useState, useEffect } from 'react';
-import { ChevronRight, Search, Book, HelpCircle, FileText, Headphones, Menu, X, Send, Mail, Phone, MapPin, Clock, Loader2, ArrowRight } from 'lucide-react';
-import { toast } from 'react-hot-toast';
-import { useTranslations } from 'next-intl';
-import { useAuth } from '@/context/AuthContext';
-import { mailingService } from '@/services/mailingService';
+import { ChevronRight, Search, Book, HelpCircle, FileText, Headphones, Menu, X } from 'lucide-react';
 
 const HelpCenter = () => {
   const [activeSection, setActiveSection] = useState('documentation');
@@ -14,140 +10,416 @@ const HelpCenter = () => {
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isMobileTocOpen, setIsMobileTocOpen] = useState(false);
 
-  const [contactForm, setContactForm] = useState({
-    nom: '',
-    email: '',
-    sujet: '',
-    description: ''
-  });
-  const [formSubmitted, setFormSubmitted] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const [searchResults, setSearchResults] = useState<any[] | null>(null);
-
-  const { user } = useAuth();
-  const t = useTranslations('help');
-  const tc = useTranslations('common');
-  const tContact = useTranslations('contact');
-
-  useEffect(() => {
-    if (!searchQuery.trim()) {
-      setSearchResults(null);
-      return;
-    }
-
-    const query = searchQuery.toLowerCase();
-    const results: any[] = [];
-
-    Object.entries(content).forEach(([sectionKey, sectionContent]) => {
-      Object.entries(sectionContent).forEach(([subKey, subContent]: [string, any]) => {
-        if (subContent.title?.toLowerCase().includes(query) || subContent.content?.toLowerCase().includes(query)) {
-          results.push({
-            section: sectionKey,
-            subsection: subKey,
-            title: subContent.title,
-            snippet: subContent.content?.substring(0, 150) + "..."
-          });
-        }
-      });
-    });
-
-    setSearchResults(results);
-  }, [searchQuery]);
-
+  // Structure du contenu
   const sections: Record<string, any> = {
     documentation: {
-      title: t('sections.documentation.title'),
+      title: 'Documentation',
       icon: Book,
       subsections: [
-        { id: 'intro', title: t('sections.documentation.subsections.intro') },
-        { id: 'fonctionnalites', title: t('sections.documentation.subsections.fonctionnalites') },
-        { id: 'interface', title: t('sections.documentation.subsections.interface') },
-        { id: 'organisation', title: t('sections.documentation.subsections.organisation') },
-        { id: 'shortcuts', title: t('sections.documentation.subsections.shortcuts') },
-        { id: 'slash-commands', title: t('sections.documentation.subsections.slash-commands') },
-        { id: 'publication', title: t('sections.documentation.subsections.publication') }
+        { id: 'intro', title: 'Introduction à XCCM 2' },
+        { id: 'fonctionnalites', title: 'Fonctionnalités principales' },
+        { id: 'interface', title: 'Interface utilisateur' },
+        { id: 'organisation', title: 'Organisation des cours' },
+        { id: 'publication', title: 'Publication et partage' }
       ]
     },
     faq: {
-      title: t('sections.faq.title'),
+      title: 'FAQ',
       icon: HelpCircle,
       subsections: [
-        { id: 'compte', title: t('sections.faq.subsections.compte') },
-        { id: 'creation', title: t('sections.faq.subsections.creation') },
-        { id: 'problemes', title: t('sections.faq.subsections.problemes') },
-        { id: 'securite', title: t('sections.faq.subsections.securite') }
+        { id: 'compte', title: 'Gestion du compte' },
+        { id: 'creation', title: 'Création de contenu' },
+        { id: 'problemes', title: 'Problèmes courants' },
+        { id: 'securite', title: 'Sécurité et confidentialité' }
       ]
     },
     guide: {
-      title: t('sections.guide.title'),
+      title: 'Guide Auteurs',
       icon: FileText,
       subsections: [
-        { id: 'premier-cours', title: t('sections.guide.subsections.premier-cours') },
-        { id: 'structuration', title: t('sections.guide.subsections.structuration') },
-        { id: 'bonnes-pratiques', title: t('sections.guide.subsections.bonnes-pratiques') },
-        { id: 'multimedia', title: t('sections.guide.subsections.multimedia') },
-        { id: 'collaboration', title: t('sections.guide.subsections.collaboration') }
+        { id: 'premier-cours', title: 'Créer votre premier cours' },
+        { id: 'structuration', title: 'Structurer vos contenus' },
+        { id: 'bonnes-pratiques', title: 'Bonnes pratiques pédagogiques' },
+        { id: 'multimedia', title: 'Ajouter du multimédia' },
+        { id: 'collaboration', title: 'Travailler en équipe' }
       ]
     },
     support: {
-      title: t('sections.support.title'),
+      title: 'Support Technique',
       icon: Headphones,
       subsections: [
-        { id: 'contact', title: t('sections.support.subsections.contact') },
-        { id: 'bug-report', title: t('sections.support.subsections.bug-report') },
-        { id: 'compatibilite', title: t('sections.support.subsections.compatibilite') },
-        { id: 'api', title: t('sections.support.subsections.api') }
+        { id: 'contact', title: 'Nous contacter' },
+        { id: 'bug-report', title: 'Signaler un bug' },
+        { id: 'compatibilite', title: 'Compatibilité navigateurs' },
+        { id: 'api', title: 'Documentation API' }
       ]
     }
   };
 
-  const handleContactSubmit = async () => {
-    if (!user) {
-      toast.error(tContact('fillAll'), { icon: '🔒', duration: 4000 });
-      return;
-    }
-
-    if (!contactForm.nom || !contactForm.email || !contactForm.sujet || !contactForm.description) {
-      toast.error(tContact('fillAll'));
-      return;
-    }
-
-    setIsSubmitting(true);
-    try {
-      await mailingService.sendContact({
-        name: contactForm.nom,
-        email: contactForm.email,
-        subject: contactForm.sujet,
-        message: contactForm.description
-      });
-      toast.success(tContact('success'));
-      setFormSubmitted(true);
-      setContactForm({ nom: '', email: '', sujet: '', description: '' });
-      setTimeout(() => { setFormSubmitted(false); }, 5000);
-    } catch (err: any) {
-      toast.error(err.message || tc('error'));
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
+  // Contenu détaillé
   const content: Record<string, any> = {
     documentation: {
-      intro: { title: t('sections.documentation.subsections.intro'), content: "XCCM 2 est une plateforme numérique dédiée à la création..." },
-      fonctionnalites: { title: t('sections.documentation.subsections.fonctionnalites'), content: "XCCM 2 propose un ensemble de fonctionnalités..." },
-      interface: { title: t('sections.documentation.subsections.interface'), content: "L'interface de XCCM 2 est organisée en trois zones..." },
-      shortcuts: { title: t('sections.documentation.subsections.shortcuts'), content: "Gagnez du temps avec les raccourcis essentiels..." },
-      'slash-commands': { title: t('sections.documentation.subsections.slash-commands'), content: "Tapez \"/\" dans l'éditeur pour ouvrir le menu..." }
+      intro: {
+        title: 'Introduction à XCCM 2',
+        content: `XCCM 2 est une plateforme numérique dédiée à la création, la structuration et la publication de cours en ligne. Conçue comme un système auteur, elle permet aux enseignants, formateurs et créateurs de contenus pédagogiques de produire des cours clairs, modulaires et facilement accessibles aux apprenants.
+
+Développé dans le cadre d'un projet d'Interaction Homme-Machine (IHM), XCCM 2 place l'utilisateur au centre de la conception, en mettant l'accent sur l'ergonomie, la simplicité d'usage et la qualité de l'expérience utilisateur.`
+      },
+      fonctionnalites: {
+        title: 'Fonctionnalités principales',
+        content: `XCCM 2 propose un ensemble de fonctionnalités essentielles pour la conception de cours en ligne :
+
+• Création et édition de cours pédagogiques
+• Organisation hiérarchique des contenus (cours, parties, chapitres, paragraphes)
+• Gestion d'une bibliothèque de cours
+• Publication des contenus sur une plateforme accessible aux apprenants
+• Navigation fluide et structurée entre les différents contenus
+• Import automatique de documents avec division en granules
+• Collaboration en temps réel avec d'autres auteurs`
+      },
+      interface: {
+        title: 'Interface utilisateur',
+        content: `L'interface de XCCM 2 est organisée en trois zones principales :
+
+Table des matières (gauche) : Visualisez et naviguez dans la structure hiérarchique de votre cours. Utilisez les flèches pour déplier/replier les sections.
+
+Zone d'édition (centre) : Créez et modifiez vos contenus avec un éditeur de texte riche, similaire à Word. La barre d'outils offre toutes les options de formatage nécessaires.
+
+Panneau latéral (droite) : Accédez rapidement aux fonctionnalités d'import, commentaires, informations du cours et paramètres via les icônes verticales.`
+      },
+      organisation: {
+        title: 'Organisation des cours',
+        content: `Un cours dans XCCM 2 suit une structure hiérarchique claire :
+
+Cours : Le niveau le plus élevé, contient toutes vos ressources pédagogiques
+├── Parties : Grandes divisions thématiques de votre cours
+│   ├── Chapitres : Sous-divisions logiques d'une partie
+│   │   ├── Paragraphes : Sections de contenu au sein d'un chapitre
+│   │   │   └── Notions : Concepts spécifiques ou points clés
+
+Cette organisation modulaire facilite la navigation et la réutilisation des contenus.`
+      },
+      publication: {
+        title: 'Publication et partage',
+        content: `Une fois votre cours terminé, vous pouvez le publier en quelques clics :
+
+1. Vérifiez votre contenu avec le bouton "Aperçu"
+2. Configurez les paramètres de visibilité (Privé, Public, Partagé)
+3. Cliquez sur "Publier" pour rendre votre cours accessible
+4. Partagez le lien avec vos apprenants
+
+Les cours publiés sont automatiquement indexés dans la bibliothèque XCCM 2 et peuvent être découverts par d'autres utilisateurs selon vos paramètres de visibilité.`
+      }
     },
     faq: {
-      compte: { title: t('sections.faq.subsections.compte'), content: "Vous pouvez gérer votre compte depuis les paramètres..." }
+      compte: {
+        title: 'Gestion du compte',
+        content: `Q: Comment créer un compte sur XCCM 2 ?
+R: Cliquez sur "S'inscrire" en haut à droite, remplissez le formulaire avec vos informations, et validez votre email.
+
+Q: J'ai oublié mon mot de passe, que faire ?
+R: Utilisez le lien "Mot de passe oublié" sur la page de connexion. Un email de réinitialisation vous sera envoyé.
+
+Q: Puis-je changer mon nom d'utilisateur ?
+R: Oui, rendez-vous dans Paramètres > Mon Compte > Modifier le profil.
+
+Q: Comment supprimer mon compte ?
+R: Contactez le support technique via le formulaire de contact. Notez que cette action est irréversible.`
+      },
+      creation: {
+        title: 'Création de contenu',
+        content: `Q: Combien de cours puis-je créer ?
+R: Il n'y a pas de limite au nombre de cours que vous pouvez créer avec XCCM 2.
+
+Q: Puis-je importer mes anciens cours ?
+R: Oui, utilisez la fonction d'import dans le panneau latéral droit. XCCM 2 supporte les formats PDF, DOCX, et TXT.
+
+Q: Comment ajouter des images et vidéos ?
+R: Utilisez le bouton "Import" dans le panneau latéral, puis glissez-déposez vos fichiers multimédias.
+
+Q: Mes modifications sont-elles sauvegardées automatiquement ?
+R: Oui, si vous activez la sauvegarde automatique dans les paramètres. Sinon, pensez à sauvegarder régulièrement.`
+      },
+      problemes: {
+        title: 'Problèmes courants',
+        content: `Q: Mon éditeur ne répond plus, que faire ?
+R: Actualisez la page (F5). Vos modifications récentes seront sauvegardées si l'auto-save est activé.
+
+Q: Je ne vois pas mes cours dans la bibliothèque
+R: Vérifiez que vous êtes bien connecté et que le filtre "Mes cours" est actif.
+
+Q: L'aperçu ne correspond pas à mon contenu
+R: Videz le cache de votre navigateur et réessayez. Si le problème persiste, contactez le support.
+
+Q: Les caractères spéciaux ne s'affichent pas correctement
+R: Assurez-vous d'utiliser l'encodage UTF-8 dans les paramètres de votre cours.`
+      },
+      securite: {
+        title: 'Sécurité et confidentialité',
+        content: `Q: Mes données sont-elles sécurisées ?
+R: Oui, XCCM 2 utilise le chiffrement SSL/TLS pour toutes les communications et stocke vos données de manière sécurisée.
+
+Q: Qui peut voir mes cours non publiés ?
+R: Seuls vous et les collaborateurs que vous avez explicitement ajoutés peuvent accéder à vos brouillons.
+
+Q: Puis-je exporter mes données ?
+R: Oui, vous pouvez exporter vos cours au format PDF ou DOCX à tout moment depuis les paramètres.
+
+Q: Comment signaler un contenu inapproprié ?
+R: Utilisez le bouton "Signaler" sous le cours concerné ou contactez directement le support.`
+      }
     },
     guide: {
-      'premier-cours': { title: t('sections.guide.subsections.premier-cours'), content: "Pour créer votre premier cours, cliquez sur le bouton..." }
+      'premier-cours': {
+        title: 'Créer votre premier cours',
+        content: `Bienvenue dans XCCM 2 ! Suivez ces étapes pour créer votre premier cours :
+
+Étape 1 : Accéder à l'éditeur
+Cliquez sur "Éditer" dans le menu principal ou sur le bouton "+ Nouveau cours" dans votre bibliothèque.
+
+Étape 2 : Définir la structure
+Commencez par créer au moins une partie dans la table des matières. Cliquez sur le bouton "+" à côté de "Table des matières".
+
+Étape 3 : Ajouter du contenu
+Sélectionnez une section dans la table des matières et commencez à écrire dans la zone d'édition centrale.
+
+Étape 4 : Formater votre texte
+Utilisez la barre d'outils pour mettre en forme votre contenu (gras, italique, listes, etc.).
+
+Étape 5 : Enregistrer et prévisualiser
+Cliquez sur "Aperçu" pour voir le rendu final, puis sur "Publier" quand vous êtes satisfait.`
+      },
+      structuration: {
+        title: 'Structurer vos contenus',
+        content: `Une bonne structuration facilite l'apprentissage et la navigation :
+
+Principes de structuration :
+
+1. Hiérarchie claire : Utilisez parties > chapitres > paragraphes > notions
+2. Titres descriptifs : Choisissez des titres explicites pour chaque section
+3. Granularité : Divisez les concepts complexes en notions plus simples
+4. Progression logique : Organisez vos contenus du général au particulier
+5. Cohérence : Maintenez le même niveau de détail dans chaque section
+
+Astuce : Utilisez la fonction d'import pour convertir automatiquement vos documents en structure hiérarchique.`
+      },
+      'bonnes-pratiques': {
+        title: 'Bonnes pratiques pédagogiques',
+        content: `Pour créer des cours efficaces sur XCCM 2 :
+
+Clarté et concision
+• Utilisez des phrases courtes et un vocabulaire adapté à votre public
+• Évitez le jargon technique inutile
+• Définissez les termes importants dès leur première apparition
+
+Engagement des apprenants
+• Posez des questions tout au long du cours
+• Proposez des exemples concrets et des cas pratiques
+• Utilisez des visuels pour illustrer vos propos
+
+Accessibilité
+• Structurez bien vos contenus avec des titres clairs
+• Ajoutez des descriptions alternatives aux images
+• Utilisez un contraste suffisant pour la lisibilité
+
+Évaluation
+• Incluez des quiz ou des exercices pratiques
+• Donnez des feedbacks constructifs
+• Permettez la révision des concepts clés`
+      },
+      multimedia: {
+        title: 'Ajouter du multimédia',
+        content: `Enrichissez vos cours avec des éléments multimédias :
+
+Images
+1. Cliquez sur l'icône "Cloud" dans le panneau latéral droit
+2. Glissez-déposez vos images ou parcourez vos fichiers
+3. Formats acceptés : JPG, PNG, GIF, SVG
+
+Vidéos
+• Hébergez vos vidéos sur YouTube ou Vimeo
+• Copiez le lien de partage
+• Collez-le dans votre contenu (conversion automatique)
+
+Documents
+• PDF, DOCX, XLSX supportés
+• Taille maximale : 50 MB par fichier
+• Les documents seront automatiquement convertis en granules
+
+Bonnes pratiques
+✓ Optimisez vos images (max 1 MB recommandé)
+✓ Ajoutez des légendes explicatives
+✓ Testez la lecture sur différents appareils
+✓ Respectez les droits d'auteur`
+      },
+      collaboration: {
+        title: 'Travailler en équipe',
+        content: `XCCM 2 facilite la collaboration entre auteurs :
+
+Inviter des collaborateurs
+1. Ouvrez les paramètres du cours (icône engrenage)
+2. Activez le "Mode collaboratif"
+3. Entrez les emails de vos co-auteurs
+4. Définissez leurs permissions (Lecture, Édition, Admin)
+
+Gestion des versions
+• Chaque modification est automatiquement horodatée
+• Consultez l'historique dans Paramètres > Versions
+• Restaurez une version antérieure si nécessaire
+
+Commentaires et révisions
+• Utilisez le panneau Commentaires pour échanger
+• Mentionnez un collaborateur avec @nom
+• Marquez les sections à réviser
+
+Bonnes pratiques collaboratives
+→ Définissez des conventions de nommage
+→ Communiquez régulièrement avec votre équipe
+→ Assignez des sections spécifiques à chaque auteur
+→ Faites des révisions croisées avant publication`
+      }
     },
     support: {
-      contact: { title: t('sections.support.subsections.contact'), content: "Utilisez le formulaire ci-dessous pour nous contacter..." }
+      contact: {
+        title: 'Nous contacter',
+        content: `Notre équipe support est là pour vous aider :
+
+Email : support@xccm2.com
+Délai de réponse : 24-48h ouvrées
+
+Formulaire de contact
+Utilisez le formulaire ci-dessous pour nous envoyer un message détaillé :
+
+[Votre nom]
+[Votre email]
+[Sujet]
+[Description du problème]
+
+Horaires d'assistance
+Lundi - Vendredi : 9h - 18h (GMT+1)
+Samedi : 10h - 14h
+Dimanche : Fermé
+
+Support prioritaire
+Les utilisateurs avec un compte Premium bénéficient d'un support prioritaire avec réponse sous 4h.
+
+Communauté
+Rejoignez notre forum communautaire pour échanger avec d'autres utilisateurs et trouver des réponses rapides : forum.xccm2.com`
+      },
+      'bug-report': {
+        title: 'Signaler un bug',
+        content: `Vous avez rencontré un problème technique ? Aidez-nous à l'identifier :
+
+Informations à fournir
+• Navigateur et version (ex: Chrome 120)
+• Système d'exploitation (Windows, Mac, Linux)
+• Description détaillée du problème
+• Étapes pour reproduire le bug
+• Captures d'écran si possible
+
+Où signaler ?
+→ Email : bugs@xccm2.com
+→ GitHub : github.com/xccm2/issues
+→ Formulaire de bug : xccm2.com/report-bug
+
+Statut des bugs connus
+Consultez notre page de statut pour voir les problèmes connus et leur résolution : status.xccm2.com
+
+Exemple de rapport :
+"Navigateur: Firefox 121
+OS: Windows 11
+Problème: Le bouton 'Publier' ne répond pas
+Étapes: 1) Créer un cours 2) Ajouter du contenu 3) Cliquer sur Publier
+Résultat attendu: Le cours devrait être publié
+Résultat obtenu: Rien ne se passe"
+
+Votre feedback est précieux pour améliorer XCCM 2 !`
+      },
+      compatibilite: {
+        title: 'Compatibilité navigateurs',
+        content: `XCCM 2 fonctionne sur les navigateurs modernes :
+
+Navigateurs supportés ✓
+• Google Chrome 100+ (recommandé)
+• Mozilla Firefox 100+
+• Microsoft Edge 100+
+• Safari 15+
+• Opera 85+
+
+Fonctionnalités par navigateur
+
+Chrome / Edge
+✓ Support complet
+✓ Performance optimale
+✓ Toutes les fonctionnalités disponibles
+
+Firefox
+✓ Support complet
+✓ Bonne performance
+⚠ Import de gros fichiers peut être plus lent
+
+Safari
+✓ Support de base
+⚠ Certaines animations peuvent différer
+⚠ Testez l'aperçu avant publication
+
+Navigateurs non supportés ✗
+• Internet Explorer (toutes versions)
+• Navigateurs obsolètes (> 3 ans)
+
+Configuration recommandée
+• Écran : 1366x768 minimum (1920x1080 recommandé)
+• RAM : 4 GB minimum
+• Connexion : 5 Mbps minimum
+• JavaScript activé
+• Cookies activés`
+      },
+      api: {
+        title: 'Documentation API',
+        content: `Intégrez XCCM 2 dans vos applications avec notre API REST :
+
+URL de base
+https://api.xccm2.com/v1
+
+Authentication
+Utilisez un token Bearer dans le header :
+Authorization: Bearer YOUR_API_TOKEN
+
+Endpoints principaux
+
+GET /courses
+Liste tous les cours accessibles
+
+POST /courses
+Crée un nouveau cours
+
+GET /courses/:id
+Récupère un cours spécifique
+
+PUT /courses/:id
+Met à jour un cours
+
+DELETE /courses/:id
+Supprime un cours
+
+Exemple de requête (JavaScript)
+fetch('https://api.xccm2.com/v1/courses', {
+  headers: {
+    'Authorization': 'Bearer YOUR_TOKEN',
+    'Content-Type': 'application/json'
+  }
+})
+
+Documentation complète
+→ Consultez notre documentation Swagger : api.xccm2.com/docs
+→ Exemples de code : github.com/xccm2/api-examples
+→ SDK disponibles : JavaScript, Python, PHP, Ruby
+
+Limites de taux
+• 1000 requêtes / heure pour les comptes gratuits
+• 10000 requêtes / heure pour les comptes Premium
+• Contactez-nous pour des besoins personnalisés`
+      }
     }
   };
 
@@ -167,9 +439,24 @@ const HelpCenter = () => {
         }
       }
     };
+
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, [activeSection]);
+
+  useEffect(() => {
+    const hash = window.location.hash.slice(1);
+    if (hash) {
+      const [section, subsection] = hash.split('#');
+      if (sections[section]) {
+        setActiveSection(section);
+        setTimeout(() => {
+          const element = document.getElementById(subsection || sections[section].subsections[0].id);
+          element?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 100);
+      }
+    }
+  }, []);
 
   const scrollToSection = (subsectionId: string) => {
     const element = document.getElementById(subsectionId);
@@ -190,117 +477,191 @@ const HelpCenter = () => {
   const Icon = currentSection?.icon || Book;
 
   return (
-    <div className="flex flex-col md:flex-row h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white">
+    <div className="flex flex-col md:flex-row h-screen bg-gray-50 text-gray-900">
       {/* Header Mobile */}
-      <div className="md:hidden bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-4 flex items-center justify-between sticky top-0 z-50">
+      <div className="md:hidden bg-white border-b border-gray-200 p-4 flex items-center justify-between sticky top-0 z-50">
         <div className="flex items-center gap-3">
-          <button onClick={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"><Menu size={24} /></button>
+          <button
+            onClick={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
+            className="p-2 hover:bg-gray-100 rounded-lg"
+          >
+            <Menu size={24} />
+          </button>
           <div>
-            <h1 className="text-lg font-bold text-gray-900 dark:text-white">XCCM 2</h1>
-            <p className="text-xs text-gray-600 dark:text-gray-400">{t('title')}</p>
+            <h1 className="text-lg font-bold text-gray-900">XCCM 2</h1>
+            <p className="text-xs text-gray-600">Centre d'aide</p>
           </div>
         </div>
-        <button onClick={() => setIsMobileTocOpen(!isMobileTocOpen)} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-[#99334C] dark:text-[#ff9daf]"><FileText size={20} /></button>
+        <button
+          onClick={() => setIsMobileTocOpen(!isMobileTocOpen)}
+          className="p-2 hover:bg-gray-100 rounded-lg text-[#99334C]"
+        >
+          <FileText size={20} />
+        </button>
       </div>
 
-      {/* Sidebar Navigation */}
-      <aside className={`fixed inset-y-0 left-0 z-50 w-72 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 transition-transform md:translate-x-0 md:static ${isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
-        <div className="p-6">
-          <div className="flex items-center gap-3 mb-8">
-            <div className="w-10 h-10 bg-[#99334C] dark:bg-[#ff9daf] rounded-xl flex items-center justify-center text-white"><Book size={24} /></div>
-            <h2 className="text-xl font-bold">XCCM 2</h2>
+      {/* Overlay Mobile */}
+      {(isMobileSidebarOpen || isMobileTocOpen) && (
+        <div
+          className="fixed inset-0 bg-black/50 z-40 md:hidden"
+          onClick={() => {
+            setIsMobileSidebarOpen(false);
+            setIsMobileTocOpen(false);
+          }}
+        />
+      )}
+
+      {/* Sidebar Gauche */}
+      <div className={`
+        fixed md:relative inset-y-0 left-0 z-50
+        w-72 md:w-64 bg-white border-r border-gray-200 overflow-y-auto
+        transform transition-transform duration-300 ease-in-out
+        ${isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+      `}>
+        <div className="p-6 border-b border-gray-200 flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">XCCM 2</h1>
+            <p className="text-sm text-gray-600">Centre d'aide</p>
           </div>
-          <nav className="space-y-2">
-            {Object.entries(sections).map(([key, section]) => (
-              <button key={key} onClick={() => changeSection(key)} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-all ${activeSection === key ? 'bg-[#99334C] text-white shadow-lg' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'}`}>
-                <section.icon size={20} />
-                <span>{section.title}</span>
-              </button>
-            ))}
+          <button
+            onClick={() => setIsMobileSidebarOpen(false)}
+            className="md:hidden p-2 hover:bg-gray-100 rounded-lg"
+          >
+            <X size={20} />
+          </button>
+        </div>
+
+        <div className="p-4 border-b border-gray-200">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
+            <input
+              type="text"
+              placeholder="Rechercher..."
+              className="w-full bg-gray-50 border border-gray-300 rounded-lg pl-10 pr-4 py-2 text-sm text-gray-900 focus:outline-none focus:border-[#99334C] transition-colors"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+        </div>
+
+        <nav className="p-4">
+          <div className="space-y-1">
+            {Object.entries(sections).map(([key, section]: [string, any]) => {
+              const SectionIcon = section.icon;
+              return (
+                <button
+                  key={key}
+                  onClick={() => changeSection(key)}
+                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${activeSection === key
+                    ? 'bg-[#99334C] text-white'
+                    : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
+                    }`}
+                >
+                  <SectionIcon size={18} />
+                  <span className="font-medium">{section.title}</span>
+                </button>
+              );
+            })}
+          </div>
+        </nav>
+
+        <div className="p-4 border-t border-gray-200 mt-auto">
+          <p className="text-xs text-gray-500">Version 2.0.0</p>
+          <p className="text-xs text-gray-500 mt-1">Projet IHM 2025</p>
+        </div>
+      </div>
+
+      {/* Contenu principal */}
+      <div className="flex-1 overflow-y-auto bg-white">
+        <div className="max-w-4xl mx-auto p-4 md:p-8 pb-24">
+          <div className="mb-8 md:mb-12">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-2 md:p-3 bg-[#99334C] rounded-lg">
+                <Icon size={20} className="text-white md:w-6 md:h-6" />
+              </div>
+              <h1 className="text-2xl md:text-4xl font-bold text-gray-900">{currentSection?.title}</h1>
+            </div>
+            <p className="text-gray-600 text-sm md:text-lg">
+              {activeSection === 'documentation' && 'Découvrez toutes les fonctionnalités de XCCM 2'}
+              {activeSection === 'faq' && 'Réponses aux questions fréquemment posées'}
+              {activeSection === 'guide' && 'Apprenez à créer des cours de qualité'}
+              {activeSection === 'support' && 'Obtenez de l\'aide technique'}
+            </p>
+          </div>
+
+          {currentSection?.subsections.map((subsection: any) => {
+            const subsectionContent = content[activeSection]?.[subsection.id];
+            return (
+              <section
+                key={subsection.id}
+                id={subsection.id}
+                className="mb-12 md:mb-16 scroll-mt-24"
+              >
+                <h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-4 md:mb-6 pb-3 border-b border-gray-200">
+                  {subsectionContent?.title || subsection.title}
+                </h2>
+                <div className="prose prose-sm md:prose-lg max-w-none">
+                  <p className="text-gray-700 leading-relaxed whitespace-pre-line text-sm md:text-base">
+                    {subsectionContent?.content}
+                  </p>
+                </div>
+              </section>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Sidebar Droite - TOC Mobile (drawer) */}
+      <div className={`
+        fixed xl:relative inset-y-0 right-0 z-50
+        w-72 xl:w-64 bg-white border-l border-gray-200 overflow-y-auto
+        transform transition-transform duration-300 ease-in-out
+        ${isMobileTocOpen ? 'translate-x-0' : 'translate-x-full xl:translate-x-0'}
+      `}>
+        <div className="p-6 sticky top-0 bg-white">
+          <div className="flex items-center justify-between mb-4 md:mb-4">
+            <h3 className="text-sm font-semibold text-gray-600 uppercase tracking-wider">
+              Sur cette page
+            </h3>
+            <button
+              onClick={() => setIsMobileTocOpen(false)}
+              className="md:hidden p-1 hover:bg-gray-100 rounded"
+            >
+              <X size={18} />
+            </button>
+          </div>
+          <nav>
+            <ul className="space-y-2">
+              {currentSection?.subsections.map((subsection: any) => (
+                <li key={subsection.id}>
+                  <button
+                    onClick={() => scrollToSection(subsection.id)}
+                    className={`w-full text-left text-sm py-2 px-3 rounded transition-colors flex items-center gap-2 ${activeSubSection === subsection.id
+                      ? 'text-[#99334C] font-medium bg-[#99334C]/10'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                      }`}
+                  >
+                    {activeSubSection === subsection.id && (
+                      <ChevronRight size={14} className="flex-shrink-0" />
+                    )}
+                    <span className={activeSubSection === subsection.id ? '' : 'ml-5'}>
+                      {subsection.title}
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
           </nav>
         </div>
-        <div className="mt-auto p-6 border-t border-gray-200 dark:border-gray-700">
-          <div className="bg-gray-50 dark:bg-gray-900 rounded-xl p-4"><p className="text-sm font-bold mb-1">{t('version')}</p><p className="text-xs text-gray-500">{t('projectYear')}</p></div>
-        </div>
-      </aside>
+      </div>
 
-      {/* Main Content */}
-      <main className="flex-1 overflow-y-auto w-full">
-        <div className="max-w-4xl mx-auto px-6 py-12">
-          {/* Hero / Search */}
-          <div className="mb-12 text-center md:text-left">
-            <h1 className="text-4xl font-bold mb-4">{t('title')}</h1>
-            <div className="relative max-w-2xl">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
-              <input type="text" placeholder={t('searchPlaceholder')} value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-full pl-12 pr-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-[#99334C]/20 focus:border-[#99334C] dark:bg-gray-800 dark:text-white transition-all shadow-sm" />
-            </div>
-          </div>
-
-          {/* Search Results */}
-          {searchResults && (
-            <div className="mb-12 bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700 shadow-xl">
-              <h2 className="text-xl font-bold mb-4 flex items-center gap-2"><Search size={20} className="text-[#99334C]" /> {t('searchResults')}</h2>
-              <div className="space-y-4">
-                {searchResults.length > 0 ? searchResults.map((res: any, i: number) => (
-                  <button key={i} onClick={() => { changeSection(res.section); setTimeout(() => scrollToSection(res.subsection), 100); setSearchQuery(''); }} className="w-full text-left p-4 rounded-xl border border-gray-100 dark:border-gray-700 hover:border-[#99334C]/30 hover:bg-[#99334C]/5 transition-all">
-                    <h3 className="font-bold text-[#99334C] dark:text-[#ff9daf]">{res.title}</h3>
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{res.snippet}</p>
-                  </button>
-                )) : <p className="text-gray-500">{t('noResults', { query: searchQuery })}</p>}
-              </div>
-            </div>
-          )}
-
-          {/* Dynamic Content */}
-          <div className="bg-white dark:bg-gray-800 rounded-3xl p-8 md:p-12 border border-gray-200 dark:border-gray-700 shadow-sm min-h-[500px]">
-            <div className="flex items-center gap-4 mb-8">
-              <Icon size={48} className="text-[#99334C] dark:text-[#ff9daf]" />
-              <h2 className="text-3xl font-bold">{currentSection?.title}</h2>
-            </div>
-            {Object.entries(content[activeSection] || {}).map(([key, sub]: [string, any]) => (
-              <section key={key} id={key} className="mb-12 scroll-mt-24">
-                <h3 className="text-2xl font-bold mb-4 text-[#99334C] dark:text-[#ff9daf] flex items-center gap-3">
-                  <span className="w-1.5 h-8 bg-[#99334C] dark:bg-[#ff9daf] rounded-full"></span>
-                  {sub.title}
-                </h3>
-                <div className="prose prose-lg dark:prose-invert max-w-none text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-wrap">{sub.content}</div>
-              </section>
-            ))}
-
-            {/* Support Form Section */}
-            {activeSection === 'support' && (
-              <div className="mt-12 bg-gray-50 dark:bg-gray-900 rounded-2xl p-8 border border-gray-200 dark:border-gray-700">
-                <h3 className="text-2xl font-bold mb-6 flex items-center gap-3"><Mail className="text-[#99334C]" /> {tContact('formTitle')}</h3>
-                <div className="grid md:grid-cols-2 gap-6 mt-8">
-                  <div className="space-y-6">
-                    <div><label className="block text-sm font-semibold mb-2">{tContact('name')}</label><input type="text" value={contactForm.nom} onChange={e => setContactForm({ ...contactForm, nom: e.target.value })} className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-[#99334C]/20 dark:bg-gray-800" placeholder={tContact('namePlaceholder')} /></div>
-                    <div><label className="block text-sm font-semibold mb-2">{tContact('email')}</label><input type="email" value={contactForm.email} onChange={e => setContactForm({ ...contactForm, email: e.target.value })} className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-[#99334C]/20 dark:bg-gray-800" placeholder={tContact('emailPlaceholder')} /></div>
-                    <button onClick={handleContactSubmit} disabled={isSubmitting} className="w-full bg-[#99334C] text-white py-4 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-[#7a283d] disabled:opacity-50 transition-all">{isSubmitting ? <><Loader2 className="animate-spin" /> {tc('loading')}</> : <><Send /> {tContact('send')}</>}</button>
-                    {formSubmitted && <div className="p-4 bg-green-50 text-green-700 rounded-xl font-medium flex items-center gap-2"><Send size={18} /> {tContact('success')}</div>}
-                  </div>
-                  <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm space-y-4">
-                    <h4 className="font-bold">{tContact('replyTime')}</h4>
-                    <div className="flex items-center gap-3 text-gray-600 dark:text-gray-400"><Mail size={18} /> contact@xccm2.com</div>
-                    <div className="flex items-center gap-3 text-gray-600 dark:text-gray-400"><Phone size={18} /> +237 6XX XXX XXX</div>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      </main>
-
-      {/* Table of Contents Desktop */}
-      <nav className="hidden lg:block w-70 p-8 pt-12">
-        <div className="sticky top-12">
-          <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-6 px-4">{Icon.name === 'Book' ? 'TOC' : 'Sections'}</h3>
-          <div className="space-y-1">
-            {currentSection?.subsections.map((sub: any) => (
-              <button key={sub.id} onClick={() => scrollToSection(sub.id)} className={`w-full text-left px-4 py-2 text-sm rounded-lg transition-all ${activeSubSection === sub.id ? 'bg-[#99334C]/10 text-[#99334C] font-bold border-l-4 border-[#99334C]' : 'text-gray-500 hover:text-gray-900 dark:hover:text-white'}`}>{sub.title}</button>
-            ))}
-          </div>
-        </div>
-      </nav>
+      {/* Bouton TOC flottant pour tablettes */}
+      <button
+        onClick={() => setIsMobileTocOpen(true)}
+        className="fixed bottom-6 right-6 xl:hidden bg-[#99334C] text-white p-4 rounded-full shadow-lg z-30 hover:bg-[#7a283d] transition-colors"
+      >
+        <FileText size={24} />
+      </button>
     </div>
   );
 };
