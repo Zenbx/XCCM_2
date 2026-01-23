@@ -20,7 +20,7 @@ const protectedRoutes = ['/edit-home', '/edit', '/account', '/settings', '/admin
 const adminRoutes = ['/admin'];
 
 // Routes accessibles uniquement quand NON authentifié
-const authRoutes = ['/login', '/register', '/forgot-password', '/reset-password'];
+const authRoutes = ['/login', '/register'];
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
