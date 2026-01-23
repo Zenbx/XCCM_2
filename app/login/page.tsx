@@ -11,7 +11,8 @@ import toast from 'react-hot-toast';
 import { useTranslations } from 'next-intl';
 
 const LoginPage = () => {
-  const t = useTranslations('common');
+  const t = useTranslations('auth');
+  const tc = useTranslations('common');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
@@ -29,21 +30,21 @@ const LoginPage = () => {
     setMounted(true);
     const error = searchParams.get('error');
     if (error) {
-      if (error === 'SessionMissing') toast.error("La session d'authentification a expiré.");
-      else if (error === 'UserNotFound') toast.error("Aucun compte trouvé avec cet e-mail.");
+      if (error === 'SessionMissing') toast.error(tc('error'));
+      else if (error === 'UserNotFound') toast.error(tc('error'));
       else if (error === 'google' || error === 'microsoft' || error === 'OAuthCallback') {
-        toast.error(`Erreur d'authentification ${error}. Veuillez réessayer.`);
+        toast.error(`${tc('error')} ${error}.`);
       }
-      else toast.error("Une erreur est survenue lors de l'authentification.");
+      else toast.error(tc('error'));
     }
   }, [searchParams]);
 
   const validate = () => {
     const newErrors: { email?: string; password?: string } = {};
-    if (!email) newErrors.email = 'L\'email est requis';
-    else if (!/\S+@\S+\.\S+/.test(email)) newErrors.email = 'Email invalide';
+    if (!email) newErrors.email = tc('error');
+    else if (!/\S+@\S+\.\S+/.test(email)) newErrors.email = tc('error');
 
-    if (!password) newErrors.password = 'Le mot de passe est requis';
+    if (!password) newErrors.password = tc('error');
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -56,7 +57,7 @@ const LoginPage = () => {
 
     try {
       await login(email, password);
-      toast.success('Connexion réussie !');
+      toast.success(tc('success'));
 
       if (redirectTo) {
         router.push(redirectTo);
@@ -64,7 +65,7 @@ const LoginPage = () => {
         router.push('/edit-home');
       }
     } catch (err: any) {
-      toast.error(err.message || 'Erreur lors de la connexion');
+      toast.error(err.message || tc('error'));
     } finally {
       setIsLoading(false);
     }
@@ -111,7 +112,7 @@ const LoginPage = () => {
             className="flex items-center gap-2 text-white/90 hover:text-white transition-colors w-fit group"
           >
             <ArrowLeft className="w-5 h-5 transition-transform group-hover:-translate-x-1" />
-            <span className="font-medium">{t('back')}</span>
+            <span className="font-medium">{tc('back')}</span>
           </button>
 
           <div className="max-w-md">
@@ -148,10 +149,7 @@ const LoginPage = () => {
           </div>
 
           <p className="text-sm text-white/70">
-            En cliquant sur Se connecter, vous acceptez notre{' '}
-            <a href="#" className="underline hover:text-white">Politique de confidentialité</a>
-            {' '}et nos{' '}
-            <a href="#" className="underline hover:text-white">Conditions d'utilisation</a>.
+            {t('clickingAccept')} <a href="#" className="underline hover:text-white">{t('privacyPolicy')}</a> {tc('and')} <a href="#" className="underline hover:text-white">{t('termsOfUse')}</a>.
           </p>
         </div>
       </div>
@@ -166,15 +164,15 @@ const LoginPage = () => {
               className="flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors mb-6 group"
             >
               <ArrowLeft className="w-5 h-5 transition-transform group-hover:-translate-x-1" />
-              <span className="font-medium">{t('back')}</span>
+              <span className="font-medium">{tc('back')}</span>
             </button>
             <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">{t('login')}</h2>
-            <p className="text-gray-600 dark:text-gray-400">Accédez à votre espace XCCM2</p>
+            <p className="text-gray-600 dark:text-gray-400">{t('loginSubtitle')}</p>
           </div>
 
           <div className="hidden lg:block mb-8">
             <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">{t('login')}</h2>
-            <p className="text-gray-600 dark:text-gray-400">Accédez à votre espace XCCM2</p>
+            <p className="text-gray-600 dark:text-gray-400">{t('loginSubtitle')}</p>
           </div>
 
           <div className="space-y-6">
@@ -250,7 +248,7 @@ const LoginPage = () => {
               {isLoading ? (
                 <>
                   <Loader2 className="w-5 h-5 animate-spin" />
-                  <span>{t('loading')}</span>
+                  <span>{tc('loading')}</span>
                 </>
               ) : (
                 t('login')
@@ -317,10 +315,7 @@ const LoginPage = () => {
           </div>
 
           <p className="lg:hidden mt-8 text-xs text-center text-gray-500 dark:text-gray-400">
-            En vous connectant, vous acceptez notre{' '}
-            <a href="#" className="underline">Politique de confidentialité</a>
-            {' '}et nos{' '}
-            <a href="#" className="underline">Conditions d'utilisation</a>.
+            {t('clickingAccept')} <a href="#" className="underline">{t('privacyPolicy')}</a> {t('and')} <a href="#" className="underline">{t('termsOfUse')}</a>.
           </p>
         </div>
       </div>

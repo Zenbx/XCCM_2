@@ -13,7 +13,17 @@
         "loading": "Chargement...",
         "welcomeBack": "Ravi de vous revoir !",
         "platformDescription": "Notre plateforme vous permet de créer, organiser et partager vos contenus pédagogiques de manière intuitive.",
-        "back": "Retour"
+        "back": "Retour",
+        "save": "Sauvegarder",
+        "cancel": "Annuler",
+        "delete": "Supprimer",
+        "edit": "Éditer",
+        "search": "Rechercher...",
+        "all": "Tous",
+        "none": "Aucun",
+        "success": "Succès",
+        "error": "Erreur",
+        "and": "et"
     },
     "header": {
         "links": {
@@ -56,6 +66,8 @@
         "copyright": "© {year} XCCM 2. Projet Interaction Homme-Machine."
     },
     "home": {
+        "previewLabel": "Aperçu",
+        "visionSection": "Vision du projet",
         "hero": {
             "titleLine1": "Créer vos cours",
             "emph1": "facilement",
@@ -65,16 +77,14 @@
             "ctaPrimary": "Commencer",
             "ctaSecondary": "En savoir plus",
             "discoverFeatures": "Découvrir les fonctionnalités",
-            "docs": "Voir la documentation"
-        },
-        "tabs": {
-            "organizations": "Pour les Organisations",
-            "home": "Pour la Maison",
-            "education": "Pour l'Éducation"
+            "docs": "Voir la documentation",
+            "productivityTitle": "Débloquez la productivité avec"
         },
         "features": {
             "title": "Fonctionnalités puissantes",
             "subtitle": "Tout ce dont vous avez besoin pour créer des contenus exceptionnels",
+            "homeDesc": "Créez vos propres guides personnels ou partagez votre passion avec une communauté mondiale depuis chez vous.",
+            "educationDesc": "Simplifiez la production de cours académiques. Idéal pour les enseignants cherchant à réduire la charge cognitive.",
             "composition": {
                 "title": "Pour la Composition",
                 "desc": "Structurez vos idées en parties, chapitres et notions de manière hiérarchique et logique."
@@ -91,6 +101,224 @@
                 "title": "Performance Optimale",
                 "desc": "Interface rapide et réactive pour une expérience de création fluide."
             }
+        },
+        "testimonials": {
+            "title": "Ils nous font confiance",
+            "subtitle": "Découvrez ce que nos utilisateurs disent de XCCM 2"
+        },
+        "ctaBlock": {
+            "title": "Prêt à vous lancer ?",
+            "subtitle": "Rejoignez des milliers d'utilisateurs qui créent déjà des contenus exceptionnels avec XCCM 2",
+            "primary": "Commencer gratuitement",
+            "demo": "Planifier une démo",
+            "bullets": [
+                "Gratuit pour commencer",
+                "Sans carte bancaire",
+                "Support 24/7"
+            ]
         }
+    },
+    "editor": {
+        "homeTitle": "Retour à l'accueil",
+        "saving": "Sauvegarde en cours...",
+        "saved": "Sauvegardé !",
+        "saveError": "Erreur lors de la sauvegarde",
+        "notionPlaceholder": "✏️ Commencez à rédiger votre notion ici... (Tapez '/' pour les commandes)",
+        "partPlaceholder": "📦 Glissez-déposez un Chapitre ici pour l'ajouter à cette Partie...",
+        "chapterPlaceholder": "📄 Glissez-déposez un Paragraphe ici pour l'ajouter à ce Chapitre...",
+        "paragraphPlaceholder": "💡 Glissez-déposez une Notion ici pour créer une nouvelle notion...",
+        "selectPrompt": "Sélectionnez un élément pour commencer...",
+        "updating": "Mise à jour en cours",
+        "importingPrompt": "Le granule sera importé et ajouté à la table des matières...",
+        "publishPreview": "Aperçu / Publication",
+        "comments": "Commentaires",
+        "settings": "Paramètres du projet",
+        "part": "Partie",
+        "chapter": "Chapitre",
+        "paragraph": "Paragraphe",
+        "notion": "Notion",
+        "publish": "Publier / Partager"
+    },
+    "toc": {
+        "title": "Table des matières",
+        "addPart": "Ajouter une partie",
+        "addChapter": "Ajouter un chapitre",
+        "addParagraph": "Ajouter un paragraphe",
+        "addNotion": "Ajouter une notion",
+        "rename": "Renommer",
+        "delete": "Supprimer"
+    },
+    "library": {
+        "title": "Bibliothèque Universitaire",
+        "subtitle": "Explorez notre collection de cours, exercices et ressources pédagogiques.",
+        "searchPlaceholder": "Rechercher un cours, un auteur...",
+        "docsLoaded": "{count} documents chargés",
+        "freeAccess": "Accès gratuit",
+        "filterCategory": "Filtrer par catégories",
+        "allCategories": "Toutes les catégories",
+        "allLevels": "Tous les niveaux",
+        "levels": {
+            "Debutant": "Débutant",
+            "Intermediaire": "Intermédiaire",
+            "Avance": "Avancé",
+            "NA": "N/A"
+        },
+        "noCourseFound": "Aucun cours trouvé",
+        "noCourseFoundDesc": "Essayez avec d'autres mots-clés ou revenez bientôt !",
+        "results": "{count} résultat{count, plural, =0 {} one {} other {s}}",
+        "read": "Lire",
+        "download": "Télécharger",
+        "pages": "{count} pages",
+        "unknownAuthor": "Auteur inconnu",
+        "topCreators": "Top Créateurs",
+        "seeAll": "Voir tout",
+        "topCreatorsDesc": "Les auteurs les plus actifs de la communauté",
+        "loadError": "Erreur de chargement"
+    },
+    "about": {
+        "hero": {
+            "title": "À propos de XCCM2",
+            "subtitle": "Une plateforme éducative numérique conçue pour faciliter la création, l'organisation et la publication de contenus pédagogiques en ligne."
+        },
+        "presentation": {
+            "title": "Présentation générale",
+            "intro": "XCCM 2 est une plateforme éducative numérique conçue pour faciliter la création, l'organisation et la publication de contenus pédagogiques en ligne. Elle s'adresse aux enseignants, formateurs et créateurs de contenus souhaitant structurer leurs cours de manière claire, intuitive et accessible.",
+            "paragraph": "Pensée dans une logique de système auteur, la plateforme permet de concevoir des cours modulaires, organisés par parties, chapitres et notions, tout en offrant une expérience utilisateur fluide et cohérente.",
+            "quote": "Développé dans le cadre d'un projet d'Interaction Homme‑Machine (IHM), XCCM 2 place l'utilisateur au centre de la conception, en mettant l'accent sur l'ergonomie, la simplicité d'usage et la qualité de l'expérience utilisateur."
+        },
+        "features": {
+            "creation": {
+                "title": "Création Simplifiée",
+                "desc": "Créez des cours structurés avec une interface intuitive"
+            },
+            "organization": {
+                "title": "Organisation Hiérarchique",
+                "desc": "Organisez vos contenus en parties, chapitres et notions"
+            },
+            "publishing": {
+                "title": "Publication Rapide",
+                "desc": "Publiez et partagez vos cours en un clic"
+            },
+            "collaboration": {
+                "title": "Collaboration",
+                "desc": "Travaillez en équipe sur vos projets pédagogiques"
+            }
+        },
+        "vision": {
+            "title": "Vision du projet",
+            "subtitle": "Transformer la manière dont les contenus pédagogiques sont créés et partagés",
+            "ambitionTitle": "Notre ambition",
+            "ambitionParagraph1": "À travers XCCM 2, l'ambition est de proposer une plateforme éducative moderne qui valorise la structuration du savoir, favorise l'autonomie des auteurs et améliore l'expérience d'apprentissage des utilisateurs finaux.",
+            "ambitionParagraph2": "XCCM 2 se positionne ainsi comme un outil pédagogique fiable, évolutif et centré sur l'humain, répondant aux besoins actuels de l'enseignement numérique.",
+            "centeredUser": "Centré utilisateur"
+        },
+        "values": {
+            "innovation": {
+                "title": "Innovation",
+                "desc": "Repousser les limites de l'éducation numérique"
+            },
+            "accessibility": {
+                "title": "Accessibilité",
+                "desc": "Rendre l'éducation accessible à tous"
+            },
+            "quality": {
+                "title": "Qualité",
+                "desc": "Garantir une expérience utilisateur irréprochable"
+            },
+            "evolution": {
+                "title": "Évolution",
+                "desc": "S'adapter aux besoins de l'enseignement moderne"
+            }
+        },
+        "team": {
+            "title": "Notre équipe",
+            "subtitle": "Des passionnés d'éducation et de technologie réunis pour créer la meilleure expérience",
+            "autoScroll": "Défilement automatique • Survolez pour mettre en pause"
+        },
+        "cta": {
+            "title": "Prêt à révolutionner votre enseignement ?",
+            "subtitle": "Rejoignez XCCM 2 et créez des contenus pédagogiques exceptionnels",
+            "primary": "Commencer maintenant"
+        }
+    },
+    "help": {
+        "title": "Centre d'aide",
+        "searchPlaceholder": "Rechercher...",
+        "searchResults": "Résultats de recherche",
+        "noResults": "Aucun résultat trouvé pour \"{query}\".",
+        "version": "Version 2.0.0",
+        "projectYear": "Projet IHM 2025",
+        "sections": {
+            "documentation": {
+                "title": "Documentation",
+                "subtitle": "Découvrez toutes les fonctionnalités de XCCM 2",
+                "subsections": {
+                    "intro": "Introduction à XCCM 2",
+                    "fonctionnalites": "Fonctionnalités principales",
+                    "interface": "Interface utilisateur",
+                    "shortcuts": "Raccourcis Clavier",
+                    "slash-commands": "Commandes Slash (/)",
+                    "organisation": "Organisation des cours",
+                    "publication": "Publication et partage"
+                }
+            },
+            "faq": {
+                "title": "FAQ",
+                "subtitle": "Réponses aux questions fréquemment posées",
+                "subsections": {
+                    "compte": "Gestion du compte",
+                    "creation": "Création de contenu",
+                    "problemes": "Problèmes courants",
+                    "securite": "Sécurité et confidentialité"
+                }
+            },
+            "guide": {
+                "title": "Guide Auteurs",
+                "subtitle": "Apprenez à créer des cours de qualité",
+                "subsections": {
+                    "premier-cours": "Créer votre premier cours",
+                    "structuration": "Structurer vos contenus",
+                    "bonnes-pratiques": "Bonnes pratiques pédagogiques",
+                    "multimedia": "Ajouter du multimédia",
+                    "collaboration": "Travailler en équipe"
+                }
+            },
+            "support": {
+                "title": "Support Technique",
+                "subtitle": "Obtenez de l'aide technique",
+                "subsections": {
+                    "contact": "Nous contacter",
+                    "bug-report": "Signaler un bug",
+                    "compatibilite": "Compatibilité navigateurs",
+                    "api": "Documentation API"
+                }
+            }
+        }
+    },
+    "contact": {
+        "title": "Nous contacter",
+        "subtitle": "Une question ? Une suggestion ? N'hésitez pas à nous écrire.",
+        "formTitle": "Envoyez-nous un message",
+        "name": "Nom",
+        "email": "E-mail",
+        "subject": "Sujet",
+        "message": "Message",
+        "description": "Description",
+        "send": "Envoyer",
+        "sending": "Envoi...",
+        "namePlaceholder": "Votre nom",
+        "emailPlaceholder": "votre@email.com",
+        "subjectPlaceholder": "Objet de votre message",
+        "messagePlaceholder": "Écrivez votre message ici...",
+        "descriptionPlaceholder": "Décrivez votre message ici...",
+        "success": "Message envoyé, merci !",
+        "error": "Erreur lors de l'envoi du message",
+        "authError": "Vous devez être connecté pour nous contacter par formulaire.",
+        "fillAll": "Veuillez remplir tous les champs",
+        "replyTime": "Nous vous répondrons dans les 24-48h.",
+        "infoTitle": "Informations de contact",
+        "hoursTitle": "Horaires d'ouverture",
+        "closed": "Fermé",
+        "sectionLabel": "Contactez-nous"
     }
 }

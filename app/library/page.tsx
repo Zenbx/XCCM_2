@@ -12,8 +12,11 @@ import { SkeletonCourseCard, SkeletonAvatar, Skeleton } from '@/components/UI/Sk
 
 import toast from 'react-hot-toast';
 import { useInView } from 'react-intersection-observer';
+import { useTranslations } from 'next-intl';
 
 const LibraryPage = () => {
+  const t = useTranslations('library');
+  const tc = useTranslations('common');
   const { ref, inView } = useInView();
   const [hasMore, setHasMore] = useState(true);
   const [page, setPage] = useState(1);
@@ -173,7 +176,7 @@ const LibraryPage = () => {
         </div>
         <div className="relative max-w-7xl mx-auto px-6 text-center">
           <h1 className="text-5xl md:text-6xl font-bold mb-6">
-            Bibliothèque Universitaire
+            {t('title')}
           </h1>
           <div className="flex justify-center mb-8">
             <div className="h-1 w-32 bg-white/50 rounded-full relative">
@@ -181,23 +184,23 @@ const LibraryPage = () => {
             </div>
           </div>
           <p className="text-xl text-white/90 max-w-3xl mx-auto leading-relaxed">
-            Explorez notre collection de cours, exercices et ressources pédagogiques.
+            {t('subtitle')}
           </p>
           <div className="flex items-center justify-center gap-6 text-sm mt-8 text-white/80">
             <div className="flex items-center gap-2 bg-white/10 px-4 py-2 rounded-full backdrop-blur-sm">
               <FileText className="w-5 h-5" />
-              <span>{courses.length} documents chargés</span>
+              <span>{t('docsLoaded', { count: courses.length })}</span>
             </div>
             <div className="flex items-center gap-2 bg-white/10 px-4 py-2 rounded-full backdrop-blur-sm">
               <Globe className="w-5 h-5" />
-              <span>Accès gratuit</span>
+              <span>{t('freeAccess')}</span>
             </div>
             <Link
               href="/community"
               className="flex items-center gap-2 bg-white text-[#99334C] px-4 py-2 rounded-full font-bold hover:bg-white/90 transition-all shadow-lg"
             >
               <Users className="w-5 h-5" />
-              <span>Communauté</span>
+              <span>{tc('links.community')}</span>
             </Link>
           </div>
         </div>
@@ -212,7 +215,7 @@ const LibraryPage = () => {
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                 <input
                   type="text"
-                  placeholder="Rechercher un cours, un auteur..."
+                  placeholder={t('searchPlaceholder')}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-xl text-gray-700 placeholder-gray-400 focus:ring-2 focus:ring-[#99334C]/20 focus:border-[#99334C] transition-all"
@@ -233,10 +236,10 @@ const LibraryPage = () => {
                   onChange={(e) => setLevelFilter(e.target.value)}
                   className="px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#99334C]/20 focus:border-[#99334C] transition-all cursor-pointer hover:bg-gray-100"
                 >
-                  <option value="all">Tous les niveaux</option>
-                  <option value="Debutant">Débutant</option>
-                  <option value="Intermediaire">Intermédiaire</option>
-                  <option value="Avance">Avancé</option>
+                  <option value="all">{t('allLevels')}</option>
+                  <option value="Debutant">{t('levels.Debutant')}</option>
+                  <option value="Intermediaire">{t('levels.Intermediaire')}</option>
+                  <option value="Avance">{t('levels.Avance')}</option>
                 </select>
 
                 <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1 h-[46px]">
@@ -259,7 +262,7 @@ const LibraryPage = () => {
             <div className="pt-2">
               <div className="flex items-center gap-2 mb-4">
                 <Filter className="w-5 h-5 text-gray-600" />
-                <span className="font-bold text-gray-700">Filtrer par catégories</span>
+                <span className="font-bold text-gray-700">{t('filterCategory')}</span>
               </div>
               <div className="flex flex-wrap gap-2">
                 {categories.map((cat) => (
@@ -271,7 +274,7 @@ const LibraryPage = () => {
                       : 'bg-white text-gray-600 border-gray-200 hover:border-[#99334C]/30 hover:bg-[#99334C]/5'
                       }`}
                   >
-                    {cat === 'all' ? 'Toutes les catégories' : cat}
+                    {cat === 'all' ? t('allCategories') : cat}
                   </button>
                 ))}
               </div>
@@ -292,22 +295,22 @@ const LibraryPage = () => {
           ) : error ? (
             <div className="flex flex-col items-center justify-center h-64 bg-red-50 border border-red-200 rounded-xl">
               <AlertCircle className="w-12 h-12 text-red-500 mb-4" />
-              <h3 className="text-xl font-bold text-red-800">Erreur de chargement</h3>
+              <h3 className="text-xl font-bold text-red-800">{t('loadError')}</h3>
               <p className="text-red-600">{error}</p>
             </div>
           ) : filteredCourses.length === 0 ? (
             <div className="text-center h-64 flex flex-col justify-center items-center">
               <BookOpen className="w-12 h-12 text-gray-400 mb-4" />
-              <h3 className="text-xl font-bold text-gray-700">Aucun cours trouvé</h3>
+              <h3 className="text-xl font-bold text-gray-700">{t('noCourseFound')}</h3>
               <p className="text-gray-500">
-                {searchQuery ? 'Essayez avec d\'autres mots-clés' : 'Revenez bientôt pour de nouveaux contenus !'}
+                {searchQuery ? t('noCourseFoundDesc') : t('noCourseFoundDesc')}
               </p>
             </div>
           ) : (
             <>
               {/* Résultats */}
               <div className="mb-6 text-sm text-gray-600">
-                {filteredCourses.length} résultat{filteredCourses.length > 1 ? 's' : ''} (Total chargé: {courses.length})
+                {t('results', { count: filteredCourses.length })} ({t('docsLoaded', { count: courses.length })})
               </div>
 
               {viewMode === 'grid' ? (
@@ -354,11 +357,9 @@ const LibraryPage = () => {
                             <Heart className={`w-6 h-6 ${course.isLiked ? 'fill-current' : ''}`} />
                           </button>
                         </div>
-                        <div className="absolute top-3 left-3">
-                          <span className={`px-3 py-1 rounded-full text-xs font-bold ${getLevelColor(course.level)}`}>
-                            {course.level || 'N/A'}
-                          </span>
-                        </div>
+                        <span className={`px-3 py-1 rounded-full text-xs font-bold ${getLevelColor(course.level)}`}>
+                          {course.level ? t('levels.' + course.level) : t('levels.NA')}
+                        </span>
                         <button
                           onClick={(e) => { e.stopPropagation(); toggleBookmark(course.doc_id); }}
                           className="absolute top-3 right-3 p-2 bg-white/90 rounded-full hover:bg-white transition-all"
@@ -406,7 +407,7 @@ const LibraryPage = () => {
                             <div className="w-8 h-8 bg-[#99334C]/10 rounded-full flex items-center justify-center">
                               <User className="w-4 h-4 text-[#99334C]" />
                             </div>
-                            <span className="text-sm font-medium text-gray-700">{course.author || 'Auteur inconnu'}</span>
+                            <span className="text-sm font-medium text-gray-700">{course.author || t('unknownAuthor')}</span>
                           </div>
                           <div className="flex items-center gap-1 text-sm text-gray-500">
                             <Calendar className="w-4 h-4" />
@@ -459,7 +460,7 @@ const LibraryPage = () => {
                               className="px-4 py-2 bg-[#99334C] text-white rounded-lg hover:bg-[#7a283d] transition-all flex items-center gap-2"
                             >
                               <Eye className="w-4 h-4" />
-                              Lire
+                              {t('read')}
                             </button>
                             <button
                               onClick={(e) => { e.stopPropagation(); handleDownloadCourse(course.doc_id); }}
@@ -519,25 +520,26 @@ const LibraryPage = () => {
 
       {/* Top Creators Section */}
       <section className="py-12 px-6 bg-gray-50 border-t border-gray-200">
-        <div className="max-w-7xl mx-auto">          <div className="flex items-center justify-between mb-8">
-          <h2 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
-            <Star className="w-8 h-8 text-[#99334C]" />
-            Top Créateurs
-          </h2>
-          <Link
-            href="/creators"
-            className="text-[#99334C] font-bold hover:underline flex items-center gap-2"
-          >
-            Voir tout <ArrowRight className="w-4 h-4" />
-          </Link>
-          <div className="text-sm text-gray-500">
-            Les auteurs les plus actifs de la communauté
+        <div className="max-w-7xl mx-auto">
+          <div className="flex items-center justify-between mb-8">
+            <h2 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
+              <Star className="w-8 h-8 text-[#99334C]" />
+              {t('topCreators')}
+            </h2>
+            <Link
+              href="/creators"
+              className="text-[#99334C] font-bold hover:underline flex items-center gap-2"
+            >
+              {t('seeAll')} <ArrowRight className="w-4 h-4" />
+            </Link>
           </div>
-        </div>
+          <div className="text-sm text-gray-500 mb-6">
+            {t('topCreatorsDesc')}
+          </div>
 
           <TopCreatorsList />
         </div>
-      </section >
+      </section>
 
     </div >
   );
