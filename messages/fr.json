@@ -1,0 +1,96 @@
+{
+    "common": {
+        "login": "Se connecter",
+        "register": "S'inscrire",
+        "logout": "Déconnexion",
+        "email": "E-mail",
+        "password": "Mot de passe",
+        "rememberMe": "Se souvenir de moi",
+        "forgotPassword": "Mot de passe oublié ?",
+        "noAccount": "Pas encore de compte ?",
+        "createAccount": "Créer un compte",
+        "orContinueWith": "Ou continuer avec",
+        "loading": "Chargement...",
+        "welcomeBack": "Ravi de vous revoir !",
+        "platformDescription": "Notre plateforme vous permet de créer, organiser et partager vos contenus pédagogiques de manière intuitive.",
+        "back": "Retour"
+    },
+    "header": {
+        "links": {
+            "home": "Accueil",
+            "about": "À propos",
+            "edit": "Éditer",
+            "library": "Bibliothèque",
+            "marketplace": "Marketplace",
+            "community": "Communauté",
+            "help": "Aide"
+        },
+        "menu": "Menu"
+    },
+    "auth": {
+        "register": "S'inscrire",
+        "login": "Se connecter",
+        "logout": "Déconnexion",
+        "admin": "Administration",
+        "account": "Mon compte",
+        "settings": "Paramètres",
+        "analytics": "Statistiques"
+    },
+    "footer": {
+        "title": "XCCM 2",
+        "newsletter": {
+            "title": "Abonnez-vous à notre Newsletter",
+            "desc": "Recevez les dernières nouveautés, mises à jour et offres directement dans votre boîte.",
+            "subscribe": "S'abonner",
+            "emailPlaceholder": "Votre E-mail"
+        },
+        "links": {
+            "platform": "Plateforme",
+            "about": "À propos",
+            "support": "Aide & Support",
+            "solutions": "Solutions"
+        },
+        "privacy": "Confidentialité",
+        "terms": "Conditions d'utilisation",
+        "accessibility": "Accessibilité",
+        "copyright": "© {year} XCCM 2. Projet Interaction Homme-Machine."
+    },
+    "home": {
+        "hero": {
+            "titleLine1": "Créer vos cours",
+            "emph1": "facilement",
+            "emph2": "partagez",
+            "titleLine2": "vos connaissances",
+            "subtitle": "XCCM 2 est votre outil de création pédagogique moderne, structuré et centré sur l'utilisateur.",
+            "ctaPrimary": "Commencer",
+            "ctaSecondary": "En savoir plus",
+            "discoverFeatures": "Découvrir les fonctionnalités",
+            "docs": "Voir la documentation"
+        },
+        "tabs": {
+            "organizations": "Pour les Organisations",
+            "home": "Pour la Maison",
+            "education": "Pour l'Éducation"
+        },
+        "features": {
+            "title": "Fonctionnalités puissantes",
+            "subtitle": "Tout ce dont vous avez besoin pour créer des contenus exceptionnels",
+            "composition": {
+                "title": "Pour la Composition",
+                "desc": "Structurez vos idées en parties, chapitres et notions de manière hiérarchique et logique."
+            },
+            "courses": {
+                "title": "Pour les Cours",
+                "desc": "Accédez à une bibliothèque complète et diffusez vos contenus en un seul clic."
+            },
+            "sharing": {
+                "title": "Partage Simplifié",
+                "desc": "Partagez vos créations avec votre équipe ou le monde entier en quelques secondes."
+            },
+            "performance": {
+                "title": "Performance Optimale",
+                "desc": "Interface rapide et réactive pour une expérience de création fluide."
+            }
+        }
+    }
+}
