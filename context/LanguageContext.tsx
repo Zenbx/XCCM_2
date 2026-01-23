@@ -30,6 +30,7 @@ export const LanguageProvider = ({ children }: { children: React.ReactNode }) =>
   useEffect(() => {
     try {
       localStorage.setItem('xccm2_language', language);
+      document.cookie = `NEXT_LOCALE=${language}; path=/; max-age=31536000`;
     } catch (err) {
       // ignore
     }

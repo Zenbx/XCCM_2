@@ -1,13 +1,11 @@
 "use client"
 
 import React, { useState, useEffect } from 'react';
-import { ChevronRight, Search, Book, HelpCircle, FileText, Headphones, Menu, X, Send, Mail, Phone, MapPin, Clock } from 'lucide-react';
+import { ChevronRight, Search, Book, HelpCircle, FileText, Headphones, Menu, X, Send, Mail, Phone, MapPin, Clock, Loader2, ArrowRight } from 'lucide-react';
 import { toast } from 'react-hot-toast';
-import { useLanguage } from '@/context/LanguageContext';
+import { useTranslations } from 'next-intl';
 import { useAuth } from '@/context/AuthContext';
-import { translations } from '@/services/locales';
 import { mailingService } from '@/services/mailingService';
-import { Loader2 } from 'lucide-react';
 
 const HelpCenter = () => {
   const [activeSection, setActiveSection] = useState('documentation');
@@ -55,60 +53,61 @@ const HelpCenter = () => {
   }, [searchQuery]);
 
   // Language + translations alias
-  const { language } = useLanguage();
+  const t = useTranslations('help');
+  const tc = useTranslations('common');
+  const contextContact = useTranslations('contact');
   const { user } = useAuth();
-  const t = translations[language] ?? translations.fr;
 
-  // Structure du contenu (généré depuis les traductions)
+  // Structure du contenu
   const sections: Record<string, any> = {
     documentation: {
-      title: t.help?.sections?.documentation?.title || 'Documentation',
+      title: t('sections.documentation.title'),
       icon: Book,
       subsections: [
-        { id: 'intro', title: t.help?.sections?.documentation?.subsections?.intro || 'Introduction' },
-        { id: 'fonctionnalites', title: t.help?.sections?.documentation?.subsections?.fonctionnalites || 'Fonctionnalités' },
-        { id: 'interface', title: t.help?.sections?.documentation?.subsections?.interface || 'Interface' },
-        { id: 'organisation', title: t.help?.sections?.documentation?.subsections?.organisation || 'Organisation' },
-        { id: 'shortcuts', title: 'Raccourcis' },
-        { id: 'slash-commands', title: 'Commandes Slash' },
-        { id: 'publication', title: t.help?.sections?.documentation?.subsections?.publication || 'Publication' }
+        { id: 'intro', title: t('sections.documentation.subsections.intro') },
+        { id: 'fonctionnalites', title: t('sections.documentation.subsections.fonctionnalites') },
+        { id: 'interface', title: t('sections.documentation.subsections.interface') },
+        { id: 'organisation', title: t('sections.documentation.subsections.organisation') },
+        { id: 'shortcuts', title: t('sections.documentation.subsections.shortcuts') },
+        { id: 'slash-commands', title: t('sections.documentation.subsections.slash-commands') },
+        { id: 'publication', title: t('sections.documentation.subsections.publication') }
       ]
     },
     faq: {
-      title: t.help?.sections?.faq?.title || 'FAQ',
+      title: t('sections.faq.title'),
       icon: HelpCircle,
       subsections: [
-        { id: 'compte', title: t.help?.sections?.faq?.subsections?.compte || 'Compte' },
-        { id: 'creation', title: t.help?.sections?.faq?.subsections?.creation || 'Création' },
-        { id: 'problemes', title: t.help?.sections?.faq?.subsections?.problemes || 'Problèmes' },
-        { id: 'securite', title: t.help?.sections?.faq?.subsections?.securite || 'Sécurité' }
+        { id: 'compte', title: t('sections.faq.subsections.compte') },
+        { id: 'creation', title: t('sections.faq.subsections.creation') },
+        { id: 'problemes', title: t('sections.faq.subsections.problemes') },
+        { id: 'securite', title: t('sections.faq.subsections.securite') }
       ]
     },
     guide: {
-      title: t.help?.sections?.guide?.title || 'Guide Auteurs',
+      title: t('sections.guide.title'),
       icon: FileText,
       subsections: [
-        { id: 'premier-cours', title: t.help?.sections?.guide?.subsections?.['premier-cours'] || 'Premier cours' },
-        { id: 'structuration', title: t.help?.sections?.guide?.subsections?.structuration || 'Structuration' },
-        { id: 'bonnes-pratiques', title: t.help?.sections?.guide?.subsections?.['bonnes-pratiques'] || 'Bonnes pratiques' },
-        { id: 'multimedia', title: t.help?.sections?.guide?.subsections?.multimedia || 'Multimédia' },
-        { id: 'collaboration', title: t.help?.sections?.guide?.subsections?.collaboration || 'Collaboration' }
+        { id: 'premier-cours', title: t('sections.guide.subsections.premier-cours') },
+        { id: 'structuration', title: t('sections.guide.subsections.structuration') },
+        { id: 'bonnes-pratiques', title: t('sections.guide.subsections.bonnes-pratiques') },
+        { id: 'multimedia', title: t('sections.guide.subsections.multimedia') },
+        { id: 'collaboration', title: t('sections.guide.subsections.collaboration') }
       ]
     },
     support: {
-      title: t.help?.sections?.support?.title || 'Support Technique',
+      title: t('sections.support.title'),
       icon: Headphones,
       subsections: [
-        { id: 'contact', title: t.help?.sections?.support?.subsections?.contact || 'Contact' },
-        { id: 'bug-report', title: t.help?.sections?.support?.subsections?.['bug-report'] || 'Bug' },
-        { id: 'compatibilite', title: t.help?.sections?.support?.subsections?.compatibilite || 'Compatibilité' },
-        { id: 'api', title: t.help?.sections?.support?.subsections?.api || 'API' }
+        { id: 'contact', title: t('sections.support.subsections.contact') },
+        { id: 'bug-report', title: t('sections.support.subsections.bug-report') },
+        { id: 'compatibilite', title: t('sections.support.subsections.compatibilite') },
+        { id: 'api', title: t('sections.support.subsections.api') }
       ]
     }
   };
   const handleContactSubmit = async () => {
     if (!user) {
-      toast.error("Vous devez être connecté pour contacter le support technique", {
+      toast.error(contextContact('authError'), {
         icon: '🔒',
         duration: 4000
       });
@@ -116,7 +115,7 @@ const HelpCenter = () => {
     }
 
     if (!contactForm.nom || !contactForm.email || !contactForm.sujet || !contactForm.description) {
-      toast.error(t.help?.contactForm?.fillAll ?? 'Veuillez remplir tous les champs');
+      toast.error(contextContact('fillAll'));
       return;
     }
 
@@ -128,14 +127,14 @@ const HelpCenter = () => {
         subject: contactForm.sujet,
         message: contactForm.description
       });
-      toast.success(t.help?.contactForm?.success || 'Message envoyé avec succès !');
+      toast.success(contextContact('success'));
       setFormSubmitted(true);
       setContactForm({ nom: '', email: '', sujet: '', description: '' });
       setTimeout(() => {
         setFormSubmitted(false);
       }, 5000);
     } catch (err: any) {
-      toast.error(err.message || "Erreur lors de l'envoi du message");
+      toast.error(err.message || tc('error'));
     } finally {
       setIsSubmitting(false);
     }
@@ -729,73 +728,73 @@ Limites de taux
                   className="mb-12 md:mb-16 scroll-mt-24"
                 >
                   <h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-6 pb-3 border-b border-gray-200">
-                    {t.help.sections.support.subsections.contact}
+                    {t('sections.support.subsections.contact')}
                   </h2>
 
                   <div className="grid lg:grid-cols-2 gap-8">
                     {/* Formulaire */}
                     <div className="bg-gray-50 dark:bg-gray-800 rounded-2xl p-6 md:p-8 border border-gray-200 dark:border-gray-700">
-                      <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6">{t.help.contactForm.formTitle}</h3>
+                      <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6">{contextContact('formTitle')}</h3>
 
                       {formSubmitted ? (
                         <div className="bg-green-50 border border-green-200 rounded-xl p-6 text-center">
                           <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
                             <Send className="w-8 h-8 text-green-600" />
                           </div>
-                          <h4 className="text-lg font-bold text-green-900 mb-2">{t.help.contactForm.success}</h4>
-                          <p className="text-green-700">Nous vous répondrons dans les 24-48h.</p>
+                          <h4 className="text-lg font-bold text-green-900 mb-2">{contextContact('success')}</h4>
+                          <p className="text-green-700">{contextContact('replyTime')}</p>
                         </div>
                       ) : (
                         <div className="space-y-5">
                           <div>
                             <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                              {t.help.contactForm.name}
+                              {contextContact('name')}
                             </label>
                             <input
                               type="text"
                               value={contactForm.nom}
                               onChange={(e) => setContactForm({ ...contactForm, nom: e.target.value })}
                               className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#99334C]/20 focus:border-[#99334C] dark:focus:border-[#ff9daf] transition-all bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
-                              placeholder={t.help.contactForm.namePlaceholder ?? "Votre nom"}
+                              placeholder={contextContact('namePlaceholder')}
                             />
                           </div>
 
                           <div>
                             <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                              {t.help.contactForm.email}
+                              {contextContact('email')}
                             </label>
                             <input
                               type="email"
                               value={contactForm.email}
                               onChange={(e) => setContactForm({ ...contactForm, email: e.target.value })}
                               className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#99334C]/20 focus:border-[#99334C] dark:focus:border-[#ff9daf] transition-all bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
-                              placeholder={t.help.contactForm.emailPlaceholder ?? "votre@email.com"}
+                              placeholder={contextContact('emailPlaceholder')}
                             />
                           </div>
 
                           <div>
                             <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                              {t.help.contactForm.subject}
+                              {contextContact('subject')}
                             </label>
                             <input
                               type="text"
                               value={contactForm.sujet}
                               onChange={(e) => setContactForm({ ...contactForm, sujet: e.target.value })}
                               className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#99334C]/20 focus:border-[#99334C] dark:focus:border-[#ff9daf] transition-all bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
-                              placeholder={t.help.contactForm.subjectPlaceholder ?? "Objet de votre message"}
+                              placeholder={contextContact('subjectPlaceholder')}
                             />
                           </div>
 
                           <div>
                             <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                              {t.help.contactForm.description}
+                              {contextContact('description')}
                             </label>
                             <textarea
                               value={contactForm.description}
                               onChange={(e) => setContactForm({ ...contactForm, description: e.target.value })}
                               rows={5}
                               className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#99334C]/20 focus:border-[#99334C] dark:focus:border-[#ff9daf] transition-all resize-none bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
-                              placeholder={t.help.contactForm.descriptionPlaceholder ?? "Décrivez votre problème en détail..."}
+                              placeholder={contextContact('descriptionPlaceholder')}
                             />
                           </div>
 
@@ -812,7 +811,7 @@ Limites de taux
                             ) : (
                               <>
                                 <Send className="w-5 h-5" />
-                                {t.help.contactForm.send}
+                                {contextContact('send')}
                               </>
                             )}
                           </button>
