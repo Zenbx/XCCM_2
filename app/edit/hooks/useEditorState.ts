@@ -57,7 +57,7 @@ export const useEditorState = (projectName: string | null) => {
     }, [projectName]);
 
     const loadProject = useCallback(async (isSilent = false) => {
-        if (!projectName) return;
+        if (!projectName) return null;
         try {
             if (!isSilent) setIsLoading(true);
             setError('');
@@ -72,14 +72,16 @@ export const useEditorState = (projectName: string | null) => {
             setStructure(parts);
 
             if (!isSilent) setIsLoading(false);
+            return parts;
         } catch (err: any) {
             if (err.message && err.message.includes('Token invalide ou expiré')) {
                 toast.error('⚠️ Votre session a expiré. Veuillez vous reconnecter.');
                 window.location.href = '/login';
-                return;
+                return null;
             }
             setError(err.message || 'Erreur lors du chargement du projet');
             if (!isSilent) setIsLoading(false);
+            return null;
         }
     }, [projectName, fetchComments]);
 
