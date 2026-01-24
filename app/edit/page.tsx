@@ -217,6 +217,7 @@ const XCCM2Editor = () => {
   };
 
   // NOUVEAU: Création récursive (Poupées Russes) avec ciblage amélioré
+  // NOUVEAU: Création récursive (Poupées Russes) avec ciblage amélioré
   const handleDropGranule = async (granule: any, targetType?: string, targetId?: string, targetParentId?: string | null) => {
     if (!projectName) return;
     console.log("Dropping granule with target:", { granule, targetType, targetId, targetParentId });
@@ -233,7 +234,6 @@ const XCCM2Editor = () => {
       if (targetType === 'part') {
         const part = structure.find(p => p.part_id === targetId);
         dropPartTitle = part?.part_title || '';
-        // Si on drop une notion sur une partie, on cherche le premier chapitre et paragraphe
         if (granule.type === 'notion') {
           const firstChap = part?.chapters?.[0];
           dropChapterTitle = firstChap?.chapter_title || '';
@@ -244,7 +244,6 @@ const XCCM2Editor = () => {
         dropPartTitle = part?.part_title || '';
         const chapter = part?.chapters?.find(c => c.chapter_id === targetId);
         dropChapterTitle = chapter?.chapter_title || '';
-        // Si on drop une notion sur un chapitre, on cherche le premier paragraphe
         if (granule.type === 'notion') {
           dropParaName = chapter?.paragraphs?.[0]?.para_name || '';
         }
@@ -260,9 +259,7 @@ const XCCM2Editor = () => {
         }
       }
 
-      // Fallback si on drop sur le conteneur ou si la résolution a échoué
       if (!dropPartTitle && structure.length > 0) {
-        console.log("[Drop] Target resolution failed, falling back to first part/chapter/para");
         dropPartTitle = currentContext?.partTitle || structure[0].part_title;
         const partObj = structure.find(p => p.part_title === dropPartTitle) || structure[0];
         dropChapterTitle = currentContext?.chapterTitle || partObj.chapters?.[0]?.chapter_title || '';
@@ -270,16 +267,27 @@ const XCCM2Editor = () => {
         dropParaName = currentContext?.paraName || chapObj?.paragraphs?.[0]?.para_name || '';
       }
 
-      console.log("[Drop] final resolved Context:", { dropPartTitle, dropChapterTitle, dropParaName, targetType, targetId });
+      // Tracking du premier granule Notion pour sélection automatique
+      let firstNotionToSelect: {
+        partTitle: string;
+        chapterTitle: string;
+        paraName: string;
+        notionName: string;
+      } | null = null;
+
+      const trackFirstNotion = (pTitle: string, cTitle: string, paName: string, nName: string) => {
+        if (!firstNotionToSelect) {
+          firstNotionToSelect = { partTitle: pTitle, chapterTitle: cTitle, paraName: paName, notionName: nName };
+        }
+      };
 
       // --- DÉTECTION DE CONTENU SÉRIALISÉ (MARKETPLACE) ---
       let effectiveData = granule;
       if (granule.previewContent && (granule.previewContent.startsWith('{') || granule.previewContent.startsWith('['))) {
         try {
           effectiveData = JSON.parse(granule.previewContent);
-          console.log("[Drop] Parsed serialized content:", effectiveData);
         } catch (e) {
-          console.warn("[Drop] Failed to parse previewContent as JSON, using raw granule");
+          console.warn("[Drop] Failed to parse previewContent as JSON");
         }
       }
 
@@ -342,11 +350,13 @@ const XCCM2Editor = () => {
 
         const nextNotionNum = (paraObj?.notions?.length || 0) + 1;
 
+        const notionName = effectiveData.notion_name || effectiveData.content || "Nouvelle Notion";
         await structureService.createNotion(projectName, parentPart, parentChapter, parentPara, {
-          notion_name: effectiveData.notion_name || effectiveData.content || "Nouvelle Notion",
+          notion_name: notionName,
           notion_content: effectiveData.notion_content || effectiveData.previewContent || '',
           notion_number: nextNotionNum
         });
+        trackFirstNotion(parentPart, parentChapter, parentPara, notionName);
       }
 
       async function recurseChapter(pTitle: string, cTitle: string, chapData: any) {
@@ -368,19 +378,50 @@ const XCCM2Editor = () => {
         if (notions) {
           for (let k = 0; k < notions.length; k++) {
             const notion = notions[k];
+            const notionName = notion.notion_name || notion.content;
             await structureService.createNotion(projectName!, pTitle, cTitle, paName, {
-              notion_name: notion.notion_name || notion.content,
+              notion_name: notionName,
               notion_content: notion.notion_content || notion.previewContent || '',
               notion_number: k + 1
             });
+            trackFirstNotion(pTitle, cTitle, paName, notionName);
           }
         }
       }
 
-      await loadProject(true);
+      const updatedStructure = await loadProject(true);
       setPendingGranule(null);
       toast.success('Importation réussie !', { id: toastId });
       setTimeout(() => setPulsingId(null), 1000);
+
+      // ✅ Sélection automatique de la première notion importée
+      if (firstNotionToSelect && updatedStructure) {
+        const { partTitle, chapterTitle, paraName, notionName } = firstNotionToSelect;
+        const part = updatedStructure.find((p: any) => p.part_title === partTitle);
+        const chap = part?.chapters?.find((c: any) => c.chapter_title === chapterTitle);
+        const para = chap?.paragraphs?.find((pa: any) => pa.para_name === paraName);
+        const notion = para?.notions?.find((n: any) => n.notion_name === notionName);
+
+        if (notion) {
+          const selectUpdate = async () => {
+            if (hasUnsavedChanges) await handleSave(true);
+            setCurrentContext({
+              type: 'notion',
+              projectName: projectName!,
+              partTitle,
+              chapterTitle,
+              paraName,
+              notionName,
+              notion
+            });
+            setEditorContent(notion.notion_content || '');
+            setHasUnsavedChanges(false);
+          };
+          // @ts-ignore
+          if (document.startViewTransition) document.startViewTransition(selectUpdate);
+          else await selectUpdate();
+        }
+      }
 
     } catch (err: any) {
       console.error("Drop error:", err);
