@@ -570,13 +570,13 @@ const XCCM2Editor = () => {
 
   // Real-time Structure sync
   const handleStructureChange = useCallback((event: string) => {
-    if (event === 'NOTION_UPDATED' || event === 'STRUCTURE_CHANGED' || event === 'COMMENT_ADDED') {
+    // On ignore les simples mises à jour de contenu pour éviter les rechargements intempestifs
+    if (event === 'NOTION_UPDATED') return;
+
+    if (event === 'STRUCTURE_CHANGED' || event === 'COMMENT_ADDED') {
       loadProject(true);
       if (event === 'COMMENT_ADDED') {
-        // Optionnel: On pourrait juste recharger les commentaires, mais structure recharger c'est plus safe
         toast.success('💬 Nouveau commentaire');
-      } else {
-        toast.success('📡 Mise à jour collaborative');
       }
     }
   }, [loadProject]);
@@ -690,7 +690,7 @@ const XCCM2Editor = () => {
                     setEditorContent(ctx.notion.notion_content || '');
                     setHasUnsavedChanges(false);
                   };
-                  await update();
+                  update();
                 } catch (err) {
                   console.error("Error selecting Notion:", err);
                   toast.error("Erreur de sélection");
@@ -709,7 +709,7 @@ const XCCM2Editor = () => {
                     setEditorContent(ctx.part.part_intro || '');
                     setHasUnsavedChanges(false);
                   };
-                  await update();
+                  update();
                 } catch (err) {
                   console.error("Error selecting Part:", err);
                   toast.error("Erreur de sélection");
@@ -729,7 +729,7 @@ const XCCM2Editor = () => {
                     setEditorContent('');
                     setHasUnsavedChanges(false);
                   };
-                  await update();
+                  update();
                 } catch (err) {
                   console.error("Error selecting Chapter:", err);
                   toast.error("Erreur de sélection");
@@ -750,7 +750,7 @@ const XCCM2Editor = () => {
                     setEditorContent('');
                     setHasUnsavedChanges(false);
                   };
-                  await update();
+                  update();
                 } catch (err) {
                   console.error("Error selecting Paragraph:", err);
                   toast.error("Erreur de sélection");
