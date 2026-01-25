@@ -178,6 +178,11 @@ class ProjectService {
 
       if (!response.ok) {
         const errorData = await response.json();
+        // Propager les erreurs de validation spécifiques si présentes
+        if (response.status === 422 && errorData.errors) {
+          const detail = Object.values(errorData.errors as Record<string, string[]>).flat().join(', ');
+          throw new Error(detail || errorData.message || 'Erreur de validation');
+        }
         throw new Error(errorData.message || 'Erreur lors de la création du projet');
       }
 
