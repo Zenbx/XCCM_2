@@ -743,9 +743,15 @@ const EditHomePage = () => {
               className="w-full px-4 py-3 border border-gray-300 rounded-xl text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-[#99334C] outline-none"
               autoFocus
             />
-            <p className="mt-2 text-xs text-gray-500 mb-6">
+            <p className="mt-2 text-xs text-gray-500 mb-2">
               Minimum 3 caractères. Lettres, chiffres, espaces, points, tirets et underscores autorisés.
             </p>
+            <div className="bg-amber-50 border-l-4 border-amber-400 p-3 mb-6">
+              <p className="text-[10px] text-amber-800 leading-tight">
+                <strong>Important :</strong> Le nom doit être unique.
+                La casse est respectée (ex: "Projet A" est différent de "projet a").
+              </p>
+            </div>
             <div className="flex gap-3">
               <button
                 onClick={() => setShowCreateModal(false)}

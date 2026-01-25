@@ -407,7 +407,7 @@ const EditorArea: React.FC<EditorAreaProps> = ({
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
       >
-        <div className="w-full h-full p-10" style={{ viewTransitionName: 'editor-content' }}>
+        <div className="w-full h-full p-10">
           <TiptapEditor
             key={`${collaboration?.documentId || 'static'}-${!!collaboration}`}
             content={content}
