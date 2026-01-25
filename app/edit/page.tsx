@@ -675,74 +675,86 @@ const XCCM2Editor = () => {
               structure={structure}
               width={sidebarWidth}
               onSelectNotion={async (ctx) => {
-                const update = async () => {
-                  if (hasUnsavedChanges) await handleSave(true);
-                  setCurrentContext({
-                    type: 'notion',
-                    projectName: projectData?.pr_name || '',
-                    partTitle: ctx.partTitle,
-                    chapterTitle: ctx.chapterTitle,
-                    paraName: ctx.paraName,
-                    notionName: ctx.notionName,
-                    notion: ctx.notion
-                  });
-                  setEditorContent(ctx.notion.notion_content || '');
-                  setHasUnsavedChanges(false);
-                };
-                // @ts-ignore
-                if (document.startViewTransition) document.startViewTransition(update);
-                else await update();
+                try {
+                  const update = async () => {
+                    if (hasUnsavedChanges) await handleSave(true);
+                    setCurrentContext({
+                      type: 'notion',
+                      projectName: projectData?.pr_name || '',
+                      partTitle: ctx.partTitle,
+                      chapterTitle: ctx.chapterTitle,
+                      paraName: ctx.paraName,
+                      notionName: ctx.notionName,
+                      notion: ctx.notion
+                    });
+                    setEditorContent(ctx.notion.notion_content || '');
+                    setHasUnsavedChanges(false);
+                  };
+                  await update();
+                } catch (err) {
+                  console.error("Error selecting Notion:", err);
+                  toast.error("Erreur de sélection");
+                }
               }}
               onSelectPart={async (ctx) => {
-                const update = async () => {
-                  if (hasUnsavedChanges) await handleSave(true);
-                  setCurrentContext({
-                    type: 'part',
-                    projectName: projectData?.pr_name || '',
-                    partTitle: ctx.partTitle,
-                    part: ctx.part
-                  });
-                  setEditorContent(ctx.part.part_intro || '');
-                  setHasUnsavedChanges(false);
-                };
-                // @ts-ignore
-                if (document.startViewTransition) document.startViewTransition(update);
-                else await update();
+                try {
+                  const update = async () => {
+                    if (hasUnsavedChanges) await handleSave(true);
+                    setCurrentContext({
+                      type: 'part',
+                      projectName: projectData?.pr_name || '',
+                      partTitle: ctx.partTitle,
+                      part: ctx.part
+                    });
+                    setEditorContent(ctx.part.part_intro || '');
+                    setHasUnsavedChanges(false);
+                  };
+                  await update();
+                } catch (err) {
+                  console.error("Error selecting Part:", err);
+                  toast.error("Erreur de sélection");
+                }
               }}
               onSelectChapter={async (pName, cTitle, cId) => {
-                const update = async () => {
-                  if (hasUnsavedChanges) await handleSave(true);
-                  setCurrentContext({
-                    type: 'chapter',
-                    projectName: projectData?.pr_name || '',
-                    partTitle: pName,
-                    chapterTitle: cTitle,
-                    chapterId: cId
-                  });
-                  setEditorContent('');
-                  setHasUnsavedChanges(false);
-                };
-                // @ts-ignore
-                if (document.startViewTransition) document.startViewTransition(update);
-                else await update();
+                try {
+                  const update = async () => {
+                    if (hasUnsavedChanges) await handleSave(true);
+                    setCurrentContext({
+                      type: 'chapter',
+                      projectName: projectData?.pr_name || '',
+                      partTitle: pName,
+                      chapterTitle: cTitle,
+                      chapterId: cId
+                    });
+                    setEditorContent('');
+                    setHasUnsavedChanges(false);
+                  };
+                  await update();
+                } catch (err) {
+                  console.error("Error selecting Chapter:", err);
+                  toast.error("Erreur de sélection");
+                }
               }}
               onSelectParagraph={async (pName, cTitle, paName, paId) => {
-                const update = async () => {
-                  if (hasUnsavedChanges) await handleSave(true);
-                  setCurrentContext({
-                    type: 'paragraph',
-                    projectName: projectData?.pr_name || '',
-                    partTitle: pName,
-                    chapterTitle: cTitle,
-                    paraName: paName,
-                    paraId: paId
-                  });
-                  setEditorContent('');
-                  setHasUnsavedChanges(false);
-                };
-                // @ts-ignore
-                if (document.startViewTransition) document.startViewTransition(update);
-                else await update();
+                try {
+                  const update = async () => {
+                    if (hasUnsavedChanges) await handleSave(true);
+                    setCurrentContext({
+                      type: 'paragraph',
+                      projectName: projectData?.pr_name || '',
+                      partTitle: pName,
+                      chapterTitle: cTitle,
+                      paraName: paName,
+                      paraId: paId
+                    });
+                    setEditorContent('');
+                    setHasUnsavedChanges(false);
+                  };
+                  await update();
+                } catch (err) {
+                  console.error("Error selecting Paragraph:", err);
+                  toast.error("Erreur de sélection");
+                }
               }}
               onPublishToMarketplace={handlePublishToMarketplace}
               onCreatePart={handleCreatePart}
