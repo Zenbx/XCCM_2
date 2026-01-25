@@ -752,7 +752,7 @@ const XCCM2Editor = () => {
               structure={structure}
               width={sidebarWidth}
               onSelectNotion={async (ctx) => {
-                const update = async () => {
+                try {
                   if (hasUnsavedChanges) await handleSave(true);
                   setCurrentContext({
                     type: 'notion',
@@ -765,13 +765,13 @@ const XCCM2Editor = () => {
                   });
                   setEditorContent(ctx.notion.notion_content || '');
                   setHasUnsavedChanges(false);
-                };
-                // @ts-ignore
-                if (document.startViewTransition) document.startViewTransition(update);
-                else await update();
+                } catch (err) {
+                  console.error("Error selecting Notion:", err);
+                  toast.error("Erreur lors de la sélection");
+                }
               }}
               onSelectPart={async (ctx) => {
-                const update = async () => {
+                try {
                   if (hasUnsavedChanges) await handleSave(true);
                   setCurrentContext({
                     type: 'part',
@@ -781,13 +781,13 @@ const XCCM2Editor = () => {
                   });
                   setEditorContent(ctx.part.part_intro || '');
                   setHasUnsavedChanges(false);
-                };
-                // @ts-ignore
-                if (document.startViewTransition) document.startViewTransition(update);
-                else await update();
+                } catch (err) {
+                  console.error("Error selecting Part:", err);
+                  toast.error("Erreur lors de la sélection");
+                }
               }}
               onSelectChapter={async (pName, cTitle, cId) => {
-                const update = async () => {
+                try {
                   if (hasUnsavedChanges) await handleSave(true);
                   setCurrentContext({
                     type: 'chapter',
@@ -798,13 +798,13 @@ const XCCM2Editor = () => {
                   });
                   setEditorContent('');
                   setHasUnsavedChanges(false);
-                };
-                // @ts-ignore
-                if (document.startViewTransition) document.startViewTransition(update);
-                else await update();
+                } catch (err) {
+                  console.error("Error selecting Chapter:", err);
+                  toast.error("Erreur lors de la sélection");
+                }
               }}
               onSelectParagraph={async (pName, cTitle, paName, paId) => {
-                const update = async () => {
+                try {
                   if (hasUnsavedChanges) await handleSave(true);
                   setCurrentContext({
                     type: 'paragraph',
@@ -816,10 +816,10 @@ const XCCM2Editor = () => {
                   });
                   setEditorContent('');
                   setHasUnsavedChanges(false);
-                };
-                // @ts-ignore
-                if (document.startViewTransition) document.startViewTransition(update);
-                else await update();
+                } catch (err) {
+                  console.error("Error selecting Paragraph:", err);
+                  toast.error("Erreur lors de la sélection");
+                }
               }}
               onPublishToMarketplace={handlePublishToMarketplace}
               onCreatePart={handleCreatePart}
