@@ -531,18 +531,21 @@ const XCCM2Editor = () => {
   }, [synapseDocId, provider, yDoc, authUser]);
 
   // Action: Save
-  const handleSave = async (isAuto = false) => {
-    if (!currentContext || !projectName) return;
-    console.log(`[Save] Saving ${currentContext.type} "${currentContext.notionName || currentContext.partTitle}"...`, { isAuto, contentLength: editorContent.length });
+  const handleSave = async (isAuto = false, contextOverride?: typeof currentContext, contentOverride?: string) => {
+    const saveContext = contextOverride || currentContext;
+    const saveContent = contentOverride !== undefined ? contentOverride : editorContent;
+
+    if (!saveContext || !projectName) return;
+    console.log(`[Save] Saving ${saveContext.type} "${saveContext.notionName || saveContext.partTitle}"...`, { isAuto, contentLength: saveContent.length });
     try {
       setIsSaving(true);
-      if (currentContext.type === 'notion' && currentContext.notionName) {
-        console.log(`[Save] Updating Notion: ${currentContext.notionName} in ${currentContext.paraName}`);
-        await structureService.updateNotion(projectName, currentContext.partTitle, currentContext.chapterTitle!, currentContext.paraName!, currentContext.notionName!, { notion_content: editorContent });
-        if (currentContext.notion) currentContext.notion.notion_content = editorContent;
-      } else if (currentContext.type === 'part' && currentContext.partTitle) {
-        await structureService.updatePart(projectName, currentContext.partTitle, { part_intro: editorContent });
-        if (currentContext.part) currentContext.part.part_intro = editorContent;
+      if (saveContext.type === 'notion' && saveContext.notionName) {
+        console.log(`[Save] Updating Notion: ${saveContext.notionName} in ${saveContext.paraName}`);
+        await structureService.updateNotion(projectName, saveContext.partTitle, saveContext.chapterTitle!, saveContext.paraName!, saveContext.notionName!, { notion_content: saveContent });
+        if (saveContext.notion) saveContext.notion.notion_content = saveContent;
+      } else if (saveContext.type === 'part' && saveContext.partTitle) {
+        await structureService.updatePart(projectName, saveContext.partTitle, { part_intro: saveContent });
+        if (saveContext.part) saveContext.part.part_intro = saveContent;
       }
       setHasUnsavedChanges(false);
       // Synchronisation locale de la structure pour éviter le contenu obsolète au retour
@@ -673,7 +676,14 @@ const XCCM2Editor = () => {
               structure={structure}
               width={sidebarWidth}
               onSelectNotion={(ctx) => {
-                if (hasUnsavedChanges) handleSave(true);
+                // Capturer le contexte actuel AVANT de changer
+                if (hasUnsavedChanges && currentContext) {
+                  const savedContext = { ...currentContext };
+                  const savedContent = editorContent;
+                  // Lancer la sauvegarde en arrière-plan (NON bloquant)
+                  handleSave(true, savedContext, savedContent);
+                }
+                // Changer de contexte immédiatement (UX fluide)
                 setCurrentContext({
                   type: 'notion',
                   projectName: projectData?.pr_name || '',
@@ -687,7 +697,14 @@ const XCCM2Editor = () => {
                 setHasUnsavedChanges(false);
               }}
               onSelectPart={(ctx) => {
-                if (hasUnsavedChanges) handleSave(true);
+                // Capturer le contexte actuel AVANT de changer
+                if (hasUnsavedChanges && currentContext) {
+                  const savedContext = { ...currentContext };
+                  const savedContent = editorContent;
+                  // Lancer la sauvegarde en arrière-plan (NON bloquant)
+                  handleSave(true, savedContext, savedContent);
+                }
+                // Changer de contexte immédiatement (UX fluide)
                 setCurrentContext({
                   type: 'part',
                   projectName: projectData?.pr_name || '',
@@ -698,7 +715,14 @@ const XCCM2Editor = () => {
                 setHasUnsavedChanges(false);
               }}
               onSelectChapter={(pName, cTitle, cId) => {
-                if (hasUnsavedChanges) handleSave(true);
+                // Capturer le contexte actuel AVANT de changer
+                if (hasUnsavedChanges && currentContext) {
+                  const savedContext = { ...currentContext };
+                  const savedContent = editorContent;
+                  // Lancer la sauvegarde en arrière-plan (NON bloquant)
+                  handleSave(true, savedContext, savedContent);
+                }
+                // Changer de contexte immédiatement (UX fluide)
                 setCurrentContext({
                   type: 'chapter',
                   projectName: projectData?.pr_name || '',
@@ -710,7 +734,14 @@ const XCCM2Editor = () => {
                 setHasUnsavedChanges(false);
               }}
               onSelectParagraph={(pName, cTitle, paName, paId) => {
-                if (hasUnsavedChanges) handleSave(true);
+                // Capturer le contexte actuel AVANT de changer
+                if (hasUnsavedChanges && currentContext) {
+                  const savedContext = { ...currentContext };
+                  const savedContent = editorContent;
+                  // Lancer la sauvegarde en arrière-plan (NON bloquant)
+                  handleSave(true, savedContext, savedContent);
+                }
+                // Changer de contexte immédiatement (UX fluide)
                 setCurrentContext({
                   type: 'paragraph',
                   projectName: projectData?.pr_name || '',
