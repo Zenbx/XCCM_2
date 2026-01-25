@@ -267,6 +267,17 @@ const XCCM2Editor = () => {
         dropParaName = currentContext?.paraName || chapObj?.paragraphs?.[0]?.para_name || '';
       }
 
+      // Helper pour éviter les doublons de noms (Problème API)
+      const getUniqueTitle = (baseTitle: string, existingTitles: string[]) => {
+        let title = baseTitle;
+        let counter = 1;
+        while (existingTitles.some(t => t.toLowerCase() === title.toLowerCase())) {
+          title = `${baseTitle} (${counter})`;
+          counter++;
+        }
+        return title;
+      };
+
       // Tracking du premier granule Notion pour sélection automatique
       let firstNotionToSelect: {
         partTitle: string;
@@ -291,10 +302,16 @@ const XCCM2Editor = () => {
         }
       }
 
+      const currentStructure = await loadProject(true) || structure;
+
       if (granule.type === 'part') {
         const nextPartNum = structure.length + 1;
+
+        const existingParts = currentStructure.map((p: any) => p.part_title);
+        const uniqueTitle = getUniqueTitle(effectiveData.part_title || effectiveData.content, existingParts);
+
         const newPart = await structureService.createPart(projectName, {
-          part_title: effectiveData.part_title || effectiveData.content,
+          part_title: uniqueTitle,
           part_number: nextPartNum,
           part_intro: effectiveData.part_intro || effectiveData.introduction || ''
         });
@@ -304,33 +321,45 @@ const XCCM2Editor = () => {
         if (chapters) {
           for (let i = 0; i < chapters.length; i++) {
             const chap = chapters[i];
-            const newChapter = await structureService.createChapter(projectName, newPart.part_title, {
+            // Since newPart is new and empty, checking for duplicates is less critical 
+            // unless the source has duplicates. We use the raw name for simplicity inside a new part.
+            const newChapter = await structureService.createChapter(projectName, uniqueTitle, {
               chapter_title: chap.chapter_title || chap.content,
               chapter_number: i + 1
             });
-            await recurseChapter(newPart.part_title, newChapter.chapter_title, chap);
+            await recurseChapter(uniqueTitle, newChapter.chapter_title, chap);
           }
         }
       } else if (granule.type === 'chapter') {
         const parentPart = dropPartTitle || currentContext?.partTitle || structure[structure.length - 1]?.part_title || (structure.length > 0 ? structure[0].part_title : "Partie 1");
-        const partObj = structure.find(p => p.part_title.toLowerCase().trim() === parentPart.toLowerCase().trim());
+
+        const partObj = currentStructure.find((p: any) => p.part_title.toLowerCase().trim() === parentPart.toLowerCase().trim());
         const nextChapNum = (partObj?.chapters?.length || 0) + 1;
 
+        const existingChapters = partObj?.chapters?.map((c: any) => c.chapter_title) || [];
+        const uniqueTitle = getUniqueTitle(effectiveData.chapter_title || effectiveData.content, existingChapters);
+
         const newChapter = await structureService.createChapter(projectName, parentPart, {
-          chapter_title: effectiveData.chapter_title || effectiveData.content,
+          chapter_title: uniqueTitle,
           chapter_number: nextChapNum
         });
         setPulsingId(newChapter.chapter_id);
-        await recurseChapter(parentPart, newChapter.chapter_title, effectiveData);
+
+        // Use uniqueTitle instead of original
+        await recurseChapter(parentPart, uniqueTitle, effectiveData);
       } else if (granule.type === 'paragraph') {
         const parentPart = dropPartTitle || currentContext?.partTitle || structure[structure.length - 1]?.part_title || (structure.length > 0 ? structure[0].part_title : "Partie 1");
-        const partObj = structure.find(p => p.part_title.toLowerCase().trim() === parentPart.toLowerCase().trim());
+        const partObj = currentStructure.find((p: any) => p.part_title.toLowerCase().trim() === parentPart.toLowerCase().trim());
+
         const parentChapter = dropChapterTitle || currentContext?.chapterTitle || partObj?.chapters?.[0]?.chapter_title || "Chapitre 1";
-        const chapObj = partObj?.chapters?.find(c => c.chapter_title.toLowerCase().trim() === parentChapter.toLowerCase().trim());
+        const chapObj = partObj?.chapters?.find((c: any) => c.chapter_title.toLowerCase().trim() === parentChapter.toLowerCase().trim());
         const nextParaNum = (chapObj?.paragraphs?.length || 0) + 1;
 
+        const existingParas = chapObj?.paragraphs?.map((p: any) => p.para_name) || [];
+        const uniqueName = getUniqueTitle(effectiveData.para_name || effectiveData.content, existingParas);
+
         const newPara = await structureService.createParagraph(projectName, parentPart, parentChapter, {
-          para_name: effectiveData.para_name || effectiveData.content,
+          para_name: uniqueName,
           para_number: nextParaNum
         });
         setPulsingId(newPara.para_id);
@@ -350,13 +379,15 @@ const XCCM2Editor = () => {
 
         const nextNotionNum = (paraObj?.notions?.length || 0) + 1;
 
-        const notionName = effectiveData.notion_name || effectiveData.content || "Nouvelle Notion";
+        const existingNotions = paraObj?.notions?.map((n: any) => n.notion_name) || [];
+        const uniqueNotionName = getUniqueTitle(effectiveData.notion_name || effectiveData.content || "Nouvelle Notion", existingNotions);
+
         await structureService.createNotion(projectName, parentPart, parentChapter, parentPara, {
-          notion_name: notionName,
+          notion_name: uniqueNotionName,
           notion_content: effectiveData.notion_content || effectiveData.previewContent || '',
           notion_number: nextNotionNum
         });
-        trackFirstNotion(parentPart, parentChapter, parentPara, notionName);
+        trackFirstNotion(parentPart, parentChapter, parentPara, uniqueNotionName);
       }
 
       async function recurseChapter(pTitle: string, cTitle: string, chapData: any) {
