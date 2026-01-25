@@ -279,11 +279,11 @@ interface TableOfContentsProps {
   selectedChapterId?: string;
   selectedParagraphId?: string;
   selectedNotionId?: string;
-  onRename?: (type: 'part' | 'chapter' | 'paragraph' | 'notion', id: string, newTitle: string) => Promise<void>;
+  onRename?: (type: 'part' | 'chapter' | 'paragraph' | 'notion', id: string, oldTitle: string, newTitle: string) => Promise<void>;
   onReorder?: (type: 'part' | 'chapter' | 'paragraph' | 'notion', parentId: string | null, items: any[]) => Promise<void>;
   onMove?: (type: 'chapter' | 'paragraph' | 'notion', itemId: string, newParentId: string) => Promise<void>;
   onExternalDrop?: (granule: any, targetType?: string, targetId?: string, targetParentId?: string | null) => Promise<void>;
-  onDelete?: (type: 'part' | 'chapter' | 'paragraph' | 'notion', id: string) => Promise<void>;
+  onDelete?: (type: 'part' | 'chapter' | 'paragraph' | 'notion', id: string, title: string) => Promise<void>;
   onPublishToMarketplace?: (type: string, id: string, title: string) => void;
   language?: Language;
   width?: number;
@@ -324,6 +324,7 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
   const t = useTranslations('toc');
   const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({});
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingOldTitle, setEditingOldTitle] = useState("");
   const [tempTitle, setTempTitle] = useState("");
 
   const [optimisticStructure, setOptimisticStructure] = useState<Part[]>(structure);
@@ -440,11 +441,13 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
   const startEditing = (e: React.MouseEvent, id: string, currentTitle: string) => {
     e.stopPropagation();
     setEditingId(id);
+    setEditingOldTitle(currentTitle);
     setTempTitle(currentTitle);
   };
 
   const cancelEditing = () => {
     setEditingId(null);
+    setEditingOldTitle("");
     setTempTitle("");
   };
 
@@ -453,9 +456,10 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
     const newTitle = tempTitle.trim();
     if (newTitle && onRename) {
       isSubmitting.current = true;
+      const oldTitle = editingOldTitle;
       cancelEditing();
       try {
-        await onRename(type, id, newTitle);
+        await onRename(type, id, oldTitle, newTitle);
       } catch (error) {
         toast.error("Échec du renommage");
         toast.error("Échec du renommage");
@@ -489,10 +493,21 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
 
   const handleContextMenuDelete = async () => {
     if (!contextMenu.type || !contextMenu.id || !onDelete) return;
+
+    let title = '';
+    if (contextMenu.type === 'part') title = contextMenu.partTitle || '';
+    else if (contextMenu.type === 'chapter') title = contextMenu.chapterTitle || '';
+    else if (contextMenu.type === 'paragraph') title = contextMenu.paraName || '';
+    else if (contextMenu.type === 'notion') {
+      // Pour les notions, le menu contextuel doit avoir le titre de la notion
+      // On l'ajoute lors de l'appel handleContextMenu
+      title = (contextMenu as any).notionName || '';
+    }
+
     try {
-      await onDelete(contextMenu.type, contextMenu.id);
+      await onDelete(contextMenu.type, contextMenu.id, title);
     } catch (error) {
-      toast.error("Erreur lors de la suppression: " + (error instanceof Error ? error.message : "Erreur inconnue"));
+      toast.error("Erreur lors de la suppression");
     }
   };
 
@@ -924,6 +939,7 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
                   onDrop={(e) => handleDrop(e, 'part', part.part_id, null)}
                   onDragEnd={handleDragEnd}
                   onContextMenu={(e) => handleContextMenu(e, 'part', part.part_id, { partTitle: part.part_title })}
+                  onDoubleClick={(e) => startEditing(e, `part-${part.part_id}`, part.part_title)}
                 >
                   <span className="text-gray-300 cursor-grab"><GripVertical size={14} /></span>
                   <button onClick={(e) => { e.stopPropagation(); toggleExpand(`part-${part.part_id}`); }} className="p-0.5 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300">
@@ -1010,6 +1026,7 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
                               onDrop={(e) => handleDrop(e, 'chapter', chapter.chapter_id, part.part_id)}
                               onDragEnd={handleDragEnd}
                               onContextMenu={(e) => handleContextMenu(e, 'chapter', chapter.chapter_id, { partTitle: part.part_title, chapterTitle: chapter.chapter_title })}
+                              onDoubleClick={(e) => startEditing(e, `chapter-${chapter.chapter_id}`, chapter.chapter_title)}
                             >
                               <span className="text-gray-300 opacity-0 group-hover:opacity-100 cursor-grab"><GripVertical size={14} /></span>
                               <button onClick={(e) => { e.stopPropagation(); toggleExpand(`chapter-${chapter.chapter_id}`); }} className="p-0.5 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300">
@@ -1082,6 +1099,7 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
                                         onDrop={(e) => handleDrop(e, 'paragraph', paragraph.para_id, chapter.chapter_id)}
                                         onDragEnd={handleDragEnd}
                                         onContextMenu={(e) => handleContextMenu(e, 'paragraph', paragraph.para_id, { partTitle: part.part_title, chapterTitle: chapter.chapter_title, paraName: paragraph.para_name })}
+                                        onDoubleClick={(e) => startEditing(e, `paragraph-${paragraph.para_id}`, paragraph.para_name)}
                                       >
                                         <span className="text-gray-300 opacity-0 group-hover:opacity-100 cursor-grab"><GripVertical size={14} /></span>
                                         <button onClick={(e) => { e.stopPropagation(); toggleExpand(`paragraph-${paragraph.para_id}`); }} className="p-0.5 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300">
@@ -1168,11 +1186,30 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
                                                   }
                                                 }}
                                                 onClick={() => onSelectNotion({ projectName, partTitle: part.part_title, chapterTitle: chapter.chapter_title, paraName: paragraph.para_name, notionName: notion.notion_name, notion })}
-                                                onContextMenu={(e) => handleContextMenu(e, 'notion', notion.notion_id, { partTitle: part.part_title, chapterTitle: chapter.chapter_title, paraName: paragraph.para_name })}
+                                                onDoubleClick={(e) => startEditing(e, `notion-${notion.notion_id}`, notion.notion_name)}
+                                                onContextMenu={(e) => handleContextMenu(e, 'notion', notion.notion_id, {
+                                                  partTitle: part.part_title,
+                                                  chapterTitle: chapter.chapter_title,
+                                                  paraName: paragraph.para_name,
+                                                  notionName: notion.notion_name
+                                                })}
                                               >
                                                 <span className="text-gray-300 opacity-0 group-hover:opacity-100 cursor-grab"><GripVertical size={14} /></span>
                                                 <FileText size={14} className="shrink-0" color={selectedNotionId === notion.notion_id ? '#99334C' : getIconColor('notion')} />
-                                                <span className={`text-sm truncate ${selectedNotionId === notion.notion_id ? 'font-medium' : ''}`}>{notion.notion_name}</span>
+
+                                                {editingId === `notion-${notion.notion_id}` ? (
+                                                  <input
+                                                    autoFocus
+                                                    className="text-sm flex-1 bg-white border border-[#28A745] rounded px-1 outline-none text-gray-700"
+                                                    value={tempTitle}
+                                                    onChange={(e) => setTempTitle(e.target.value)}
+                                                    onBlur={() => submitRename('notion', notion.notion_id)}
+                                                    onKeyDown={(e) => handleKeyDown(e, 'notion', notion.notion_id)}
+                                                    onClick={(e) => e.stopPropagation()}
+                                                  />
+                                                ) : (
+                                                  <span className={`text-sm truncate ${selectedNotionId === notion.notion_id ? 'font-medium' : ''}`}>{notion.notion_name}</span>
+                                                )}
                                               </div>
                                             ))}
                                             {/* End zone Notions */}
@@ -1245,7 +1282,11 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
         onRename={() => {
           if (contextMenu.id && contextMenu.type) {
             let title = '';
-            if (contextMenu.type === 'part') title = structure.find(p => p.part_id === contextMenu.id)?.part_title || '';
+            if (contextMenu.type === 'part') title = contextMenu.partTitle || '';
+            else if (contextMenu.type === 'chapter') title = contextMenu.chapterTitle || '';
+            else if (contextMenu.type === 'paragraph') title = contextMenu.paraName || '';
+            else if (contextMenu.type === 'notion') title = (contextMenu as any).notionName || '';
+
             startEditing({ stopPropagation: () => { } } as any, `${contextMenu.type}-${contextMenu.id}`, title);
           }
         }}

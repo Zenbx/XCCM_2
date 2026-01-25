@@ -218,6 +218,35 @@ export const useEditorModals = (
 
             toast.success("Supprimé avec succès");
             setDeleteModalConfig(prev => ({ ...prev, isOpen: false }));
+
+            // Optimistic Visual Update: Remove from local state immediately
+            const updatedStructure = JSON.parse(JSON.stringify(currentStructure));
+            if (type === 'part') {
+                setStructure(updatedStructure.filter((p: any) => p.part_id !== id));
+            } else if (type === 'chapter') {
+                updatedStructure.forEach((p: any) => {
+                    if (p.chapters) p.chapters = p.chapters.filter((c: any) => c.chapter_id !== id);
+                });
+                setStructure(updatedStructure);
+            } else if (type === 'paragraph') {
+                updatedStructure.forEach((p: any) => {
+                    p.chapters?.forEach((c: any) => {
+                        if (c.paragraphs) c.paragraphs = c.paragraphs.filter((pa: any) => pa.para_id !== id);
+                    });
+                });
+                setStructure(updatedStructure);
+            } else if (type === 'notion') {
+                updatedStructure.forEach((p: any) => {
+                    p.chapters?.forEach((c: any) => {
+                        c.paragraphs?.forEach((pa: any) => {
+                            if (pa.notions) pa.notions = pa.notions.filter((n: any) => n.notion_id !== id);
+                        });
+                    });
+                });
+                setStructure(updatedStructure);
+            }
+
+            // Sync with server in background
             await loadProject(true);
         } catch (err: any) {
             toast.error("Échec de la suppression");

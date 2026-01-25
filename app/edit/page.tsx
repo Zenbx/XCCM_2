@@ -396,27 +396,23 @@ const XCCM2Editor = () => {
   const editorRef = useRef<HTMLDivElement>(null);
 
   // Handlers pour la structure (TOC)
-  const handleRenameGranule = async (type: string, id: string, newTitle: string) => {
+  const handleRenameGranule = async (type: string, id: string, oldTitle: string, newTitle: string) => {
     if (!projectName) return;
     try {
       if (type === 'part') {
-        const oldTitle = structure.find(p => p.part_id === id)?.part_title;
-        if (oldTitle) await structureService.updatePart(projectName, oldTitle, { part_title: newTitle });
+        await structureService.updatePart(projectName, oldTitle, { part_title: newTitle });
       } else if (type === 'chapter') {
         const part = structure.find(p => p.chapters?.some(c => c.chapter_id === id));
-        const oldTitle = part?.chapters?.find(c => c.chapter_id === id)?.chapter_title;
-        if (part && oldTitle) await structureService.updateChapter(projectName, part.part_title, oldTitle, { chapter_title: newTitle });
+        if (part) await structureService.updateChapter(projectName, part.part_title, oldTitle, { chapter_title: newTitle });
       } else if (type === 'paragraph') {
         const part = structure.find(p => p.chapters?.some(c => c.paragraphs?.some(pa => pa.para_id === id)));
         const chapter = part?.chapters?.find(c => c.paragraphs?.some(pa => pa.para_id === id));
-        const oldName = chapter?.paragraphs?.find(pa => pa.para_id === id)?.para_name;
-        if (part && chapter && oldName) await structureService.updateParagraph(projectName, part.part_title, chapter.chapter_title, oldName, { para_name: newTitle });
+        if (part && chapter) await structureService.updateParagraph(projectName, part.part_title, chapter.chapter_title, oldTitle, { para_name: newTitle });
       } else if (type === 'notion') {
         const part = structure.find(p => p.chapters?.some(c => c.paragraphs?.some(pa => pa.notions?.some(n => n.notion_id === id))));
         const chapter = part?.chapters?.find(c => c.paragraphs?.some(pa => pa.notions?.some(n => n.notion_id === id)));
         const para = chapter?.paragraphs?.find(pa => pa.notions?.some(n => n.notion_id === id));
-        const oldName = para?.notions?.find(n => n.notion_id === id)?.notion_name;
-        if (part && chapter && para && oldName) await structureService.updateNotion(projectName, part.part_title, chapter.chapter_title, para.para_name, oldName, { notion_name: newTitle });
+        if (part && chapter && para) await structureService.updateNotion(projectName, part.part_title, chapter.chapter_title, para.para_name, oldTitle, { notion_name: newTitle });
       }
       loadProject(true);
     } catch (err: any) {
@@ -765,15 +761,8 @@ const XCCM2Editor = () => {
               onReorder={handleReorderGranule}
               onMove={handleMoveGranule}
               onExternalDrop={handleDropGranule}
-              onDelete={async (type, id) => {
-                const findTitle = () => {
-                  if (type === 'part') return structure.find(p => p.part_id === id)?.part_title;
-                  if (type === 'chapter') return structure.flatMap(p => p.chapters || []).find(c => c.chapter_id === id)?.chapter_title;
-                  if (type === 'paragraph') return structure.flatMap(p => p.chapters || []).flatMap(c => c.paragraphs || []).find(pa => pa.para_id === id)?.para_name;
-                  if (type === 'notion') return structure.flatMap(p => p.chapters || []).flatMap(c => c.paragraphs || []).flatMap(pa => pa.notions || []).find(n => n.notion_id === id)?.notion_name;
-                  return '';
-                };
-                handleDelete(type, id, findTitle() || '');
+              onDelete={async (type, id, title) => {
+                handleDelete(type, id, title);
               }}
               selectedPartId={currentContext?.type === 'part' ? currentContext.part?.part_id || structure.find(p => p.part_title === currentContext.partTitle)?.part_id : undefined}
               selectedChapterId={currentContext?.chapterId}
