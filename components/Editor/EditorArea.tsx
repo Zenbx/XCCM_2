@@ -260,12 +260,6 @@ const EditorArea: React.FC<EditorAreaProps> = ({
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
-
-    if (e.dataTransfer.types.includes('application/x-toc-item')) {
-      e.dataTransfer.dropEffect = 'none';
-      return;
-    }
-
     e.currentTarget.classList.add('ring-2', 'ring-[#99334C]', 'bg-gray-50');
   };
 
@@ -279,15 +273,6 @@ const EditorArea: React.FC<EditorAreaProps> = ({
     e.preventDefault();
     e.stopPropagation();
     e.currentTarget.classList.remove('ring-2', 'ring-[#99334C]', 'bg-gray-50');
-
-    // ✅ Bloquer explicitement les éléments de la TOC
-    if (e.dataTransfer.types.includes('application/x-toc-item')) {
-      toast.error("Action impossible : Les éléments de la structure (TOC) ne peuvent pas être déposés dans l'éditeur.", {
-        icon: '🚫',
-        duration: 3000
-      });
-      return;
-    }
 
     const granuleData = e.dataTransfer.getData('granule');
     if (granuleData) {

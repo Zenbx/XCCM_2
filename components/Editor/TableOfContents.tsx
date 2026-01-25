@@ -113,7 +113,6 @@ const createDragGhost = (
     ">
       <span style="font-size: 14px;">${typeIcons[type]}</span>
       <span style="overflow: hidden; text-overflow: ellipsis;">${title}</span>
-      <span id="drag-warning-icon" style="display: none; margin-left: auto; color: #EF4444;">⚠️</span>
     </div>
   `;
 
@@ -536,7 +535,7 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
 
     if (e.dataTransfer) {
       e.dataTransfer.setDragImage(ghost.firstElementChild as HTMLElement, 20, 20);
-      e.dataTransfer.setData('application/x-toc-item', JSON.stringify({ type, id, parentId }));
+      e.dataTransfer.setData('text/plain', JSON.stringify({ type, id, parentId }));
       e.dataTransfer.effectAllowed = 'move';
     }
 

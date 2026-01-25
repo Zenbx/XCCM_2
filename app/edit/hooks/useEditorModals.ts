@@ -6,7 +6,7 @@ export const useEditorModals = (
     projectName: string | null,
     structure: any[], // ✅ Added structure for auto-increment
     setStructure: (parts: any) => void,
-    loadProject: (silent?: boolean) => Promise<any[] | null>,
+    loadProject: (silent?: boolean) => Promise<void>,
     setPendingGranule?: (pending: any) => void,
     setPulsingId?: (id: string | null) => void
 ) => {
