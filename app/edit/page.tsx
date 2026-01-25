@@ -33,7 +33,7 @@ import PublishToMarketplaceModal from '@/components/Editor/PublishToMarketplaceM
 // Services & Utils
 import { structureService } from '@/services/structureService';
 import { commentService } from '@/services/commentService';
-import '../../styles/view-transitions.css';
+//import '../../styles/view-transitions.css';
 
 const XCCM2Editor = () => {
   const searchParams = useSearchParams();
@@ -850,6 +850,16 @@ const XCCM2Editor = () => {
           <div className="max-w-4xl mx-auto min-h-full">
             <EditorArea
               content={editorContent}
+              placeholder={(() => {
+                if (!currentContext) return t('selectPrompt');
+                switch (currentContext.type) {
+                  case 'part': return t('partPlaceholder');
+                  case 'chapter': return t('chapterPlaceholder');
+                  case 'paragraph': return t('paragraphPlaceholder');
+                  case 'notion': return t('notionPlaceholder');
+                  default: return t('selectPrompt');
+                }
+              })()}
               textFormat={textFormat}
               onChange={(val) => {
                 setEditorContent(val);

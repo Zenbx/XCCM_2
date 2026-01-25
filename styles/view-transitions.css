@@ -1,9 +1,10 @@
 /* View Transitions API - Smooth Navigation */
 
-/* Enable View Transitions globally */
+/* Enable View Transitions globally - DISABLED FOR STABILITY
 @view-transition {
     navigation: auto;
 }
+*/
 
 /* Base transition for all content */
 ::view-transition-old(root),
