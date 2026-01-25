@@ -187,10 +187,41 @@ export const useEditorModals = (
 
     const confirmDelete = async (currentStructure: any[]) => {
         if (!projectName || !deleteModalConfig.id) return;
-        try {
-            setDeleteModalConfig(prev => ({ ...prev, isDeleting: true }));
-            const { type, id, title } = deleteModalConfig;
+        const { type, id, title } = deleteModalConfig;
+        if (!type || !id || !title) return;
 
+        // 1. Close modal immediately for zero-wait UX
+        setDeleteModalConfig(prev => ({ ...prev, isOpen: false, isDeleting: false }));
+
+        // 2. Optimistic Visual Update: Remove from local state immediately
+        const updatedStructure = JSON.parse(JSON.stringify(currentStructure));
+        if (type === 'part') {
+            setStructure(updatedStructure.filter((p: any) => p.part_id !== id));
+        } else if (type === 'chapter') {
+            updatedStructure.forEach((p: any) => {
+                if (p.chapters) p.chapters = p.chapters.filter((c: any) => c.chapter_id !== id);
+            });
+            setStructure(updatedStructure);
+        } else if (type === 'paragraph') {
+            updatedStructure.forEach((p: any) => {
+                p.chapters?.forEach((c: any) => {
+                    if (c.paragraphs) c.paragraphs = c.paragraphs.filter((pa: any) => pa.para_id !== id);
+                });
+            });
+            setStructure(updatedStructure);
+        } else if (type === 'notion') {
+            updatedStructure.forEach((p: any) => {
+                p.chapters?.forEach((c: any) => {
+                    c.paragraphs?.forEach((pa: any) => {
+                        if (pa.notions) pa.notions = pa.notions.filter((n: any) => n.notion_id !== id);
+                    });
+                });
+            });
+            setStructure(updatedStructure);
+        }
+
+        try {
+            // 3. Perform backend deletion in the background
             if (type === 'part') {
                 await structureService.deletePart(projectName, title);
             } else if (type === 'chapter') {
@@ -217,39 +248,12 @@ export const useEditorModals = (
             }
 
             toast.success("Supprimé avec succès");
-            setDeleteModalConfig(prev => ({ ...prev, isOpen: false }));
-
-            // Optimistic Visual Update: Remove from local state immediately
-            const updatedStructure = JSON.parse(JSON.stringify(currentStructure));
-            if (type === 'part') {
-                setStructure(updatedStructure.filter((p: any) => p.part_id !== id));
-            } else if (type === 'chapter') {
-                updatedStructure.forEach((p: any) => {
-                    if (p.chapters) p.chapters = p.chapters.filter((c: any) => c.chapter_id !== id);
-                });
-                setStructure(updatedStructure);
-            } else if (type === 'paragraph') {
-                updatedStructure.forEach((p: any) => {
-                    p.chapters?.forEach((c: any) => {
-                        if (c.paragraphs) c.paragraphs = c.paragraphs.filter((pa: any) => pa.para_id !== id);
-                    });
-                });
-                setStructure(updatedStructure);
-            } else if (type === 'notion') {
-                updatedStructure.forEach((p: any) => {
-                    p.chapters?.forEach((c: any) => {
-                        c.paragraphs?.forEach((pa: any) => {
-                            if (pa.notions) pa.notions = pa.notions.filter((n: any) => n.notion_id !== id);
-                        });
-                    });
-                });
-                setStructure(updatedStructure);
-            }
-
-            // Sync with server in background
+            // 4. Sync with server in background
             await loadProject(true);
         } catch (err: any) {
             toast.error("Échec de la suppression");
+            // Revert state on error for consistency
+            setStructure(currentStructure);
         } finally {
             setDeleteModalConfig(prev => ({ ...prev, isDeleting: false }));
         }
