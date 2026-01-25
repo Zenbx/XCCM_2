@@ -586,29 +586,31 @@ const XCCM2Editor = () => {
   // Lifecycle
   useEffect(() => { loadProject(); }, [projectName]);
 
-  // Content External Sync
-  useEffect(() => {
-    if (!structure || structure.length === 0) return;
-    if (currentContext?.type === 'notion' && currentContext.notionName) {
-      const findNotion = () => {
-        for (const part of structure) {
-          for (const chapter of part.chapters || []) {
-            for (const para of chapter.paragraphs || []) {
-              const found = para.notions?.find(n => n.notion_id === currentContext.notion?.notion_id);
-              if (found) return found;
+  /* 
+    // Content External Sync
+    useEffect(() => {
+      if (!structure || structure.length === 0) return;
+      if (currentContext?.type === 'notion' && currentContext.notionName) {
+        const findNotion = () => {
+          for (const part of structure) {
+            for (const chapter of part.chapters || []) {
+              for (const para of chapter.paragraphs || []) {
+                const found = para.notions?.find(n => n.notion_id === currentContext.notion?.notion_id);
+                if (found) return found;
+              }
             }
           }
-        }
-        return null;
-      };
-      const foundNotion = findNotion();
-      if (foundNotion) {
-        if (foundNotion.notion_content !== editorContent && !hasUnsavedChanges) {
-          setEditorContent(foundNotion.notion_content || '');
+          return null;
+        };
+        const foundNotion = findNotion();
+        if (foundNotion) {
+          if (foundNotion.notion_content !== editorContent && !hasUnsavedChanges) {
+            setEditorContent(foundNotion.notion_content || '');
+          }
         }
       }
-    }
-  }, [structure]);
+    }, [structure]);
+    */
 
   // Socratic Debounce
   useEffect(() => {
@@ -670,87 +672,55 @@ const XCCM2Editor = () => {
               projectName={projectName || ''}
               structure={structure}
               width={sidebarWidth}
-              onSelectNotion={async (ctx) => {
-                try {
-                  const update = async () => {
-                    if (hasUnsavedChanges) await handleSave(true);
-                    setCurrentContext({
-                      type: 'notion',
-                      projectName: projectData?.pr_name || '',
-                      partTitle: ctx.partTitle,
-                      chapterTitle: ctx.chapterTitle,
-                      paraName: ctx.paraName,
-                      notionName: ctx.notionName,
-                      notion: ctx.notion
-                    });
-                    setEditorContent(ctx.notion.notion_content || '');
-                    setHasUnsavedChanges(false);
-                  };
-                  update();
-                } catch (err) {
-                  console.error("Error selecting Notion:", err);
-                  toast.error("Erreur de sélection");
-                }
+              onSelectNotion={(ctx) => {
+                if (hasUnsavedChanges) handleSave(true);
+                setCurrentContext({
+                  type: 'notion',
+                  projectName: projectData?.pr_name || '',
+                  partTitle: ctx.partTitle,
+                  chapterTitle: ctx.chapterTitle,
+                  paraName: ctx.paraName,
+                  notionName: ctx.notionName,
+                  notion: ctx.notion
+                });
+                setEditorContent(ctx.notion.notion_content || '');
+                setHasUnsavedChanges(false);
               }}
-              onSelectPart={async (ctx) => {
-                try {
-                  const update = async () => {
-                    if (hasUnsavedChanges) await handleSave(true);
-                    setCurrentContext({
-                      type: 'part',
-                      projectName: projectData?.pr_name || '',
-                      partTitle: ctx.partTitle,
-                      part: ctx.part
-                    });
-                    setEditorContent(ctx.part.part_intro || '');
-                    setHasUnsavedChanges(false);
-                  };
-                  update();
-                } catch (err) {
-                  console.error("Error selecting Part:", err);
-                  toast.error("Erreur de sélection");
-                }
+              onSelectPart={(ctx) => {
+                if (hasUnsavedChanges) handleSave(true);
+                setCurrentContext({
+                  type: 'part',
+                  projectName: projectData?.pr_name || '',
+                  partTitle: ctx.partTitle,
+                  part: ctx.part
+                });
+                setEditorContent(ctx.part.part_intro || '');
+                setHasUnsavedChanges(false);
               }}
-              onSelectChapter={async (pName, cTitle, cId) => {
-                try {
-                  const update = async () => {
-                    if (hasUnsavedChanges) await handleSave(true);
-                    setCurrentContext({
-                      type: 'chapter',
-                      projectName: projectData?.pr_name || '',
-                      partTitle: pName,
-                      chapterTitle: cTitle,
-                      chapterId: cId
-                    });
-                    setEditorContent('');
-                    setHasUnsavedChanges(false);
-                  };
-                  update();
-                } catch (err) {
-                  console.error("Error selecting Chapter:", err);
-                  toast.error("Erreur de sélection");
-                }
+              onSelectChapter={(pName, cTitle, cId) => {
+                if (hasUnsavedChanges) handleSave(true);
+                setCurrentContext({
+                  type: 'chapter',
+                  projectName: projectData?.pr_name || '',
+                  partTitle: pName,
+                  chapterTitle: cTitle,
+                  chapterId: cId
+                });
+                setEditorContent('');
+                setHasUnsavedChanges(false);
               }}
-              onSelectParagraph={async (pName, cTitle, paName, paId) => {
-                try {
-                  const update = async () => {
-                    if (hasUnsavedChanges) await handleSave(true);
-                    setCurrentContext({
-                      type: 'paragraph',
-                      projectName: projectData?.pr_name || '',
-                      partTitle: pName,
-                      chapterTitle: cTitle,
-                      paraName: paName,
-                      paraId: paId
-                    });
-                    setEditorContent('');
-                    setHasUnsavedChanges(false);
-                  };
-                  update();
-                } catch (err) {
-                  console.error("Error selecting Paragraph:", err);
-                  toast.error("Erreur de sélection");
-                }
+              onSelectParagraph={(pName, cTitle, paName, paId) => {
+                if (hasUnsavedChanges) handleSave(true);
+                setCurrentContext({
+                  type: 'paragraph',
+                  projectName: projectData?.pr_name || '',
+                  partTitle: pName,
+                  chapterTitle: cTitle,
+                  paraName: paName,
+                  paraId: paId
+                });
+                setEditorContent('');
+                setHasUnsavedChanges(false);
               }}
               onPublishToMarketplace={handlePublishToMarketplace}
               onCreatePart={handleCreatePart}
