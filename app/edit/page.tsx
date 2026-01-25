@@ -675,15 +675,8 @@ const XCCM2Editor = () => {
               projectName={projectName || ''}
               structure={structure}
               width={sidebarWidth}
-              onSelectNotion={(ctx) => {
-                // Capturer le contexte actuel AVANT de changer
-                if (hasUnsavedChanges && currentContext) {
-                  const savedContext = { ...currentContext };
-                  const savedContent = editorContent;
-                  // Lancer la sauvegarde en arrière-plan (NON bloquant)
-                  handleSave(true, savedContext, savedContent);
-                }
-                // Changer de contexte immédiatement (UX fluide)
+              onSelectNotion={async (ctx) => {
+                if (hasUnsavedChanges) await handleSave(true);
                 setCurrentContext({
                   type: 'notion',
                   projectName: projectData?.pr_name || '',
@@ -696,15 +689,8 @@ const XCCM2Editor = () => {
                 setEditorContent(ctx.notion.notion_content || '');
                 setHasUnsavedChanges(false);
               }}
-              onSelectPart={(ctx) => {
-                // Capturer le contexte actuel AVANT de changer
-                if (hasUnsavedChanges && currentContext) {
-                  const savedContext = { ...currentContext };
-                  const savedContent = editorContent;
-                  // Lancer la sauvegarde en arrière-plan (NON bloquant)
-                  handleSave(true, savedContext, savedContent);
-                }
-                // Changer de contexte immédiatement (UX fluide)
+              onSelectPart={async (ctx) => {
+                if (hasUnsavedChanges) await handleSave(true);
                 setCurrentContext({
                   type: 'part',
                   projectName: projectData?.pr_name || '',
@@ -714,15 +700,8 @@ const XCCM2Editor = () => {
                 setEditorContent(ctx.part.part_intro || '');
                 setHasUnsavedChanges(false);
               }}
-              onSelectChapter={(pName, cTitle, cId) => {
-                // Capturer le contexte actuel AVANT de changer
-                if (hasUnsavedChanges && currentContext) {
-                  const savedContext = { ...currentContext };
-                  const savedContent = editorContent;
-                  // Lancer la sauvegarde en arrière-plan (NON bloquant)
-                  handleSave(true, savedContext, savedContent);
-                }
-                // Changer de contexte immédiatement (UX fluide)
+              onSelectChapter={async (pName, cTitle, cId) => {
+                if (hasUnsavedChanges) await handleSave(true);
                 setCurrentContext({
                   type: 'chapter',
                   projectName: projectData?.pr_name || '',
@@ -733,15 +712,8 @@ const XCCM2Editor = () => {
                 setEditorContent('');
                 setHasUnsavedChanges(false);
               }}
-              onSelectParagraph={(pName, cTitle, paName, paId) => {
-                // Capturer le contexte actuel AVANT de changer
-                if (hasUnsavedChanges && currentContext) {
-                  const savedContext = { ...currentContext };
-                  const savedContent = editorContent;
-                  // Lancer la sauvegarde en arrière-plan (NON bloquant)
-                  handleSave(true, savedContext, savedContent);
-                }
-                // Changer de contexte immédiatement (UX fluide)
+              onSelectParagraph={async (pName, cTitle, paName, paId) => {
+                if (hasUnsavedChanges) await handleSave(true);
                 setCurrentContext({
                   type: 'paragraph',
                   projectName: projectData?.pr_name || '',
