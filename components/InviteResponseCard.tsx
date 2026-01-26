@@ -133,7 +133,7 @@ export default function InviteResponseCard({
                   <Loader2 className="w-5 h-5 animate-spin" />
                 ) : (
                   <>
-                    Accepter l'invitation
+                    Rejoindre l'équipe
                   </>
                 )}
               </button>
@@ -151,7 +151,7 @@ export default function InviteResponseCard({
               {status === "accepted" && (
                 <div className="p-4 bg-green-50 border border-green-200 text-green-800 rounded-lg flex flex-col items-center gap-2 animate-in fade-in zoom-in duration-300">
                   <span className="font-bold text-lg">C'est fait !</span>
-                  <p className="text-sm">Vous avez rejoint le projet. Préparation de votre espace...</p>
+                  <p className="text-sm">Vous faites maintenant partie de l'équipe ! Préparation de votre espace...</p>
                   <Loader2 className="w-5 h-5 animate-spin mt-2" />
                 </div>
               )}

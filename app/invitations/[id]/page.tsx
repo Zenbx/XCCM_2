@@ -109,7 +109,7 @@ export default function InvitationPage({ params }: Props) {
         <div className="mb-6 text-center">
           <h2 className="text-xl font-semibold text-gray-900">Invitation</h2>
           <p className="text-sm text-gray-500">
-            Réponds à l'invitation pour accéder au projet
+            Rejoignez l'équipe du projet pour commencer à collaborer
           </p>
         </div>
 
@@ -123,7 +123,7 @@ export default function InvitationPage({ params }: Props) {
 
         {/* Footer */}
         <div className="mt-6 text-center text-xs text-gray-400">
-          Si tu ne connais pas cet invité, contacte le support.
+          Si tu ne connais pas cet auteur, contacte le support.
         </div>
       </div>
     </div>

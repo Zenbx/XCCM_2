@@ -10,7 +10,7 @@ import {
   Edit3,
   Save,
   Award, BookOpen, Eye, Download, TrendingUp, Box, Clock,
-  ChevronRight, LogOut, Settings, Plus, Layout, Heart, Trash2, FileText, Globe, ExternalLink, Loader2
+  ChevronRight, LogOut, Settings, Plus, Layout, Heart, Trash2, FileText, Globe, ExternalLink, Loader2, EyeOff
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { getCookie } from '@/lib/cookies';
@@ -549,7 +549,7 @@ const AccountPage = () => {
                 onClick={() => setActiveTab('publications')}
                 className={`px-6 py-2.5 rounded-lg font-bold transition-all ${activeTab === 'publications' ? 'bg-white text-[#99334C] shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
               >
-                Mes Publications
+                Mes Projets Publiés
               </button>
             </div>
 
@@ -668,7 +668,7 @@ const AccountPage = () => {
                 <div className="flex items-center justify-between mb-8">
                   <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
                     <Globe className="w-6 h-6 text-[#99334C]" />
-                    Documents dans la bibliothèque
+                    Gestion de vos projets en bibliothèque
                   </h3>
                   <span className="px-3 py-1 bg-[#99334C]/10 text-[#99334C] text-xs font-bold rounded-full">
                     {userDocuments.length} SNAPSHOTS
@@ -733,13 +733,16 @@ const AccountPage = () => {
                           <button
                             onClick={() => handleDeletePublication(doc.doc_id, doc.doc_name)}
                             disabled={isDeletingDoc === doc.doc_id}
-                            className="p-2.5 bg-red-50 text-red-500 rounded-xl hover:bg-red-500 hover:text-white transition-all disabled:opacity-50"
-                            title="Supprimer la publication"
+                            className="flex items-center gap-2 px-4 py-2 bg-red-50 text-red-600 rounded-xl hover:bg-red-600 hover:text-white transition-all disabled:opacity-50 font-bold text-sm"
+                            title="Retirer de la bibliothèque"
                           >
                             {isDeletingDoc === doc.doc_id ? (
-                              <Loader2 size={20} className="animate-spin" />
+                              <Loader2 size={16} className="animate-spin" />
                             ) : (
-                              <Trash2 size={20} />
+                              <>
+                                <EyeOff size={16} />
+                                <span>Dépublier</span>
+                              </>
                             )}
                           </button>
                         </div>
