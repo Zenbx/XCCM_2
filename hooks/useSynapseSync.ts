@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import * as Y from 'yjs';
 import { HocuspocusProvider } from '@hocuspocus/provider';
 import { Awareness } from 'y-protocols/awareness';
@@ -114,6 +114,19 @@ export function useSynapseSync(options: SynapseSyncOptions): SynapseSyncResult {
 
     // Use Refs to avoid re-render loops but keep state for connection status
     const yDocRef = useRef<Y.Doc | null>(null);
+
+    // ✅ CRITICAL FIX: Create Y.Doc synchronously so it's available for Tiptap immediately
+    // useEditor extension initialization happens once on mount. If yDoc is null then, Collab is disabled forever.
+    const yDoc = useMemo(() => {
+        return new Y.Doc();
+    }, [documentId]); // Recreate doc only when ID changes
+
+    // Update ref for legacy access compatibility if needed
+    useEffect(() => {
+        yDocRef.current = yDoc;
+    }, [yDoc]);
+
+    // Provider Ref to manage lifecycle without re-renders
     const providerRef = useRef<HocuspocusProvider | null>(null);
 
     // State
@@ -132,11 +145,9 @@ export function useSynapseSync(options: SynapseSyncOptions): SynapseSyncResult {
 
     // Initialisation de la connexion
     useEffect(() => {
-        if (!documentId || !userId) return;
+        if (!documentId || !userId || !yDoc) return;
 
-        // Créer le document Y.js
-        const yDoc = new Y.Doc();
-        yDocRef.current = yDoc;
+        console.log(`[Synapse] Initializing connection for ${documentId}`);
 
         const provider = new HocuspocusProvider({
             url: serverUrl,
@@ -161,7 +172,6 @@ export function useSynapseSync(options: SynapseSyncOptions): SynapseSyncResult {
                 if (state) onSynced?.();
             },
             onStatus: ({ status }) => {
-                console.log(`[Synapse] Status: ${status}`);
                 // Use functional update to avoid dependency issues
                 setConnectionStatus(prev => {
                     if (status === 'connecting') return 'connecting';
@@ -227,11 +237,13 @@ export function useSynapseSync(options: SynapseSyncOptions): SynapseSyncResult {
             console.log(`[Synapse] Cleaning up connection for ${documentId}`);
             awareness.off('change', handleAwarenessChange);
             provider.disconnect();
-            yDoc.destroy();
-            yDocRef.current = null;
             providerRef.current = null;
+
+            // Note: with useMemo, react might handle destroy but being explicit is safer for Yjs
+            // when the docId changes. However since we create a new one, destroying the old one is good.
+            yDoc.destroy();
         };
-    }, [documentId, userId, userName, userColor, serverUrl, token]);
+    }, [yDoc, documentId, userId, userName, userColor, serverUrl, token]);
 
     // Mettre à jour la position du curseur
     const updateCursor = useCallback((anchor: number, head: number) => {
@@ -261,11 +273,11 @@ export function useSynapseSync(options: SynapseSyncOptions): SynapseSyncResult {
 
     // Obtenir le fragment XML pour TipTap
     const getYXmlFragment = useCallback((name: string = 'prosemirror') => {
-        return yDocRef.current?.getXmlFragment(name) || null;
-    }, []);
+        return yDoc.getXmlFragment(name) || null;
+    }, [yDoc]);
 
     return {
-        yDoc: yDocRef.current,
+        yDoc: yDoc,
         provider: providerRef.current,
         awareness: providerRef.current?.awareness || null,
         isConnected,

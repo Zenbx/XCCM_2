@@ -225,6 +225,18 @@ const TiptapEditor: React.FC<TiptapEditorProps> = (props) => {
     content: collaboration ? undefined : content,
     editable: !readOnly,
     onCreate: ({ editor }) => {
+      // ✅ HYBRID SYNC : Réparation de la "Perte Fantôme"
+      // Si on a du contenu local (cache) ET que la collaboration est active,
+      // on vérifie si le document collaboratif est vide (perte de connexion) ou en retard.
+      // Si oui, on FORCE le contenu local pour "réparer" le document partagé.
+      if (content && content.length > 20) { // Sécurité : on ignore les contenus vides/trop courts
+        const currentHTML = editor.getHTML();
+        // Si l'éditeur est vide (<p></p>) OU si le cache local est nettement plus fourni
+        if (editor.isEmpty || (content.length > currentHTML.length + 10)) {
+          console.log('[Hybrid Sync] 🛠️ Restoring content from Local Cache to heal Collab Document');
+          editor.commands.setContent(content, true); // Booléen true pour emitUpdate
+        }
+      }
       onReady?.(editor);
     },
     onUpdate: ({ editor }) => {
@@ -235,29 +247,19 @@ const TiptapEditor: React.FC<TiptapEditorProps> = (props) => {
     },
     // ✅ SAUVEGARDE FINALE AU DÉMONTAGE RETIRÉE
     // La sauvegarde est maintenant gérée de manière synchrone par le parent (EditorArea/Page)
-    // avant le démontage pour éviter les Race Conditions.
     editorProps: {
       attributes: {
         class: `focus:outline-none min-h-[800px] ${className}`,
       },
-      // ✅ Amélioration de la gestion du Copier-Coller externe
       transformPastedHTML(html) {
-        // Nettoyage basique mais préservation des styles de base (gras, italique, souligné, couleurs)
         let cleaned = html;
-        // On peut ajouter ici des regex pour nettoyer le surplus de MS Word tout en gardant les <strong>, <em>, etc.
         return cleaned;
       },
       handlePaste(view, event) {
-        // La gestion standard de Tiptap est déjà pas mal, 
-        // on laisse faire sauf si on veut surcharger la logique image
         return false;
       },
     },
   });
-
-  // ✅ REMOVED synchronisation useEffect pour éviter les fuites de contenu (Leakage)
-  // On utilise key={docId} dans EditorArea, donc l'éditeur est recréé à chaque changement.
-  // L'initialisation via useEditor({ content }) suffit amplement.
 
   // Gérer le mode lecture seule
   useEffect(() => {
