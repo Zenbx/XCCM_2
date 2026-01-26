@@ -100,6 +100,7 @@ const XCCM2Editor = () => {
   const [isResizing, setIsResizing] = useState(false);
   const [isZenMode, setIsZenMode] = useState(false);
   const [tiptapEditor, setTiptapEditor] = useState<any>(null);
+  const [isTransitioning, setIsTransitioning] = useState(false);
   const editorRef = useRef<HTMLDivElement>(null);
   const lastDocChangeTimeRef = useRef<number>(0);
   const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -229,7 +230,7 @@ const XCCM2Editor = () => {
     e.dataTransfer.effectAllowed = 'copy';
   };
 
-    const handleDropGranule = async (granule: any, targetType?: string, targetId?: string, targetParentId?: string | null) => {
+  const handleDropGranule = async (granule: any, targetType?: string, targetId?: string, targetParentId?: string | null) => {
     if (!projectName) return;
     console.log("Dropping granule with target:", { granule, targetType, targetId, targetParentId });
 
@@ -281,7 +282,7 @@ const XCCM2Editor = () => {
         try { effectiveData = JSON.parse(granule.previewContent); } catch (e) { }
       }
 
-      // --- Fonctions Récursives (Les Poupées Russes) ---
+      // --- Fonctions Récursives ---
       const recurseParagraph = async (pTitle: string, cTitle: string, paName: string, paraData: any) => {
         const notions = paraData.notions || paraData.children;
         if (notions && notions.length > 0) {
@@ -310,7 +311,7 @@ const XCCM2Editor = () => {
         }
       };
 
-      // --- Logique de création principale ---
+      // --- Logique principale ---
       if (granule.type === 'part') {
         const nextPartNum = structure.length + 1;
         const newPart = await structureService.createPart(projectName, {
@@ -319,7 +320,7 @@ const XCCM2Editor = () => {
           part_intro: effectiveData.part_intro || effectiveData.introduction || ''
         });
         setPulsingId(newPart.part_id);
-        
+
         const chapters = effectiveData.chapters || effectiveData.children;
         if (chapters && chapters.length > 0) {
           for (let i = 0; i < chapters.length; i++) {
@@ -335,7 +336,7 @@ const XCCM2Editor = () => {
         const parentPart = dropPartTitle || currentContext?.partTitle || (structure.length > 0 ? structure[structure.length - 1].part_title : "Partie 1");
         const partObj = structure.find(p => p.part_title.trim() === parentPart.trim());
         const nextChapNum = (partObj?.chapters?.length || 0) + 1;
-        
+
         const newChapter = await structureService.createChapter(projectName, parentPart, {
           chapter_title: effectiveData.chapter_title || effectiveData.content || "Nouveau Chapitre",
           chapter_number: nextChapNum
@@ -348,7 +349,7 @@ const XCCM2Editor = () => {
         const parentChapter = dropChapterTitle || currentContext?.chapterTitle || partObj?.chapters?.[0]?.chapter_title || "Chapitre 1";
         const chapObj = partObj?.chapters?.find(c => c.chapter_title.trim() === parentChapter.trim());
         const nextParaNum = (chapObj?.paragraphs?.length || 0) + 1;
-        
+
         const newPara = await structureService.createParagraph(projectName, parentPart, parentChapter, {
           para_name: effectiveData.para_name || effectiveData.content || "Nouveau Paragraphe",
           para_number: nextParaNum
@@ -362,7 +363,7 @@ const XCCM2Editor = () => {
         const chapObj = partObj.chapters?.find(c => c.chapter_title.trim() === parentChapter.trim()) || partObj.chapters?.[0];
         const parentPara = dropParaName || currentContext?.paraName || chapObj?.paragraphs?.[0]?.para_name || "Paragraphe 1";
         const paraObj = chapObj?.paragraphs?.find(p => p.para_name.trim() === parentPara.trim()) || chapObj?.paragraphs?.[0];
-        
+
         const nextNotionNum = (paraObj?.notions?.length || 0) + 1;
         await structureService.createNotion(projectName, parentPart, parentChapter, paraObj?.para_name || parentPara, {
           notion_name: effectiveData.notion_name || effectiveData.content || "Nouvelle Notion",
@@ -608,7 +609,7 @@ const XCCM2Editor = () => {
                 lastDocChangeTimeRef.current = Date.now();
 
                 if (hasUnsavedChanges && prevId && currentContext) {
-                  const frozenContext = { ...currentContext, notion: currentContext.notion ? { ...currentContext.notion } : undefined, part: currentContext.part ? { ...currentContext.part } : undefined };
+                  const frozenContext = JSON.parse(JSON.stringify(currentContext));
                   queueSave(frozenContext, trueContent);
                 }
 
@@ -634,7 +635,7 @@ const XCCM2Editor = () => {
                 lastDocChangeTimeRef.current = Date.now();
 
                 if (hasUnsavedChanges && prevId && currentContext) {
-                  const frozenContext = { ...currentContext, notion: currentContext.notion ? { ...currentContext.notion } : undefined, part: currentContext.part ? { ...currentContext.part } : undefined };
+                  const frozenContext = JSON.parse(JSON.stringify(currentContext));
                   queueSave(frozenContext, trueContent);
                 }
 
@@ -651,24 +652,40 @@ const XCCM2Editor = () => {
                 let trueContent = editorContent;
                 if (tiptapEditor && !tiptapEditor.isDestroyed) { try { trueContent = tiptapEditor.getHTML(); } catch (e) { } }
                 if (prevId) localContentCacheRef.current[prevId] = trueContent;
-                if (hasUnsavedChanges && currentContext) queueSave(currentContext, trueContent);
+                if (hasUnsavedChanges && currentContext) {
+                    const frozenContext = JSON.parse(JSON.stringify(currentContext));
+                    queueSave(frozenContext, trueContent);
+                }
                 if (autoSaveTimerRef.current) { clearTimeout(autoSaveTimerRef.current); autoSaveTimerRef.current = null; }
-                activeDocIdRef.current = `chapter-${cId}`;
-                setCurrentContext({ type: 'chapter', projectName: projectData?.pr_name || '', partTitle: pName, chapterTitle: cTitle, chapterId: cId });
-                setHasUnsavedChanges(false);
+                
+                setIsTransitioning(true);
+                setTimeout(() => {
+                  activeDocIdRef.current = `chapter-${cId}`;
+                  setCurrentContext({ type: 'chapter', projectName: projectData?.pr_name || '', partTitle: pName, chapterTitle: cTitle, chapterId: cId });
+                  setEditorContent('');
+                  setHasUnsavedChanges(false);
+                  setIsTransitioning(false);
+                }, 300);
               }}
               onSelectParagraph={(pName, cTitle, paName, paId) => {
                 const prevId = currentContext?.notion?.notion_id || currentContext?.part?.part_id;
                 let trueContent = editorContent;
                 if (tiptapEditor && !tiptapEditor.isDestroyed) { try { trueContent = tiptapEditor.getHTML(); } catch (e) { } }
                 if (prevId) localContentCacheRef.current[prevId] = trueContent;
-                if (hasUnsavedChanges && currentContext) queueSave(currentContext, trueContent);
+                if (hasUnsavedChanges && currentContext) {
+                    const frozenContext = JSON.parse(JSON.stringify(currentContext));
+                    queueSave(frozenContext, trueContent);
+                }
                 if (autoSaveTimerRef.current) { clearTimeout(autoSaveTimerRef.current); autoSaveTimerRef.current = null; }
                 
-                activeDocIdRef.current = `paragraph-${paId}`;
-                setCurrentContext({ type: 'paragraph', projectName: projectData?.pr_name || '', partTitle: pName, chapterTitle: cTitle, paraName: paName, paraId: paId });
-                setEditorContent(''); // ✅ Clear editor when on structural element
-                setHasUnsavedChanges(false);
+                setIsTransitioning(true);
+                setTimeout(() => {
+                  activeDocIdRef.current = `paragraph-${paId}`;
+                  setCurrentContext({ type: 'paragraph', projectName: projectData?.pr_name || '', partTitle: pName, chapterTitle: cTitle, paraName: paName, paraId: paId });
+                  setEditorContent('');
+                  setHasUnsavedChanges(false);
+                  setIsTransitioning(false);
+                }, 300);
               }}
               onPublishToMarketplace={handlePublishToMarketplace}
               onCreatePart={handleCreatePart}
@@ -749,7 +766,15 @@ const XCCM2Editor = () => {
           onToggleZen={() => setIsZenMode(prev => !prev)}
         />
 
-        <main className="flex-1 overflow-y-auto bg-gray-50/50 p-4 lg:p-12">
+                <main className="flex-1 overflow-y-auto bg-gray-50/50 p-4 lg:p-12 relative">
+          {isTransitioning && (
+            <div className="absolute inset-0 z-50 flex items-center justify-center bg-gray-50/40 backdrop-blur-[2px] animate-in fade-in duration-200">
+               <div className="flex flex-col items-center gap-3 p-6 bg-white rounded-2xl shadow-xl border border-gray-100">
+                 <Loader2 className="w-8 h-8 text-[#99334C] animate-spin" />
+                 <span className="text-sm font-medium text-gray-500">Chargement...</span>
+               </div>
+            </div>
+          )}
           <div className="max-w-4xl mx-auto min-h-full">
             <EditorArea
               key={synapseDocId}
@@ -772,20 +797,29 @@ const XCCM2Editor = () => {
 
                 const isValEmpty = val === '<p></p>' || val === '' || val.trim() === '';
                 const isMounting = (Date.now() - lastDocChangeTimeRef.current) < 500;
-                const isActive = updateDocId === activeDocIdRef.current;
+                const matchesActive = updateDocId === activeDocIdRef.current;
                 const hasPriorContent = !!(localContentCacheRef.current[cleanId] && localContentCacheRef.current[cleanId].length > 10);
 
-                if (isValEmpty && hasPriorContent && isMounting) return;
+                // --- 🛡️ THE ANTI-ERASURE SHIELD ---
+                if (isValEmpty && hasPriorContent && isMounting) {
+                  return;
+                }
 
-                // Passive cache update
-                if (!isValEmpty || !hasPriorContent) localContentCacheRef.current[cleanId] = val;
+                // ✅ RÈGLE D'OR : Le cache local est mis à jour pour TOUT message valide (incluant Exit Saves)
+                localContentCacheRef.current[cleanId] = val;
 
-                if (isActive) {
+                if (matchesActive) {
                   setEditorContent(val);
                   setHasUnsavedChanges(true);
+
                   if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+                  const frozenContext = currentContext ? JSON.parse(JSON.stringify(currentContext)) : null;
+
                   autoSaveTimerRef.current = setTimeout(() => {
-                    if (isActive && currentContext) { queueSave(currentContext, val); }
+                    // Re-vérification au moment de l'exécution : On ne sauve que si on est encore sur le bon doc
+                    if (updateDocId === activeDocIdRef.current && frozenContext) {
+                      queueSave(frozenContext, val);
+                    }
                   }, 1500);
                 }
 
