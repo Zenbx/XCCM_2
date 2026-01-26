@@ -822,14 +822,31 @@ const XCCM2Editor = () => {
               structure={structure}
               width={sidebarWidth}
               onSelectNotion={(ctx) => {
-                const targetNotionId = `notion-${ctx.notion.notion_id}`;
-                activeDocIdRef.current = targetNotionId;
+                // ✅ FIX 3: Annuler l'auto-save en cours
+                if (autoSaveTimerRef.current) {
+                  clearTimeout(autoSaveTimerRef.current);
+                  autoSaveTimerRef.current = null;
+                }
+
+                const targetId = `notion-${ctx.notion.notion_id}`;
+                
+                // ✅ FIX 1: Capturer l'ID et Snapshot du contexte AVANT le switch
+                const prevId = currentContext?.notion?.notion_id || currentContext?.part?.part_id;
+
+                activeDocIdRef.current = targetId;
                 lastDocChangeTimeRef.current = Date.now();
 
-                if (hasUnsavedChanges && currentContext) {
-                  const prevId = currentContext.notion?.notion_id || currentContext.part?.part_id;
-                  const prevContent = (prevId ? localContentCacheRef.current[prevId] : null) ?? editorContent;
-                  queueSave(currentContext, prevContent);
+                if (hasUnsavedChanges && prevId && currentContext) {
+                  const prevContent = localContentCacheRef.current[prevId] ?? editorContent;
+                  
+                  // Snapshot figé (Frozen Context)
+                  const frozenContext = { 
+                    ...currentContext,
+                    notion: currentContext.notion ? { ...currentContext.notion } : undefined,
+                    part: currentContext.part ? { ...currentContext.part } : undefined,
+                  };
+                  
+                  queueSave(frozenContext, prevContent);
                 }
 
                 setCurrentContext({
@@ -847,14 +864,31 @@ const XCCM2Editor = () => {
                 setHasUnsavedChanges(false);
               }}
               onSelectPart={(ctx) => {
-                const targetPartId = `part-${ctx.part.part_id}`;
-                activeDocIdRef.current = targetPartId;
+                // ✅ FIX 3: Annuler l'auto-save en cours
+                if (autoSaveTimerRef.current) {
+                  clearTimeout(autoSaveTimerRef.current);
+                  autoSaveTimerRef.current = null;
+                }
+
+                const targetId = `part-${ctx.part.part_id}`;
+                
+                // ✅ FIX 1: Capturer l'ID et Snapshot du contexte AVANT le switch
+                const prevId = currentContext?.notion?.notion_id || currentContext?.part?.part_id;
+
+                activeDocIdRef.current = targetId;
                 lastDocChangeTimeRef.current = Date.now();
 
-                if (hasUnsavedChanges && currentContext) {
-                  const prevId = currentContext.notion?.notion_id || currentContext.part?.part_id;
-                  const prevContent = (prevId ? localContentCacheRef.current[prevId] : null) ?? editorContent;
-                  queueSave(currentContext, prevContent);
+                if (hasUnsavedChanges && prevId && currentContext) {
+                  const prevContent = localContentCacheRef.current[prevId] ?? editorContent;
+                  
+                  // Snapshot figé (Frozen Context)
+                  const frozenContext = { 
+                    ...currentContext,
+                    notion: currentContext.notion ? { ...currentContext.notion } : undefined,
+                    part: currentContext.part ? { ...currentContext.part } : undefined,
+                  };
+                  
+                  queueSave(frozenContext, prevContent);
                 }
 
                 setCurrentContext({
@@ -869,6 +903,7 @@ const XCCM2Editor = () => {
                 setHasUnsavedChanges(false);
               }}
               onSelectChapter={(pName, cTitle, cId) => {
+                if (autoSaveTimerRef.current) { clearTimeout(autoSaveTimerRef.current); autoSaveTimerRef.current = null; }
                 // Queue save en arrière-plan si nécessaire (NON-BLOQUANT)
                 if (hasUnsavedChanges && currentContext) {
                   queueSave(currentContext, editorContent);
@@ -887,6 +922,7 @@ const XCCM2Editor = () => {
                 setHasUnsavedChanges(false);
               }}
               onSelectParagraph={(pName, cTitle, paName, paId) => {
+                if (autoSaveTimerRef.current) { clearTimeout(autoSaveTimerRef.current); autoSaveTimerRef.current = null; }
                 // Queue save en arrière-plan si nécessaire (NON-BLOQUANT)
                 if (hasUnsavedChanges && currentContext) {
                   queueSave(currentContext, editorContent);
@@ -1026,16 +1062,13 @@ const XCCM2Editor = () => {
                 // Pour les messages fantômes (pas le document actif), on n'accepte que s'ils sont PLEINS
                 if (!isActive && isValEmpty) return;
 
-                // Toujours mettre à jour le cache RAM (Prio n°1)
-                localContentCacheRef.current[cleanId] = val;
-
-                // Mise à jour de l'UI uniquement si c'est le document que l'utilisateur regarde
+                // ✅ FIX 2: N'écrire dans le cache et l'UI QUE si c'est le document actif
                 if (isActive) {
+                  localContentCacheRef.current[cleanId] = val;
                   setEditorContent(val);
                   setHasUnsavedChanges(true);
 
                   // ✅ AUTO-SAVE CONTINU (Debounced)
-                  // On remplit le buffer toutes les 1.5s d'inactivité au lieu d'attendre la sortie
                   if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
                   autoSaveTimerRef.current = setTimeout(() => {
                     if (isActive && currentContext) {
