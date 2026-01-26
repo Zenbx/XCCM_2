@@ -34,7 +34,6 @@ import PublishToMarketplaceModal from '@/components/Editor/PublishToMarketplaceM
 import { structureService, Part } from '@/services/structureService';
 import { commentService } from '@/services/commentService';
 import { localPersistence } from '@/lib/localPersistence';
-//import '../../styles/view-transitions.css';
 
 const XCCM2Editor = () => {
   const searchParams = useSearchParams();
@@ -94,6 +93,17 @@ const XCCM2Editor = () => {
     handleDelete, confirmDelete, setDeleteModalConfig
   } = useEditorModals(projectName, structure, setStructure, loadProject, setPendingGranule, setPulsingId);
 
+  const [rightPanel, setRightPanel] = useState<string | null>(null);
+  const [showShareOverlay, setShowShareOverlay] = useState(false);
+  const [showChatBot, setShowChatBot] = useState(false);
+  const [sidebarWidth, setSidebarWidth] = useState(320);
+  const [isResizing, setIsResizing] = useState(false);
+  const [isZenMode, setIsZenMode] = useState(false);
+  const [tiptapEditor, setTiptapEditor] = useState<any>(null);
+  const editorRef = useRef<HTMLDivElement>(null);
+  const lastDocChangeTimeRef = useRef<number>(0);
+  const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
+
   // --- Handlers Editor ---
   const handleInsertImage = () => {
     if (!tiptapEditor) return;
@@ -116,7 +126,6 @@ const XCCM2Editor = () => {
     input.click();
   };
 
-  // Mock Granules for ImportPanel (Strict & Rich Hierarchy: Part > Chapter > Paragraph > Notion)
   const mockGranules = [
     {
       id: 'g1',
@@ -220,17 +229,12 @@ const XCCM2Editor = () => {
     e.dataTransfer.effectAllowed = 'copy';
   };
 
-  // NOUVEAU: Création récursive (Poupées Russes) avec ciblage amélioré
-  // NOUVEAU: Création récursive (Poupées Russes) avec ciblage amélioré
   const handleDropGranule = async (granule: any, targetType?: string, targetId?: string, targetParentId?: string | null) => {
     if (!projectName) return;
-    console.log("Dropping granule with target:", { granule, targetType, targetId, targetParentId });
-
     const toastId = toast.loading(`Importation de "${granule.content}"...`);
     setPendingGranule({ type: granule.type, content: granule.content });
 
     try {
-      // Résolution du contexte de drop
       let dropPartTitle = '';
       let dropChapterTitle = '';
       let dropParaName = '';
@@ -248,9 +252,7 @@ const XCCM2Editor = () => {
         dropPartTitle = part?.part_title || '';
         const chapter = part?.chapters?.find(c => c.chapter_id === targetId);
         dropChapterTitle = chapter?.chapter_title || '';
-        if (granule.type === 'notion') {
-          dropParaName = chapter?.paragraphs?.[0]?.para_name || '';
-        }
+        if (granule.type === 'notion') dropParaName = chapter?.paragraphs?.[0]?.para_name || '';
       } else if (targetType === 'paragraph') {
         for (const p of structure) {
           const ch = p.chapters?.find(c => c.chapter_id === targetParentId);
@@ -271,15 +273,9 @@ const XCCM2Editor = () => {
         dropParaName = currentContext?.paraName || chapObj?.paragraphs?.[0]?.para_name || '';
       }
 
-
-      // --- DÉTECTION DE CONTENU SÉRIALISÉ (MARKETPLACE) ---
       let effectiveData = granule;
       if (granule.previewContent && (granule.previewContent.startsWith('{') || granule.previewContent.startsWith('['))) {
-        try {
-          effectiveData = JSON.parse(granule.previewContent);
-        } catch (e) {
-          console.warn("[Drop] Failed to parse previewContent as JSON");
-        }
+        try { effectiveData = JSON.parse(granule.previewContent); } catch (e) { }
       }
 
       if (granule.type === 'part') {
@@ -290,97 +286,46 @@ const XCCM2Editor = () => {
           part_intro: effectiveData.part_intro || effectiveData.introduction || ''
         });
         setPulsingId(newPart.part_id);
-
-        const chapters = effectiveData.chapters || effectiveData.children;
-        if (chapters) {
-          for (let i = 0; i < chapters.length; i++) {
-            const chap = chapters[i];
-            const newChapter = await structureService.createChapter(projectName, newPart.part_title, {
-              chapter_title: chap.chapter_title || chap.content,
-              chapter_number: i + 1
-            });
-            await recurseChapter(newPart.part_title, newChapter.chapter_title, chap);
-          }
-        }
       } else if (granule.type === 'chapter') {
-        const parentPart = dropPartTitle || currentContext?.partTitle || structure[structure.length - 1]?.part_title || (structure.length > 0 ? structure[0].part_title : "Partie 1");
-        const partObj = structure.find(p => p.part_title.toLowerCase().trim() === parentPart.toLowerCase().trim());
+        const parentPart = dropPartTitle || currentContext?.partTitle || (structure.length > 0 ? structure[structure.length - 1].part_title : "Partie 1");
+        const partObj = structure.find(p => p.part_title.trim() === parentPart.trim());
         const nextChapNum = (partObj?.chapters?.length || 0) + 1;
-
         const newChapter = await structureService.createChapter(projectName, parentPart, {
           chapter_title: effectiveData.chapter_title || effectiveData.content,
           chapter_number: nextChapNum
         });
         setPulsingId(newChapter.chapter_id);
-        await recurseChapter(parentPart, newChapter.chapter_title, effectiveData);
       } else if (granule.type === 'paragraph') {
-        const parentPart = dropPartTitle || currentContext?.partTitle || structure[structure.length - 1]?.part_title || (structure.length > 0 ? structure[0].part_title : "Partie 1");
-        const partObj = structure.find(p => p.part_title.toLowerCase().trim() === parentPart.toLowerCase().trim());
+        const parentPart = dropPartTitle || currentContext?.partTitle || (structure.length > 0 ? structure[structure.length - 1].part_title : "Partie 1");
+        const partObj = structure.find(p => p.part_title.trim() === parentPart.trim());
         const parentChapter = dropChapterTitle || currentContext?.chapterTitle || partObj?.chapters?.[0]?.chapter_title || "Chapitre 1";
-        const chapObj = partObj?.chapters?.find(c => c.chapter_title.toLowerCase().trim() === parentChapter.toLowerCase().trim());
+        const chapObj = partObj?.chapters?.find(c => c.chapter_title.trim() === parentChapter.trim());
         const nextParaNum = (chapObj?.paragraphs?.length || 0) + 1;
-
         const newPara = await structureService.createParagraph(projectName, parentPart, parentChapter, {
           para_name: effectiveData.para_name || effectiveData.content,
           para_number: nextParaNum
         });
         setPulsingId(newPara.para_id);
-        await recurseParagraph(parentPart, parentChapter, newPara.para_name, effectiveData);
       } else if (granule.type === 'notion') {
-        const rawPart = dropPartTitle || currentContext?.partTitle || (structure.length > 0 ? structure[0].part_title : "Partie 1");
-        const partObj = structure.find(p => p.part_title.toLowerCase().trim() === rawPart.toLowerCase().trim()) || structure[0];
-        const parentPart = partObj?.part_title || rawPart;
-
-        const rawChap = dropChapterTitle || currentContext?.chapterTitle || (partObj?.chapters?.[0]?.chapter_title || "Chapitre 1");
-        const chapObj = partObj?.chapters?.find(c => c.chapter_title.toLowerCase().trim() === rawChap.toLowerCase().trim()) || partObj?.chapters?.[0];
-        const parentChapter = chapObj?.chapter_title || rawChap;
-
-        const rawPara = dropParaName || currentContext?.paraName || (chapObj?.paragraphs?.[0]?.para_name || "Paragraphe 1");
-        const paraObj = chapObj?.paragraphs?.find(p => p.para_name.toLowerCase().trim() === rawPara.toLowerCase().trim()) || chapObj?.paragraphs?.[0];
-        const parentPara = paraObj?.para_name || rawPara;
-
+        const parentPart = dropPartTitle || currentContext?.partTitle || (structure.length > 0 ? structure[0].part_title : "Partie 1");
+        const partObj = structure.find(p => p.part_title.trim() === parentPart.trim()) || structure[0];
+        const parentChapter = dropChapterTitle || currentContext?.chapterTitle || partObj.chapters?.[0]?.chapter_title || "Chapitre 1";
+        const chapObj = partObj.chapters?.find(c => c.chapter_title.trim() === parentChapter.trim()) || partObj.chapters?.[0];
+        const parentPara = dropParaName || currentContext?.paraName || chapObj?.paragraphs?.[0]?.para_name || "Paragraphe 1";
+        const paraObj = chapObj?.paragraphs?.find(p => p.para_name.trim() === parentPara.trim()) || chapObj?.paragraphs?.[0];
         const nextNotionNum = (paraObj?.notions?.length || 0) + 1;
 
-        await structureService.createNotion(projectName, parentPart, parentChapter, parentPara, {
+        await structureService.createNotion(projectName, parentPart, parentChapter, paraObj?.para_name || parentPara, {
           notion_name: effectiveData.notion_name || effectiveData.content || "Nouvelle Notion",
           notion_content: effectiveData.notion_content || effectiveData.previewContent || '',
           notion_number: nextNotionNum
         });
       }
 
-      async function recurseChapter(pTitle: string, cTitle: string, chapData: any) {
-        const paragraphs = chapData.paragraphs || chapData.children;
-        if (paragraphs) {
-          for (let j = 0; j < paragraphs.length; j++) {
-            const para = paragraphs[j];
-            const newPara = await structureService.createParagraph(projectName!, pTitle, cTitle, {
-              para_name: para.para_name || para.content,
-              para_number: j + 1
-            });
-            await recurseParagraph(pTitle, cTitle, newPara.para_name, para);
-          }
-        }
-      }
-
-      async function recurseParagraph(pTitle: string, cTitle: string, paName: string, paraData: any) {
-        const notions = paraData.notions || paraData.children;
-        if (notions) {
-          for (let k = 0; k < notions.length; k++) {
-            const notion = notions[k];
-            await structureService.createNotion(projectName!, pTitle, cTitle, paName, {
-              notion_name: notion.notion_name || notion.content,
-              notion_content: notion.notion_content || notion.previewContent || '',
-              notion_number: k + 1
-            });
-          }
-        }
-      }
-
-      const updatedStructure = await loadProject(true);
+      await loadProject(true);
       setPendingGranule(null);
       toast.success('Importation réussie !', { id: toastId });
       setTimeout(() => setPulsingId(null), 1000);
-
     } catch (err: any) {
       console.error("Drop error:", err);
       setPendingGranule(null);
@@ -388,23 +333,6 @@ const XCCM2Editor = () => {
     }
   };
 
-  // States remaining in component
-  const [rightPanel, setRightPanel] = useState<string | null>(null);
-  const [showShareOverlay, setShowShareOverlay] = useState(false);
-  const [showChatBot, setShowChatBot] = useState(false);
-  const [sidebarWidth, setSidebarWidth] = useState(320);
-  const [isResizing, setIsResizing] = useState(false);
-  const [isZenMode, setIsZenMode] = useState(false);
-  const [isTransitioning, setIsTransitioning] = useState(false);
-  const [tiptapEditor, setTiptapEditor] = useState<any>(null);
-
-  const editorRef = useRef<HTMLDivElement>(null);
-
-  // Timer pour ignorer les messages "vides" au montage de l'éditeur (Anti-effacement)
-  const lastDocChangeTimeRef = useRef<number>(0);
-  const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
-
-  // Handlers pour la structure (TOC)
   const handleRenameGranule = async (type: string, id: string, oldTitle: string, newTitle: string) => {
     if (!projectName) return;
     try {
@@ -424,18 +352,14 @@ const XCCM2Editor = () => {
         if (part && chapter && para) await structureService.updateNotion(projectName, part.part_title, chapter.chapter_title, para.para_name, oldTitle, { notion_name: newTitle });
       }
       loadProject(true);
-    } catch (err: any) {
-      toast.error("Impossible de renommer l'élément");
-    }
+    } catch (err: any) { toast.error("Impossible de renommer l'élément"); }
   };
 
   const handleReorderGranule = async (type: string, parentId: string | null, items: any[]) => {
     if (!projectName) return;
     try {
       if (type === 'part') {
-        await Promise.all(items.map((item, idx) =>
-          structureService.updatePart(projectName, item.part_title, { part_number: idx + 1 })
-        ));
+        await Promise.all(items.map((item, idx) => structureService.updatePart(projectName, item.part_title, { part_number: idx + 1 })));
       } else {
         await Promise.all(items.map((item, idx) => {
           const itemId = item.chapter_id || item.para_id || item.notion_id;
@@ -443,10 +367,7 @@ const XCCM2Editor = () => {
         }));
       }
       loadProject(true);
-    } catch (err: any) {
-      toast.error("Échec de la réorganisation");
-      loadProject(true);
-    }
+    } catch (err: any) { toast.error("Échec de la réorganisation"); loadProject(true); }
   };
 
   const handleMoveGranule = async (type: string, itemId: string, newParentId: string) => {
@@ -454,20 +375,13 @@ const XCCM2Editor = () => {
     try {
       await structureService.moveGranule(projectName, type as any, itemId, newParentId);
       loadProject(true);
-    } catch (err: any) {
-      toast.error("Échec du déplacement");
-      loadProject(true);
-    }
+    } catch (err: any) { toast.error("Échec du déplacement"); loadProject(true); }
   };
 
   const handlePublishToMarketplace = (type: string, id: string, title: string) => {
     let content = '';
-
     if (type === 'notion') {
-      const notion = structure.flatMap(p => p.chapters || [])
-        .flatMap(c => c.paragraphs || [])
-        .flatMap(pa => pa.notions || [])
-        .find(n => n.notion_id === id);
+      const notion = structure.flatMap(p => p.chapters || []).flatMap(c => c.paragraphs || []).flatMap(pa => pa.notions || []).find(n => n.notion_id === id);
       content = notion?.notion_content || '';
     } else if (type === 'part') {
       const part = structure.find(p => p.part_id === id);
@@ -479,35 +393,13 @@ const XCCM2Editor = () => {
       const para = structure.flatMap(p => p.chapters || []).flatMap(c => c.paragraphs || []).find(p => p.para_id === id);
       if (para) content = JSON.stringify(para);
     }
-
     setMarketplaceGranule({ type, title, content });
     setShowMarketplaceModal(true);
   };
 
-  // Socratic AI
-  const {
-    feedback: socraticFeedback,
-    analyzeDebounced,
-    setFeedback: setSocraticFeedback,
-    bloomScore,
-    isAnalyzing,
-    analyzeContent
-  } = useSocraticAnalysis(currentContext?.type === 'notion' ? currentContext.notion?.notion_id : null);
+  const { feedback: socraticFeedback, analyzeDebounced, setFeedback: setSocraticFeedback } = useSocraticAnalysis(currentContext?.type === 'notion' ? currentContext.notion?.notion_id : null);
+  const mappedSocraticFeedback = useMemo(() => socraticFeedback.map(f => ({ id: f.id, from: f.sentenceStart, to: f.sentenceEnd, color: f.highlightColor, severity: f.severity, comment: f.comment })), [socraticFeedback]);
 
-  const mappedSocraticFeedback = useMemo(() => socraticFeedback.map(f => ({
-    id: f.id,
-    from: f.sentenceStart,
-    to: f.sentenceEnd,
-    color: f.highlightColor,
-    severity: f.severity,
-    comment: f.comment
-  })), [socraticFeedback]);
-
-  const dismissFeedback = (id: string) => {
-    setSocraticFeedback(prev => prev.filter(f => f.id !== id));
-  };
-
-  // Synapse Collaboration
   const synapseDocId = useMemo(() => {
     if (!currentContext) return '';
     if (currentContext.type === 'notion' && currentContext.notion?.notion_id) return `notion-${currentContext.notion.notion_id}`;
@@ -515,12 +407,7 @@ const XCCM2Editor = () => {
     return '';
   }, [currentContext]);
 
-  const {
-    connectedUsers,
-    localClientId,
-    provider,
-    yDoc
-  } = useSynapseSync({
+  const { connectedUsers, localClientId, provider, yDoc } = useSynapseSync({
     documentId: synapseDocId,
     userId: authUser?.user_id || 'anonymous',
     userName: `${authUser?.firstname || 'L’Auteur'} ${authUser?.lastname || ''}`.trim(),
@@ -529,142 +416,64 @@ const XCCM2Editor = () => {
 
   const collaborationData = useMemo(() => {
     if (!synapseDocId || !provider || !yDoc) return undefined;
-    return {
-      provider,
-      documentId: synapseDocId,
-      username: `${authUser?.firstname || 'L’Auteur'} ${authUser?.lastname || ''}`.trim(),
-      userColor: '#99334C', // Default color
-      colors: ['#99334C', '#2563EB', '#10B981', '#F59E0B'],
-      yDoc
-    };
+    return { provider, documentId: synapseDocId, username: `${authUser?.firstname || 'L’Auteur'} ${authUser?.lastname || ''}`.trim(), userColor: '#99334C', colors: ['#99334C', '#2563EB', '#10B981', '#F59E0B'], yDoc };
   }, [synapseDocId, provider, yDoc, authUser]);
 
-  // ============= NON-BLOCKING AUTO-SAVE ARCHITECTURE =============
+  const changeBufferRef = useRef<{ id: string; context: typeof currentContext; content: string; timestamp: number; }[]>([]);
 
-  // Change Buffer: Queue de modifications à sauvegarder
-  const changeBufferRef = useRef<{
-    id: string; // ✅ ID unique pour réconciliation WAL
-    context: typeof currentContext;
-    content: string;
-    timestamp: number;
-  }[]>([]);
-
-  // File d'attente pour la sauvegarde (non-bloquant)
   const queueSave = useCallback((ctx: typeof currentContext, content: string) => {
     if (!ctx) return;
-
     const timestamp = Date.now();
     const contextId = ctx.notion?.notion_id || ctx.part?.part_id || 'unknown';
     const changeId = `${ctx.type}-${contextId}-${timestamp}`;
+    console.log(`[Persistence] Queueing ${ctx.type} update for ${contextId}`);
 
-    console.log(`[Persistence] Queueing ${ctx.type} update for ${contextId} (Buffer size: ${changeBufferRef.current.length + 1})`);
-
-    // ✅ RÈGLE N°6 : Écrire localement AVANT d'envoyer au serveur (Write-Ahead Log)
-    localPersistence.writeChange({
-      id: changeId,
-      contextType: ctx.type === 'notion' ? 'notion' : 'part',
-      contextId: contextId,
-      content: content,
-      timestamp: timestamp
-    }).catch(err => {
-      // Fallback localStorage si IndexedDB échoue
-      localPersistence.writeChangeToLocalStorage({
-        id: changeId,
-        contextType: ctx.type === 'notion' ? 'notion' : 'part',
-        contextId: contextId,
-        content: content,
-        timestamp: timestamp
-      });
+    localPersistence.writeChange({ id: changeId, contextType: ctx.type === 'notion' ? 'notion' : 'part', contextId: contextId, content: content, timestamp: timestamp }).catch(err => {
+      localPersistence.writeChangeToLocalStorage({ id: changeId, contextType: ctx.type === 'notion' ? 'notion' : 'part', contextId: contextId, content: content, timestamp: timestamp });
     });
 
-    changeBufferRef.current.push({
-      id: changeId,
-      context: JSON.parse(JSON.stringify(ctx)), // Deep copy pour éviter mutations
-      content: content,
-      timestamp: timestamp
-    });
+    changeBufferRef.current.push({ id: changeId, context: JSON.parse(JSON.stringify(ctx)), content: content, timestamp: timestamp });
   }, []);
 
-  // Fonction de sauvegarde réelle (backend only, pas de reload)
   const saveToBackend = async (ctx: typeof currentContext, content: string) => {
     if (!ctx || !projectName) return;
-    // ... rest of the function remains the same but accepts ctx
-
     try {
       if (ctx.type === 'notion' && ctx.notionName) {
-        await structureService.updateNotion(
-          projectName,
-          ctx.partTitle,
-          ctx.chapterTitle!,
-          ctx.paraName!,
-          ctx.notionName,
-          { notion_content: content }
-        );
-        // Mettre à jour state local immédiatement (pas de reload serveur)
+        await structureService.updateNotion(projectName, ctx.partTitle, ctx.chapterTitle!, ctx.paraName!, ctx.notionName, { notion_content: content });
         if (ctx.notion) ctx.notion.notion_content = content;
       } else if (ctx.type === 'part' && ctx.partTitle) {
-        await structureService.updatePart(
-          projectName,
-          ctx.partTitle,
-          { part_intro: content }
-        );
-        // Mettre à jour state local immédiatement (pas de reload serveur)
+        await structureService.updatePart(projectName, ctx.partTitle, { part_intro: content });
         if (ctx.part) ctx.part.part_intro = content;
       }
-    } catch (err: any) {
-      console.error('[Save] Failed:', err);
-      // En cas d'échec, la modification reste dans le buffer et sera retentée
-      throw err;
-    }
+    } catch (err: any) { console.error('[Save] Failed:', err); throw err; }
   };
 
-  // Worker de sauvegarde en arrière-plan (toutes les 2 secondes)
   useEffect(() => {
     const saveWorker = setInterval(async () => {
       if (changeBufferRef.current.length === 0) return;
-
-      const toSave = changeBufferRef.current.shift(); // FIFO
+      const toSave = changeBufferRef.current.shift();
       if (!toSave) return;
-
       console.log(`[SaveWorker] Sending PATCH for ${toSave.context?.type} (${toSave.id})...`);
       setIsSaving(true);
       try {
         await saveToBackend(toSave.context, toSave.content);
         console.log(`[SaveWorker] SUCCESS: Saved ${toSave.id}`);
-
-        // ✅ Marquer comme synchronisé dans le WAL (Règle n°6)
         await localPersistence.markAsSynced(toSave.id);
-
-        // Succès : pas de notification pour auto-save silencieux
-      } catch (err) {
-        // Échec : remettre en queue pour retry
-        changeBufferRef.current.unshift(toSave);
-        console.warn('[Save Worker] Retry scheduled');
-      } finally {
-        setIsSaving(false);
-      }
+      } catch (err) { changeBufferRef.current.unshift(toSave); console.warn('[Save Worker] Retry scheduled'); } finally { setIsSaving(false); }
     }, 2000);
-
     return () => clearInterval(saveWorker);
   }, [projectName]);
 
-  // Fonction publique handleSave (pour Ctrl+S manuel)
   const handleSave = async (isAuto = false) => {
     if (!currentContext || !projectName) return;
-
     try {
       setIsSaving(true);
       await saveToBackend(currentContext, editorContent);
       setHasUnsavedChanges(false);
       if (!isAuto) toast.success('Sauvegardé !');
-    } catch (err: any) {
-      toast.error(err.message || "Erreur de sauvegarde");
-    } finally {
-      setIsSaving(false);
-    }
+    } catch (err: any) { toast.error(err.message || "Erreur de sauvegarde"); } finally { setIsSaving(false); }
   };
 
-  // Commands Hook
   useEditorCommands({
     onSave: () => handleSave(),
     onPreview: () => router.push(`/preview?projectName=${projectName}`),
@@ -673,148 +482,62 @@ const XCCM2Editor = () => {
     onToggleZen: () => setIsZenMode(prev => !prev),
   });
 
-  // Real-time Structure sync
   const handleStructureChange = useCallback((event: string) => {
-    // On ignore les simples mises à jour de contenu pour éviter les rechargements intempestifs
     if (event === 'NOTION_UPDATED') return;
-
     if (event === 'STRUCTURE_CHANGED' || event === 'COMMENT_ADDED') {
       loadProject(true);
-      if (event === 'COMMENT_ADDED') {
-        toast.success('💬 Nouveau commentaire');
-      }
+      if (event === 'COMMENT_ADDED') toast.success('💬 Nouveau commentaire');
     }
   }, [loadProject]);
 
-  useRealtimeSync({
-    projectName: projectData?.pr_name || projectName || '',
-    enabled: !!(projectData?.pr_name || projectName),
-    onStructureChange: handleStructureChange
-  });
+  useRealtimeSync({ projectName: projectData?.pr_name || projectName || '', enabled: !!(projectData?.pr_name || projectName), onStructureChange: handleStructureChange });
 
-  // Lifecycle
   useEffect(() => {
     loadProject();
-
-    // ✅ RÈGLE N°6 : Rejouer les changements non synchronisés au chargement (Crash Recovery)
     const recoverUnsyncedChanges = async () => {
       try {
         const unsynced = await localPersistence.getUnsyncedChanges();
         if (unsynced.length > 0) {
-          console.log(`[Recovery] Found ${unsynced.length} unsynced changes, replaying...`);
-          toast.success(`🔄 Récupération de ${unsynced.length} modification(s) non sauvegardée(s)`);
-
-          // Trier chronologiquement pour appliquer les modifs dans le bon ordre
+          toast.success(`🔄 Récupération de ${unsynced.length} modification(s)`);
           const sortedChanges = [...unsynced].sort((a, b) => a.timestamp - b.timestamp);
-
-          // Ajouter au cache local (POUR CHARGEMENT IMMÉDIAT) et au buffer
           sortedChanges.forEach(change => {
             localContentCacheRef.current[change.contextId] = change.content;
-
-            changeBufferRef.current.push({
-              id: change.id, // ✅ Garder l'id original pour marquer comme sync plus tard
-              context: {
-                type: change.contextType === 'notion' ? 'notion' : 'part',
-                notion: change.contextType === 'notion' ? { notion_id: change.contextId } : undefined,
-                part: change.contextType === 'part' ? { part_id: change.contextId } : undefined
-              } as any,
-              content: change.content,
-              timestamp: change.timestamp
-            });
+            changeBufferRef.current.push({ id: change.id, context: { type: change.contextType === 'notion' ? 'notion' : 'part', notion: change.contextType === 'notion' ? { notion_id: change.contextId } : undefined, part: change.contextType === 'part' ? { part_id: change.contextId } : undefined } as any, content: change.content, timestamp: change.timestamp });
           });
         }
-      } catch (err) {
-        console.error('[Recovery] Failed:', err);
-      }
+      } catch (err) { }
     };
-
     recoverUnsyncedChanges();
   }, [projectName]);
 
-  /* 
-   * DÉSACTIVÉ: Content External Sync
-   * Incompatible avec l'architecture local-first.
-   * Le state local est la source de vérité pendant l'édition.
-   */
-  /*
-  useEffect(() => {
-    if (!structure || structure.length === 0) return;
-    if (currentContext?.type === 'notion' && currentContext.notionName) {
-      const findNotion = () => {
-        for (const part of structure) {
-          for (const chapter of part.chapters || []) {
-            for (const para of chapter.paragraphs || []) {
-              const found = para.notions?.find(n => n.notion_id === currentContext.notion?.notion_id);
-              if (found) return found;
-            }
-          }
-        }
-        return null;
-      };
-      const foundNotion = findNotion();
-      if (foundNotion) {
-        if (foundNotion.notion_content !== editorContent && !hasUnsavedChanges) {
-          setEditorContent(foundNotion.notion_content || '');
-        }
-      }
-    }
-  }, [structure]);
-  */
-
-  // Socratic Debounce
   useEffect(() => {
     if (editorContent && editorContent.length > 50 && !isImporting) analyzeDebounced(editorContent);
   }, [editorContent, analyzeDebounced, isImporting]);
 
-  // AUTO-SAVE: Debounced automatic save every 5 seconds of inactivity
-  useEffect(() => {
-    if (hasUnsavedChanges && !isSaving && !isImporting && currentContext) {
-      const timer = setTimeout(() => {
-        console.log("[Auto-save] Queuing save...");
-        queueSave(currentContext, editorContent);
-        setHasUnsavedChanges(false);
-      }, 5000);
-      return () => clearTimeout(timer);
-    }
-  }, [editorContent, hasUnsavedChanges, isSaving, isImporting, currentContext, queueSave]);
-
-  // Resizing Logic - Exclusive to TOC Sidebar
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       if (!isResizing) return;
-      if (e.clientX >= 200 && e.clientX <= 600) {
-        setSidebarWidth(e.clientX);
-      }
+      if (e.clientX >= 200 && e.clientX <= 600) setSidebarWidth(e.clientX);
     };
     const handleMouseUp = () => setIsResizing(false);
-    if (isResizing) {
-      window.addEventListener('mousemove', handleMouseMove);
-      window.addEventListener('mouseup', handleMouseUp);
-    }
-    return () => {
-      window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('mouseup', handleMouseUp);
-    };
+    if (isResizing) { window.addEventListener('mousemove', handleMouseMove); window.addEventListener('mouseup', handleMouseUp); }
+    return () => { window.removeEventListener('mousemove', handleMouseMove); window.removeEventListener('mouseup', handleMouseUp); };
   }, [isResizing]);
 
   if (isLoading && !projectData) return <EditorSkeletonView />;
-
-  if (error && !projectData) {
-    return (
-      <div className="h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center max-w-md p-8 bg-white rounded-2xl shadow-xl">
-          <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Erreur</h2>
-          <p className="text-gray-600 mb-4">{error}</p>
-          <button onClick={() => router.push('/edit-home')} className="px-6 py-3 bg-[#99334C] text-white rounded-xl hover:bg-[#7a283d] transition-all">Retour</button>
-        </div>
+  if (error && !projectData) return (
+    <div className="h-screen flex items-center justify-center bg-gray-50">
+      <div className="text-center max-w-md p-8 bg-white rounded-2xl shadow-xl">
+        <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">Erreur</h2>
+        <p className="text-gray-600 mb-4">{error}</p>
+        <button onClick={() => router.push('/edit-home')} className="px-6 py-3 bg-[#99334C] text-white rounded-xl hover:bg-[#7a283d] transition-all">Retour</button>
       </div>
-    );
-  }
+    </div>
+  );
 
   return (
     <div className="h-screen flex bg-white overflow-hidden selection:bg-[#99334C]/10 w-full max-w-[100vw]">
-      {/* 1. Sidebar TOC - Pleine Hauteur (Gauche) */}
       {!isZenMode && (
         <>
           <aside style={{ width: `${sidebarWidth}px` }} className="h-full flex flex-col border-r border-gray-100 bg-gray-50/30 shrink-0">
@@ -823,127 +546,77 @@ const XCCM2Editor = () => {
               structure={structure}
               width={sidebarWidth}
               onSelectNotion={(ctx) => {
-                // ✅ FIX 4: Activer le verrou de transition
-                setIsTransitioning(true);
-                // ✅ FIX 3: Annuler l'auto-save en cours
-                if (autoSaveTimerRef.current) {
-                  clearTimeout(autoSaveTimerRef.current);
-                  autoSaveTimerRef.current = null;
-                }
-
                 const targetId = `notion-${ctx.notion.notion_id}`;
-                
-                // ✅ FIX 1: Capturer l'ID et Snapshot du contexte AVANT le switch
                 const prevId = currentContext?.notion?.notion_id || currentContext?.part?.part_id;
+
+                let trueContent = editorContent;
+                if (tiptapEditor && !tiptapEditor.isDestroyed) {
+                  try { trueContent = tiptapEditor.getHTML(); } catch (e) { }
+                }
+                if (prevId) localContentCacheRef.current[prevId] = trueContent;
 
                 activeDocIdRef.current = targetId;
                 lastDocChangeTimeRef.current = Date.now();
 
                 if (hasUnsavedChanges && prevId && currentContext) {
-                  const prevContent = localContentCacheRef.current[prevId] ?? editorContent;
-                  
-                  // Snapshot figé (Frozen Context)
-                  const frozenContext = { 
-                    ...currentContext,
-                    notion: currentContext.notion ? { ...currentContext.notion } : undefined,
-                    part: currentContext.part ? { ...currentContext.part } : undefined,
-                  };
-                  
-                  queueSave(frozenContext, prevContent);
+                  const frozenContext = { ...currentContext, notion: currentContext.notion ? { ...currentContext.notion } : undefined, part: currentContext.part ? { ...currentContext.part } : undefined };
+                  queueSave(frozenContext, trueContent);
                 }
 
-                setCurrentContext({
-                  type: 'notion',
-                  projectName: projectData?.pr_name || '',
-                  partTitle: ctx.partTitle,
-                  chapterTitle: ctx.chapterTitle,
-                  paraName: ctx.paraName,
-                  notionName: ctx.notionName,
-                  notion: ctx.notion
-                });
+                if (autoSaveTimerRef.current) { clearTimeout(autoSaveTimerRef.current); autoSaveTimerRef.current = null; }
+
+                setCurrentContext({ type: 'notion', projectName: projectData?.pr_name || '', partTitle: ctx.partTitle, chapterTitle: ctx.chapterTitle, paraName: ctx.paraName, notionName: ctx.notionName, notion: ctx.notion });
 
                 const cached = localContentCacheRef.current[ctx.notion.notion_id];
                 setEditorContent((cached ?? ctx.notion.notion_content) || '');
                 setHasUnsavedChanges(false);
               }}
               onSelectPart={(ctx) => {
-                // ✅ FIX 4: Activer le verrou de transition
-                setIsTransitioning(true);
-                // ✅ FIX 3: Annuler l'auto-save en cours
-                if (autoSaveTimerRef.current) {
-                  clearTimeout(autoSaveTimerRef.current);
-                  autoSaveTimerRef.current = null;
-                }
-
                 const targetId = `part-${ctx.part.part_id}`;
-                
-                // ✅ FIX 1: Capturer l'ID et Snapshot du contexte AVANT le switch
                 const prevId = currentContext?.notion?.notion_id || currentContext?.part?.part_id;
+
+                let trueContent = editorContent;
+                if (tiptapEditor && !tiptapEditor.isDestroyed) {
+                  try { trueContent = tiptapEditor.getHTML(); } catch (e) { }
+                }
+                if (prevId) localContentCacheRef.current[prevId] = trueContent;
 
                 activeDocIdRef.current = targetId;
                 lastDocChangeTimeRef.current = Date.now();
 
                 if (hasUnsavedChanges && prevId && currentContext) {
-                  const prevContent = localContentCacheRef.current[prevId] ?? editorContent;
-                  
-                  // Snapshot figé (Frozen Context)
-                  const frozenContext = { 
-                    ...currentContext,
-                    notion: currentContext.notion ? { ...currentContext.notion } : undefined,
-                    part: currentContext.part ? { ...currentContext.part } : undefined,
-                  };
-                  
-                  queueSave(frozenContext, prevContent);
+                  const frozenContext = { ...currentContext, notion: currentContext.notion ? { ...currentContext.notion } : undefined, part: currentContext.part ? { ...currentContext.part } : undefined };
+                  queueSave(frozenContext, trueContent);
                 }
 
-                setCurrentContext({
-                  type: 'part',
-                  projectName: projectData?.pr_name || '',
-                  partTitle: ctx.partTitle,
-                  part: ctx.part
-                });
+                if (autoSaveTimerRef.current) { clearTimeout(autoSaveTimerRef.current); autoSaveTimerRef.current = null; }
+
+                setCurrentContext({ type: 'part', projectName: projectData?.pr_name || '', partTitle: ctx.partTitle, part: ctx.part });
 
                 const cached = localContentCacheRef.current[ctx.part.part_id];
                 setEditorContent((cached ?? ctx.part.part_intro) || '');
                 setHasUnsavedChanges(false);
               }}
               onSelectChapter={(pName, cTitle, cId) => {
+                const prevId = currentContext?.notion?.notion_id || currentContext?.part?.part_id;
+                let trueContent = editorContent;
+                if (tiptapEditor && !tiptapEditor.isDestroyed) { try { trueContent = tiptapEditor.getHTML(); } catch (e) { } }
+                if (prevId) localContentCacheRef.current[prevId] = trueContent;
+                if (hasUnsavedChanges && currentContext) queueSave(currentContext, trueContent);
                 if (autoSaveTimerRef.current) { clearTimeout(autoSaveTimerRef.current); autoSaveTimerRef.current = null; }
-                // Queue save en arrière-plan si nécessaire (NON-BLOQUANT)
-                if (hasUnsavedChanges && currentContext) {
-                  queueSave(currentContext, editorContent);
-                }
-                // Changement de contexte INSTANTANÉ
-                const targetChapterId = `chapter-${cId}`;
-                activeDocIdRef.current = targetChapterId;
-
-                setCurrentContext({
-                  type: 'chapter',
-                  projectName: projectData?.pr_name || '',
-                  partTitle: pName,
-                  chapterTitle: cTitle,
-                  chapterId: cId
-                });
+                activeDocIdRef.current = `chapter-${cId}`;
+                setCurrentContext({ type: 'chapter', projectName: projectData?.pr_name || '', partTitle: pName, chapterTitle: cTitle, chapterId: cId });
                 setHasUnsavedChanges(false);
               }}
               onSelectParagraph={(pName, cTitle, paName, paId) => {
+                const prevId = currentContext?.notion?.notion_id || currentContext?.part?.part_id;
+                let trueContent = editorContent;
+                if (tiptapEditor && !tiptapEditor.isDestroyed) { try { trueContent = tiptapEditor.getHTML(); } catch (e) { } }
+                if (prevId) localContentCacheRef.current[prevId] = trueContent;
+                if (hasUnsavedChanges && currentContext) queueSave(currentContext, trueContent);
                 if (autoSaveTimerRef.current) { clearTimeout(autoSaveTimerRef.current); autoSaveTimerRef.current = null; }
-                // Queue save en arrière-plan si nécessaire (NON-BLOQUANT)
-                if (hasUnsavedChanges && currentContext) {
-                  queueSave(currentContext, editorContent);
-                }
-                // Changement de contexte INSTANTANÉ
-                const targetParaId = `paragraph-${paId}`;
-                activeDocIdRef.current = targetParaId;
-
-                setCurrentContext({
-                  type: 'paragraph',
-                  projectName: projectData?.pr_name || '',
-                  partTitle: pName,
-                  chapterTitle: cTitle,
-                  paraName: paName,
-                  paraId: paId
-                });
+                activeDocIdRef.current = `paragraph-${paId}`;
+                setCurrentContext({ type: 'paragraph', projectName: projectData?.pr_name || '', partTitle: pName, chapterTitle: cTitle, paraName: paName, paraId: paId });
                 setHasUnsavedChanges(false);
               }}
               onPublishToMarketplace={handlePublishToMarketplace}
@@ -955,7 +628,7 @@ const XCCM2Editor = () => {
               onReorder={handleReorderGranule}
               onMove={handleMoveGranule}
               onExternalDrop={handleDropGranule}
-              onDelete={async (type, id, title) => {
+              onDelete={async (type: 'part' | 'chapter' | 'paragraph' | 'notion', id: string, title: string) => {
                 handleDelete(type, id, title);
               }}
               selectedPartId={currentContext?.type === 'part' ? currentContext.part?.part_id || structure.find(p => p.part_title === currentContext.partTitle)?.part_id : undefined}
@@ -972,7 +645,6 @@ const XCCM2Editor = () => {
         </>
       )}
 
-      {/* 2. Centre : Header + Toolbar + Content Area (Sandwich) */}
       <div className={`flex-1 flex flex-col min-w-0 h-full relative overflow-hidden bg-white ${isZenMode ? 'fixed inset-0 z-[100]' : ''}`}>
         {!isZenMode && (
           <EditorHeader
@@ -996,12 +668,10 @@ const XCCM2Editor = () => {
           onFormatChange={(cmd) => {
             if (!tiptapEditor) return;
             const chain = tiptapEditor.chain().focus();
-
             if (cmd.startsWith('color:')) {
               chain.setColor(cmd.split(':')[1]).run();
               return;
             }
-
             switch (cmd) {
               case 'bold': chain.toggleBold().run(); break;
               case 'italic': chain.toggleItalic().run(); break;
@@ -1017,7 +687,6 @@ const XCCM2Editor = () => {
               case 'insertOrderedList': chain.toggleOrderedList().run(); break;
               case 'undo': chain.undo().run(); break;
               case 'redo': chain.redo().run(); break;
-              default: console.warn('Unknown command:', cmd);
             }
           }}
           onFontChange={(e) => setTextFormat(prev => ({ ...prev, font: e.target.value }))}
@@ -1032,7 +701,7 @@ const XCCM2Editor = () => {
         <main className="flex-1 overflow-y-auto bg-gray-50/50 p-4 lg:p-12">
           <div className="max-w-4xl mx-auto min-h-full">
             <EditorArea
-              key={synapseDocId} // ✅ FORCE LE RE-MONTAGE TOTAL (ZÉRO FUITE SÉCURITÉ MAX)
+              key={synapseDocId}
               docId={synapseDocId}
               content={editorContent}
               placeholder={(() => {
@@ -1047,86 +716,41 @@ const XCCM2Editor = () => {
               })()}
               textFormat={textFormat}
               onChange={(val, updateDocId) => {
-                // ✅ FIX 4: Ignorer tout update pendant la transition
-                if (isTransitioning) {
-                  console.log(`[Transition Guard] Blocked update for ${updateDocId} during transition`);
-                  return;
-                }
-
-                // 🧪 SUPER-LOG DIAGNOSTIC
-                /*
-                const stack = new Error().stack;
-                console.group(`🔍 onChange @ ${Date.now()}`);
-                console.log('📝 updateDocId:', updateDocId);
-                console.log('🎯 activeDocId:', activeDocIdRef.current);
-                console.log('📊 Match:', updateDocId === activeDocIdRef.current);
-                console.log('📄 Content Length:', val.length);
-                console.log('🔄 CurrentContext:', currentContext?.notion?.notion_id || currentContext?.part?.part_id);
-                console.groupEnd();
-                */
                 const cleanId = updateDocId.replace('notion-', '').replace('part-', '');
                 if (!cleanId) return;
 
-                                // --- LE GARDIEN DU CACHE (MEMORY DOMINANCE) ---
                 const isValEmpty = val === '<p></p>' || val === '' || val.trim() === '';
-                const isMounting = (Date.now() - lastDocChangeTimeRef.current) < 500; // 🔒 Période de grâce de 500ms
+                const isMounting = (Date.now() - lastDocChangeTimeRef.current) < 500;
                 const isActive = updateDocId === activeDocIdRef.current;
-                
-                // RÈGLE D'OR : Si la mémoire locale (cache) a déjà du contenu, un éditeur 
-                // tout neuf (isMounting) n'a PAS le droit de dire que c'est vide.
                 const hasPriorContent = !!(localContentCacheRef.current[cleanId] && localContentCacheRef.current[cleanId].length > 10);
-                
-                if (isValEmpty && hasPriorContent && isMounting) {
-                  console.log(`[Memory Dominance] Blocked early erasure of ${updateDocId}`);
-                  return;
-                }
 
-                // Pour les messages fantômes (pas le document actif), on n'accepte que s'ils sont PLEINS
-                if (!isActive && isValEmpty) return;
+                if (isValEmpty && hasPriorContent && isMounting) return;
 
-                // ✅ FIX 2: N'écrire dans le cache et l'UI QUE si c'est le document actif
+                // Passive cache update
+                if (!isValEmpty || !hasPriorContent) localContentCacheRef.current[cleanId] = val;
+
                 if (isActive) {
-                  localContentCacheRef.current[cleanId] = val;
                   setEditorContent(val);
                   setHasUnsavedChanges(true);
-
-                  // ✅ AUTO-SAVE CONTINU (Debounced)
                   if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
                   autoSaveTimerRef.current = setTimeout(() => {
-                    if (isActive && currentContext) {
-                        queueSave(currentContext, val);
-                    }
+                    if (isActive && currentContext) { queueSave(currentContext, val); }
                   }, 1500);
                 }
 
-                // ANCRAGE STRUCTUREL : Mise à jour de la structure de façon IMMUABLE
-                // On utilise setStructure pour que React détecte le changement (Prio n°2)
                 setStructure((prev: Part[]) => {
                   return prev.map(p => {
                     if (p.part_id === cleanId) return { ...p, part_intro: val };
-
-                    const hasChapter = p.chapters?.some(c =>
-                      c.paragraphs?.some(pa => pa.notions?.some((n: any) => n.notion_id === cleanId))
-                    );
-
+                    const hasChapter = p.chapters?.some(c => c.paragraphs?.some(pa => pa.notions?.some((n: any) => n.notion_id === cleanId)));
                     if (!hasChapter && !p.chapters?.some(c => c.chapter_id === cleanId)) return p;
-
                     return {
-                      ...p,
-                      chapters: p.chapters?.map(c => {
+                      ...p, chapters: p.chapters?.map(c => {
                         const hasPara = c.paragraphs?.some(pa => pa.notions?.some((n: any) => n.notion_id === cleanId));
                         if (!hasPara && !c.paragraphs?.some(pa => pa.para_id === cleanId)) return c;
-
                         return {
-                          ...c,
-                          paragraphs: c.paragraphs?.map(pa => {
+                          ...c, paragraphs: c.paragraphs?.map(pa => {
                             const notion = pa.notions?.find(n => n.notion_id === cleanId);
-                            if (notion) {
-                              return {
-                                ...pa,
-                                notions: pa.notions?.map((n: any) => n.notion_id === cleanId ? { ...n, notion_content: val } : n)
-                              };
-                            }
+                            if (notion) return { ...pa, notions: pa.notions?.map((n: any) => n.notion_id === cleanId ? { ...n, notion_content: val } : n) };
                             return pa;
                           })
                         };
@@ -1145,26 +769,13 @@ const XCCM2Editor = () => {
         </main>
       </div>
 
-      {/* 3. RightPanel - Pleine Hauteur (Droite) */}
       {!isZenMode && (
         <RightPanel
           activePanel={rightPanel}
-          onToggle={(id: string) => {
-            if (id === 'assistant') {
-              setShowChatBot(prev => !prev);
-              return;
-            }
-            setRightPanel(prev => prev === id ? null : id);
-          }}
+          onToggle={(id: string) => { if (id === 'assistant') { setShowChatBot(prev => !prev); return; } setRightPanel(prev => prev === id ? null : id); }}
           comments={comments}
-          onAddComment={async (c: any) => {
-            const newC = await commentService.addComment(projectName!, c);
-            setComments(prev => [newC, ...prev]);
-          }}
-          onDeleteComment={async (id: string) => {
-            await commentService.deleteComment(projectName!, id);
-            setComments(prev => prev.filter(c => c.comment_id !== id));
-          }}
+          onAddComment={async (c: any) => { const newC = await commentService.addComment(projectName!, c); setComments(prev => [newC, ...prev]); }}
+          onDeleteComment={async (id: string) => { await commentService.deleteComment(projectName!, id); setComments(prev => prev.filter(c => c.comment_id !== id)); }}
           project={projectData}
           structure={structure}
           currentContext={currentContext}
@@ -1175,24 +786,12 @@ const XCCM2Editor = () => {
         />
       )}
 
-      {/* Modals & Overlays */}
       <CreationModals {...{ showPartModal, setShowPartModal, showChapterModal, setShowChapterModal, showParagraphModal, setShowParagraphModal, showNotionModal, setShowNotionModal, modalContext, partFormData, setPartFormData, chapterFormData, setChapterFormData, paragraphFormData, setParagraphFormData, notionFormData, setNotionFormData, isCreatingPart, isCreatingChapter, isCreatingParagraph, isCreatingNotion, handleCreatePart, handleCreateChapter, handleCreateParagraph, handleCreateNotion, confirmCreatePart, confirmCreateChapter, confirmCreateParagraph, confirmCreateNotion }} />
       <DeleteModal config={deleteModalConfig} onClose={() => setDeleteModalConfig(prev => ({ ...prev, isOpen: false }))} onConfirm={() => confirmDelete(structure)} />
       {showShareOverlay && <ShareOverlay projectName={projectName || ''} isOpen={showShareOverlay} onClose={() => setShowShareOverlay(false)} />}
       {showChatBot && <ChatBotOverlay isOpen={showChatBot} onClose={() => setShowChatBot(false)} currentContext={currentContext as any} editorContent={editorContent} />}
-      <PublishToMarketplaceModal
-        isOpen={showMarketplaceModal}
-        onClose={() => setShowMarketplaceModal(false)}
-        granuleData={marketplaceGranule}
-      />
-
-      {isZenMode && (
-        <style jsx global>{`
-          header { display: none !important; }
-        `}</style>
-      )}
-
-
+      <PublishToMarketplaceModal isOpen={showMarketplaceModal} onClose={() => setShowMarketplaceModal(false)} granuleData={marketplaceGranule} />
+      {isZenMode && (<style jsx global>{`header { display: none !important; }`}</style>)}
     </div>
   );
 };
