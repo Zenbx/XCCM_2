@@ -396,6 +396,9 @@ const XCCM2Editor = () => {
 
   const editorRef = useRef<HTMLDivElement>(null);
 
+  // Cache local pour garantir que la mémoire est TOUJOURS la vérité (Règle n°1)
+  const localContentCacheRef = useRef<Record<string, string>>({});
+
   // Handlers pour la structure (TOC)
   const handleRenameGranule = async (type: string, id: string, oldTitle: string, newTitle: string) => {
     if (!projectName) return;
@@ -806,7 +809,9 @@ const XCCM2Editor = () => {
                   notionName: ctx.notionName,
                   notion: ctx.notion
                 });
-                setEditorContent(ctx.notion.notion_content || '');
+                // ✅ RÈGLE N°1 : Toujours charger depuis le cache local s'il existe
+                const cached = localContentCacheRef.current[ctx.notion.notion_id];
+                setEditorContent((cached ?? ctx.notion.notion_content) || '');
                 setHasUnsavedChanges(false);
               }}
               onSelectPart={(ctx) => {
@@ -821,7 +826,9 @@ const XCCM2Editor = () => {
                   partTitle: ctx.partTitle,
                   part: ctx.part
                 });
-                setEditorContent(ctx.part.part_intro || '');
+                // ✅ RÈGLE N°1 : Toujours charger depuis le cache local s'il existe
+                const cached = localContentCacheRef.current[ctx.part.part_id];
+                setEditorContent((cached ?? ctx.part.part_intro) || '');
                 setHasUnsavedChanges(false);
               }}
               onSelectChapter={(pName, cTitle, cId) => {
@@ -958,6 +965,19 @@ const XCCM2Editor = () => {
               onChange={(val) => {
                 setEditorContent(val);
                 setHasUnsavedChanges(true);
+
+                // ✅ RÈGLE N°1 : Cache local pour vérité absolue
+                const contextId = currentContext?.notion?.notion_id || currentContext?.part?.part_id;
+                if (contextId) {
+                  localContentCacheRef.current[contextId] = val;
+                }
+
+                // Pour la TOC (référence directe)
+                if (currentContext?.type === 'notion' && currentContext.notion) {
+                  currentContext.notion.notion_content = val;
+                } else if (currentContext?.type === 'part' && currentContext.part) {
+                  currentContext.part.part_intro = val;
+                }
               }}
               onEditorReady={setTiptapEditor}
               onDrop={handleDropGranule}
