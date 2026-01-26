@@ -814,10 +814,18 @@ const XCCM2Editor = () => {
               structure={structure}
               width={sidebarWidth}
               onSelectNotion={(ctx) => {
-                // Queue save en arrière-plan si nécessaire (NON-BLOQUANT)
-                if (hasUnsavedChanges && currentContext) {
-                  queueSave(currentContext, editorContent);
+                // ✅ SNAPSHOT SYNCHRONE : On grave le texte actuel dans le cache AVANT de changer
+                if (currentContext) {
+                  const prevId = currentContext.notion?.notion_id || currentContext.part?.part_id;
+                  if (prevId) localContentCacheRef.current[prevId] = editorContent;
                 }
+
+                // Queue save en arrière-plan (persistance lente)
+                if (hasUnsavedChanges && currentContext) {
+                  const latestContent = localContentCacheRef.current[currentContext.notion?.notion_id || currentContext.part?.part_id || ''] ?? editorContent;
+                  queueSave(currentContext, latestContent);
+                }
+
                 // Changement de contexte INSTANTANÉ
                 setCurrentContext({
                   type: 'notion',
@@ -828,16 +836,24 @@ const XCCM2Editor = () => {
                   notionName: ctx.notionName,
                   notion: ctx.notion
                 });
-                // ✅ RÈGLE N°1 : Toujours charger depuis le cache local s'il existe
+                // ✅ CHARGEMENT DEPUIS CACHE : On récupère ce qu'on a en RAM ou ce que le serveur donne
                 const cached = localContentCacheRef.current[ctx.notion.notion_id];
                 setEditorContent((cached ?? ctx.notion.notion_content) || '');
                 setHasUnsavedChanges(false);
               }}
               onSelectPart={(ctx) => {
-                // Queue save en arrière-plan si nécessaire (NON-BLOQUANT)
-                if (hasUnsavedChanges && currentContext) {
-                  queueSave(currentContext, editorContent);
+                // ✅ SNAPSHOT SYNCHRONE : On grave le texte actuel dans le cache AVANT de changer
+                if (currentContext) {
+                  const prevId = currentContext.notion?.notion_id || currentContext.part?.part_id;
+                  if (prevId) localContentCacheRef.current[prevId] = editorContent;
                 }
+
+                // Queue save en arrière-plan (persistance lente)
+                if (hasUnsavedChanges && currentContext) {
+                  const latestContent = localContentCacheRef.current[currentContext.notion?.notion_id || currentContext.part?.part_id || ''] ?? editorContent;
+                  queueSave(currentContext, latestContent);
+                }
+
                 // Changement de contexte INSTANTANÉ
                 setCurrentContext({
                   type: 'part',
@@ -845,7 +861,7 @@ const XCCM2Editor = () => {
                   partTitle: ctx.partTitle,
                   part: ctx.part
                 });
-                // ✅ RÈGLE N°1 : Toujours charger depuis le cache local s'il existe
+                // ✅ CHARGEMENT DEPUIS CACHE
                 const cached = localContentCacheRef.current[ctx.part.part_id];
                 setEditorContent((cached ?? ctx.part.part_intro) || '');
                 setHasUnsavedChanges(false);
@@ -984,27 +1000,33 @@ const XCCM2Editor = () => {
               })()}
               textFormat={textFormat}
               onChange={(val, updateDocId) => {
-                // ✅ RÈGLE D'OR : VÉRIFICATION D'IDENTITÉ (ANTI-FUITE)
-                // Si l'éditeur qui envoie le texte ne correspond plus au contexte affiché, ON JETTE.
-                if (updateDocId !== synapseDocId) {
-                  console.log(`[Identity Lock] Dropped update from stale doc: ${updateDocId} (current: ${synapseDocId})`);
+                // ✅ RÈGLE D'OR : On ne jette plus rien de PRÉCIEUX.
+                const cleanId = updateDocId.replace('notion-', '').replace('part-', '');
+                if (!cleanId) return;
+
+                // --- LE GARDIEN DU CACHE ---
+                // Si l'éditeur n'est plus actif, il n'a PAS le droit de vider son tiroir.
+                // S'il envoie du vide, on vérifie qu'il est encore "le roi" (le doc affiché).
+                const isValEmpty = val === '<p></p>' || val === '' || val.trim() === '';
+                if (isValEmpty && updateDocId !== synapseDocId) {
+                  console.log(`[Cache Guard] Blocked erasure of ${updateDocId} by ghost message.`);
                   return;
                 }
 
-                setEditorContent(val);
-                setHasUnsavedChanges(true);
+                // On range l'info dans son tiroir
+                localContentCacheRef.current[cleanId] = val;
 
-                // ✅ RÈGLE N°1 : Cache local pour vérité absolue
-                const contextId = currentContext?.notion?.notion_id || currentContext?.part?.part_id;
-                if (contextId) {
-                  localContentCacheRef.current[contextId] = val;
-                }
+                // On ne met à jour l'affichage et la structure que si c'est le document actif
+                if (updateDocId === synapseDocId) {
+                  setEditorContent(val);
+                  setHasUnsavedChanges(true);
 
-                // Pour la TOC (référence directe)
-                if (currentContext?.type === 'notion' && currentContext.notion) {
-                  currentContext.notion.notion_content = val;
-                } else if (currentContext?.type === 'part' && currentContext.part) {
-                  currentContext.part.part_intro = val;
+                  // Ancrage dans la structure (Source de Vérité en RAM)
+                  if (currentContext?.type === 'notion' && currentContext.notion) {
+                    currentContext.notion.notion_content = val;
+                  } else if (currentContext?.type === 'part' && currentContext.part) {
+                    currentContext.part.part_intro = val;
+                  }
                 }
               }}
               onEditorReady={setTiptapEditor}
