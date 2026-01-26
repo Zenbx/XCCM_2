@@ -607,7 +607,6 @@ const XCCM2Editor = () => {
           )}
           <div className="max-w-4xl mx-auto min-h-full">
             <EditorArea
-              key={synapseDocId}
               docId={synapseDocId}
               content={editorContent}
               placeholder={(() => {
