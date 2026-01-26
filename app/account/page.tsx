@@ -10,14 +10,17 @@ import {
   Edit3,
   Save,
   Award, BookOpen, Eye, Download, TrendingUp, Box, Clock,
-  ChevronRight, LogOut, Settings, Plus, Layout, Heart, Trash2
+  ChevronRight, LogOut, Settings, Plus, Layout, Heart, Trash2, FileText, Globe, ExternalLink, Loader2
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { getCookie } from '@/lib/cookies';
 import { vaultService, VaultItem } from '@/services/vaultService';
 import { authService } from '@/services/authService';
 import { getAuthHeaders } from '@/lib/apiHelper';
+import { documentService } from '@/services/documentService';
+import { projectService } from '@/services/projectService';
 import toast from 'react-hot-toast';
+import Link from 'next/link';
 
 const AccountPage = () => {
   const { user, isLoading, refreshUser } = useAuth();
@@ -79,6 +82,9 @@ const AccountPage = () => {
   const [vaultItems, setVaultItems] = useState<VaultItem[]>([]);
   const [loadingVault, setLoadingVault] = useState(false);
   const [showAllActivity, setShowAllActivity] = useState(false);
+  const [activeTab, setActiveTab] = useState<'activity' | 'publications'>('activity');
+  const [userDocuments, setUserDocuments] = useState<any[]>([]);
+  const [isDeletingDoc, setIsDeletingDoc] = useState<string | null>(null);
 
   // Fetch stats on mount
   React.useEffect(() => {
@@ -123,8 +129,40 @@ const AccountPage = () => {
     if (user) {
       fetchStats();
       fetchVault();
+      fetchDocuments();
     }
   }, [user]);
+
+  const fetchDocuments = async () => {
+    try {
+      const projectsResponse = await projectService.getAllProjects();
+      const docs = projectsResponse.flatMap((p: any) =>
+        (p.documents || []).map((d: any) => ({
+          ...d,
+          project_name: p.pr_name,
+          category: p.category
+        }))
+      ).sort((a: any, b: any) => new Date(b.published_at).getTime() - new Date(a.published_at).getTime());
+      setUserDocuments(docs);
+    } catch (err) {
+      console.error("Error fetching documents", err);
+    }
+  };
+
+  const handleDeletePublication = async (docId: string, docName: string) => {
+    if (!window.confirm(`Voulez-vous vraiment retirer "${docName}" de la bibliothèque ?`)) return;
+
+    setIsDeletingDoc(docId);
+    try {
+      await documentService.deleteDocument(docId);
+      toast.success("Publication retirée");
+      fetchDocuments();
+    } catch (err) {
+      toast.error("Erreur lors de la suppression");
+    } finally {
+      setIsDeletingDoc(null);
+    }
+  };
 
   const fetchVault = async () => {
     try {
@@ -499,112 +537,218 @@ const AccountPage = () => {
               </div>
             </div>
 
-            {/* Activité récente */}
-            <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6">
-              <h3 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
-                <Clock className="w-6 h-6 text-[#99334C]" />
-                Activité récente
-              </h3>
-
-              <div className="space-y-4">
-                {displayedActivities.length > 0 ? (
-                  <>
-                    {displayedActivities.map((activity, index) => (
-                      <div key={index} className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-all">
-                        <div className={`w-10 h-10 rounded-full flex items-center justify-center ${activity.type === 'project' ? 'bg-blue-100' :
-                          activity.type === 'comment' ? 'bg-green-100' :
-                            activity.type === 'like' ? 'bg-red-100' : 'bg-purple-100'
-                          }`}>
-                          {activity.type === 'project' && <Briefcase className="w-5 h-5 text-blue-600" />}
-                          {activity.type === 'comment' && <Mail className="w-5 h-5 text-green-600" />}
-                          {activity.type === 'like' && <Eye className="w-5 h-5 text-red-600" />}
-                          {activity.type === 'invitation' && <Mail className="w-5 h-5 text-purple-600" />}
-                        </div>
-                        <div className="flex-1">
-                          <p className="text-sm font-bold text-gray-900">{activity.title}</p>
-                          <p className="text-xs text-gray-500">{activity.description}</p>
-                        </div>
-                        <div className="text-xs text-gray-400 whitespace-nowrap">
-                          {new Date(activity.timestamp).toLocaleDateString()}
-                        </div>
-                      </div>
-                    ))}
-
-                    {stats.recentActivities.length > 5 && (
-                      <button
-                        onClick={() => setShowAllActivity(!showAllActivity)}
-                        className="w-full py-2.5 text-sm font-semibold text-[#99334C] hover:bg-[#99334C]/5 rounded-xl transition-all border border-[#99334C]/20 flex items-center justify-center gap-2"
-                      >
-                        {showAllActivity ? 'Voir moins' : 'Voir plus'}
-                        <ChevronRight className={`w-4 h-4 transition-transform ${showAllActivity ? '-rotate-90' : 'rotate-90'}`} />
-                      </button>
-                    )}
-                  </>
-                ) : (
-                  <p className="text-gray-500 text-center py-4">Aucune activité récente.</p>
-                )}
-              </div>
+            {/* Tabs System */}
+            <div className="flex items-center gap-2 p-1 bg-gray-100 w-fit rounded-xl mb-6">
+              <button
+                onClick={() => setActiveTab('activity')}
+                className={`px-6 py-2.5 rounded-lg font-bold transition-all ${activeTab === 'activity' ? 'bg-white text-[#99334C] shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+              >
+                Activité & Coffre-fort
+              </button>
+              <button
+                onClick={() => setActiveTab('publications')}
+                className={`px-6 py-2.5 rounded-lg font-bold transition-all ${activeTab === 'publications' ? 'bg-white text-[#99334C] shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+              >
+                Mes Publications
+              </button>
             </div>
 
-            {/* Mon Coffre-fort */}
-            <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6">
-              <h3 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
-                <Box className="w-6 h-6 text-[#99334C]" />
-                Mon Coffre-fort
-              </h3>
+            {activeTab === 'activity' ? (
+              <div className="space-y-6">
+                {/* Activité récente */}
+                <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6">
+                  <h3 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+                    <Clock className="w-6 h-6 text-[#99334C]" />
+                    Activité récente
+                  </h3>
 
-              {loadingVault ? (
-                <div className="text-center py-4 text-gray-400">Chargement...</div>
-              ) : (
-                <div className="space-y-4">
-                  {vaultItems.length > 0 ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {vaultItems.map((item) => (
-                        <div key={item.id} className="border border-gray-200 rounded-xl p-4 hover:border-[#99334C]/30 hover:bg-[#99334C]/5 transition-all group relative">
-                          <button
-                            onClick={() => handleRemoveFromVault(item.id)}
-                            className="absolute top-2 right-2 p-1.5 text-gray-400 hover:text-red-500 rounded-lg hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-all"
-                            title="Retirer du coffre-fort"
-                          >
-                            <Trash2 size={16} />
-                          </button>
-
-                          <div className="flex items-start gap-3">
-                            <div className="p-2 bg-white rounded-lg border border-gray-100 shadow-sm text-[#99334C] shrink-0">
-                              {item.type === 'part' && <span className="text-xs font-bold">PT</span>}
-                              {item.type === 'chapter' && <span className="text-xs font-bold">CH</span>}
-                              {item.type === 'paragraph' && <span className="text-xs font-bold">PA</span>}
-                              {item.type === 'notion' && <span className="text-xs font-bold">NO</span>}
+                  <div className="space-y-4">
+                    {displayedActivities.length > 0 ? (
+                      <>
+                        {displayedActivities.map((activity, index) => (
+                          <div key={index} className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-all">
+                            <div className={`w-10 h-10 rounded-full flex items-center justify-center ${activity.type === 'project' ? 'bg-blue-100' :
+                              activity.type === 'comment' ? 'bg-green-100' :
+                                activity.type === 'like' ? 'bg-red-100' : 'bg-purple-100'
+                              }`}>
+                              {activity.type === 'project' && <Briefcase className="w-5 h-5 text-blue-600" />}
+                              {activity.type === 'comment' && <Mail className="w-5 h-5 text-green-600" />}
+                              {activity.type === 'like' && <Eye className="w-5 h-5 text-red-600" />}
+                              {activity.type === 'invitation' && <Mail className="w-5 h-5 text-purple-600" />}
                             </div>
-                            <div>
-                              <h4 className="font-bold text-gray-800 line-clamp-1 pr-6">{item.title}</h4>
-                              <p className="text-xs text-gray-500 mt-1">
-                                De : {item.source_doc_name || 'Inconnu'}
-                              </p>
-                              <p className="text-[10px] text-gray-400 mt-0.5">
-                                Ajouté le {new Date(item.added_at).toLocaleDateString()}
-                              </p>
+                            <div className="flex-1">
+                              <p className="text-sm font-bold text-gray-900">{activity.title}</p>
+                              <p className="text-xs text-gray-500">{activity.description}</p>
+                            </div>
+                            <div className="text-xs text-gray-400 whitespace-nowrap">
+                              {new Date(activity.timestamp).toLocaleDateString()}
                             </div>
                           </div>
-                        </div>
-                      ))}
-                    </div>
+                        ))}
+
+                        {stats.recentActivities.length > 5 && (
+                          <button
+                            onClick={() => setShowAllActivity(!showAllActivity)}
+                            className="w-full py-2.5 text-sm font-semibold text-[#99334C] hover:bg-[#99334C]/5 rounded-xl transition-all border border-[#99334C]/20 flex items-center justify-center gap-2"
+                          >
+                            {showAllActivity ? 'Voir moins' : 'Voir plus'}
+                            <ChevronRight className={`w-4 h-4 transition-transform ${showAllActivity ? '-rotate-90' : 'rotate-90'}`} />
+                          </button>
+                        )}
+                      </>
+                    ) : (
+                      <p className="text-gray-500 text-center py-4">Aucune activité récente.</p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Mon Coffre-fort */}
+                <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6">
+                  <h3 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+                    <Box className="w-6 h-6 text-[#99334C]" />
+                    Mon Coffre-fort
+                  </h3>
+
+                  {loadingVault ? (
+                    <div className="text-center py-4 text-gray-400">Chargement...</div>
                   ) : (
-                    <div className="text-center py-8 bg-gray-50 rounded-xl border-dashed border-2 border-gray-200">
-                      <Box className="w-10 h-10 text-gray-300 mx-auto mb-2" />
-                      <p className="text-gray-500 font-medium">Votre coffre-fort est vide.</p>
-                      <p className="text-xs text-gray-400 mt-1">Collectez des granules depuis vos lectures pour les retrouver ici.</p>
-                      <button
-                        onClick={() => router.push('/library')}
-                        className="mt-4 px-4 py-2 text-sm text-[#99334C] font-medium hover:underline"
-                      >
-                        Aller à la bibliothèque
-                      </button>
+                    <div className="space-y-4">
+                      {vaultItems.length > 0 ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {vaultItems.map((item) => (
+                            <div key={item.id} className="border border-gray-200 rounded-xl p-4 hover:border-[#99334C]/30 hover:bg-[#99334C]/5 transition-all group relative">
+                              <button
+                                onClick={() => handleRemoveFromVault(item.id)}
+                                className="absolute top-2 right-2 p-1.5 text-gray-400 hover:text-red-500 rounded-lg hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-all"
+                                title="Retirer du coffre-fort"
+                              >
+                                <Trash2 size={16} />
+                              </button>
+
+                              <div className="flex items-start gap-3">
+                                <div className="p-2 bg-white rounded-lg border border-gray-100 shadow-sm text-[#99334C] shrink-0">
+                                  {item.type === 'part' && <span className="text-xs font-bold">PT</span>}
+                                  {item.type === 'chapter' && <span className="text-xs font-bold">CH</span>}
+                                  {item.type === 'paragraph' && <span className="text-xs font-bold">PA</span>}
+                                  {item.type === 'notion' && <span className="text-xs font-bold">NO</span>}
+                                </div>
+                                <div>
+                                  <h4 className="font-bold text-gray-800 line-clamp-1 pr-6">{item.title}</h4>
+                                  <p className="text-xs text-gray-500 mt-1">
+                                    De : {item.source_doc_name || 'Inconnu'}
+                                  </p>
+                                  <p className="text-[10px] text-gray-400 mt-0.5">
+                                    Ajouté le {new Date(item.added_at).toLocaleDateString()}
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-center py-8 bg-gray-50 rounded-xl border-dashed border-2 border-gray-200">
+                          <Box className="w-10 h-10 text-gray-300 mx-auto mb-2" />
+                          <p className="text-gray-500 font-medium">Votre coffre-fort est vide.</p>
+                          <p className="text-xs text-gray-400 mt-1">Collectez des granules depuis vos lectures pour les retrouver ici.</p>
+                          <button
+                            onClick={() => router.push('/library')}
+                            className="mt-4 px-4 py-2 text-sm text-[#99334C] font-medium hover:underline"
+                          >
+                            Aller à la bibliothèque
+                          </button>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
-              )}
-            </div>
+              </div>
+            ) : (
+              /* Mes Publications Management Section */
+              <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 min-h-[400px]">
+                <div className="flex items-center justify-between mb-8">
+                  <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                    <Globe className="w-6 h-6 text-[#99334C]" />
+                    Documents dans la bibliothèque
+                  </h3>
+                  <span className="px-3 py-1 bg-[#99334C]/10 text-[#99334C] text-xs font-bold rounded-full">
+                    {userDocuments.length} SNAPSHOTS
+                  </span>
+                </div>
+
+                {userDocuments.length === 0 ? (
+                  <div className="text-center py-16 bg-gray-50/50 rounded-2xl border-2 border-dashed border-gray-200">
+                    <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm">
+                      <FileText className="w-8 h-8 text-gray-300" />
+                    </div>
+                    <h4 className="text-lg font-bold text-gray-900 mb-1">Aucune publication</h4>
+                    <p className="text-gray-500 max-w-sm mx-auto mb-6">Vous n'avez pas encore publié de versions de vos projets dans la bibliothèque publique.</p>
+                    <button
+                      onClick={() => router.push('/edit-home')}
+                      className="px-6 py-2.5 bg-[#99334C] text-white rounded-xl font-bold hover:shadow-lg transition-all"
+                    >
+                      Aller à mes projets
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {userDocuments.map((doc) => (
+                      <div key={doc.doc_id} className="bg-white border border-gray-100 rounded-2xl p-4 md:p-5 hover:shadow-md transition-all flex flex-col md:flex-row md:items-center gap-4">
+                        <div className="w-12 h-16 bg-[#99334C]/5 rounded-lg flex items-center justify-center shrink-0 border border-[#99334C]/5">
+                          <FileText className="w-6 h-6 text-[#99334C]/40" />
+                        </div>
+
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <h4 className="font-bold text-gray-900 truncate">{doc.doc_name}</h4>
+                            <span className="px-1.5 py-0.5 bg-gray-100 text-gray-500 text-[10px] font-black rounded uppercase">
+                              {doc.format || 'pdf'}
+                            </span>
+                          </div>
+                          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-400">
+                            <span className="flex items-center gap-1 font-medium"><BookOpen size={13} /> {doc.project_name}</span>
+                            <span className="flex items-center gap-1"><Calendar size={13} /> {new Date(doc.published_at).toLocaleDateString()}</span>
+                            <span className="text-[#99334C]/60 italic font-medium">{doc.category || 'Général'}</span>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-6 px-6 md:border-x border-gray-50">
+                          <div className="text-center">
+                            <p className="text-sm font-black text-gray-900">{doc.consult || 0}</p>
+                            <p className="text-[10px] text-gray-400 uppercase font-bold tracking-tighter">Vues</p>
+                          </div>
+                          <div className="text-center">
+                            <p className="text-sm font-black text-gray-900">{doc.downloaded || 0}</p>
+                            <p className="text-[10px] text-gray-400 uppercase font-bold tracking-tighter">DL</p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <Link
+                            href={`/book-reader?docId=${doc.doc_id}`}
+                            className="p-2.5 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-600 hover:text-white transition-all group"
+                            title="Voir dans la bibliothèque"
+                          >
+                            <ExternalLink size={20} className="group-hover:scale-110 transition-transform" />
+                          </Link>
+                          <button
+                            onClick={() => handleDeletePublication(doc.doc_id, doc.doc_name)}
+                            disabled={isDeletingDoc === doc.doc_id}
+                            className="p-2.5 bg-red-50 text-red-500 rounded-xl hover:bg-red-500 hover:text-white transition-all disabled:opacity-50"
+                            title="Supprimer la publication"
+                          >
+                            {isDeletingDoc === doc.doc_id ? (
+                              <Loader2 size={20} className="animate-spin" />
+                            ) : (
+                              <Trash2 size={20} />
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Colonne droite - Statistiques */}

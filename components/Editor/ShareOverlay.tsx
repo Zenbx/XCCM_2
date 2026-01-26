@@ -181,7 +181,7 @@ const ShareOverlay: React.FC<ShareOverlayProps> = ({ isOpen, onClose, projectNam
                             {/* Section Inviter */}
                             <div className="space-y-4">
                                 <label className="block text-sm font-bold text-gray-700 dark:text-gray-300">
-                                    Inviter un collaborateur
+                                    Inviter des collaborateurs
                                 </label>
                                 <div className="flex gap-2">
                                     <div className="flex-1 relative">
@@ -195,7 +195,7 @@ const ShareOverlay: React.FC<ShareOverlayProps> = ({ isOpen, onClose, projectNam
                                                     handleInvite();
                                                 }
                                             }}
-                                            placeholder="email@exemple.com"
+                                            placeholder="email1@exemple.com, email2@exemple.com..."
                                             disabled={isSending}
                                             className="w-full pl-12 pr-4 py-3.5 bg-white/50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-2xl text-gray-700 dark:text-gray-100 placeholder-gray-400 focus:ring-2 focus:ring-[#99334C] focus:border-transparent outline-none transition-all disabled:opacity-50 font-medium"
                                         />
