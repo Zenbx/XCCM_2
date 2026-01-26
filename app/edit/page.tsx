@@ -682,8 +682,10 @@ const XCCM2Editor = () => {
           console.log(`[Recovery] Found ${unsynced.length} unsynced changes, replaying...`);
           toast.success(`🔄 Récupération de ${unsynced.length} modification(s) non sauvegardée(s)`);
 
-          // Ajouter au buffer pour sauvegarde
+          // Ajouter au cache local (POUR CHARGEMENT IMMÉDIAT) et au buffer
           unsynced.forEach(change => {
+            localContentCacheRef.current[change.contextId] = change.content;
+
             changeBufferRef.current.push({
               context: {
                 type: change.contextType === 'notion' ? 'notion' : 'part',
@@ -950,6 +952,7 @@ const XCCM2Editor = () => {
         <main className="flex-1 overflow-y-auto bg-gray-50/50 p-4 lg:p-12">
           <div className="max-w-4xl mx-auto min-h-full">
             <EditorArea
+              docId={synapseDocId}
               content={editorContent}
               placeholder={(() => {
                 if (!currentContext) return t('selectPrompt');
@@ -962,7 +965,14 @@ const XCCM2Editor = () => {
                 }
               })()}
               textFormat={textFormat}
-              onChange={(val) => {
+              onChange={(val, updateDocId) => {
+                // ✅ RÈGLE D'OR : VÉRIFICATION D'IDENTITÉ (ANTI-FUITE)
+                // Si l'éditeur qui envoie le texte ne correspond plus au contexte affiché, ON JETTE.
+                if (updateDocId !== synapseDocId) {
+                  console.log(`[Identity Lock] Dropped update from stale doc: ${updateDocId} (current: ${synapseDocId})`);
+                  return;
+                }
+
                 setEditorContent(val);
                 setHasUnsavedChanges(true);
 

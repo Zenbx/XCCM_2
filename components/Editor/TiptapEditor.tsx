@@ -118,8 +118,9 @@ const FontSize = Extension.create({
 });
 
 interface TiptapEditorProps {
+  docId: string; // ✅ Indispensable pour éviter les fuites de contenu
   content: string;
-  onChange: (html: string) => void;
+  onChange: (html: string, docId: string) => void;
   placeholder?: string;
   readOnly?: boolean;
   className?: string;
@@ -226,7 +227,7 @@ const TiptapEditor: React.FC<TiptapEditorProps> = (props) => {
       onReady?.(editor);
     },
     onUpdate: ({ editor }) => {
-      onChange(editor.getHTML());
+      onChange(editor.getHTML(), docId);
     },
     onSelectionUpdate: ({ editor }) => {
       onSelectionChange?.(editor);

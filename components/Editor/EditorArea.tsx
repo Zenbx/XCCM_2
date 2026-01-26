@@ -10,13 +10,14 @@ import TiptapEditor from './TiptapEditor'; // ✅ Import de Tiptap
 import { SocraticHighlight } from '@/extensions/SocraticExtension';
 
 interface EditorAreaProps {
+  docId: string;
   content: string;
   textFormat: {
     font: string;
     fontSize: string;
     color?: string;
   };
-  onChange: (content: string) => void;
+  onChange: (content: string, docId: string) => void;
   onEditorReady?: (editor: any) => void;
   onDrop: (content: any) => void;
   editorRef: React.RefObject<HTMLDivElement | null>;
@@ -43,6 +44,7 @@ interface EditorAreaProps {
 }
 
 const EditorArea: React.FC<EditorAreaProps> = ({
+  docId,
   content,
   textFormat,
   onChange,
@@ -302,8 +304,8 @@ const EditorArea: React.FC<EditorAreaProps> = ({
   };
 
   // Nouvelle gestion Tiptap
-  const handleTiptapUpdate = (html: string) => {
-    onChange(html);
+  const handleTiptapUpdate = (html: string, updateDocId: string) => {
+    onChange(html, updateDocId);
 
     if (tiptapInstance) {
       const { selection } = tiptapInstance.state;
@@ -410,6 +412,7 @@ const EditorArea: React.FC<EditorAreaProps> = ({
         <div className="w-full h-full p-10">
           <TiptapEditor
             key={`${collaboration?.documentId || 'static'}-${!!collaboration}`}
+            docId={docId}
             content={content}
             onChange={handleTiptapUpdate}
             placeholder={internalPlaceholder}
