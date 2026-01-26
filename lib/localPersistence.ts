@@ -74,9 +74,9 @@ class LocalPersistence {
             const transaction = this.db!.transaction([STORE_NAME], 'readonly');
             const store = transaction.objectStore(STORE_NAME);
             const index = store.index('synced');
-            const request = index.getAll(false);
+            const request = index.getAll(IDBKeyRange.only(false));
 
-            request.onsuccess = () => resolve(request.result || []);
+            request.onsuccess = () => resolve((request.result || []) as LocalChange[]);
             request.onerror = () => reject(request.error);
         });
     }
@@ -158,7 +158,7 @@ class LocalPersistence {
     async getUnsyncedFromLocalStorage(): Promise<LocalChange[]> {
         try {
             const wal = JSON.parse(localStorage.getItem('xccm-wal') || '{}');
-            return Object.values(wal).filter((c: any) => !c.synced);
+            return Object.values(wal).filter((c: any) => !c.synced) as LocalChange[];
         } catch {
             return [];
         }
