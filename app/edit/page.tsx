@@ -98,7 +98,7 @@ const XCCM2Editor = () => {
   const [isResizing, setIsResizing] = useState(false);
   const [isZenMode, setIsZenMode] = useState(false);
   const [tiptapEditor, setTiptapEditor] = useState<any>(null);
-  const editorAreaRef = useRef<EditorAreaHandle>(null); // ✅ Ref pour l'accès synchrone
+  const editorAreaRef = useRef<EditorAreaHandle>(null); // Kept specifically for focus management if needed, but logic simplified
   const editorRef = useRef<HTMLDivElement>(null);
   const lastDocChangeTimeRef = useRef<number>(0);
   const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -468,25 +468,6 @@ const XCCM2Editor = () => {
               width={sidebarWidth}
               onSelectNotion={(ctx) => {
                 const targetId = `notion-${ctx.notion.notion_id}`;
-                const prevId = currentContext?.notion?.notion_id || currentContext?.part?.part_id;
-                console.log(`[Navigation] Notion Clicked. Target: ${targetId}, Prev: ${prevId}`);
-
-                // CRITICAL FIX: Synchronous content retrieval via Ref with NULL safety
-                let trueContent: string | null = null;
-                if (editorAreaRef.current) {
-                  trueContent = editorAreaRef.current.getEditorContent();
-                } else if (tiptapEditor && !tiptapEditor.isDestroyed) {
-                  try { trueContent = tiptapEditor.getHTML(); } catch (e) { trueContent = null; }
-                }
-
-                if (trueContent !== null && prevId) {
-                  console.log(`[Navigation] Saving content for ${prevId} (Length: ${trueContent.length})`);
-                  localContentCacheRef.current[prevId] = trueContent;
-                  if (hasUnsavedChanges && prevId && currentContext) { queueSave(currentContext, trueContent); }
-                } else {
-                  console.log(`[Navigation] SKIPPING Save. Content was ${trueContent === null ? 'NULL (Editor Not Ready)' : 'Available but no PrevId'}`);
-                }
-
                 if (autoSaveTimerRef.current) { clearTimeout(autoSaveTimerRef.current); autoSaveTimerRef.current = null; }
 
                 setIsTransitioning(true);
@@ -494,36 +475,18 @@ const XCCM2Editor = () => {
                   activeDocIdRef.current = targetId;
                   lastDocChangeTimeRef.current = Date.now();
                   setCurrentContext({ type: 'notion', ...ctx });
-                  // CRITICAL FIX: Always check cache first to preserve unsaved changes
+
+                  // Check cache first for latest content
                   const cached = localContentCacheRef.current[ctx.notion.notion_id];
                   const serverContent = ctx.notion.notion_content || '';
-                  // Use cached version if it exists, otherwise fall back to server
                   setEditorContent(cached !== undefined ? cached : serverContent);
+
                   setHasUnsavedChanges(false);
                   setIsTransitioning(false);
                 }, 300);
               }}
               onSelectPart={(ctx) => {
                 const targetId = `part-${ctx.part.part_id}`;
-                const prevId = currentContext?.notion?.notion_id || currentContext?.part?.part_id;
-                console.log(`[Navigation] Part Clicked. Target: ${targetId}, Prev: ${prevId}`);
-
-                // CRITICAL FIX: Synchronous content retrieval via Ref with NULL safety
-                let trueContent: string | null = null;
-                if (editorAreaRef.current) {
-                  trueContent = editorAreaRef.current.getEditorContent();
-                } else if (tiptapEditor && !tiptapEditor.isDestroyed) {
-                  try { trueContent = tiptapEditor.getHTML(); } catch (e) { trueContent = null; }
-                }
-
-                if (trueContent !== null && prevId) {
-                  console.log(`[Navigation] Saving content for ${prevId} (Length: ${trueContent.length})`);
-                  localContentCacheRef.current[prevId] = trueContent;
-                  if (hasUnsavedChanges && prevId && currentContext) { queueSave(currentContext, trueContent); }
-                } else {
-                  console.log(`[Navigation] SKIPPING Save. Content is NULL or no PrevId.`);
-                }
-
                 if (autoSaveTimerRef.current) { clearTimeout(autoSaveTimerRef.current); autoSaveTimerRef.current = null; }
 
                 setIsTransitioning(true);
@@ -531,30 +494,15 @@ const XCCM2Editor = () => {
                   activeDocIdRef.current = targetId;
                   lastDocChangeTimeRef.current = Date.now();
                   setCurrentContext({ type: 'part', ...ctx });
+
                   const cached = localContentCacheRef.current[ctx.part.part_id];
                   setEditorContent((cached ?? ctx.part.part_intro) || '');
+
                   setHasUnsavedChanges(false);
                   setIsTransitioning(false);
                 }, 300);
               }}
               onSelectChapter={(pName, cTitle, cId) => {
-                const prevId = currentContext?.notion?.notion_id || currentContext?.part?.part_id;
-                console.log(`[Navigation] Chapter Clicked. Prev: ${prevId}`);
-
-                // CRITICAL FIX: Synchronous content retrieval via Ref with NULL safety
-                let trueContent: string | null = null;
-                if (editorAreaRef.current) {
-                  trueContent = editorAreaRef.current.getEditorContent();
-                } else if (tiptapEditor && !tiptapEditor.isDestroyed) {
-                  try { trueContent = tiptapEditor.getHTML(); } catch (e) { trueContent = null; }
-                }
-
-                if (trueContent !== null && prevId) {
-                  console.log(`[Navigation] Saving content for ${prevId}`);
-                  localContentCacheRef.current[prevId] = trueContent;
-                  if (hasUnsavedChanges && currentContext) { queueSave(currentContext, trueContent); }
-                }
-
                 if (autoSaveTimerRef.current) { clearTimeout(autoSaveTimerRef.current); autoSaveTimerRef.current = null; }
 
                 setIsTransitioning(true);
@@ -567,23 +515,6 @@ const XCCM2Editor = () => {
                 }, 300);
               }}
               onSelectParagraph={(pName, cTitle, paName, paId) => {
-                const prevId = currentContext?.notion?.notion_id || currentContext?.part?.part_id;
-                console.log(`[Navigation] Paragraph Clicked. Prev: ${prevId}`);
-
-                // CRITICAL FIX: Synchronous content retrieval via Ref with NULL safety
-                let trueContent: string | null = null;
-                if (editorAreaRef.current) {
-                  trueContent = editorAreaRef.current.getEditorContent();
-                } else if (tiptapEditor && !tiptapEditor.isDestroyed) {
-                  try { trueContent = tiptapEditor.getHTML(); } catch (e) { trueContent = null; }
-                }
-
-                if (trueContent !== null && prevId) {
-                  console.log(`[Navigation] Saving content for ${prevId}`);
-                  localContentCacheRef.current[prevId] = trueContent;
-                  if (hasUnsavedChanges && currentContext) { queueSave(currentContext, trueContent); }
-                }
-
                 if (autoSaveTimerRef.current) { clearTimeout(autoSaveTimerRef.current); autoSaveTimerRef.current = null; }
                 setIsTransitioning(true);
                 setTimeout(() => {
@@ -692,11 +623,6 @@ const XCCM2Editor = () => {
               textFormat={textFormat}
               onChange={(val, updateDocId) => {
                 const cleanId = updateDocId.replace('notion-', '').replace('part-', '');
-                // LOG ADDED FOR USER VERIFICATION: Track typing
-                if (val.length % 5 === 0 || val.length < 50) { // Log filtered to avoid console flood, but show start/important changes
-                  console.log(`[Typing] Update for ${cleanId}. New Length: ${val.length}`);
-                }
-
                 if (!cleanId) return;
                 const isValEmpty = val === '<p></p>' || val === '' || val.trim() === '';
                 const isMounting = (Date.now() - lastDocChangeTimeRef.current) < 500;

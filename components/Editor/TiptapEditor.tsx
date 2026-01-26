@@ -225,18 +225,6 @@ const TiptapEditor: React.FC<TiptapEditorProps> = (props) => {
     content: collaboration ? undefined : content,
     editable: !readOnly,
     onCreate: ({ editor }) => {
-      // ✅ HYBRID SYNC : Réparation de la "Perte Fantôme"
-      // Si on a du contenu local (cache) ET que la collaboration est active,
-      // on vérifie si le document collaboratif est vide (perte de connexion) ou en retard.
-      // Si oui, on FORCE le contenu local pour "réparer" le document partagé.
-      if (content && content.length > 20) { // Sécurité : on ignore les contenus vides/trop courts
-        const currentHTML = editor.getHTML();
-        // Si l'éditeur est vide (<p></p>) OU si le cache local est nettement plus fourni
-        if (editor.isEmpty || (content.length > currentHTML.length + 10)) {
-          console.log('[Hybrid Sync] 🛠️ Restoring content from Local Cache to heal Collab Document');
-          editor.commands.setContent(content, true); // Booléen true pour emitUpdate
-        }
-      }
       onReady?.(editor);
     },
     onUpdate: ({ editor }) => {
