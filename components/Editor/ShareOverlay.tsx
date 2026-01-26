@@ -181,7 +181,7 @@ const ShareOverlay: React.FC<ShareOverlayProps> = ({ isOpen, onClose, projectNam
                             {/* Section Inviter */}
                             <div className="space-y-4">
                                 <label className="block text-sm font-bold text-gray-700 dark:text-gray-300">
-                                    Inviter un collaborateur
+                                    Inviter des collaborateurs
                                 </label>
                                 <div className="flex gap-2">
                                     <div className="flex-1 relative">

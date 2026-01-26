@@ -162,6 +162,52 @@ class DocumentService {
       throw error;
     }
   }
+
+  async getMyPublishedDocuments(): Promise<{ documents: Document[] }> {
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/api/documents/me`,
+        {
+          method: 'GET',
+          headers: getAuthHeaders()
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error('Erreur lors de la récupération de vos documents');
+      }
+
+      const result = await response.json();
+      return {
+        documents: result.data || []
+      };
+    } catch (error) {
+      console.error('getMyPublishedDocuments error:', error);
+      throw error;
+    }
+  }
+
+  async unpublishDocument(docId: string): Promise<boolean> {
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/api/documents/${docId}`,
+        {
+          method: 'DELETE',
+          headers: getAuthHeaders()
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error('Erreur lors de la dépublication');
+      }
+
+      const result = await response.json();
+      return result.success;
+    } catch (error) {
+      console.error('unpublishDocument error:', error);
+      throw error;
+    }
+  }
 }
 
 export const documentService = new DocumentService();
