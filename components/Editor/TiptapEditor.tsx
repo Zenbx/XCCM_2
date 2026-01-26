@@ -233,14 +233,9 @@ const TiptapEditor: React.FC<TiptapEditorProps> = (props) => {
     onSelectionUpdate: ({ editor }) => {
       onSelectionChange?.(editor);
     },
-    // ✅ SAUVEGARDE FINALE AU DÉMONTAGE
-    // On s'assure que si l'éditeur est détruit (clic sur une autre notion),
-    // il envoie ses dernières modifications.
-    onDestroy: () => {
-      if (editor && !editor.isDestroyed) {
-        onChange(editor.getHTML(), docId);
-      }
-    },
+    // ✅ SAUVEGARDE FINALE AU DÉMONTAGE RETIRÉE
+    // La sauvegarde est maintenant gérée de manière synchrone par le parent (EditorArea/Page)
+    // avant le démontage pour éviter les Race Conditions.
     editorProps: {
       attributes: {
         class: `focus:outline-none min-h-[800px] ${className}`,

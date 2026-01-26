@@ -44,7 +44,7 @@ interface EditorAreaProps {
 }
 
 export interface EditorAreaHandle {
-  getEditorContent: () => string;
+  getEditorContent: () => string | null;
   focus: () => void;
 }
 
@@ -100,9 +100,12 @@ const EditorArea = React.forwardRef<EditorAreaHandle, EditorAreaProps>(({
     getEditorContent: () => {
       // Direct access to TipTap content to avoid state sync issues
       if (tiptapInstance && !tiptapInstance.isDestroyed) {
-        return tiptapInstance.getHTML();
+        const content = tiptapInstance.getHTML();
+        console.log(`[EditorArea] Sync retrieval success. Length: ${content.length}`);
+        return content;
       }
-      return '';
+      console.warn('[EditorArea] Sync retrieval FAILED. Editor instance not ready or destroyed.');
+      return null;
     },
     focus: () => {
       tiptapInstance?.commands.focus();
