@@ -952,6 +952,7 @@ const XCCM2Editor = () => {
         <main className="flex-1 overflow-y-auto bg-gray-50/50 p-4 lg:p-12">
           <div className="max-w-4xl mx-auto min-h-full">
             <EditorArea
+              key={synapseDocId} // ✅ FORCE LE RE-MONTAGE TOTAL (ZÉRO FUITE SÉCURITÉ MAX)
               docId={synapseDocId}
               content={editorContent}
               placeholder={(() => {

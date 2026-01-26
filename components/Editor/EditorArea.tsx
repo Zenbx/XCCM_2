@@ -411,7 +411,7 @@ const EditorArea: React.FC<EditorAreaProps> = ({
       >
         <div className="w-full h-full p-10">
           <TiptapEditor
-            key={`${collaboration?.documentId || 'static'}-${!!collaboration}`}
+            key={docId} // ✅ FORCE LE RE-MONTAGE : Détruit l'ancien éditeur, crée un nouveau (ZÉRO FUITE)
             docId={docId}
             content={content}
             onChange={handleTiptapUpdate}
