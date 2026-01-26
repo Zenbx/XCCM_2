@@ -821,17 +821,11 @@ const XCCM2Editor = () => {
                 activeDocIdRef.current = targetNotionId;
                 lastDocChangeTimeRef.current = Date.now();
 
-                // Queue save en arrière-plan si nécessaire
                 if (hasUnsavedChanges && currentContext) {
-                  const currentId = currentContext.notion?.notion_id || currentContext.part?.part_id;
-                  const latestContent = (currentId ? localContentCacheRef.current[currentId] : null) ?? editorContent;
-                  queueSave(currentContext, latestContent);
+                  const prevId = currentContext.notion?.notion_id || currentContext.part?.part_id;
+                  const prevContent = (prevId ? localContentCacheRef.current[prevId] : null) ?? editorContent;
+                  queueSave(currentContext, prevContent);
                 }
-
-                // Changement de contexte INSTANTANÉ
-                const nextId = `notion-${ctx.notion.notion_id}`;
-                activeDocIdRef.current = nextId;
-                lastDocChangeTimeRef.current = Date.now();
 
                 setCurrentContext({
                   type: 'notion',
@@ -843,7 +837,6 @@ const XCCM2Editor = () => {
                   notion: ctx.notion
                 });
 
-                // ✅ CHARGEMENT DEPUIS CACHE : On récupère ce qu'on a en RAM ou ce que le serveur donne
                 const cached = localContentCacheRef.current[ctx.notion.notion_id];
                 setEditorContent((cached ?? ctx.notion.notion_content) || '');
                 setHasUnsavedChanges(false);
@@ -853,17 +846,11 @@ const XCCM2Editor = () => {
                 activeDocIdRef.current = targetPartId;
                 lastDocChangeTimeRef.current = Date.now();
 
-                // Queue save en arrière-plan si nécessaire
                 if (hasUnsavedChanges && currentContext) {
-                  const currentId = currentContext.notion?.notion_id || currentContext.part?.part_id;
-                  const latestContent = (currentId ? localContentCacheRef.current[currentId] : null) ?? editorContent;
-                  queueSave(currentContext, latestContent);
+                  const prevId = currentContext.notion?.notion_id || currentContext.part?.part_id;
+                  const prevContent = (prevId ? localContentCacheRef.current[prevId] : null) ?? editorContent;
+                  queueSave(currentContext, prevContent);
                 }
-
-                // Changement de contexte INSTANTANÉ
-                const nextId = `part-${ctx.part.part_id}`;
-                activeDocIdRef.current = nextId;
-                lastDocChangeTimeRef.current = Date.now();
 
                 setCurrentContext({
                   type: 'part',
@@ -872,7 +859,6 @@ const XCCM2Editor = () => {
                   part: ctx.part
                 });
 
-                // ✅ CHARGEMENT DEPUIS CACHE
                 const cached = localContentCacheRef.current[ctx.part.part_id];
                 setEditorContent((cached ?? ctx.part.part_intro) || '');
                 setHasUnsavedChanges(false);
@@ -1018,16 +1004,22 @@ const XCCM2Editor = () => {
                 const cleanId = updateDocId.replace('notion-', '').replace('part-', '');
                 if (!cleanId) return;
 
-                // --- LE GARDIEN DU CACHE ---
+                                // --- LE GARDIEN DU CACHE (MEMORY DOMINANCE) ---
                 const isValEmpty = val === '<p></p>' || val === '' || val.trim() === '';
-                const isMounting = (Date.now() - lastDocChangeTimeRef.current) < 250; // Monté il y a < 250ms
+                const isMounting = (Date.now() - lastDocChangeTimeRef.current) < 500; // 🔒 Période de grâce de 500ms
                 const isActive = updateDocId === activeDocIdRef.current;
-
-                // On bloque les ordres d'effacement venant de fantômes ou au montage
-                if (isValEmpty && (!isActive || isMounting)) {
-                  console.log(`[Cache Guard] Blocked erasure of ${updateDocId} (Active:${isActive}, Mounting:${isMounting})`);
+                
+                // RÈGLE D'OR : Si la mémoire locale (cache) a déjà du contenu, un éditeur 
+                // tout neuf (isMounting) n'a PAS le droit de dire que c'est vide.
+                const hasPriorContent = !!(localContentCacheRef.current[cleanId] && localContentCacheRef.current[cleanId].length > 10);
+                
+                if (isValEmpty && hasPriorContent && isMounting) {
+                  console.log(`[Memory Dominance] Blocked early erasure of ${updateDocId}`);
                   return;
                 }
+
+                // Pour les messages fantômes (pas le document actif), on n'accepte que s'ils sont PLEINS
+                if (!isActive && isValEmpty) return;
 
                 // Toujours mettre à jour le cache RAM (Prio n°1)
                 localContentCacheRef.current[cleanId] = val;
@@ -1045,7 +1037,7 @@ const XCCM2Editor = () => {
                     if (p.part_id === cleanId) return { ...p, part_intro: val };
 
                     const hasChapter = p.chapters?.some(c =>
-                      c.paragraphs?.some(pa => pa.notions?.some(n => n.notion_id === cleanId))
+                      c.paragraphs?.some(pa => pa.notions?.some((n: any) => n.notion_id === cleanId))
                     );
 
                     if (!hasChapter && !p.chapters?.some(c => c.chapter_id === cleanId)) return p;
@@ -1053,7 +1045,7 @@ const XCCM2Editor = () => {
                     return {
                       ...p,
                       chapters: p.chapters?.map(c => {
-                        const hasPara = c.paragraphs?.some(pa => pa.notions?.some(n => n.notion_id === cleanId));
+                        const hasPara = c.paragraphs?.some(pa => pa.notions?.some((n: any) => n.notion_id === cleanId));
                         if (!hasPara && !c.paragraphs?.some(pa => pa.para_id === cleanId)) return c;
 
                         return {
