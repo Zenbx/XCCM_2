@@ -395,6 +395,7 @@ const XCCM2Editor = () => {
   const [sidebarWidth, setSidebarWidth] = useState(320);
   const [isResizing, setIsResizing] = useState(false);
   const [isZenMode, setIsZenMode] = useState(false);
+  const [isTransitioning, setIsTransitioning] = useState(false);
   const [tiptapEditor, setTiptapEditor] = useState<any>(null);
 
   const editorRef = useRef<HTMLDivElement>(null);
@@ -822,6 +823,8 @@ const XCCM2Editor = () => {
               structure={structure}
               width={sidebarWidth}
               onSelectNotion={(ctx) => {
+                // ✅ FIX 4: Activer le verrou de transition
+                setIsTransitioning(true);
                 // ✅ FIX 3: Annuler l'auto-save en cours
                 if (autoSaveTimerRef.current) {
                   clearTimeout(autoSaveTimerRef.current);
@@ -864,6 +867,8 @@ const XCCM2Editor = () => {
                 setHasUnsavedChanges(false);
               }}
               onSelectPart={(ctx) => {
+                // ✅ FIX 4: Activer le verrou de transition
+                setIsTransitioning(true);
                 // ✅ FIX 3: Annuler l'auto-save en cours
                 if (autoSaveTimerRef.current) {
                   clearTimeout(autoSaveTimerRef.current);
@@ -1042,6 +1047,23 @@ const XCCM2Editor = () => {
               })()}
               textFormat={textFormat}
               onChange={(val, updateDocId) => {
+                // ✅ FIX 4: Ignorer tout update pendant la transition
+                if (isTransitioning) {
+                  console.log(`[Transition Guard] Blocked update for ${updateDocId} during transition`);
+                  return;
+                }
+
+                // 🧪 SUPER-LOG DIAGNOSTIC
+                /*
+                const stack = new Error().stack;
+                console.group(`🔍 onChange @ ${Date.now()}`);
+                console.log('📝 updateDocId:', updateDocId);
+                console.log('🎯 activeDocId:', activeDocIdRef.current);
+                console.log('📊 Match:', updateDocId === activeDocIdRef.current);
+                console.log('📄 Content Length:', val.length);
+                console.log('🔄 CurrentContext:', currentContext?.notion?.notion_id || currentContext?.part?.part_id);
+                console.groupEnd();
+                */
                 const cleanId = updateDocId.replace('notion-', '').replace('part-', '');
                 if (!cleanId) return;
 
