@@ -479,8 +479,11 @@ const XCCM2Editor = () => {
                   activeDocIdRef.current = targetId;
                   lastDocChangeTimeRef.current = Date.now();
                   setCurrentContext({ type: 'notion', ...ctx });
+                  // CRITICAL FIX: Always check cache first to preserve unsaved changes
                   const cached = localContentCacheRef.current[ctx.notion.notion_id];
-                  setEditorContent((cached ?? ctx.notion.notion_content) || '');
+                  const serverContent = ctx.notion.notion_content || '';
+                  // Use cached version if it exists, otherwise fall back to server
+                  setEditorContent(cached !== undefined ? cached : serverContent);
                   setHasUnsavedChanges(false);
                   setIsTransitioning(false);
                 }, 300);
