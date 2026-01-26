@@ -23,7 +23,10 @@
         "none": "Aucun",
         "success": "Succès",
         "error": "Erreur",
-        "and": "et"
+        "and": "et",
+        "links": {
+            "community": "Communauté"
+        }
     },
     "header": {
         "links": {
@@ -102,6 +105,12 @@
                 "desc": "Interface rapide et réactive pour une expérience de création fluide."
             }
         },
+        "tabs": {
+            "organizations": "Organisations",
+            "home": "Individuel",
+            "education": "Éducation"
+        },
+        "preview": "Aperçu",
         "testimonials": {
             "title": "Ils nous font confiance",
             "subtitle": "Découvrez ce que nos utilisateurs disent de XCCM 2"
@@ -160,6 +169,7 @@
         "levels": {
             "Debutant": "Débutant",
             "Intermediaire": "Intermédiaire",
+            "Intermédiaire": "Intermédiaire",
             "Avance": "Avancé",
             "NA": "N/A"
         },

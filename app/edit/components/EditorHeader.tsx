@@ -64,7 +64,7 @@ const EditorHeader: React.FC<EditorHeaderProps> = ({
                             </>
                         ) : (
                             <>
-                                <span className="uppercase text-[10px] font-bold tracking-wider">{t.editor.part}</span>
+                                <span className="uppercase text-[10px] font-bold tracking-wider">{t('part')}</span>
                                 <ChevronRight className="w-3 h-3 text-gray-300 dark:text-gray-600" />
                                 <span className="font-bold text-[#99334C] dark:text-[#ff9daf]">{currentContext.partTitle}</span>
                                 <span className="ml-1 text-gray-400 font-normal dark:text-gray-500">(Intro)</span>
