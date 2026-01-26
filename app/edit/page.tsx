@@ -401,6 +401,7 @@ const XCCM2Editor = () => {
 
   // Timer pour ignorer les messages "vides" au montage de l'éditeur (Anti-effacement)
   const lastDocChangeTimeRef = useRef<number>(0);
+  const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Handlers pour la structure (TOC)
   const handleRenameGranule = async (type: string, id: string, oldTitle: string, newTitle: string) => {
@@ -555,6 +556,8 @@ const XCCM2Editor = () => {
     const contextId = ctx.notion?.notion_id || ctx.part?.part_id || 'unknown';
     const changeId = `${ctx.type}-${contextId}-${timestamp}`;
 
+    console.log(`[Persistence] Queueing ${ctx.type} update for ${contextId} (Buffer size: ${changeBufferRef.current.length + 1})`);
+
     // ✅ RÈGLE N°6 : Écrire localement AVANT d'envoyer au serveur (Write-Ahead Log)
     localPersistence.writeChange({
       id: changeId,
@@ -622,9 +625,11 @@ const XCCM2Editor = () => {
       const toSave = changeBufferRef.current.shift(); // FIFO
       if (!toSave) return;
 
+      console.log(`[SaveWorker] Sending PATCH for ${toSave.context?.type} (${toSave.id})...`);
       setIsSaving(true);
       try {
         await saveToBackend(toSave.context, toSave.content);
+        console.log(`[SaveWorker] SUCCESS: Saved ${toSave.id}`);
 
         // ✅ Marquer comme synchronisé dans le WAL (Règle n°6)
         await localPersistence.markAsSynced(toSave.id);
@@ -1028,6 +1033,15 @@ const XCCM2Editor = () => {
                 if (isActive) {
                   setEditorContent(val);
                   setHasUnsavedChanges(true);
+
+                  // ✅ AUTO-SAVE CONTINU (Debounced)
+                  // On remplit le buffer toutes les 1.5s d'inactivité au lieu d'attendre la sortie
+                  if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+                  autoSaveTimerRef.current = setTimeout(() => {
+                    if (isActive && currentContext) {
+                        queueSave(currentContext, val);
+                    }
+                  }, 1500);
                 }
 
                 // ANCRAGE STRUCTUREL : Mise à jour de la structure de façon IMMUABLE
