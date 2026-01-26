@@ -87,25 +87,51 @@ export const useCollection = (docId: string | null, currentDoc: any) => {
             const findChapterTitle = () => navigationPath.find(i => i.type === 'chapter')?.chapter_title || '';
 
             if (collectedGranule.type === 'part') {
+                // Determine next part number
+                const nextNum = (projectStructure?.length || 0) + 1;
                 await structureService.createPart(projectName, {
                     part_title: collectedGranule.title,
-                    part_number: (projectStructure?.length || 0) + 1
+                    part_intro: collectedGranule.content || '',
+                    part_number: nextNum
                 });
             } else if (collectedGranule.type === 'chapter') {
+                // Find parent part to count existing chapters
+                const parentPart = projectStructure?.find(p => p.part_id === parentId);
+                const nextNum = (parentPart?.chapters?.length || 0) + 1;
+
                 await structureService.createChapter(projectName, parentTitle, {
                     chapter_title: collectedGranule.title,
-                    chapter_number: 1
+                    chapter_number: nextNum
                 });
             } else if (collectedGranule.type === 'paragraph') {
+                // Find parent chapter to count existing paragraphs
+                // traverse structure to find the chapter
+                let chapter: any = null;
+                for (const p of projectStructure || []) {
+                    const c = p.chapters?.find((ch: any) => ch.chapter_id === parentId);
+                    if (c) { chapter = c; break; }
+                }
+                const nextNum = (chapter?.paragraphs?.length || 0) + 1;
+
                 await structureService.createParagraph(projectName, findPartTitle(), parentTitle, {
                     para_name: collectedGranule.title,
-                    para_number: 1
+                    para_number: nextNum
                 });
             } else if (collectedGranule.type === 'notion') {
+                // Find parent paragraph to count existing notions
+                let paragraph: any = null;
+                for (const p of projectStructure || []) {
+                    for (const c of p.chapters || []) {
+                        const para = c.paragraphs?.find((pa: any) => pa.para_id === parentId);
+                        if (para) { paragraph = para; break; }
+                    }
+                }
+                const nextNum = (paragraph?.notions?.length || 0) + 1;
+
                 await structureService.createNotion(projectName, findPartTitle(), findChapterTitle(), parentTitle, {
                     notion_name: collectedGranule.title,
                     notion_content: collectedGranule.content || '',
-                    notion_number: 1
+                    notion_number: nextNum
                 });
             }
 

@@ -468,8 +468,20 @@ const XCCM2Editor = () => {
               onSelectNotion={(ctx) => {
                 const targetId = `notion-${ctx.notion.notion_id}`;
                 const prevId = currentContext?.notion?.notion_id || currentContext?.part?.part_id;
-                let trueContent = editorContent;
-                if (tiptapEditor && !tiptapEditor.isDestroyed) { try { trueContent = tiptapEditor.getHTML(); } catch (e) { } }
+
+                // CRITICAL: Always get content from TipTap editor, NOT from state
+                let trueContent = '';
+                if (tiptapEditor && !tiptapEditor.isDestroyed) {
+                  try {
+                    trueContent = tiptapEditor.getHTML();
+                  } catch (e) {
+                    console.warn('Failed to get editor content, using state fallback');
+                    trueContent = editorContent;
+                  }
+                } else {
+                  trueContent = editorContent;  // Only if editor is destroyed
+                }
+
                 if (prevId) localContentCacheRef.current[prevId] = trueContent;
                 if (hasUnsavedChanges && prevId && currentContext) { queueSave(currentContext, trueContent); }
                 if (autoSaveTimerRef.current) { clearTimeout(autoSaveTimerRef.current); autoSaveTimerRef.current = null; }
@@ -491,8 +503,20 @@ const XCCM2Editor = () => {
               onSelectPart={(ctx) => {
                 const targetId = `part-${ctx.part.part_id}`;
                 const prevId = currentContext?.notion?.notion_id || currentContext?.part?.part_id;
-                let trueContent = editorContent;
-                if (tiptapEditor && !tiptapEditor.isDestroyed) { try { trueContent = tiptapEditor.getHTML(); } catch (e) { } }
+
+                // CRITICAL: Always get content from TipTap editor, NOT from state
+                let trueContent = '';
+                if (tiptapEditor && !tiptapEditor.isDestroyed) {
+                  try {
+                    trueContent = tiptapEditor.getHTML();
+                  } catch (e) {
+                    console.warn('Failed to get editor content, using state fallback');
+                    trueContent = editorContent;
+                  }
+                } else {
+                  trueContent = editorContent;
+                }
+
                 if (prevId) localContentCacheRef.current[prevId] = trueContent;
                 if (hasUnsavedChanges && prevId && currentContext) { queueSave(currentContext, trueContent); }
                 if (autoSaveTimerRef.current) { clearTimeout(autoSaveTimerRef.current); autoSaveTimerRef.current = null; }
@@ -510,8 +534,20 @@ const XCCM2Editor = () => {
               }}
               onSelectChapter={(pName, cTitle, cId) => {
                 const prevId = currentContext?.notion?.notion_id || currentContext?.part?.part_id;
-                let trueContent = editorContent;
-                if (tiptapEditor && !tiptapEditor.isDestroyed) { try { trueContent = tiptapEditor.getHTML(); } catch (e) { } }
+
+                // CRITICAL: Always get content from TipTap editor, NOT from state
+                let trueContent = '';
+                if (tiptapEditor && !tiptapEditor.isDestroyed) {
+                  try {
+                    trueContent = tiptapEditor.getHTML();
+                  } catch (e) {
+                    console.warn('Failed to get editor content, using state fallback');
+                    trueContent = editorContent;
+                  }
+                } else {
+                  trueContent = editorContent;
+                }
+
                 if (prevId) localContentCacheRef.current[prevId] = trueContent;
                 if (hasUnsavedChanges && currentContext) { queueSave(currentContext, trueContent); }
                 if (autoSaveTimerRef.current) { clearTimeout(autoSaveTimerRef.current); autoSaveTimerRef.current = null; }

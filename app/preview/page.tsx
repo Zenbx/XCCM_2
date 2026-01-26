@@ -924,8 +924,8 @@ const PreviewPage = () => {
                     >
                         <div className="p-6 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
                             <div>
-                                <h2 className="text-xl font-bold text-gray-900">Publier votre document</h2>
-                                <p className="text-xs text-gray-500 mt-1">Configurez les métadonnées de votre publication</p>
+                                <h2 className="text-xl font-bold text-gray-900">Créer un snapshot public</h2>
+                                <p className="text-xs text-gray-500 mt-1">Version figée de votre projet à diffuser en bibliothèque</p>
                             </div>
                             <button onClick={() => setShowFormatDialog(false)} className="p-2 hover:bg-gray-200 rounded-full transition-colors">
                                 <X size={20} className="text-gray-400" />
@@ -935,14 +935,20 @@ const PreviewPage = () => {
                         <div className="p-6 space-y-5 max-h-[70vh] overflow-y-auto">
                             {/* Nom du document */}
                             <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-2">Nom du document</label>
+                                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                    Nom du snapshot
+                                    <span className="ml-2 text-[10px] font-normal text-gray-400">(Version actuelle de "{projectData?.pr_name}")</span>
+                                </label>
                                 <input
                                     type="text"
                                     value={snapshotName}
                                     onChange={(e) => setSnapshotName(e.target.value)}
-                                    placeholder="Ex: Guide Expert - Design System"
+                                    placeholder="Ex: Mon Projet - Version 1.0"
                                     className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#99334C]/20 focus:border-[#99334C] transition-all outline-none"
                                 />
+                                <p className="text-[11px] text-gray-500 mt-1.5 italic">
+                                    💡 Ce nom sera visible dans la bibliothèque publique. Choisissez un nom unique et explicite.
+                                </p>
                             </div>
 
                             {/* Catégorie et Format */}
