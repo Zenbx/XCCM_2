@@ -768,11 +768,9 @@ const XCCM2Editor = () => {
 
                 <main className="flex-1 overflow-y-auto bg-gray-50/50 p-4 lg:p-12 relative">
           {isTransitioning && (
-            <div className="absolute inset-0 z-50 flex items-center justify-center bg-gray-50/40 backdrop-blur-[2px] animate-in fade-in duration-200">
-               <div className="flex flex-col items-center gap-3 p-6 bg-white rounded-2xl shadow-xl border border-gray-100">
-                 <Loader2 className="w-8 h-8 text-[#99334C] animate-spin" />
-                 <span className="text-sm font-medium text-gray-500">Chargement...</span>
-               </div>
+            <div className="absolute top-6 right-6 z-50 flex items-center gap-3 px-4 py-2 bg-white/90 backdrop-blur-md rounded-full shadow-lg border border-[#99334C]/10 animate-in slide-in-from-top-4 fade-in duration-300">
+               <Loader2 className="w-4 h-4 text-[#99334C] animate-spin" />
+               <span className="text-xs font-bold text-[#99334C] tracking-wide uppercase">Stabilisation...</span>
             </div>
           )}
           <div className="max-w-4xl mx-auto min-h-full">
