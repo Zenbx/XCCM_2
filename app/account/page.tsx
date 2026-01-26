@@ -135,15 +135,24 @@ const AccountPage = () => {
 
   const fetchDocuments = async () => {
     try {
-      const projectsResponse = await projectService.getAllProjects();
-      const docs = projectsResponse.flatMap((p: any) =>
-        (p.documents || []).map((d: any) => ({
-          ...d,
-          project_name: p.pr_name,
-          category: p.category
-        }))
-      ).sort((a: any, b: any) => new Date(b.published_at).getTime() - new Date(a.published_at).getTime());
-      setUserDocuments(docs);
+      if (!user?.user_id) return;
+
+      const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001').replace(/\/$/, '');
+      const response = await fetch(`${API_BASE_URL}/api/users/${user.user_id}`);
+      const data = await response.json();
+
+      if (data.success) {
+        // Re-construct the list from projects with snapshots
+        const docs = data.data.projects.flatMap((p: any) =>
+          (p.documents || []).map((d: any) => ({
+            ...d,
+            project_name: p.pr_name,
+            category: p.category
+          }))
+        ).sort((a: any, b: any) => new Date(b.published_at).getTime() - new Date(a.published_at).getTime());
+
+        setUserDocuments(docs);
+      }
     } catch (err) {
       console.error("Error fetching documents", err);
     }
