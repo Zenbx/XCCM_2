@@ -260,18 +260,9 @@ const TiptapEditor: React.FC<TiptapEditorProps> = (props) => {
     },
   });
 
-  // Mettre à jour le contenu si prop change de l'extérieur (seulement si pas de collaboration)
-  useEffect(() => {
-    if (editor && !collaboration && content !== editor.getHTML()) {
-      // Avoid "flushSync was called from inside a lifecycle method" error
-      // by deferring the update to the next microtask/frame
-      queueMicrotask(() => {
-        if (editor && !editor.isDestroyed) {
-          editor.commands.setContent(content, false);
-        }
-      });
-    }
-  }, [content, editor]);
+  // ✅ REMOVED synchronisation useEffect pour éviter les fuites de contenu (Leakage)
+  // On utilise key={docId} dans EditorArea, donc l'éditeur est recréé à chaque changement.
+  // L'initialisation via useEditor({ content }) suffit amplement.
 
   // Gérer le mode lecture seule
   useEffect(() => {

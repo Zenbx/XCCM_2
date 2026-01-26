@@ -229,12 +229,15 @@ const XCCM2Editor = () => {
     e.dataTransfer.effectAllowed = 'copy';
   };
 
-  const handleDropGranule = async (granule: any, targetType?: string, targetId?: string, targetParentId?: string | null) => {
+    const handleDropGranule = async (granule: any, targetType?: string, targetId?: string, targetParentId?: string | null) => {
     if (!projectName) return;
+    console.log("Dropping granule with target:", { granule, targetType, targetId, targetParentId });
+
     const toastId = toast.loading(`Importation de "${granule.content}"...`);
     setPendingGranule({ type: granule.type, content: granule.content });
 
     try {
+      // Résolution du contexte de drop
       let dropPartTitle = '';
       let dropChapterTitle = '';
       let dropParaName = '';
@@ -278,34 +281,80 @@ const XCCM2Editor = () => {
         try { effectiveData = JSON.parse(granule.previewContent); } catch (e) { }
       }
 
+      // --- Fonctions Récursives (Les Poupées Russes) ---
+      const recurseParagraph = async (pTitle: string, cTitle: string, paName: string, paraData: any) => {
+        const notions = paraData.notions || paraData.children;
+        if (notions && notions.length > 0) {
+          for (let k = 0; k < notions.length; k++) {
+            const notion = notions[k];
+            await structureService.createNotion(projectName, pTitle, cTitle, paName, {
+              notion_name: notion.notion_name || notion.content || "Nouvelle Notion",
+              notion_content: notion.notion_content || notion.previewContent || '',
+              notion_number: k + 1
+            });
+          }
+        }
+      };
+
+      const recurseChapter = async (pTitle: string, cTitle: string, chapData: any) => {
+        const paragraphs = chapData.paragraphs || chapData.children;
+        if (paragraphs && paragraphs.length > 0) {
+          for (let j = 0; j < paragraphs.length; j++) {
+            const para = paragraphs[j];
+            const newPara = await structureService.createParagraph(projectName, pTitle, cTitle, {
+              para_name: para.para_name || para.content || "Nouveau Paragraphe",
+              para_number: j + 1
+            });
+            await recurseParagraph(pTitle, cTitle, newPara.para_name, para);
+          }
+        }
+      };
+
+      // --- Logique de création principale ---
       if (granule.type === 'part') {
         const nextPartNum = structure.length + 1;
         const newPart = await structureService.createPart(projectName, {
-          part_title: effectiveData.part_title || effectiveData.content,
+          part_title: effectiveData.part_title || effectiveData.content || "Nouvelle Partie",
           part_number: nextPartNum,
           part_intro: effectiveData.part_intro || effectiveData.introduction || ''
         });
         setPulsingId(newPart.part_id);
+        
+        const chapters = effectiveData.chapters || effectiveData.children;
+        if (chapters && chapters.length > 0) {
+          for (let i = 0; i < chapters.length; i++) {
+            const chap = chapters[i];
+            const newChapter = await structureService.createChapter(projectName, newPart.part_title, {
+              chapter_title: chap.chapter_title || chap.content || "Nouveau Chapitre",
+              chapter_number: i + 1
+            });
+            await recurseChapter(newPart.part_title, newChapter.chapter_title, chap);
+          }
+        }
       } else if (granule.type === 'chapter') {
         const parentPart = dropPartTitle || currentContext?.partTitle || (structure.length > 0 ? structure[structure.length - 1].part_title : "Partie 1");
         const partObj = structure.find(p => p.part_title.trim() === parentPart.trim());
         const nextChapNum = (partObj?.chapters?.length || 0) + 1;
+        
         const newChapter = await structureService.createChapter(projectName, parentPart, {
-          chapter_title: effectiveData.chapter_title || effectiveData.content,
+          chapter_title: effectiveData.chapter_title || effectiveData.content || "Nouveau Chapitre",
           chapter_number: nextChapNum
         });
         setPulsingId(newChapter.chapter_id);
+        await recurseChapter(parentPart, newChapter.chapter_title, effectiveData);
       } else if (granule.type === 'paragraph') {
         const parentPart = dropPartTitle || currentContext?.partTitle || (structure.length > 0 ? structure[structure.length - 1].part_title : "Partie 1");
         const partObj = structure.find(p => p.part_title.trim() === parentPart.trim());
         const parentChapter = dropChapterTitle || currentContext?.chapterTitle || partObj?.chapters?.[0]?.chapter_title || "Chapitre 1";
         const chapObj = partObj?.chapters?.find(c => c.chapter_title.trim() === parentChapter.trim());
         const nextParaNum = (chapObj?.paragraphs?.length || 0) + 1;
+        
         const newPara = await structureService.createParagraph(projectName, parentPart, parentChapter, {
-          para_name: effectiveData.para_name || effectiveData.content,
+          para_name: effectiveData.para_name || effectiveData.content || "Nouveau Paragraphe",
           para_number: nextParaNum
         });
         setPulsingId(newPara.para_id);
+        await recurseParagraph(parentPart, parentChapter, newPara.para_name, effectiveData);
       } else if (granule.type === 'notion') {
         const parentPart = dropPartTitle || currentContext?.partTitle || (structure.length > 0 ? structure[0].part_title : "Partie 1");
         const partObj = structure.find(p => p.part_title.trim() === parentPart.trim()) || structure[0];
@@ -313,8 +362,8 @@ const XCCM2Editor = () => {
         const chapObj = partObj.chapters?.find(c => c.chapter_title.trim() === parentChapter.trim()) || partObj.chapters?.[0];
         const parentPara = dropParaName || currentContext?.paraName || chapObj?.paragraphs?.[0]?.para_name || "Paragraphe 1";
         const paraObj = chapObj?.paragraphs?.find(p => p.para_name.trim() === parentPara.trim()) || chapObj?.paragraphs?.[0];
+        
         const nextNotionNum = (paraObj?.notions?.length || 0) + 1;
-
         await structureService.createNotion(projectName, parentPart, parentChapter, paraObj?.para_name || parentPara, {
           notion_name: effectiveData.notion_name || effectiveData.content || "Nouvelle Notion",
           notion_content: effectiveData.notion_content || effectiveData.previewContent || '',
@@ -615,8 +664,10 @@ const XCCM2Editor = () => {
                 if (prevId) localContentCacheRef.current[prevId] = trueContent;
                 if (hasUnsavedChanges && currentContext) queueSave(currentContext, trueContent);
                 if (autoSaveTimerRef.current) { clearTimeout(autoSaveTimerRef.current); autoSaveTimerRef.current = null; }
+                
                 activeDocIdRef.current = `paragraph-${paId}`;
                 setCurrentContext({ type: 'paragraph', projectName: projectData?.pr_name || '', partTitle: pName, chapterTitle: cTitle, paraName: paName, paraId: paId });
+                setEditorContent(''); // ✅ Clear editor when on structural element
                 setHasUnsavedChanges(false);
               }}
               onPublishToMarketplace={handlePublishToMarketplace}
