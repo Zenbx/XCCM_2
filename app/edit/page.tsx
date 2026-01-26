@@ -3,7 +3,7 @@
 import React, { useState, useRef, useEffect, Suspense, useMemo, useCallback } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import {
-  Loader2, AlertCircle, Bot
+  Loader2, AlertCircle
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -98,7 +98,7 @@ const XCCM2Editor = () => {
   const [isResizing, setIsResizing] = useState(false);
   const [isZenMode, setIsZenMode] = useState(false);
   const [tiptapEditor, setTiptapEditor] = useState<any>(null);
-  const editorAreaRef = useRef<EditorAreaHandle>(null); // Kept specifically for focus management if needed, but logic simplified
+  const editorAreaRef = useRef<EditorAreaHandle>(null);
   const editorRef = useRef<HTMLDivElement>(null);
   const lastDocChangeTimeRef = useRef<number>(0);
   const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -151,29 +151,6 @@ const XCCM2Editor = () => {
                   content: 'Boutons Tactiles',
                   icon: 'File',
                   previewContent: 'Le bouton tactile doit avoir un retour haptique visuel...'
-                }
-              ]
-            }
-          ]
-        },
-        {
-          id: 'c2',
-          type: 'chapter',
-          content: 'Chapitre B: Composants Tactiles',
-          icon: 'Book',
-          children: [
-            {
-              id: 'p2',
-              type: 'paragraph',
-              content: 'Saisie de Données',
-              icon: 'FileText',
-              children: [
-                {
-                  id: 'n2',
-                  type: 'notion',
-                  content: 'Inputs Modernes',
-                  icon: 'File',
-                  previewContent: 'Les champs de saisie doivent être optimisés pour le toucher.'
                 }
               ]
             }
@@ -372,14 +349,15 @@ const XCCM2Editor = () => {
   const { connectedUsers, localClientId, provider, yDoc } = useSynapseSync({
     documentId: synapseDocId,
     userId: authUser?.user_id || 'anonymous',
-    userName: `${authUser?.firstname || 'L’Auteur'} ${authUser?.lastname || ''}`.trim(),
+    userName: `${authUser?.firstname || 'L\'Auteur'} ${authUser?.lastname || ''}`.trim(),
     serverUrl: process.env.NEXT_PUBLIC_HOCUSPOCUS_URL || 'ws://localhost:1234',
     token: authToken,
   });
 
   const collaborationData = useMemo(() => {
     if (!synapseDocId || !provider || !yDoc) return undefined;
-    return { provider, documentId: synapseDocId, username: `${authUser?.firstname || 'L’Auteur'} ${authUser?.lastname || ''}`.trim(), userColor: '#99334C', colors: ['#99334C', '#2563EB', '#10B981', '#F59E0B'], yDoc };
+    return {
+      provider, documentId: synapseDocId, username: `${authUser?.firstname || 'L\'Auteur'} ${authUser?.lastname || ''}`.trim(), userColor: '#99334C', colors: ['#99334C', '#2563EB', '#10B981', '#F59E0B'], yDoc };
   }, [synapseDocId, provider, yDoc, authUser]);
 
   const changeBufferRef = useRef<any[]>([]);
@@ -470,17 +448,24 @@ const XCCM2Editor = () => {
                 const targetId = `notion-${ctx.notion.notion_id}`;
                 if (autoSaveTimerRef.current) { clearTimeout(autoSaveTimerRef.current); autoSaveTimerRef.current = null; }
 
+                console.log(`[TOC] Sélection notion: ${ctx.notion.notion_name} (${ctx.notion.notion_id})`);
+
                 setIsTransitioning(true);
                 setTimeout(() => {
                   activeDocIdRef.current = targetId;
                   lastDocChangeTimeRef.current = Date.now();
+
+                  // ✅ Mise à jour du contexte AVANT de mettre à jour le contenu
                   setCurrentContext({ type: 'notion', ...ctx });
 
-                  // Check cache first for latest content
+                  // ✅ Vérifier le cache d'abord pour le dernier contenu édité
                   const cached = localContentCacheRef.current[ctx.notion.notion_id];
                   const serverContent = ctx.notion.notion_content || '';
-                  setEditorContent(cached !== undefined ? cached : serverContent);
+                  const finalContent = cached !== undefined ? cached : serverContent;
 
+                  console.log(`[TOC] Cache notion ${ctx.notion.notion_id}: ${cached ? 'HIT' : 'MISS'}, longueur: ${finalContent.length}`);
+
+                  setEditorContent(finalContent);
                   setHasUnsavedChanges(false);
                   setIsTransitioning(false);
                 }, 300);
@@ -489,21 +474,32 @@ const XCCM2Editor = () => {
                 const targetId = `part-${ctx.part.part_id}`;
                 if (autoSaveTimerRef.current) { clearTimeout(autoSaveTimerRef.current); autoSaveTimerRef.current = null; }
 
+                console.log(`[TOC] Sélection partie: ${ctx.part.part_title} (${ctx.part.part_id})`);
+
                 setIsTransitioning(true);
                 setTimeout(() => {
                   activeDocIdRef.current = targetId;
                   lastDocChangeTimeRef.current = Date.now();
+
+                  // ✅ Mise à jour du contexte AVANT de mettre à jour le contenu
                   setCurrentContext({ type: 'part', ...ctx });
 
+                  // ✅ Vérifier le cache d'abord
                   const cached = localContentCacheRef.current[ctx.part.part_id];
-                  setEditorContent((cached ?? ctx.part.part_intro) || '');
+                  const serverContent = ctx.part.part_intro || '';
+                  const finalContent = cached !== undefined ? cached : serverContent;
 
+                  console.log(`[TOC] Cache partie ${ctx.part.part_id}: ${cached ? 'HIT' : 'MISS'}, longueur: ${finalContent.length}`);
+
+                  setEditorContent(finalContent);
                   setHasUnsavedChanges(false);
                   setIsTransitioning(false);
                 }, 300);
               }}
               onSelectChapter={(pName, cTitle, cId) => {
                 if (autoSaveTimerRef.current) { clearTimeout(autoSaveTimerRef.current); autoSaveTimerRef.current = null; }
+
+                console.log(`[TOC] Sélection chapitre: ${cTitle} (${cId})`);
 
                 setIsTransitioning(true);
                 setTimeout(() => {
@@ -516,6 +512,9 @@ const XCCM2Editor = () => {
               }}
               onSelectParagraph={(pName, cTitle, paName, paId) => {
                 if (autoSaveTimerRef.current) { clearTimeout(autoSaveTimerRef.current); autoSaveTimerRef.current = null; }
+
+                console.log(`[TOC] Sélection paragraphe: ${paName} (${paId})`);
+
                 setIsTransitioning(true);
                 setTimeout(() => {
                   activeDocIdRef.current = `paragraph-${paId}`;
@@ -612,32 +611,48 @@ const XCCM2Editor = () => {
               placeholder={(() => {
                 if (!currentContext) return t('selectPrompt');
                 switch (currentContext.type) {
-                  case 'part': return t('partPlaceholder');
-                  case 'chapter': return t('chapterPlaceholder');
-                  case 'paragraph': return t('paragraphPlaceholder');
-                  case 'notion': return t('notionPlaceholder');
-                  default: return t('selectPrompt');
+                  case 'part': return t('partPlaceholder') || "Rédigez l'introduction de cette partie...";
+                  case 'chapter': return t('chapterPlaceholder') || "Les chapitres ne sont pas éditables directement...";
+                  case 'paragraph': return t('paragraphPlaceholder') || "Les paragraphes ne sont pas éditables directement...";
+                  case 'notion': return t('notionPlaceholder') || "Développez cette notion...";
+                  default: return t('selectPrompt') || "Sélectionnez un élément dans la table des matières...";
                 }
               })()}
               textFormat={textFormat}
               onChange={(val, updateDocId) => {
                 const cleanId = updateDocId.replace('notion-', '').replace('part-', '');
                 if (!cleanId) return;
+
                 const isValEmpty = val === '<p></p>' || val === '' || val.trim() === '';
                 const isMounting = (Date.now() - lastDocChangeTimeRef.current) < 500;
                 const matchesActive = updateDocId === activeDocIdRef.current;
                 const hasPriorContent = !!(localContentCacheRef.current[cleanId] && localContentCacheRef.current[cleanId].length > 10);
-                if (isValEmpty && hasPriorContent && isMounting) return;
+
+                // ✅ Protection contre l'écrasement au montage
+                if (isValEmpty && hasPriorContent && isMounting) {
+                  console.log(`[EditorArea] PROTECTION: Ignoré écrasement vide au montage pour ${cleanId}`);
+                  return;
+                }
+
+                // ✅ Mise à jour du cache local (source de vérité)
+                console.log(`[EditorArea] Mise à jour cache ${cleanId}: ${val.length} caractères`);
                 localContentCacheRef.current[cleanId] = val;
+
                 if (matchesActive) {
                   setEditorContent(val);
                   setHasUnsavedChanges(true);
+
                   if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
                   const frozenContext = currentContext ? JSON.parse(JSON.stringify(currentContext)) : null;
                   autoSaveTimerRef.current = setTimeout(() => {
-                    if (updateDocId === activeDocIdRef.current && frozenContext) { queueSave(frozenContext, val); }
+                    if (updateDocId === activeDocIdRef.current && frozenContext) {
+                      console.log(`[EditorArea] Auto-sauvegarde programmée pour ${cleanId}`);
+                      queueSave(frozenContext, val);
+                    }
                   }, 1500);
                 }
+
+                // ✅ Mise à jour de la structure pour refléter les changements
                 setStructure((prev: Part[]) => {
                   return prev.map(p => {
                     if (p.part_id === cleanId) return { ...p, part_intro: val };
@@ -658,7 +673,7 @@ const XCCM2Editor = () => {
               onEditorReady={setTiptapEditor}
               onDrop={handleDropGranule}
               editorRef={editorRef}
-              ref={editorAreaRef} // ✅ Référence passée
+              ref={editorAreaRef}
               collaboration={collaborationData as any}
               socraticFeedback={mappedSocraticFeedback as any}
             />

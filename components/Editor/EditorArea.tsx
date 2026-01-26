@@ -1,12 +1,11 @@
 "use client";
 
-import { AlignLeft, AlignCenter, AlignRight, Trash2, X, Command } from 'lucide-react';
+import { AlignLeft, AlignCenter, AlignRight, Trash2, X } from 'lucide-react';
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { SlashMenu } from './SlashMenu';
 import { FloatingToolbar } from './FloatingToolbar';
 import { AnimatePresence } from 'framer-motion';
-import toast from 'react-hot-toast';
-import TiptapEditor from './TiptapEditor'; // ✅ Import de Tiptap
+import TiptapEditor from './TiptapEditor';
 import { SocraticHighlight } from '@/extensions/SocraticExtension';
 
 interface EditorAreaProps {
@@ -24,7 +23,6 @@ interface EditorAreaProps {
   placeholder?: string;
   isImporting?: boolean;
   readOnly?: boolean;
-  // Nouvelles props pour les commandes structurelles
   onAddPart?: () => void;
   onAddChapter?: () => void;
   onAddParagraph?: () => void;
@@ -69,20 +67,17 @@ const EditorArea = React.forwardRef<EditorAreaHandle, EditorAreaProps>(({
   socraticFeedback = [],
   onSocraticHighlightClick,
 }, ref) => {
-  const isInitialLoad = useRef(true);
-  const [internalPlaceholder, setInternalPlaceholder] = useState(placeholder);
-
   // États pour la gestion des images
   const [selectedImage, setSelectedImage] = useState<HTMLImageElement | null>(null);
   const [toolbarPosition, setToolbarPosition] = useState({ top: 0, left: 0 });
 
-  // --- États Slash Menu (/) ---
+  // États Slash Menu (/)
   const [showSlashMenu, setShowSlashMenu] = useState(false);
   const [slashMenuPosition, setSlashMenuPosition] = useState({ top: 0, left: 0 });
   const [slashFilter, setSlashFilter] = useState("");
   const slashTriggerIndex = useRef<number>(-1);
 
-  // --- États Floating Toolbar ---
+  // États Floating Toolbar
   const [showFloatingToolbar, setShowFloatingToolbar] = useState(false);
   const [floatingToolbarPosition, setFloatingToolbarPosition] = useState({ top: 0, left: 0 });
   const [activeFormats, setActiveFormats] = useState({
@@ -92,34 +87,24 @@ const EditorArea = React.forwardRef<EditorAreaHandle, EditorAreaProps>(({
     strikethrough: false
   });
 
-  // Instance de l'éditeur Tiptap pour les commandes externes
+  // Instance de l'éditeur Tiptap
   const [tiptapInstance, setTiptapInstance] = useState<any>(null);
 
   // Expose methods to parent via ref
   React.useImperativeHandle(ref, () => ({
     getEditorContent: () => {
-      // Direct access to TipTap content to avoid state sync issues
       if (tiptapInstance && !tiptapInstance.isDestroyed) {
         const content = tiptapInstance.getHTML();
-        console.log(`[EditorArea] Sync retrieval success. Length: ${content.length}`);
+        console.log(`[EditorArea] Sync retrieval success for ${docId}. Length: ${content.length}`);
         return content;
       }
-      console.warn('[EditorArea] Sync retrieval FAILED. Editor instance not ready or destroyed.');
+      console.warn(`[EditorArea] Sync retrieval FAILED for ${docId}. Editor instance not ready or destroyed.`);
       return null;
     },
     focus: () => {
       tiptapInstance?.commands.focus();
     }
-  }), [tiptapInstance]);
-
-  useEffect(() => {
-    setInternalPlaceholder(placeholder);
-  }, [placeholder]);
-
-  // Tiptap gère sa propre synchronisation via onUpdate, 
-  // on n'a plus besoin du useEffect qui injecte innerHTML
-
-  // Tiptap gère désormais la sélection via handleSelectionUpdate
+  }), [tiptapInstance, docId]);
 
   // Gestionnaire de copier-coller pour les images
   const handlePaste = (e: React.ClipboardEvent) => {
@@ -140,19 +125,15 @@ const EditorArea = React.forwardRef<EditorAreaHandle, EditorAreaProps>(({
           }
         };
         reader.readAsDataURL(blob);
-        return; // On arrête après avoir traité une image
+        return;
       }
     }
   };
 
-  // Tiptap gère désormais la sélection et le focus
-
   // Mise à jour de la taille de l'image sélectionnée
   const updateImageSize = (size: string) => {
     if (selectedImage && tiptapInstance) {
-      // On passe par Tiptap pour la mise à jour des attributs, ce qui déclenchera handleSelectionUpdate
       const currentStyle = selectedImage.getAttribute('style') || '';
-      // On remplace ou ajoute width
       let newStyle = currentStyle.replace(/width:[^;]+;?/, '').trim();
       newStyle += ` width: ${size}; height: auto;`;
 
@@ -187,7 +168,6 @@ const EditorArea = React.forwardRef<EditorAreaHandle, EditorAreaProps>(({
   // Suppression de l'image
   const deleteSelectedImage = () => {
     if (selectedImage) {
-      // Supprimer via Tiptap si possible
       if (tiptapInstance) {
         tiptapInstance.commands.deleteSelection();
       } else {
@@ -198,21 +178,16 @@ const EditorArea = React.forwardRef<EditorAreaHandle, EditorAreaProps>(({
     }
   };
 
-  // Tiptap gère désormais les changements via handleTiptapUpdate
-
   const handleSlashSelect = (command: any) => {
     if (!tiptapInstance) return;
 
-    // Supprimer le texte '/' et le filtre via Tiptap
     const { selection } = tiptapInstance.state;
     tiptapInstance.chain()
       .focus()
       .deleteRange({ from: slashTriggerIndex.current, to: selection.from })
       .run();
 
-    // Attendre un tick pour s'assurer que le contenu est mis à jour
     setTimeout(() => {
-      // Exécuter l'action
       if (command.id === 'image') {
         onInsertImage();
       } else if (command.id === 'part' && onAddPart) {
@@ -325,7 +300,7 @@ const EditorArea = React.forwardRef<EditorAreaHandle, EditorAreaProps>(({
     }
   };
 
-  // Nouvelle gestion Tiptap
+  // Gestion des mises à jour Tiptap
   const handleTiptapUpdate = (html: string, updateDocId: string) => {
     onChange(html, updateDocId);
 
@@ -358,12 +333,11 @@ const EditorArea = React.forwardRef<EditorAreaHandle, EditorAreaProps>(({
     onEditorReady?.(editor);
 
     const { selection } = editor.state;
+    
     // Détection de sélection d'image (NodeSelection)
     if (selection.node && selection.node.type.name === 'image') {
       const { view } = editor;
       const coords = view.coordsAtPos(selection.from);
-
-      // Essayer de récupérer le nœud DOM pour avoir la largeur exacte pour le centrage
       const domNode = view.nodeDOM(selection.from);
       const rect = domNode instanceof HTMLElement ? domNode.getBoundingClientRect() : null;
 
@@ -382,7 +356,6 @@ const EditorArea = React.forwardRef<EditorAreaHandle, EditorAreaProps>(({
       return;
     }
 
-    // Calculer position via Tiptap coordsAtPos (plus stable que le DOM direct)
     const { view } = editor;
     const fromCoords = view.coordsAtPos(selection.from);
     const toCoords = view.coordsAtPos(selection.to);
@@ -393,7 +366,6 @@ const EditorArea = React.forwardRef<EditorAreaHandle, EditorAreaProps>(({
     });
     setShowFloatingToolbar(true);
 
-    // États des formats via Tiptap
     setActiveFormats({
       bold: editor.isActive('bold'),
       italic: editor.isActive('italic'),
@@ -402,16 +374,11 @@ const EditorArea = React.forwardRef<EditorAreaHandle, EditorAreaProps>(({
     });
   };
 
-  // Gestionnaire pour s'assurer qu'on peut cliquer et focuser facilement
   const handleClick = (e: React.MouseEvent) => {
     const target = e.target as HTMLElement;
-
-    // Si on clique sur le fond gris ou à côté du papier blanc
-    // On focuse la fin du document, mais seulement si on ne clique pas sur un élément interactif
     const isInteractive = target.closest('button, a, input, [role="button"]');
 
     if (editorRef.current && !editorRef.current.contains(target) && !isInteractive) {
-      // Un petit setTimeout aide souvent à assurer que le focus est bien pris après les évènements de clic par défaut
       setTimeout(() => {
         if (tiptapInstance) {
           tiptapInstance.commands.focus('end');
@@ -433,11 +400,11 @@ const EditorArea = React.forwardRef<EditorAreaHandle, EditorAreaProps>(({
       >
         <div className="w-full h-full p-10">
           <TiptapEditor
-            key={docId} // ✅ FORCE LE RE-MONTAGE : Détruit l'ancien éditeur, crée un nouveau (ZÉRO FUITE)
+            key={docId}
             docId={docId}
             content={content}
             onChange={handleTiptapUpdate}
-            placeholder={internalPlaceholder}
+            placeholder={placeholder}
             readOnly={readOnly}
             textFormat={textFormat}
             collaboration={collaboration}
@@ -525,20 +492,17 @@ const EditorArea = React.forwardRef<EditorAreaHandle, EditorAreaProps>(({
         )}
       </div>
 
-
       <style jsx global>{`
         [contenteditable]:empty:before {
           content: attr(data-placeholder);
           color: #9CA3AF;
           pointer-events: none;
-          display: block; /* Important pour l'affichage */
+          display: block;
         }
-        /* Style pour la sélection */
         ::selection {
-            background-color: #99334C33; /* Rouge transparent */
+            background-color: #99334C33;
             color: inherit;
         }
-        /* Fix pour l'affichage des listes dans le contenteditable */
         [contenteditable] ul {
             list-style-type: disc !important;
             padding-left: 1.5rem !important;
@@ -554,7 +518,7 @@ const EditorArea = React.forwardRef<EditorAreaHandle, EditorAreaProps>(({
             margin-bottom: 0.25rem !important;
         }
       `}</style>
-    </div >
+    </div>
   );
 });
 
