@@ -21,6 +21,7 @@ import { documentService } from '@/services/documentService';
 import { projectService } from '@/services/projectService';
 import toast from 'react-hot-toast';
 import Link from 'next/link';
+import ConfirmationModal from '@/components/ConfirmationModal';
 
 const AccountPage = () => {
   const { user, isLoading, refreshUser } = useAuth();
@@ -85,6 +86,8 @@ const AccountPage = () => {
   const [activeTab, setActiveTab] = useState<'activity' | 'publications'>('activity');
   const [userDocuments, setUserDocuments] = useState<any[]>([]);
   const [isDeletingDoc, setIsDeletingDoc] = useState<string | null>(null);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [docToDelete, setDocToDelete] = useState<{ id: string, name: string } | null>(null);
 
   // Fetch stats on mount
   React.useEffect(() => {
@@ -158,18 +161,25 @@ const AccountPage = () => {
     }
   };
 
-  const handleDeletePublication = async (docId: string, docName: string) => {
-    if (!window.confirm(`Voulez-vous vraiment retirer "${docName}" de la bibliothèque ?`)) return;
+  const handleDeletePublication = (docId: string, docName: string) => {
+    setDocToDelete({ id: docId, name: docName });
+    setIsDeleteModalOpen(true);
+  };
 
-    setIsDeletingDoc(docId);
+  const handleConfirmDelete = async () => {
+    if (!docToDelete) return;
+
+    setIsDeleteModalOpen(false);
+    setIsDeletingDoc(docToDelete.id);
     try {
-      await documentService.deleteDocument(docId);
-      toast.success("Publication retirée");
+      await documentService.deleteDocument(docToDelete.id);
+      toast.success(`"${docToDelete.name}" a été retiré de la bibliothèque`);
       fetchDocuments();
     } catch (err) {
-      toast.error("Erreur lors de la suppression");
+      toast.error("Erreur lors de la dépublication");
     } finally {
       setIsDeletingDoc(null);
+      setDocToDelete(null);
     }
   };
 
@@ -761,6 +771,19 @@ const AccountPage = () => {
                 )}
               </div>
             )}
+
+            {/* Custom Confirmation Modal for Unpublishing */}
+            <ConfirmationModal
+              isOpen={isDeleteModalOpen}
+              onClose={() => setIsDeleteModalOpen(false)}
+              onConfirm={handleConfirmDelete}
+              title="Dépublier le projet"
+              message={`Êtes-vous sûr de vouloir retirer "${docToDelete?.name}" de la bibliothèque publique ? Cette version ne sera plus visible par les autres utilisateurs.`}
+              confirmLabel="Dépublier maintenant"
+              cancelLabel="Garder en ligne"
+              isDanger={true}
+              isLoading={!!isDeletingDoc}
+            />
           </div>
 
           {/* Colonne droite - Statistiques */}
