@@ -31,7 +31,7 @@ import EditorSkeletonView from './components/EditorSkeletonView';
 import PublishToMarketplaceModal from '@/components/Editor/PublishToMarketplaceModal';
 
 // Services & Utils
-import { structureService } from '@/services/structureService';
+import { structureService, Part } from '@/services/structureService';
 import { commentService } from '@/services/commentService';
 import { localPersistence } from '@/lib/localPersistence';
 //import '../../styles/view-transitions.css';
@@ -58,6 +58,9 @@ const XCCM2Editor = () => {
     hasUnsavedChanges, setHasUnsavedChanges,
     textFormat, setTextFormat,
     loadProject,
+    localContentCacheRef,
+    activeDocIdRef,
+    patchStructureWithCache,
     handleUpdateProjectSettings
   } = useEditorState(projectName);
 
@@ -396,8 +399,6 @@ const XCCM2Editor = () => {
 
   const editorRef = useRef<HTMLDivElement>(null);
 
-  // Cache local pour garantir que la mémoire est TOUJOURS la vérité (Règle n°1)
-  const localContentCacheRef = useRef<Record<string, string>>({});
   // Timer pour ignorer les messages "vides" au montage de l'éditeur (Anti-effacement)
   const lastDocChangeTimeRef = useRef<number>(0);
 
@@ -816,20 +817,22 @@ const XCCM2Editor = () => {
               structure={structure}
               width={sidebarWidth}
               onSelectNotion={(ctx) => {
-                // ✅ SNAPSHOT SYNCHRONE : On grave le texte actuel dans le cache AVANT de changer
-                if (currentContext) {
-                  const prevId = currentContext.notion?.notion_id || currentContext.part?.part_id;
-                  if (prevId) localContentCacheRef.current[prevId] = editorContent;
-                }
+                const targetNotionId = `notion-${ctx.notion.notion_id}`;
+                activeDocIdRef.current = targetNotionId;
+                lastDocChangeTimeRef.current = Date.now();
 
-                // Queue save en arrière-plan (persistance lente)
+                // Queue save en arrière-plan si nécessaire
                 if (hasUnsavedChanges && currentContext) {
-                  const latestContent = localContentCacheRef.current[currentContext.notion?.notion_id || currentContext.part?.part_id || ''] ?? editorContent;
+                  const currentId = currentContext.notion?.notion_id || currentContext.part?.part_id;
+                  const latestContent = (currentId ? localContentCacheRef.current[currentId] : null) ?? editorContent;
                   queueSave(currentContext, latestContent);
                 }
 
                 // Changement de contexte INSTANTANÉ
+                const nextId = `notion-${ctx.notion.notion_id}`;
+                activeDocIdRef.current = nextId;
                 lastDocChangeTimeRef.current = Date.now();
+
                 setCurrentContext({
                   type: 'notion',
                   projectName: projectData?.pr_name || '',
@@ -839,32 +842,36 @@ const XCCM2Editor = () => {
                   notionName: ctx.notionName,
                   notion: ctx.notion
                 });
+
                 // ✅ CHARGEMENT DEPUIS CACHE : On récupère ce qu'on a en RAM ou ce que le serveur donne
                 const cached = localContentCacheRef.current[ctx.notion.notion_id];
                 setEditorContent((cached ?? ctx.notion.notion_content) || '');
                 setHasUnsavedChanges(false);
               }}
               onSelectPart={(ctx) => {
-                // ✅ SNAPSHOT SYNCHRONE : On grave le texte actuel dans le cache AVANT de changer
-                if (currentContext) {
-                  const prevId = currentContext.notion?.notion_id || currentContext.part?.part_id;
-                  if (prevId) localContentCacheRef.current[prevId] = editorContent;
-                }
+                const targetPartId = `part-${ctx.part.part_id}`;
+                activeDocIdRef.current = targetPartId;
+                lastDocChangeTimeRef.current = Date.now();
 
-                // Queue save en arrière-plan (persistance lente)
+                // Queue save en arrière-plan si nécessaire
                 if (hasUnsavedChanges && currentContext) {
-                  const latestContent = localContentCacheRef.current[currentContext.notion?.notion_id || currentContext.part?.part_id || ''] ?? editorContent;
+                  const currentId = currentContext.notion?.notion_id || currentContext.part?.part_id;
+                  const latestContent = (currentId ? localContentCacheRef.current[currentId] : null) ?? editorContent;
                   queueSave(currentContext, latestContent);
                 }
 
                 // Changement de contexte INSTANTANÉ
+                const nextId = `part-${ctx.part.part_id}`;
+                activeDocIdRef.current = nextId;
                 lastDocChangeTimeRef.current = Date.now();
+
                 setCurrentContext({
                   type: 'part',
                   projectName: projectData?.pr_name || '',
                   partTitle: ctx.partTitle,
                   part: ctx.part
                 });
+
                 // ✅ CHARGEMENT DEPUIS CACHE
                 const cached = localContentCacheRef.current[ctx.part.part_id];
                 setEditorContent((cached ?? ctx.part.part_intro) || '');
@@ -876,6 +883,9 @@ const XCCM2Editor = () => {
                   queueSave(currentContext, editorContent);
                 }
                 // Changement de contexte INSTANTANÉ
+                const targetChapterId = `chapter-${cId}`;
+                activeDocIdRef.current = targetChapterId;
+
                 setCurrentContext({
                   type: 'chapter',
                   projectName: projectData?.pr_name || '',
@@ -883,7 +893,6 @@ const XCCM2Editor = () => {
                   chapterTitle: cTitle,
                   chapterId: cId
                 });
-                setEditorContent('');
                 setHasUnsavedChanges(false);
               }}
               onSelectParagraph={(pName, cTitle, paName, paId) => {
@@ -892,6 +901,9 @@ const XCCM2Editor = () => {
                   queueSave(currentContext, editorContent);
                 }
                 // Changement de contexte INSTANTANÉ
+                const targetParaId = `paragraph-${paId}`;
+                activeDocIdRef.current = targetParaId;
+
                 setCurrentContext({
                   type: 'paragraph',
                   projectName: projectData?.pr_name || '',
@@ -900,7 +912,6 @@ const XCCM2Editor = () => {
                   paraName: paName,
                   paraId: paId
                 });
-                setEditorContent('');
                 setHasUnsavedChanges(false);
               }}
               onPublishToMarketplace={handlePublishToMarketplace}
@@ -1004,36 +1015,64 @@ const XCCM2Editor = () => {
               })()}
               textFormat={textFormat}
               onChange={(val, updateDocId) => {
-                // ✅ RÈGLE D'OR : On ne jette plus rien de PRÉCIEUX.
                 const cleanId = updateDocId.replace('notion-', '').replace('part-', '');
                 if (!cleanId) return;
 
                 // --- LE GARDIEN DU CACHE ---
-                // Un éditeur n'a PAS le droit de vider son tiroir s'il vient de naître (mount-time ghost)
-                // ou s'il n'est plus le document actif.
                 const isValEmpty = val === '<p></p>' || val === '' || val.trim() === '';
-                const isMounting = (Date.now() - lastDocChangeTimeRef.current) < 150;
+                const isMounting = (Date.now() - lastDocChangeTimeRef.current) < 250; // Monté il y a < 250ms
+                const isActive = updateDocId === activeDocIdRef.current;
 
-                if (isValEmpty && (updateDocId !== synapseDocId || isMounting)) {
-                  console.log(`[Cache Guard] Blocked erasure of ${updateDocId} (Inactive or Mounting)`);
+                // On bloque les ordres d'effacement venant de fantômes ou au montage
+                if (isValEmpty && (!isActive || isMounting)) {
+                  console.log(`[Cache Guard] Blocked erasure of ${updateDocId} (Active:${isActive}, Mounting:${isMounting})`);
                   return;
                 }
 
-                // On range l'info dans son tiroir
+                // Toujours mettre à jour le cache RAM (Prio n°1)
                 localContentCacheRef.current[cleanId] = val;
 
-                // On ne met à jour l'affichage et la structure que si c'est le document actif
-                if (updateDocId === synapseDocId) {
+                // Mise à jour de l'UI uniquement si c'est le document que l'utilisateur regarde
+                if (isActive) {
                   setEditorContent(val);
                   setHasUnsavedChanges(true);
-
-                  // Ancrage dans la structure (Source de Vérité en RAM)
-                  if (currentContext?.type === 'notion' && currentContext.notion) {
-                    currentContext.notion.notion_content = val;
-                  } else if (currentContext?.type === 'part' && currentContext.part) {
-                    currentContext.part.part_intro = val;
-                  }
                 }
+
+                // ANCRAGE STRUCTUREL : Mise à jour de la structure de façon IMMUABLE
+                // On utilise setStructure pour que React détecte le changement (Prio n°2)
+                setStructure((prev: Part[]) => {
+                  return prev.map(p => {
+                    if (p.part_id === cleanId) return { ...p, part_intro: val };
+
+                    const hasChapter = p.chapters?.some(c =>
+                      c.paragraphs?.some(pa => pa.notions?.some(n => n.notion_id === cleanId))
+                    );
+
+                    if (!hasChapter && !p.chapters?.some(c => c.chapter_id === cleanId)) return p;
+
+                    return {
+                      ...p,
+                      chapters: p.chapters?.map(c => {
+                        const hasPara = c.paragraphs?.some(pa => pa.notions?.some(n => n.notion_id === cleanId));
+                        if (!hasPara && !c.paragraphs?.some(pa => pa.para_id === cleanId)) return c;
+
+                        return {
+                          ...c,
+                          paragraphs: c.paragraphs?.map(pa => {
+                            const notion = pa.notions?.find(n => n.notion_id === cleanId);
+                            if (notion) {
+                              return {
+                                ...pa,
+                                notions: pa.notions?.map((n: any) => n.notion_id === cleanId ? { ...n, notion_content: val } : n)
+                              };
+                            }
+                            return pa;
+                          })
+                        };
+                      })
+                    };
+                  });
+                });
               }}
               onEditorReady={setTiptapEditor}
               onDrop={handleDropGranule}

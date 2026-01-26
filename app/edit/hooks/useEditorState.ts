@@ -43,6 +43,43 @@ export const useEditorState = (projectName: string | null) => {
 
     const lastRenamedTo = useRef<string | null>(null);
 
+    // 🔑 SOURCE DE VÉRITÉ : Cache local centralisé
+    const localContentCacheRef = useRef<Record<string, string>>({});
+    // Verrou d'identité synchrone
+    const activeDocIdRef = useRef<string>('');
+
+    // Fonction de fusion déterministe (Local Dominance)
+    const patchStructureWithCache = useCallback((parts: Part[]): Part[] => {
+        return parts.map(part => {
+            const patchedPart = { ...part };
+            const cachedIntro = localContentCacheRef.current[part.part_id];
+            if (cachedIntro !== undefined) patchedPart.part_intro = cachedIntro;
+
+            if (part.chapters) {
+                patchedPart.chapters = part.chapters.map(chapter => {
+                    const patchedChapter = { ...chapter };
+                    if (chapter.paragraphs) {
+                        patchedChapter.paragraphs = chapter.paragraphs.map(para => {
+                            const patchedPara = { ...para };
+                            if (para.notions) {
+                                patchedPara.notions = para.notions.map(notion => {
+                                    const cachedNotion = localContentCacheRef.current[notion.notion_id];
+                                    if (cachedNotion !== undefined) {
+                                        return { ...notion, notion_content: cachedNotion };
+                                    }
+                                    return notion;
+                                });
+                            }
+                            return patchedPara;
+                        });
+                    }
+                    return patchedChapter;
+                });
+            }
+            return patchedPart;
+        });
+    }, []);
+
     const fetchComments = useCallback(async () => {
         if (!projectName) return;
         try {
@@ -68,8 +105,11 @@ export const useEditorState = (projectName: string | null) => {
 
             fetchComments();
 
-            const parts = await structureService.getProjectStructureOptimized(project.pr_name);
-            setStructure(parts);
+            const rawParts = await structureService.getProjectStructureOptimized(project.pr_name);
+
+            // ✅ APPLICATION DE LA RÈGLE D'OR : Fusion déterministe
+            const patchedParts = patchStructureWithCache(rawParts);
+            setStructure(patchedParts);
 
             if (!isSilent) setIsLoading(false);
         } catch (err: any) {
@@ -81,7 +121,7 @@ export const useEditorState = (projectName: string | null) => {
             setError(err.message || 'Erreur lors du chargement du projet');
             if (!isSilent) setIsLoading(false);
         }
-    }, [projectName, fetchComments]);
+    }, [projectName, fetchComments, patchStructureWithCache]);
 
     const handleUpdateProjectSettings = async (data: Partial<Project>, router: any) => {
         if (!projectData || !projectName) return;
@@ -144,6 +184,9 @@ export const useEditorState = (projectName: string | null) => {
         fetchComments,
         loadProject,
         lastRenamedTo,
+        localContentCacheRef,
+        activeDocIdRef,
+        patchStructureWithCache,
         handleUpdateProjectSettings,
         handleToggleLike
     };
