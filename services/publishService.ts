@@ -21,7 +21,7 @@ class PublishService {
     return null;
   }
 
-  async publishProject(projectName: string, format: 'pdf' | 'docx' = 'pdf', docName?: string, coverImage?: string): Promise<any> {
+  async publishProject(projectName: string, format: 'pdf' | 'docx' = 'pdf', docName?: string, coverImage?: string, description?: string, category?: string): Promise<any> {
     try {
       const token = this.getAuthToken();
       if (!token) throw new Error('Non authentifié');
@@ -37,7 +37,9 @@ class PublishService {
           body: JSON.stringify({
             format,
             doc_name: docName,
-            cover_image: coverImage
+            cover_image: coverImage,
+            description,
+            category
           })
         }
       );

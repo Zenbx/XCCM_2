@@ -54,6 +54,8 @@ const PreviewPage = () => {
     const [publishSuccess, setPublishSuccess] = useState<{ doc_id: string; doc_name: string } | null>(null);
     const [snapshotName, setSnapshotName] = useState('');
     const [coverImageUrl, setCoverImageUrl] = useState('');
+    const [publishDescription, setPublishDescription] = useState('');
+    const [publishCategory, setPublishCategory] = useState('');
 
     // Template States
     const [showTemplateDialog, setShowTemplateDialog] = useState(false);
@@ -149,16 +151,28 @@ const PreviewPage = () => {
         setShowPublishMenu(false);
 
         try {
-            const result = await publishService.publishProject(projectName, publishFormat, snapshotName, coverImageUrl);
+            const result = await publishService.publishProject(
+                projectName,
+                publishFormat,
+                snapshotName,
+                coverImageUrl,
+                publishDescription,
+                publishCategory
+            );
             setPublishSuccess({
                 doc_id: result.doc_id,
                 doc_name: result.doc_name
             });
             toast.success("Publication réussie !");
             setShowFormatDialog(false);
-        } catch (error) {
+        } catch (error: any) {
             console.error('Erreur lors de la publication:', error);
-            toast.error(`Erreur lors de la publication: ${error instanceof Error ? error.message : 'Erreur inconnue'}`);
+            const errMsg = error.message || '';
+            if (errMsg.includes('already exists') || errMsg.includes('déjà utilisé')) {
+                toast.error("⚠️ Ce nom de document est déjà utilisé. Veuillez en choisir un autre.");
+            } else {
+                toast.error(`Erreur lors de la publication: ${errMsg || 'Erreur inconnue'}`);
+            }
         } finally {
             setIsPublishing(false);
         }
@@ -901,96 +915,114 @@ const PreviewPage = () => {
                 </div>
             </div>
 
-            {/* Format Selection Dialog */}
             {showFormatDialog && (
-                <div className="fixed inset-0 z-70 bg-black/50 flex items-center justify-center">
-                    <div className="bg-white rounded-xl shadow-2xl p-8 max-w-sm w-full mx-4">
-                        <h2 className="text-2xl font-bold text-gray-900 mb-4">Choisir le format de publication</h2>
-                        <p className="text-gray-600 text-sm mb-6">Sélectionnez le format dans lequel vous souhaitez publier votre document.</p>
+                <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        className="bg-white rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden"
+                    >
+                        <div className="p-6 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
+                            <div>
+                                <h2 className="text-xl font-bold text-gray-900">Publier votre document</h2>
+                                <p className="text-xs text-gray-500 mt-1">Configurez les métadonnées de votre publication</p>
+                            </div>
+                            <button onClick={() => setShowFormatDialog(false)} className="p-2 hover:bg-gray-200 rounded-full transition-colors">
+                                <X size={20} className="text-gray-400" />
+                            </button>
+                        </div>
 
-                        <div className="space-y-3 mb-6">
-                            <label className="flex items-center p-4 border-2 rounded-lg cursor-pointer transition-all"
-                                style={{ borderColor: publishFormat === 'pdf' ? '#99334C' : '#e5e7eb', backgroundColor: publishFormat === 'pdf' ? '#99334c0a' : 'transparent' }}>
+                        <div className="p-6 space-y-5 max-h-[70vh] overflow-y-auto">
+                            {/* Nom du document */}
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-2">Nom du document</label>
                                 <input
-                                    type="radio"
-                                    name="format"
-                                    value="pdf"
-                                    checked={publishFormat === 'pdf'}
-                                    onChange={(e) => setPublishFormat(e.target.value as 'pdf' | 'docx')}
-                                    className="mr-3"
+                                    type="text"
+                                    value={snapshotName}
+                                    onChange={(e) => setSnapshotName(e.target.value)}
+                                    placeholder="Ex: Guide Expert - Design System"
+                                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#99334C]/20 focus:border-[#99334C] transition-all outline-none"
                                 />
-                                <div>
-                                    <div className="font-medium text-gray-900">PDF</div>
-                                    <div className="text-xs text-gray-600">Format universel, lecture seule</div>
-                                </div>
-                            </label>
+                            </div>
 
-                            <label className="flex items-center p-4 border-2 rounded-lg cursor-pointer transition-all"
-                                style={{ borderColor: publishFormat === 'docx' ? '#99334C' : '#e5e7eb', backgroundColor: publishFormat === 'docx' ? '#99334c0a' : 'transparent' }}>
+                            {/* Catégorie et Format */}
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 mb-2">Catégorie</label>
+                                    <input
+                                        type="text"
+                                        value={publishCategory}
+                                        onChange={(e) => setPublishCategory(e.target.value)}
+                                        placeholder="Ex: Éducation, Tech..."
+                                        className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#99334C]/20 focus:border-[#99334C] transition-all outline-none"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 mb-2">Format</label>
+                                    <select
+                                        value={publishFormat}
+                                        onChange={(e) => setPublishFormat(e.target.value as 'pdf' | 'docx')}
+                                        className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#99334C]/20 focus:border-[#99334C] transition-all outline-none"
+                                    >
+                                        <option value="pdf">PDF (Lecture seule)</option>
+                                        <option value="docx">DOCX (Éditable)</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            {/* Description */}
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-2">Description</label>
+                                <textarea
+                                    value={publishDescription}
+                                    onChange={(e) => setPublishDescription(e.target.value)}
+                                    placeholder="Décrivez brièvement le contenu de ce document..."
+                                    rows={3}
+                                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#99334C]/20 focus:border-[#99334C] transition-all outline-none resize-none"
+                                />
+                            </div>
+
+                            {/* Image de couverture (Optionnel) */}
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                                    URL de couverture <span className="text-[10px] font-normal text-gray-400 uppercase tracking-wider">(Optionnel)</span>
+                                </label>
                                 <input
-                                    type="radio"
-                                    name="format"
-                                    value="docx"
-                                    checked={publishFormat === 'docx'}
-                                    onChange={(e) => setPublishFormat(e.target.value as 'pdf' | 'docx')}
-                                    className="mr-3"
+                                    type="text"
+                                    value={coverImageUrl}
+                                    onChange={(e) => setCoverImageUrl(e.target.value)}
+                                    placeholder="https://exemple.com/image.jpg"
+                                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#99334C]/20 focus:border-[#99334C] transition-all outline-none"
                                 />
-                                <div>
-                                    <div className="font-medium text-gray-900">DOCX</div>
-                                    <div className="text-xs text-gray-600">Format Word, éditable</div>
-                                </div>
-                            </label>
+                            </div>
                         </div>
 
-                        <div className="mb-6">
-                            <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                Nom du Snapshot (Version)
-                            </label>
-                            <input
-                                type="text"
-                                value={snapshotName}
-                                onChange={(e) => setSnapshotName(e.target.value)}
-                                placeholder="ex: Version Bêta 1.0"
-                                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-700 focus:ring-2 focus:ring-[#99334C]/20 focus:border-[#99334C] transition-all"
-                            />
-                            <p className="text-[10px] text-gray-400 mt-1 italic">
-                                Ce nom sera affiché dans la bibliothèque.
-                            </p>
-                        </div>
-
-                        <div className="mb-6">
-                            <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                Image de couverture (URL)
-                            </label>
-                            <input
-                                type="text"
-                                value={coverImageUrl}
-                                onChange={(e) => setCoverImageUrl(e.target.value)}
-                                placeholder="https://exemple.com/image.jpg"
-                                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-700 focus:ring-2 focus:ring-[#99334C]/20 focus:border-[#99334C] transition-all"
-                            />
-                            <p className="text-[10px] text-gray-400 mt-1 italic">
-                                Optionnel. Remplace l'icône de base sur la première page.
-                            </p>
-                        </div>
-
-                        <div className="flex gap-3">
+                        <div className="p-6 bg-gray-50/50 border-t border-gray-100 flex gap-3">
                             <button
                                 onClick={() => setShowFormatDialog(false)}
-                                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+                                className="flex-1 px-6 py-3 bg-white border border-gray-200 text-gray-700 rounded-xl font-bold hover:bg-gray-50 transition-all"
                             >
                                 Annuler
                             </button>
                             <button
                                 onClick={handlePublishOnline}
-                                disabled={isPublishing}
-                                className="flex-1 px-4 py-2 bg-gradient-to-r from-[#99334C] to-[#DC3545] text-white rounded-lg hover:shadow-lg transition-all font-medium disabled:opacity-50 flex items-center justify-center gap-2"
+                                disabled={isPublishing || !snapshotName.trim()}
+                                className="flex-[2] px-6 py-3 bg-gradient-to-r from-[#99334C] to-[#DC3545] text-white rounded-xl font-bold shadow-lg shadow-[#99334C]/20 hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 disabled:scale-100 flex items-center justify-center gap-2"
                             >
-                                {isPublishing && <Loader2 size={16} className="animate-spin" />}
-                                Publier
+                                {isPublishing ? (
+                                    <>
+                                        <Loader2 size={20} className="animate-spin" />
+                                        Publication...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Globe size={20} />
+                                        Publier maintenant
+                                    </>
+                                )}
                             </button>
                         </div>
-                    </div>
+                    </motion.div>
                 </div>
             )}
 

@@ -162,6 +162,26 @@ class DocumentService {
       throw error;
     }
   }
+
+  async deleteDocument(docId: string): Promise<void> {
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/api/documents/${docId}`,
+        {
+          method: 'DELETE',
+          headers: getAuthHeaders()
+        }
+      );
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Erreur lors de la suppression');
+      }
+    } catch (error) {
+      console.error('deleteDocument error:', error);
+      throw error;
+    }
+  }
 }
 
 export const documentService = new DocumentService();
