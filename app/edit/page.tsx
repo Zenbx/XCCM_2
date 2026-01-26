@@ -398,6 +398,8 @@ const XCCM2Editor = () => {
 
   // Cache local pour garantir que la mémoire est TOUJOURS la vérité (Règle n°1)
   const localContentCacheRef = useRef<Record<string, string>>({});
+  // Timer pour ignorer les messages "vides" au montage de l'éditeur (Anti-effacement)
+  const lastDocChangeTimeRef = useRef<number>(0);
 
   // Handlers pour la structure (TOC)
   const handleRenameGranule = async (type: string, id: string, oldTitle: string, newTitle: string) => {
@@ -827,6 +829,7 @@ const XCCM2Editor = () => {
                 }
 
                 // Changement de contexte INSTANTANÉ
+                lastDocChangeTimeRef.current = Date.now();
                 setCurrentContext({
                   type: 'notion',
                   projectName: projectData?.pr_name || '',
@@ -855,6 +858,7 @@ const XCCM2Editor = () => {
                 }
 
                 // Changement de contexte INSTANTANÉ
+                lastDocChangeTimeRef.current = Date.now();
                 setCurrentContext({
                   type: 'part',
                   projectName: projectData?.pr_name || '',
@@ -1005,11 +1009,13 @@ const XCCM2Editor = () => {
                 if (!cleanId) return;
 
                 // --- LE GARDIEN DU CACHE ---
-                // Si l'éditeur n'est plus actif, il n'a PAS le droit de vider son tiroir.
-                // S'il envoie du vide, on vérifie qu'il est encore "le roi" (le doc affiché).
+                // Un éditeur n'a PAS le droit de vider son tiroir s'il vient de naître (mount-time ghost)
+                // ou s'il n'est plus le document actif.
                 const isValEmpty = val === '<p></p>' || val === '' || val.trim() === '';
-                if (isValEmpty && updateDocId !== synapseDocId) {
-                  console.log(`[Cache Guard] Blocked erasure of ${updateDocId} by ghost message.`);
+                const isMounting = (Date.now() - lastDocChangeTimeRef.current) < 150;
+
+                if (isValEmpty && (updateDocId !== synapseDocId || isMounting)) {
+                  console.log(`[Cache Guard] Blocked erasure of ${updateDocId} (Inactive or Mounting)`);
                   return;
                 }
 
