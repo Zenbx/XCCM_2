@@ -33,6 +33,7 @@ import PublishToMarketplaceModal from '@/components/Editor/PublishToMarketplaceM
 // Services & Utils
 import { structureService } from '@/services/structureService';
 import { commentService } from '@/services/commentService';
+import { localPersistence } from '@/lib/localPersistence';
 //import '../../styles/view-transitions.css';
 
 const XCCM2Editor = () => {
@@ -530,26 +531,106 @@ const XCCM2Editor = () => {
     };
   }, [synapseDocId, provider, yDoc, authUser]);
 
-  // Action: Save
-  const handleSave = async (isAuto = false, contextOverride?: typeof currentContext, contentOverride?: string) => {
-    const saveContext = contextOverride || currentContext;
-    const saveContent = contentOverride !== undefined ? contentOverride : editorContent;
+  // ============= NON-BLOCKING AUTO-SAVE ARCHITECTURE =============
 
-    if (!saveContext || !projectName) return;
-    console.log(`[Save] Saving ${saveContext.type} "${saveContext.notionName || saveContext.partTitle}"...`, { isAuto, contentLength: saveContent.length });
+  // Change Buffer: Queue de modifications à sauvegarder
+  const changeBufferRef = useRef<{
+    context: typeof currentContext;
+    content: string;
+    timestamp: number;
+  }[]>([]);
+
+  // File d'attente pour la sauvegarde (non-bloquant)
+  const queueSave = useCallback((ctx: typeof currentContext, content: string) => {
+    if (!ctx) return;
+
+    // ✅ RÈGLE N°6 : Écrire localement AVANT d'envoyer au serveur (Write-Ahead Log)
+    localPersistence.writeChange({
+      contextType: ctx.type === 'notion' ? 'notion' : 'part',
+      contextId: ctx.notion?.notion_id || ctx.part?.part_id || '',
+      content: content,
+      timestamp: Date.now()
+    }).catch(err => {
+      // Fallback localStorage si IndexedDB échoue
+      localPersistence.writeChangeToLocalStorage({
+        contextType: ctx.type === 'notion' ? 'notion' : 'part',
+        contextId: ctx.notion?.notion_id || ctx.part?.part_id || '',
+        content: content,
+        timestamp: Date.now()
+      });
+    });
+
+    changeBufferRef.current.push({
+      context: JSON.parse(JSON.stringify(ctx)), // Deep copy pour éviter mutations
+      content: content,
+      timestamp: Date.now()
+    });
+  }, []);
+
+  // Fonction de sauvegarde réelle (backend only, pas de reload)
+  const saveToBackend = async (ctx: typeof currentContext, content: string) => {
+    if (!ctx || !projectName) return;
+
+    try {
+      if (ctx.type === 'notion' && ctx.notionName) {
+        await structureService.updateNotion(
+          projectName,
+          ctx.partTitle,
+          ctx.chapterTitle!,
+          ctx.paraName!,
+          ctx.notionName,
+          { notion_content: content }
+        );
+        // Mettre à jour state local immédiatement (pas de reload serveur)
+        if (ctx.notion) ctx.notion.notion_content = content;
+      } else if (ctx.type === 'part' && ctx.partTitle) {
+        await structureService.updatePart(
+          projectName,
+          ctx.partTitle,
+          { part_intro: content }
+        );
+        // Mettre à jour state local immédiatement (pas de reload serveur)
+        if (ctx.part) ctx.part.part_intro = content;
+      }
+    } catch (err: any) {
+      console.error('[Save] Failed:', err);
+      // En cas d'échec, la modification reste dans le buffer et sera retentée
+      throw err;
+    }
+  };
+
+  // Worker de sauvegarde en arrière-plan (toutes les 2 secondes)
+  useEffect(() => {
+    const saveWorker = setInterval(async () => {
+      if (changeBufferRef.current.length === 0) return;
+
+      const toSave = changeBufferRef.current.shift(); // FIFO
+      if (!toSave) return;
+
+      setIsSaving(true);
+      try {
+        await saveToBackend(toSave.context, toSave.content);
+        // Succès : pas de notification pour auto-save silencieux
+      } catch (err) {
+        // Échec : remettre en queue pour retry
+        changeBufferRef.current.unshift(toSave);
+        console.warn('[Save Worker] Retry scheduled');
+      } finally {
+        setIsSaving(false);
+      }
+    }, 2000);
+
+    return () => clearInterval(saveWorker);
+  }, [projectName]);
+
+  // Fonction publique handleSave (pour Ctrl+S manuel)
+  const handleSave = async (isAuto = false) => {
+    if (!currentContext || !projectName) return;
+
     try {
       setIsSaving(true);
-      if (saveContext.type === 'notion' && saveContext.notionName) {
-        console.log(`[Save] Updating Notion: ${saveContext.notionName} in ${saveContext.paraName}`);
-        await structureService.updateNotion(projectName, saveContext.partTitle, saveContext.chapterTitle!, saveContext.paraName!, saveContext.notionName!, { notion_content: saveContent });
-        if (saveContext.notion) saveContext.notion.notion_content = saveContent;
-      } else if (saveContext.type === 'part' && saveContext.partTitle) {
-        await structureService.updatePart(projectName, saveContext.partTitle, { part_intro: saveContent });
-        if (saveContext.part) saveContext.part.part_intro = saveContent;
-      }
+      await saveToBackend(currentContext, editorContent);
       setHasUnsavedChanges(false);
-      // Synchronisation locale de la structure pour éviter le contenu obsolète au retour
-      setStructure([...structure]);
       if (!isAuto) toast.success('Sauvegardé !');
     } catch (err: any) {
       toast.error(err.message || "Erreur de sauvegarde");
@@ -587,33 +668,67 @@ const XCCM2Editor = () => {
   });
 
   // Lifecycle
-  useEffect(() => { loadProject(); }, [projectName]);
+  useEffect(() => {
+    loadProject();
+
+    // ✅ RÈGLE N°6 : Rejouer les changements non synchronisés au chargement (Crash Recovery)
+    const recoverUnsyncedChanges = async () => {
+      try {
+        const unsynced = await localPersistence.getUnsyncedChanges();
+        if (unsynced.length > 0) {
+          console.log(`[Recovery] Found ${unsynced.length} unsynced changes, replaying...`);
+          toast.success(`🔄 Récupération de ${unsynced.length} modification(s) non sauvegardée(s)`);
+
+          // Ajouter au buffer pour sauvegarde
+          unsynced.forEach(change => {
+            changeBufferRef.current.push({
+              context: {
+                type: change.contextType === 'notion' ? 'notion' : 'part',
+                notion: change.contextType === 'notion' ? { notion_id: change.contextId } : undefined,
+                part: change.contextType === 'part' ? { part_id: change.contextId } : undefined
+              } as any,
+              content: change.content,
+              timestamp: change.timestamp
+            });
+          });
+        }
+      } catch (err) {
+        console.error('[Recovery] Failed:', err);
+      }
+    };
+
+    recoverUnsyncedChanges();
+  }, [projectName]);
 
   /* 
-    // Content External Sync
-    useEffect(() => {
-      if (!structure || structure.length === 0) return;
-      if (currentContext?.type === 'notion' && currentContext.notionName) {
-        const findNotion = () => {
-          for (const part of structure) {
-            for (const chapter of part.chapters || []) {
-              for (const para of chapter.paragraphs || []) {
-                const found = para.notions?.find(n => n.notion_id === currentContext.notion?.notion_id);
-                if (found) return found;
-              }
+   * DÉSACTIVÉ: Content External Sync
+   * Incompatible avec l'architecture local-first.
+   * Le state local est la source de vérité pendant l'édition.
+   */
+  /*
+  useEffect(() => {
+    if (!structure || structure.length === 0) return;
+    if (currentContext?.type === 'notion' && currentContext.notionName) {
+      const findNotion = () => {
+        for (const part of structure) {
+          for (const chapter of part.chapters || []) {
+            for (const para of chapter.paragraphs || []) {
+              const found = para.notions?.find(n => n.notion_id === currentContext.notion?.notion_id);
+              if (found) return found;
             }
           }
-          return null;
-        };
-        const foundNotion = findNotion();
-        if (foundNotion) {
-          if (foundNotion.notion_content !== editorContent && !hasUnsavedChanges) {
-            setEditorContent(foundNotion.notion_content || '');
-          }
+        }
+        return null;
+      };
+      const foundNotion = findNotion();
+      if (foundNotion) {
+        if (foundNotion.notion_content !== editorContent && !hasUnsavedChanges) {
+          setEditorContent(foundNotion.notion_content || '');
         }
       }
-    }, [structure]);
-    */
+    }
+  }, [structure]);
+  */
 
   // Socratic Debounce
   useEffect(() => {
@@ -622,14 +737,15 @@ const XCCM2Editor = () => {
 
   // AUTO-SAVE: Debounced automatic save every 5 seconds of inactivity
   useEffect(() => {
-    if (hasUnsavedChanges && !isSaving && !isImporting) {
+    if (hasUnsavedChanges && !isSaving && !isImporting && currentContext) {
       const timer = setTimeout(() => {
-        console.log("Auto-saving...");
-        handleSave(true);
+        console.log("[Auto-save] Queuing save...");
+        queueSave(currentContext, editorContent);
+        setHasUnsavedChanges(false);
       }, 5000);
       return () => clearTimeout(timer);
     }
-  }, [editorContent, hasUnsavedChanges, isSaving, isImporting]);
+  }, [editorContent, hasUnsavedChanges, isSaving, isImporting, currentContext, queueSave]);
 
   // Resizing Logic - Exclusive to TOC Sidebar
   useEffect(() => {
@@ -675,8 +791,12 @@ const XCCM2Editor = () => {
               projectName={projectName || ''}
               structure={structure}
               width={sidebarWidth}
-              onSelectNotion={async (ctx) => {
-                if (hasUnsavedChanges) await handleSave(true);
+              onSelectNotion={(ctx) => {
+                // Queue save en arrière-plan si nécessaire (NON-BLOQUANT)
+                if (hasUnsavedChanges && currentContext) {
+                  queueSave(currentContext, editorContent);
+                }
+                // Changement de contexte INSTANTANÉ
                 setCurrentContext({
                   type: 'notion',
                   projectName: projectData?.pr_name || '',
@@ -689,8 +809,12 @@ const XCCM2Editor = () => {
                 setEditorContent(ctx.notion.notion_content || '');
                 setHasUnsavedChanges(false);
               }}
-              onSelectPart={async (ctx) => {
-                if (hasUnsavedChanges) await handleSave(true);
+              onSelectPart={(ctx) => {
+                // Queue save en arrière-plan si nécessaire (NON-BLOQUANT)
+                if (hasUnsavedChanges && currentContext) {
+                  queueSave(currentContext, editorContent);
+                }
+                // Changement de contexte INSTANTANÉ
                 setCurrentContext({
                   type: 'part',
                   projectName: projectData?.pr_name || '',
@@ -700,8 +824,12 @@ const XCCM2Editor = () => {
                 setEditorContent(ctx.part.part_intro || '');
                 setHasUnsavedChanges(false);
               }}
-              onSelectChapter={async (pName, cTitle, cId) => {
-                if (hasUnsavedChanges) await handleSave(true);
+              onSelectChapter={(pName, cTitle, cId) => {
+                // Queue save en arrière-plan si nécessaire (NON-BLOQUANT)
+                if (hasUnsavedChanges && currentContext) {
+                  queueSave(currentContext, editorContent);
+                }
+                // Changement de contexte INSTANTANÉ
                 setCurrentContext({
                   type: 'chapter',
                   projectName: projectData?.pr_name || '',
@@ -712,8 +840,12 @@ const XCCM2Editor = () => {
                 setEditorContent('');
                 setHasUnsavedChanges(false);
               }}
-              onSelectParagraph={async (pName, cTitle, paName, paId) => {
-                if (hasUnsavedChanges) await handleSave(true);
+              onSelectParagraph={(pName, cTitle, paName, paId) => {
+                // Queue save en arrière-plan si nécessaire (NON-BLOQUANT)
+                if (hasUnsavedChanges && currentContext) {
+                  queueSave(currentContext, editorContent);
+                }
+                // Changement de contexte INSTANTANÉ
                 setCurrentContext({
                   type: 'paragraph',
                   projectName: projectData?.pr_name || '',
