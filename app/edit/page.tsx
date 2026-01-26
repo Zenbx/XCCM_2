@@ -538,6 +538,7 @@ const XCCM2Editor = () => {
 
   // Change Buffer: Queue de modifications à sauvegarder
   const changeBufferRef = useRef<{
+    id: string; // ✅ ID unique pour réconciliation WAL
     context: typeof currentContext;
     content: string;
     timestamp: number;
@@ -547,32 +548,40 @@ const XCCM2Editor = () => {
   const queueSave = useCallback((ctx: typeof currentContext, content: string) => {
     if (!ctx) return;
 
+    const timestamp = Date.now();
+    const contextId = ctx.notion?.notion_id || ctx.part?.part_id || 'unknown';
+    const changeId = `${ctx.type}-${contextId}-${timestamp}`;
+
     // ✅ RÈGLE N°6 : Écrire localement AVANT d'envoyer au serveur (Write-Ahead Log)
     localPersistence.writeChange({
+      id: changeId,
       contextType: ctx.type === 'notion' ? 'notion' : 'part',
-      contextId: ctx.notion?.notion_id || ctx.part?.part_id || '',
+      contextId: contextId,
       content: content,
-      timestamp: Date.now()
+      timestamp: timestamp
     }).catch(err => {
       // Fallback localStorage si IndexedDB échoue
       localPersistence.writeChangeToLocalStorage({
+        id: changeId,
         contextType: ctx.type === 'notion' ? 'notion' : 'part',
-        contextId: ctx.notion?.notion_id || ctx.part?.part_id || '',
+        contextId: contextId,
         content: content,
-        timestamp: Date.now()
+        timestamp: timestamp
       });
     });
 
     changeBufferRef.current.push({
+      id: changeId,
       context: JSON.parse(JSON.stringify(ctx)), // Deep copy pour éviter mutations
       content: content,
-      timestamp: Date.now()
+      timestamp: timestamp
     });
   }, []);
 
   // Fonction de sauvegarde réelle (backend only, pas de reload)
   const saveToBackend = async (ctx: typeof currentContext, content: string) => {
     if (!ctx || !projectName) return;
+    // ... rest of the function remains the same but accepts ctx
 
     try {
       if (ctx.type === 'notion' && ctx.notionName) {
@@ -613,6 +622,10 @@ const XCCM2Editor = () => {
       setIsSaving(true);
       try {
         await saveToBackend(toSave.context, toSave.content);
+
+        // ✅ Marquer comme synchronisé dans le WAL (Règle n°6)
+        await localPersistence.markAsSynced(toSave.id);
+
         // Succès : pas de notification pour auto-save silencieux
       } catch (err) {
         // Échec : remettre en queue pour retry
@@ -682,11 +695,15 @@ const XCCM2Editor = () => {
           console.log(`[Recovery] Found ${unsynced.length} unsynced changes, replaying...`);
           toast.success(`🔄 Récupération de ${unsynced.length} modification(s) non sauvegardée(s)`);
 
+          // Trier chronologiquement pour appliquer les modifs dans le bon ordre
+          const sortedChanges = [...unsynced].sort((a, b) => a.timestamp - b.timestamp);
+
           // Ajouter au cache local (POUR CHARGEMENT IMMÉDIAT) et au buffer
-          unsynced.forEach(change => {
+          sortedChanges.forEach(change => {
             localContentCacheRef.current[change.contextId] = change.content;
 
             changeBufferRef.current.push({
+              id: change.id, // ✅ Garder l'id original pour marquer comme sync plus tard
               context: {
                 type: change.contextType === 'notion' ? 'notion' : 'part',
                 notion: change.contextType === 'notion' ? { notion_id: change.contextId } : undefined,

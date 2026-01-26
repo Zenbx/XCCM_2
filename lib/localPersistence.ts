@@ -45,11 +45,10 @@ class LocalPersistence {
     /**
      * Sauvegarder un changement localement (Write-Ahead)
      */
-    async writeChange(change: Omit<LocalChange, 'id' | 'synced'>): Promise<void> {
+    async writeChange(change: Omit<LocalChange, 'synced'>): Promise<void> {
         if (!this.db) await this.init();
 
         const fullChange: LocalChange = {
-            id: `${change.contextType}-${change.contextId}-${Date.now()}`,
             ...change,
             synced: false
         };
@@ -139,14 +138,13 @@ class LocalPersistence {
     /**
      * Fallback localStorage (si IndexedDB indisponible)
      */
-    async writeChangeToLocalStorage(change: Omit<LocalChange, 'id' | 'synced'>): Promise<void> {
+    async writeChangeToLocalStorage(change: Omit<LocalChange, 'synced'>): Promise<void> {
         try {
-            const key = `wal-${change.contextType}-${change.contextId}`;
+            const key = change.id;
             const existing = localStorage.getItem('xccm-wal') || '{}';
             const wal = JSON.parse(existing);
             wal[key] = {
                 ...change,
-                timestamp: Date.now(),
                 synced: false
             };
             localStorage.setItem('xccm-wal', JSON.stringify(wal));
