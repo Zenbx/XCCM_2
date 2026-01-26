@@ -114,7 +114,7 @@ const EditorArea: React.FC<EditorAreaProps> = ({
           if (event.target?.result) {
             const img = `<img src="${event.target.result}" style="max-width: 100%; height: auto; display: block; margin: 0 auto;" />`;
             tiptapInstance?.chain().focus().insertContent(img).run();
-            handleTiptapUpdate(tiptapInstance?.getHTML() || '');
+            handleTiptapUpdate(tiptapInstance?.getHTML() || '', docId);
           }
         };
         reader.readAsDataURL(blob);
@@ -135,7 +135,7 @@ const EditorArea: React.FC<EditorAreaProps> = ({
       newStyle += ` width: ${size}; height: auto;`;
 
       tiptapInstance.chain().focus().updateAttributes('image', { style: newStyle }).run();
-      handleTiptapUpdate(tiptapInstance.getHTML());
+      handleTiptapUpdate(tiptapInstance.getHTML(), docId);
     }
   };
 
@@ -158,7 +158,7 @@ const EditorArea: React.FC<EditorAreaProps> = ({
       }
 
       tiptapInstance.chain().focus().updateAttributes('image', { style: newStyle }).run();
-      handleTiptapUpdate(tiptapInstance.getHTML());
+      handleTiptapUpdate(tiptapInstance.getHTML(), docId);
     }
   };
 
@@ -172,7 +172,7 @@ const EditorArea: React.FC<EditorAreaProps> = ({
         selectedImage.remove();
       }
       setSelectedImage(null);
-      handleTiptapUpdate(tiptapInstance?.getHTML() || '');
+      handleTiptapUpdate(tiptapInstance?.getHTML() || '', docId);
     }
   };
 
@@ -235,7 +235,7 @@ const EditorArea: React.FC<EditorAreaProps> = ({
 
     setShowSlashMenu(false);
     tiptapInstance?.commands.focus();
-    handleTiptapUpdate(tiptapInstance?.getHTML() || '');
+    handleTiptapUpdate(tiptapInstance?.getHTML() || '', docId);
   };
 
   const onInsertImage = () => {
@@ -250,7 +250,7 @@ const EditorArea: React.FC<EditorAreaProps> = ({
           if (event.target?.result) {
             const img = `<img src="${event.target.result}" style="max-width: 100%; height: auto; display: block; margin: 20px auto; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);" />`;
             tiptapInstance?.chain().focus().insertContent(img).run();
-            handleTiptapUpdate(tiptapInstance?.getHTML() || '');
+            handleTiptapUpdate(tiptapInstance?.getHTML() || '', docId);
           }
         };
         reader.readAsDataURL(file);
@@ -291,7 +291,7 @@ const EditorArea: React.FC<EditorAreaProps> = ({
         if (tiptapInstance) {
           tiptapInstance.commands.focus();
           tiptapInstance.commands.insertContent(contentToAdd);
-          handleTiptapUpdate(tiptapInstance.getHTML());
+          handleTiptapUpdate(tiptapInstance.getHTML(), docId);
           return;
         }
 
@@ -453,7 +453,7 @@ const EditorArea: React.FC<EditorAreaProps> = ({
                 break;
             }
 
-            handleTiptapUpdate(tiptapInstance.getHTML());
+            handleTiptapUpdate(tiptapInstance.getHTML(), docId);
           }}
           activeFormats={activeFormats}
         />

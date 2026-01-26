@@ -145,6 +145,7 @@ interface TiptapEditorProps {
 
 const TiptapEditor: React.FC<TiptapEditorProps> = (props) => {
   const {
+    docId,
     content,
     onChange,
     placeholder = 'Commencez à écrire...',
