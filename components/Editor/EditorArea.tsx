@@ -43,7 +43,12 @@ interface EditorAreaProps {
   onSocraticHighlightClick?: (id: string, event: Event) => void;
 }
 
-const EditorArea: React.FC<EditorAreaProps> = ({
+export interface EditorAreaHandle {
+  getEditorContent: () => string;
+  focus: () => void;
+}
+
+const EditorArea = React.forwardRef<EditorAreaHandle, EditorAreaProps>(({
   docId,
   content,
   textFormat,
@@ -63,7 +68,7 @@ const EditorArea: React.FC<EditorAreaProps> = ({
   collaboration,
   socraticFeedback = [],
   onSocraticHighlightClick,
-}) => {
+}, ref) => {
   const isInitialLoad = useRef(true);
   const [internalPlaceholder, setInternalPlaceholder] = useState(placeholder);
 
@@ -89,6 +94,20 @@ const EditorArea: React.FC<EditorAreaProps> = ({
 
   // Instance de l'éditeur Tiptap pour les commandes externes
   const [tiptapInstance, setTiptapInstance] = useState<any>(null);
+
+  // Expose methods to parent via ref
+  React.useImperativeHandle(ref, () => ({
+    getEditorContent: () => {
+      // Direct access to TipTap content to avoid state sync issues
+      if (tiptapInstance && !tiptapInstance.isDestroyed) {
+        return tiptapInstance.getHTML();
+      }
+      return '';
+    },
+    focus: () => {
+      tiptapInstance?.commands.focus();
+    }
+  }), [tiptapInstance]);
 
   useEffect(() => {
     setInternalPlaceholder(placeholder);
@@ -534,6 +553,6 @@ const EditorArea: React.FC<EditorAreaProps> = ({
       `}</style>
     </div >
   );
-};
+});
 
 export default EditorArea;

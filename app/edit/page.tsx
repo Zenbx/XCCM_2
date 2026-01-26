@@ -20,7 +20,7 @@ import { useEditorModals } from './hooks/useEditorModals';
 // Components
 import TableOfContents from '@/components/Editor/TableOfContents';
 import EditorToolbar from '@/components/Editor/EditorToolBar';
-import EditorArea from '@/components/Editor/EditorArea';
+import EditorArea, { EditorAreaHandle } from '@/components/Editor/EditorArea';
 import RightPanel from '@/components/Editor/RightPanel';
 import ChatBotOverlay from '@/components/Editor/ChatBotOverlay';
 import ShareOverlay from '@/components/Editor/ShareOverlay';
@@ -98,6 +98,7 @@ const XCCM2Editor = () => {
   const [isResizing, setIsResizing] = useState(false);
   const [isZenMode, setIsZenMode] = useState(false);
   const [tiptapEditor, setTiptapEditor] = useState<any>(null);
+  const editorAreaRef = useRef<EditorAreaHandle>(null); // ✅ Ref pour l'accès synchrone
   const editorRef = useRef<HTMLDivElement>(null);
   const lastDocChangeTimeRef = useRef<number>(0);
   const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -469,17 +470,14 @@ const XCCM2Editor = () => {
                 const targetId = `notion-${ctx.notion.notion_id}`;
                 const prevId = currentContext?.notion?.notion_id || currentContext?.part?.part_id;
 
-                // CRITICAL: Always get content from TipTap editor, NOT from state
+                // CRITICAL FIX: Synchronous content retrieval via Ref
                 let trueContent = '';
-                if (tiptapEditor && !tiptapEditor.isDestroyed) {
-                  try {
-                    trueContent = tiptapEditor.getHTML();
-                  } catch (e) {
-                    console.warn('Failed to get editor content, using state fallback');
-                    trueContent = editorContent;
-                  }
+                if (editorAreaRef.current) {
+                  trueContent = editorAreaRef.current.getEditorContent();
+                } else if (tiptapEditor && !tiptapEditor.isDestroyed) {
+                  try { trueContent = tiptapEditor.getHTML(); } catch (e) { trueContent = editorContent; }
                 } else {
-                  trueContent = editorContent;  // Only if editor is destroyed
+                  trueContent = editorContent;
                 }
 
                 if (prevId) localContentCacheRef.current[prevId] = trueContent;
@@ -504,15 +502,12 @@ const XCCM2Editor = () => {
                 const targetId = `part-${ctx.part.part_id}`;
                 const prevId = currentContext?.notion?.notion_id || currentContext?.part?.part_id;
 
-                // CRITICAL: Always get content from TipTap editor, NOT from state
+                // CRITICAL FIX: Synchronous content retrieval via Ref
                 let trueContent = '';
-                if (tiptapEditor && !tiptapEditor.isDestroyed) {
-                  try {
-                    trueContent = tiptapEditor.getHTML();
-                  } catch (e) {
-                    console.warn('Failed to get editor content, using state fallback');
-                    trueContent = editorContent;
-                  }
+                if (editorAreaRef.current) {
+                  trueContent = editorAreaRef.current.getEditorContent();
+                } else if (tiptapEditor && !tiptapEditor.isDestroyed) {
+                  try { trueContent = tiptapEditor.getHTML(); } catch (e) { trueContent = editorContent; }
                 } else {
                   trueContent = editorContent;
                 }
@@ -535,15 +530,12 @@ const XCCM2Editor = () => {
               onSelectChapter={(pName, cTitle, cId) => {
                 const prevId = currentContext?.notion?.notion_id || currentContext?.part?.part_id;
 
-                // CRITICAL: Always get content from TipTap editor, NOT from state
+                // CRITICAL FIX: Synchronous content retrieval via Ref
                 let trueContent = '';
-                if (tiptapEditor && !tiptapEditor.isDestroyed) {
-                  try {
-                    trueContent = tiptapEditor.getHTML();
-                  } catch (e) {
-                    console.warn('Failed to get editor content, using state fallback');
-                    trueContent = editorContent;
-                  }
+                if (editorAreaRef.current) {
+                  trueContent = editorAreaRef.current.getEditorContent();
+                } else if (tiptapEditor && !tiptapEditor.isDestroyed) {
+                  try { trueContent = tiptapEditor.getHTML(); } catch (e) { trueContent = editorContent; }
                 } else {
                   trueContent = editorContent;
                 }
@@ -562,8 +554,16 @@ const XCCM2Editor = () => {
               }}
               onSelectParagraph={(pName, cTitle, paName, paId) => {
                 const prevId = currentContext?.notion?.notion_id || currentContext?.part?.part_id;
-                let trueContent = editorContent;
-                if (tiptapEditor && !tiptapEditor.isDestroyed) { try { trueContent = tiptapEditor.getHTML(); } catch (e) { } }
+
+                // CRITICAL FIX: Synchronous content retrieval via Ref
+                let trueContent = '';
+                if (editorAreaRef.current) {
+                  trueContent = editorAreaRef.current.getEditorContent();
+                } else if (tiptapEditor && !tiptapEditor.isDestroyed) {
+                  try { trueContent = tiptapEditor.getHTML(); } catch (e) { trueContent = editorContent; }
+                } else {
+                  trueContent = editorContent;
+                }
                 if (prevId) localContentCacheRef.current[prevId] = trueContent;
                 if (hasUnsavedChanges && currentContext) { queueSave(currentContext, trueContent); }
                 if (autoSaveTimerRef.current) { clearTimeout(autoSaveTimerRef.current); autoSaveTimerRef.current = null; }
@@ -710,7 +710,8 @@ const XCCM2Editor = () => {
               onEditorReady={setTiptapEditor}
               onDrop={handleDropGranule}
               editorRef={editorRef}
-              collaboration={collaborationData}
+              ref={editorAreaRef} // ✅ Référence passée
+              collaboration={collaborationData as any}
               socraticFeedback={mappedSocraticFeedback as any}
             />
           </div>
