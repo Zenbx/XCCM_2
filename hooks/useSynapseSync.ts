@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import * as Y from 'yjs';
 import { HocuspocusProvider } from '@hocuspocus/provider';
 import { Awareness } from 'y-protocols/awareness';
@@ -103,14 +103,20 @@ export function useSynapseSync(options: SynapseSyncOptions): SynapseSyncResult {
         documentId,
         userId,
         userName,
-        userColor = getRandomColor(),
-        serverUrl = process.env.NEXT_PUBLIC_HOCUSPOCUS_URL || 'ws://localhost:1234',
+        userColor: providedColor,
+        serverUrl: providedServerUrl,
         token,
         onConnect,
         onDisconnect,
         onSynced,
         onAwarenessChange,
     } = options;
+
+    // Default values that remain stable
+    const serverUrl = providedServerUrl || process.env.NEXT_PUBLIC_HOCUSPOCUS_URL || 'ws://localhost:1234';
+
+    // Memoize the user color so it doesn't change on Every render if not provided
+    const userColor = useMemo(() => providedColor || getRandomColor(), [providedColor]);
 
     // Use Refs to avoid re-render loops but keep state for connection status
     const yDocRef = useRef<Y.Doc | null>(null);
