@@ -62,13 +62,13 @@ const HomePage = () => {
         <div className="max-w-6xl mx-auto text-center">
 
 
-          <h1 className="text-4xl md:text-6xl font-extrabold text-gray-900 dark:text-white mb-6 tracking-tight">
+          <h1 className="text-4xl md:text-6xl font-extrabold text-gray-900 dark:text-white mb-8 tracking-tight">
             {t('hero.titleLine1')} <span className="text-[#99334C] dark:text-[#ff9daf]">{t('hero.emph1')}</span> {tc('and')} <br />
             <span className="text-[#99334C] dark:text-[#ff9daf]">{t('hero.emph2')}</span> {t('hero.titleLine2')}
           </h1>
           {t('hero.subtitle')}
 
-          <div className="flex flex-wrap justify-center gap-4">
+          <div className="flex flex-wrap justify-center gap-4 mt-8">
             <button
               onClick={goToEditor}
               className="bg-[#99334C] text-white px-8 py-3 rounded-full font-semibold hover:bg-[#7a283d] transition-all shadow-lg flex items-center gap-2">

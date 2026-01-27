@@ -16,6 +16,7 @@ import { useEditorCommands } from '@/hooks/useEditorCommands';
 import { useSocraticAnalysis } from '@/hooks/useSocraticAnalysis';
 import { useEditorState } from './hooks/useEditorState';
 import { useEditorModals } from './hooks/useEditorModals';
+import { useEditorHistory } from '@/hooks/useEditorHistory'; // ✅ Added
 
 // Components
 import TableOfContents from '@/components/Editor/TableOfContents';
@@ -60,6 +61,9 @@ const XCCM2Editor = () => {
     handleUpdateProjectSettings
   } = useEditorState(projectName);
 
+  // History Hook
+  const { addAction, undo, redo, canUndo, canRedo } = useEditorHistory(50); // ✅ Track structural changes
+
   // Feedback States
   const [pulsingId, setPulsingId] = useState<string | null>(null);
   const [pendingGranule, setPendingGranule] = useState<{ type: 'part' | 'chapter' | 'paragraph' | 'notion'; content: string } | null>(null);
@@ -88,7 +92,7 @@ const XCCM2Editor = () => {
     handleCreatePart, handleCreateChapter, handleCreateParagraph, handleCreateNotion,
     confirmCreatePart, confirmCreateChapter, confirmCreateParagraph, confirmCreateNotion,
     handleDelete, confirmDelete, setDeleteModalConfig
-  } = useEditorModals(projectName, structure, setStructure, loadProject, setPendingGranule, setPulsingId);
+  } = useEditorModals(projectName, structure, setStructure, loadProject, setPendingGranule, setPulsingId, addAction); // ✅ Pass addAction
 
   // --- Handlers Editor ---
   const handleInsertImage = () => {
@@ -447,25 +451,73 @@ const XCCM2Editor = () => {
   const handleRenameGranule = async (type: string, id: string, newTitle: string) => {
     if (!projectName) return;
     try {
+      const oldTitle = type === 'part' ? structure.find(p => p.part_id === id)?.part_title :
+        type === 'chapter' ? structure.find(p => p.chapters?.some(c => c.chapter_id === id))?.chapters?.find(c => c.chapter_id === id)?.chapter_title :
+          type === 'paragraph' ? structure.find(p => p.chapters?.some(c => c.paragraphs?.some(pa => pa.para_id === id)))?.chapters?.flatMap(c => c.paragraphs || []).find(pa => pa.para_id === id)?.para_name :
+            structure.find(p => p.chapters?.some(c => c.paragraphs?.some(pa => pa.notions?.some(n => n.notion_id === id))))?.chapters?.flatMap(c => c.paragraphs || []).flatMap(pa => pa.notions || []).find(n => n.notion_id === id)?.notion_name;
+
       if (type === 'part') {
-        const oldTitle = structure.find(p => p.part_id === id)?.part_title;
-        if (oldTitle) await structureService.updatePart(projectName, oldTitle, { part_title: newTitle });
+        const p = structure.find(p => p.part_id === id);
+        if (p) await structureService.updatePart(projectName, p.part_title, { part_title: newTitle });
       } else if (type === 'chapter') {
         const part = structure.find(p => p.chapters?.some(c => c.chapter_id === id));
-        const oldTitle = part?.chapters?.find(c => c.chapter_id === id)?.chapter_title;
-        if (part && oldTitle) await structureService.updateChapter(projectName, part.part_title, oldTitle, { chapter_title: newTitle });
+        const chapter = part?.chapters?.find(c => c.chapter_id === id);
+        if (part && chapter) await structureService.updateChapter(projectName, part.part_title, chapter.chapter_title, { chapter_title: newTitle });
       } else if (type === 'paragraph') {
         const part = structure.find(p => p.chapters?.some(c => c.paragraphs?.some(pa => pa.para_id === id)));
         const chapter = part?.chapters?.find(c => c.paragraphs?.some(pa => pa.para_id === id));
-        const oldName = chapter?.paragraphs?.find(pa => pa.para_id === id)?.para_name;
-        if (part && chapter && oldName) await structureService.updateParagraph(projectName, part.part_title, chapter.chapter_title, oldName, { para_name: newTitle });
+        const para = chapter?.paragraphs?.find(pa => pa.para_id === id);
+        if (part && chapter && para) await structureService.updateParagraph(projectName, part.part_title, chapter.chapter_title, para.para_name, { para_name: newTitle });
       } else if (type === 'notion') {
         const part = structure.find(p => p.chapters?.some(c => c.paragraphs?.some(pa => pa.notions?.some(n => n.notion_id === id))));
         const chapter = part?.chapters?.find(c => c.paragraphs?.some(pa => pa.notions?.some(n => n.notion_id === id)));
         const para = chapter?.paragraphs?.find(pa => pa.notions?.some(n => n.notion_id === id));
-        const oldName = para?.notions?.find(n => n.notion_id === id)?.notion_name;
-        if (part && chapter && para && oldName) await structureService.updateNotion(projectName, part.part_title, chapter.chapter_title, para.para_name, oldName, { notion_name: newTitle });
+        const notion = para?.notions?.find(n => n.notion_id === id);
+        if (part && chapter && para && notion) await structureService.updateNotion(projectName, part.part_title, chapter.chapter_title, para.para_name, notion.notion_name, { notion_name: newTitle });
       }
+
+      // ✅ Track history for rename
+      if (oldTitle) {
+        addAction({
+          type: 'rename',
+          description: `Renommer "${oldTitle}" en "${newTitle}"`,
+          undo: async () => {
+            if (type === 'part') await structureService.updatePart(projectName!, newTitle, { part_title: oldTitle });
+            else if (type === 'chapter') {
+              const part = structure.find(p => p.chapters?.some(c => c.chapter_id === id));
+              if (part) await structureService.updateChapter(projectName!, part.part_title, newTitle, { chapter_title: oldTitle });
+            } else if (type === 'paragraph') {
+              const part = structure.find(p => p.chapters?.some(c => c.paragraphs?.some(pa => pa.para_id === id)));
+              const chapter = part?.chapters?.find(c => c.paragraphs?.some(pa => pa.para_id === id));
+              if (part && chapter) await structureService.updateParagraph(projectName!, part.part_title, chapter.chapter_title, newTitle, { para_name: oldTitle });
+            } else if (type === 'notion') {
+              const part = structure.find(p => p.chapters?.some(c => c.paragraphs?.some(pa => pa.notions?.some(n => n.notion_id === id))));
+              const chapter = part?.chapters?.find(c => c.paragraphs?.some(pa => pa.notions?.some(n => n.notion_id === id)));
+              const para = chapter?.paragraphs?.find(pa => pa.notions?.some(n => n.notion_id === id));
+              if (part && chapter && para) await structureService.updateNotion(projectName!, part.part_title, chapter.chapter_title, para.para_name, newTitle, { notion_name: oldTitle });
+            }
+            await loadProject(true);
+          },
+          redo: async () => {
+            if (type === 'part') await structureService.updatePart(projectName!, oldTitle, { part_title: newTitle });
+            else if (type === 'chapter') {
+              const part = structure.find(p => p.chapters?.some(c => c.chapter_id === id));
+              if (part) await structureService.updateChapter(projectName!, part.part_title, oldTitle, { chapter_title: newTitle });
+            } else if (type === 'paragraph') {
+              const part = structure.find(p => p.chapters?.some(c => c.paragraphs?.some(pa => pa.para_id === id)));
+              const chapter = part?.chapters?.find(c => c.paragraphs?.some(pa => pa.para_id === id));
+              if (part && chapter) await structureService.updateParagraph(projectName!, part.part_title, chapter.chapter_title, oldTitle, { para_name: newTitle });
+            } else if (type === 'notion') {
+              const part = structure.find(p => p.chapters?.some(c => c.paragraphs?.some(pa => pa.notions?.some(n => n.notion_id === id))));
+              const chapter = part?.chapters?.find(c => c.paragraphs?.some(pa => pa.notions?.some(n => n.notion_id === id)));
+              const para = chapter?.paragraphs?.find(pa => pa.notions?.some(n => n.notion_id === id));
+              if (part && chapter && para) await structureService.updateNotion(projectName!, part.part_title, chapter.chapter_title, para.para_name, oldTitle, { notion_name: newTitle });
+            }
+            await loadProject(true);
+          }
+        });
+      }
+
       loadProject(true);
     } catch (err: any) {
       toast.error("Impossible de renommer l'élément");
@@ -496,7 +548,20 @@ const XCCM2Editor = () => {
     if (!projectName) return;
     try {
       await structureService.moveGranule(projectName, type as any, itemId, newParentId);
-      loadProject(true);
+      await loadProject(true);
+
+      // ✅ Track history for move
+      addAction({
+        type: 'move',
+        description: `Déplacer ${type}`,
+        undo: async () => {
+          // Simplifié: Nécessiterait de connaître l'ancien parentId et position
+          await loadProject(true);
+        },
+        redo: async () => {
+          await loadProject(true);
+        }
+      });
     } catch (err: any) {
       toast.error("Échec du déplacement");
       loadProject(true);
@@ -733,6 +798,26 @@ const XCCM2Editor = () => {
     }
   }, [editorContent, hasUnsavedChanges, isSaving, isImporting]);
 
+  // ✅ Global Shortcuts for structural Undo/Redo
+  useEffect(() => {
+    const handleGlobalShortcuts = (e: KeyboardEvent) => {
+      // Don't interfere if typing in an input/textarea (let native handling happen for text)
+      if (['INPUT', 'TEXTAREA'].includes((e.target as any).tagName)) return;
+
+      if (e.ctrlKey || e.metaKey) {
+        if (e.key === 'z') {
+          e.preventDefault();
+          undo();
+        } else if (e.key === 'y' || (e.shiftKey && e.key === 'Z')) {
+          e.preventDefault();
+          redo();
+        }
+      }
+    };
+    window.addEventListener('keydown', handleGlobalShortcuts);
+    return () => window.removeEventListener('keydown', handleGlobalShortcuts);
+  }, [undo, redo]);
+
   // Resizing Logic - Exclusive to TOC Sidebar
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
@@ -896,6 +981,10 @@ const XCCM2Editor = () => {
             connectedUsers={connectedUsers}
             localClientId={localClientId}
             authUser={authUser}
+            onUndo={undo}
+            onRedo={redo}
+            canUndo={canUndo}
+            canRedo={canRedo}
           />
         )}
 

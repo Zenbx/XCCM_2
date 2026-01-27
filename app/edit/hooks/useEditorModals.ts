@@ -8,7 +8,8 @@ export const useEditorModals = (
     setStructure: (parts: any) => void,
     loadProject: (silent?: boolean) => Promise<any[] | null>,
     setPendingGranule?: (pending: any) => void,
-    setPulsingId?: (id: string | null) => void
+    setPulsingId?: (id: string | null) => void,
+    addAction?: (action: any) => void // ✅ Added for undo/redo
 ) => {
     const [showPartModal, setShowPartModal] = useState(false);
     const [showChapterModal, setShowChapterModal] = useState(false);
@@ -96,6 +97,24 @@ export const useEditorModals = (
             await loadProject(true);
             setPendingGranule?.(null);
             setPulsingId?.(newPart.part_id);
+
+            // ✅ Track history
+            addAction?.({
+                type: 'create',
+                description: `Créer partie "${partFormData.title}"`,
+                undo: async () => {
+                    await structureService.deletePart(projectName, partFormData.title);
+                    await loadProject(true);
+                },
+                redo: async () => {
+                    await structureService.createPart(projectName, {
+                        part_title: partFormData.title,
+                        part_number: partFormData.number
+                    });
+                    await loadProject(true);
+                }
+            });
+
             setTimeout(() => setPulsingId?.(null), 3000);
         } catch (err: any) {
             setPendingGranule?.(null);
@@ -119,6 +138,29 @@ export const useEditorModals = (
             await loadProject(true);
             setPendingGranule?.(null);
             setPulsingId?.(newChapter.chapter_id);
+
+            // ✅ Track history
+            if (modalContext.partTitle) {
+                const pTitle = modalContext.partTitle;
+                const cTitle = chapterFormData.title;
+                const cNum = chapterFormData.number;
+                addAction?.({
+                    type: 'create',
+                    description: `Créer chapitre "${cTitle}" dans "${pTitle}"`,
+                    undo: async () => {
+                        await structureService.deleteChapter(projectName, pTitle, cTitle);
+                        await loadProject(true);
+                    },
+                    redo: async () => {
+                        await structureService.createChapter(projectName, pTitle, {
+                            chapter_title: cTitle,
+                            chapter_number: cNum
+                        });
+                        await loadProject(true);
+                    }
+                });
+            }
+
             setTimeout(() => setPulsingId?.(null), 3000);
         } catch (err: any) {
             setPendingGranule?.(null);
@@ -142,6 +184,30 @@ export const useEditorModals = (
             await loadProject(true);
             setPendingGranule?.(null);
             setPulsingId?.(newPara.para_id);
+
+            // ✅ Track history
+            if (modalContext.partTitle && modalContext.chapterTitle) {
+                const pTitle = modalContext.partTitle;
+                const cTitle = modalContext.chapterTitle;
+                const paName = paragraphFormData.name;
+                const paNum = paragraphFormData.number;
+                addAction?.({
+                    type: 'create',
+                    description: `Créer paragraphe "${paName}"`,
+                    undo: async () => {
+                        await structureService.deleteParagraph(projectName, pTitle, cTitle, paName);
+                        await loadProject(true);
+                    },
+                    redo: async () => {
+                        await structureService.createParagraph(projectName, pTitle, cTitle, {
+                            para_name: paName,
+                            para_number: paNum
+                        });
+                        await loadProject(true);
+                    }
+                });
+            }
+
             setTimeout(() => setPulsingId?.(null), 3000);
         } catch (err: any) {
             setPendingGranule?.(null);
@@ -166,6 +232,32 @@ export const useEditorModals = (
             await loadProject(true);
             setPendingGranule?.(null);
             setPulsingId?.(newNotion.notion_id);
+
+            // ✅ Track history
+            if (modalContext.partTitle && modalContext.chapterTitle && modalContext.paraName) {
+                const pTitle = modalContext.partTitle;
+                const cTitle = modalContext.chapterTitle;
+                const paName = modalContext.paraName;
+                const nName = notionFormData.name;
+                const nNum = notionFormData.number;
+                addAction?.({
+                    type: 'create',
+                    description: `Créer notion "${nName}"`,
+                    undo: async () => {
+                        await structureService.deleteNotion(projectName, pTitle, cTitle, paName, nName);
+                        await loadProject(true);
+                    },
+                    redo: async () => {
+                        await structureService.createNotion(projectName, pTitle, cTitle, paName, {
+                            notion_name: nName,
+                            notion_content: '',
+                            notion_number: nNum
+                        });
+                        await loadProject(true);
+                    }
+                });
+            }
+
             setTimeout(() => setPulsingId?.(null), 3000);
         } catch (err: any) {
             setPendingGranule?.(null);
@@ -191,16 +283,24 @@ export const useEditorModals = (
             setDeleteModalConfig(prev => ({ ...prev, isDeleting: true }));
             const { type, id, title } = deleteModalConfig;
 
+            // ✅ Backup data for undo
+            let backupData: any = null;
+            let parentContext: any = {};
+
             if (type === 'part') {
-                await structureService.deletePart(projectName, title);
+                backupData = currentStructure.find(p => p.part_id === id);
             } else if (type === 'chapter') {
                 const part = currentStructure.find(p => p.chapters?.some((c: any) => c.chapter_id === id));
-                if (part) await structureService.deleteChapter(projectName, part.part_title, title);
+                if (part) {
+                    backupData = part.chapters.find((c: any) => c.chapter_id === id);
+                    parentContext = { partTitle: part.part_title };
+                }
             } else if (type === 'paragraph') {
                 for (const part of currentStructure) {
                     const chap = part.chapters?.find((c: any) => c.paragraphs?.some((p: any) => p.para_id === id));
                     if (chap) {
-                        await structureService.deleteParagraph(projectName, part.part_title, chap.chapter_title, title);
+                        backupData = chap.paragraphs.find((p: any) => p.para_id === id);
+                        parentContext = { partTitle: part.part_title, chapterTitle: chap.chapter_title };
                         break;
                     }
                 }
@@ -209,16 +309,61 @@ export const useEditorModals = (
                     for (const chap of part.chapters || []) {
                         const para = chap.paragraphs?.find((p: any) => p.notions?.some((n: any) => n.notion_id === id));
                         if (para) {
-                            await structureService.deleteNotion(projectName, part.part_title, chap.chapter_title, para.para_name, title);
+                            backupData = para.notions.find((n: any) => n.notion_id === id);
+                            parentContext = {
+                                partTitle: part.part_title,
+                                chapterTitle: chap.chapter_title,
+                                paraName: para.para_name
+                            };
                             break;
                         }
                     }
                 }
             }
 
+            if (type === 'part') {
+                await structureService.deletePart(projectName, title);
+            } else if (type === 'chapter') {
+                if (parentContext.partTitle) await structureService.deleteChapter(projectName, parentContext.partTitle, title);
+            } else if (type === 'paragraph') {
+                if (parentContext.partTitle && parentContext.chapterTitle)
+                    await structureService.deleteParagraph(projectName, parentContext.partTitle, parentContext.chapterTitle, title);
+            } else if (type === 'notion') {
+                if (parentContext.partTitle && parentContext.chapterTitle && parentContext.paraName)
+                    await structureService.deleteNotion(projectName, parentContext.partTitle, parentContext.chapterTitle, parentContext.paraName, title);
+            }
+
             toast.success("Supprimé avec succès");
             setDeleteModalConfig(prev => ({ ...prev, isOpen: false }));
             await loadProject(true);
+
+            // ✅ Track history for delete
+            if (backupData) {
+                addAction?.({
+                    type: 'delete',
+                    description: `Supprimer ${type} "${title}"`,
+                    undo: async () => {
+                        if (type === 'part') {
+                            await structureService.createPart(projectName, backupData);
+                        } else if (type === 'chapter') {
+                            await structureService.createChapter(projectName, parentContext.partTitle, backupData);
+                        } else if (type === 'paragraph') {
+                            await structureService.createParagraph(projectName, parentContext.partTitle, parentContext.chapterTitle, backupData);
+                        } else if (type === 'notion') {
+                            await structureService.createNotion(projectName, parentContext.partTitle, parentContext.chapterTitle, parentContext.paraName, backupData);
+                        }
+                        await loadProject(true);
+                    },
+                    redo: async () => {
+                        if (type === 'part') await structureService.deletePart(projectName, title);
+                        else if (type === 'chapter') await structureService.deleteChapter(projectName, parentContext.partTitle, title);
+                        else if (type === 'paragraph') await structureService.deleteParagraph(projectName, parentContext.partTitle, parentContext.chapterTitle, title);
+                        else if (type === 'notion') await structureService.deleteNotion(projectName, parentContext.partTitle, parentContext.chapterTitle, parentContext.paraName, title);
+                        await loadProject(true);
+                    }
+                });
+            }
+
         } catch (err: any) {
             toast.error("Échec de la suppression");
         } finally {

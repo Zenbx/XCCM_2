@@ -47,7 +47,21 @@
         "admin": "Administration",
         "account": "Mon compte",
         "settings": "Paramètres",
-        "analytics": "Statistiques"
+        "analytics": "Statistiques",
+        "welcomeBack": "Ravi de vous revoir !",
+        "platformDescription": "Notre plateforme vous permet de créer, organiser et partager vos contenus pédagogiques de manière intuitive.",
+        "loginSubtitle": "Connectez-vous pour accéder à vos projets",
+        "email": "E-mail",
+        "password": "Mot de passe",
+        "rememberMe": "Se souvenir de moi",
+        "orContinueWith": "Ou continuer avec",
+        "forgotPassword": "Mot de passe oublié ?",
+        "noAccount": "Pas encore de compte ?",
+        "createAccount": "Créer un compte",
+        "clickingAccept": "En continuant, vous acceptez nos",
+        "privacyPolicy": "Politique de confidentialité",
+        "termsOfUse": "Conditions d'utilisation",
+        "and": "et"
     },
     "footer": {
         "title": "XCCM 2",
