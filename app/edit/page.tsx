@@ -341,20 +341,37 @@ const XCCM2Editor = () => {
         await recurseParagraph(parentPart, parentChapter, newPara.para_name, effectiveData);
       } else if (granule.type === 'notion') {
         const rawPart = dropPartTitle || currentContext?.partTitle || (structure.length > 0 ? structure[0].part_title : "Partie 1");
-        const partObj = structure.find(p => p.part_title.toLowerCase().trim() === rawPart.toLowerCase().trim()) || structure[0];
-        const parentPart = partObj?.part_title || rawPart;
+        let partObj = structure.find(p => p.part_title.toLowerCase().trim() === rawPart.toLowerCase().trim()) || structure[0];
 
-        const rawChap = dropChapterTitle || currentContext?.chapterTitle || (partObj?.chapters?.[0]?.chapter_title || "Chapitre 1");
-        const chapObj = partObj?.chapters?.find(c => c.chapter_title.toLowerCase().trim() === rawChap.toLowerCase().trim()) || partObj?.chapters?.[0];
-        const parentChapter = chapObj?.chapter_title || rawChap;
+        // SÉCURITÉ: Si on n'a vraiment aucune structure, on crée une partie par défaut
+        if (!partObj) {
+          const newP = await structureService.createPart(projectName, { part_title: "Partie 1", part_number: 1 });
+          partObj = { ...newP, chapters: [] };
+        }
+        const parentPart = partObj.part_title;
 
-        const rawPara = dropParaName || currentContext?.paraName || (chapObj?.paragraphs?.[0]?.para_name || "Paragraphe 1");
-        const paraObj = chapObj?.paragraphs?.find(p => p.para_name.toLowerCase().trim() === rawPara.toLowerCase().trim()) || chapObj?.paragraphs?.[0];
-        const parentPara = paraObj?.para_name || rawPara;
+        // RÉSOLUTION CHAPITRE (ou création auto)
+        let chapObj = partObj.chapters?.find(c => c.chapter_title.toLowerCase().trim() === (dropChapterTitle || currentContext?.chapterTitle || "").toLowerCase().trim()) || partObj.chapters?.[0];
+
+        if (!chapObj) {
+          console.log("[Import] No chapter found, creating default...");
+          chapObj = await structureService.createChapter(projectName, parentPart, { chapter_title: "Chapitre 1", chapter_number: 1 });
+          chapObj.paragraphs = [];
+        }
+        const parentChapter = chapObj.chapter_title;
+
+        // RÉSOLUTION PARAGRAPHE (ou création auto)
+        let paraObj = chapObj.paragraphs?.find(p => p.para_name.toLowerCase().trim() === (dropParaName || currentContext?.paraName || "").toLowerCase().trim()) || chapObj.paragraphs?.[0];
+
+        if (!paraObj) {
+          console.log("[Import] No paragraph found, creating default...");
+          paraObj = await structureService.createParagraph(projectName, parentPart, parentChapter, { para_name: "Paragraphe 1", para_number: 1 });
+        }
+        const parentPara = paraObj.para_name;
 
         const nextNotionNum = (paraObj?.notions?.length || 0) + 1;
-
         const notionName = effectiveData.notion_name || effectiveData.content || "Nouvelle Notion";
+
         await structureService.createNotion(projectName, parentPart, parentChapter, parentPara, {
           notion_name: notionName,
           notion_content: effectiveData.notion_content || effectiveData.previewContent || '',
@@ -444,6 +461,7 @@ const XCCM2Editor = () => {
   const [isResizing, setIsResizing] = useState(false);
   const [isZenMode, setIsZenMode] = useState(false);
   const [tiptapEditor, setTiptapEditor] = useState<any>(null);
+  const lastSaveTimestamp = useRef<number>(0); // ✅ Prevent transition race conditions
 
   const editorRef = useRef<HTMLDivElement>(null);
 
@@ -658,6 +676,7 @@ const XCCM2Editor = () => {
       if (currentContext.type === 'notion' && currentContext.notionName) {
         console.log(`[Save] Updating Notion: ${currentContext.notionName} in ${currentContext.paraName}`);
         await structureService.updateNotion(projectName, currentContext.partTitle, currentContext.chapterTitle!, currentContext.paraName!, currentContext.notionName!, { notion_content: editorContent });
+        lastSaveTimestamp.current = Date.now(); // ✅ Update cooldown
 
         // CRITIQUE: Mettre à jour structure directement pour éviter perte de contenu
         setStructure(prev => prev.map(part => {
@@ -689,6 +708,9 @@ const XCCM2Editor = () => {
           }
           return part;
         }));
+
+        // Optimisation: Si on a beaucoup d'items, ne pas trigger un re-render complet du composant
+        // SI le contenu n'a pas bougé depuis l'appel API (cohérence)
 
       } else if (currentContext.type === 'part' && currentContext.partTitle) {
         await structureService.updatePart(projectName, currentContext.partTitle, { part_intro: editorContent });
@@ -758,11 +780,13 @@ const XCCM2Editor = () => {
       if (foundNotion) {
         // CRITIQUE: Ne jamais écraser le contenu si l'utilisateur est en train d'éditer
         // On sync seulement si c'est un changement externe ET qu'on n'a pas de modifications locales
+        // AJOUT: Cooldown de 3 secondes après une sauvegarde locale pour éviter les données "outdated" du serveur
+        const isCooldownActive = (Date.now() - lastSaveTimestamp.current) < 3000;
         const isSignificantChange = foundNotion.notion_content !== editorContent;
-        const shouldSync = isSignificantChange && !hasUnsavedChanges && !isSaving;
+        const shouldSync = isSignificantChange && !hasUnsavedChanges && !isSaving && !isCooldownActive;
 
         if (shouldSync) {
-          console.log('[Content Sync] Updating from external change');
+          console.log('[Content Sync] Updating from external change', { cooldown: isCooldownActive });
           setEditorContent(foundNotion.notion_content || '');
         }
       }
@@ -900,12 +924,17 @@ const XCCM2Editor = () => {
               onSelectChapter={async (pName, cTitle, cId) => {
                 const update = async () => {
                   if (hasUnsavedChanges) await handleSave(true);
+                  // ✅ Resolve chapter object for Landing Page
+                  const part = structure.find(p => p.part_title === pName);
+                  const chapter = part?.chapters?.find(c => c.chapter_id === cId);
+
                   setCurrentContext({
                     type: 'chapter',
                     projectName: projectData?.pr_name || '',
                     partTitle: pName,
                     chapterTitle: cTitle,
-                    chapterId: cId
+                    chapterId: cId,
+                    chapter: chapter // ✅ Pass actual object
                   });
                   setEditorContent('');
                   setHasUnsavedChanges(false);
@@ -917,13 +946,19 @@ const XCCM2Editor = () => {
               onSelectParagraph={async (pName, cTitle, paName, paId) => {
                 const update = async () => {
                   if (hasUnsavedChanges) await handleSave(true);
+                  // ✅ Resolve paragraph object for Landing Page
+                  const part = structure.find(p => p.part_title === pName);
+                  const chapter = part?.chapters?.find(c => c.chapter_title === cTitle);
+                  const paragraph = chapter?.paragraphs?.find(pa => pa.para_id === paId);
+
                   setCurrentContext({
                     type: 'paragraph',
                     projectName: projectData?.pr_name || '',
                     partTitle: pName,
                     chapterTitle: cTitle,
                     paraName: paName,
-                    paraId: paId
+                    paraId: paId,
+                    paragraph: paragraph // ✅ Pass actual object
                   });
                   setEditorContent('');
                   setHasUnsavedChanges(false);
@@ -1051,6 +1086,7 @@ const XCCM2Editor = () => {
               }
               collaboration={collaborationData}
               socraticFeedback={mappedSocraticFeedback as any}
+              currentContext={currentContext}
             />
           </div>
         </main>

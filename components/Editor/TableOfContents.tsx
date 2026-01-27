@@ -1060,7 +1060,8 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
                   className={`flex items-center gap-2 py-2 px-2 hover:bg-gray-50 rounded-lg cursor-pointer transition-colors
                   ${selectedPartId === part.part_id ? 'bg-[#99334C]/10 text-[#99334C] shadow-sm rounded-lg' : 'rounded-lg'}
                   ${pulsingId === part.part_id ? 'animate-pulse ring-2 ring-[#99334C]' : ''}
-                  ${getDropStyle('part', part.part_id)}`}
+                  ${getDropStyle('part', part.part_id)}
+                  ${flatItems[focusedIndex]?.id === part.part_id && isTOCFocused ? 'ring-2 ring-[#99334C] ring-offset-1 bg-[#99334C]/5' : ''}`}
                   draggable={true}
                   onDragStart={(e) => handleDragStart(e, 'part', part, null)}
                   onDragOver={(e) => handleDragOver(e, 'part', part.part_id, null)}
@@ -1146,7 +1147,8 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
                               className={`flex items-center gap-2 py-1.5 px-2 hover:bg-gray-50 rounded-lg cursor-pointer group transition-all
                               ${selectedChapterId === chapter.chapter_id ? 'bg-[#99334C]/10 text-[#99334C] shadow-sm rounded-lg' : 'rounded-lg'}
                                ${pulsingId === chapter.chapter_id ? 'animate-pulse ring-2 ring-[#99334C]' : ''}
-                              ${getDropStyle('chapter', chapter.chapter_id)}`}
+                              ${getDropStyle('chapter', chapter.chapter_id)}
+                              ${flatItems[focusedIndex]?.id === chapter.chapter_id && isTOCFocused ? 'ring-2 ring-[#DC3545] ring-offset-1 bg-[#DC3545]/5' : ''}`}
                               draggable={true}
                               onDragStart={(e) => handleDragStart(e, 'chapter', chapter, part.part_id)}
                               onDragOver={(e) => handleDragOver(e, 'chapter', chapter.chapter_id, part.part_id)}
@@ -1218,7 +1220,8 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
                                         className={`flex items-center gap-2 py-1.5 px-2 hover:bg-gray-50 rounded-lg cursor-pointer group transition-all
                                       ${selectedParagraphId === paragraph.para_id ? 'bg-[#99334C]/10 text-[#99334C] shadow-sm rounded-lg' : 'rounded-lg'}
                                       ${pulsingId === paragraph.para_id ? 'animate-pulse ring-2 ring-[#99334C]' : ''}
-                                      ${getDropStyle('paragraph', paragraph.para_id)}`}
+                                      ${getDropStyle('paragraph', paragraph.para_id)}
+                                      ${flatItems[focusedIndex]?.id === paragraph.para_id && isTOCFocused ? 'ring-2 ring-amber-500 ring-offset-1 bg-amber-500/5' : ''}`}
                                         draggable={true}
                                         onDragStart={(e) => handleDragStart(e, 'paragraph', paragraph, chapter.chapter_id)}
                                         onDragOver={(e) => handleDragOver(e, 'paragraph', paragraph.para_id, chapter.chapter_id)}
@@ -1290,7 +1293,8 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
                                                 className={`flex items-center gap-2 py-1.5 px-2 rounded-lg cursor-pointer w-full text-left transition-all group
                                             ${selectedNotionId === notion.notion_id ? 'bg-[#99334C]/10 text-[#99334C] shadow-sm rounded-lg' : 'text-gray-500 hover:text-gray-900 hover:bg-gray-50 rounded-lg'} 
                                             ${pulsingId === notion.notion_id ? 'animate-pulse ring-2 ring-[#99334C]' : ''}
-                                            ${getDropStyle('notion', notion.notion_id)}`}
+                                            ${getDropStyle('notion', notion.notion_id)}
+                                            ${flatItems[focusedIndex]?.id === notion.notion_id && isTOCFocused ? 'ring-2 ring-[#99334C] ring-offset-1 bg-[#99334C]/5' : ''}`}
                                                 draggable
                                                 onDragStart={(e) => handleDragStart(e, 'notion', notion, paragraph.para_id)}
                                                 onDragOver={(e) => handleDragOver(e, 'notion', notion.notion_id, paragraph.para_id)}
@@ -1316,7 +1320,25 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
                                               >
                                                 <span className="text-gray-300 opacity-0 group-hover:opacity-100 cursor-grab"><GripVertical size={14} /></span>
                                                 <FileText size={14} className="shrink-0" color={selectedNotionId === notion.notion_id ? '#99334C' : getIconColor('notion')} />
-                                                <span className={`text-sm truncate ${selectedNotionId === notion.notion_id ? 'font-medium' : ''}`}>{notion.notion_name}</span>
+
+                                                {editingId === `notion-${notion.notion_id}` ? (
+                                                  <input
+                                                    autoFocus
+                                                    className="text-sm font-medium flex-1 bg-white border border-[#99334C] rounded px-1 outline-none text-gray-700"
+                                                    value={tempTitle}
+                                                    onChange={(e) => setTempTitle(e.target.value)}
+                                                    onBlur={() => submitRename('notion', notion.notion_id)}
+                                                    onKeyDown={(e) => handleKeyDown(e, 'notion', notion.notion_id)}
+                                                    onClick={(e) => e.stopPropagation()}
+                                                  />
+                                                ) : (
+                                                  <span
+                                                    className={`text-sm truncate flex-1 ${selectedNotionId === notion.notion_id ? 'font-medium' : ''}`}
+                                                    onDoubleClick={(e) => startEditing(e, `notion-${notion.notion_id}`, notion.notion_name)}
+                                                  >
+                                                    {notion.notion_name}
+                                                  </span>
+                                                )}
                                               </div>
                                             ))}
                                             {/* End zone Notions */}

@@ -28,6 +28,8 @@ export const useEditorState = (projectName: string | null) => {
         notionName?: string;
         notion?: Notion | null;
         part?: Part | null;
+        chapter?: any; // ✅ Added
+        paragraph?: any; // ✅ Added
     } | null>(null);
 
     const [editorContent, setEditorContent] = useState('');

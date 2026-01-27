@@ -220,7 +220,7 @@ const TiptapEditor: React.FC<TiptapEditorProps> = (props) => {
         }),
       ] : []),
     ],
-    content: collaboration ? undefined : content,
+    content: content || (collaboration ? undefined : content), // ✅ Use content as initial even if collaboration
     editable: !readOnly,
     onCreate: ({ editor }) => {
       onReady?.(editor);
@@ -240,11 +240,11 @@ const TiptapEditor: React.FC<TiptapEditorProps> = (props) => {
 
   // Mettre à jour le contenu si prop change de l'extérieur (seulement si pas de collaboration)
   useEffect(() => {
-    if (editor && !collaboration && content !== editor.getHTML()) {
+    // AJOUT: Ne pas écraser si l'éditeur est focusé (l'utilisateur est en train de taper)
+    if (editor && !collaboration && !editor.isFocused && content !== editor.getHTML()) {
       // Avoid "flushSync was called from inside a lifecycle method" error
-      // by deferring the update to the next microtask/frame
       queueMicrotask(() => {
-        if (editor && !editor.isDestroyed) {
+        if (editor && !editor.isDestroyed && !editor.isFocused) {
           editor.commands.setContent(content, false);
         }
       });

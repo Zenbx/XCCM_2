@@ -40,6 +40,7 @@ interface EditorAreaProps {
   };
   socraticFeedback?: SocraticHighlight[];
   onSocraticHighlightClick?: (id: string, event: Event) => void;
+  currentContext?: any; // ✅ Added to detect type
 }
 
 const EditorArea: React.FC<EditorAreaProps> = ({
@@ -61,6 +62,7 @@ const EditorArea: React.FC<EditorAreaProps> = ({
   collaboration,
   socraticFeedback = [],
   onSocraticHighlightClick,
+  currentContext, // ✅ Added
 }) => {
   const isInitialLoad = useRef(true);
   const [internalPlaceholder, setInternalPlaceholder] = useState(placeholder);
@@ -423,23 +425,50 @@ const EditorArea: React.FC<EditorAreaProps> = ({
         onDrop={handleDrop}
       >
         <div className="w-full h-full p-10" style={{ viewTransitionName: 'editor-content' }}>
-          <TiptapEditor
-            key={`${collaboration?.documentId || 'static'}-${!!collaboration}`}
-            content={content}
-            onChange={handleTiptapUpdate}
-            placeholder={internalPlaceholder}
-            readOnly={readOnly}
-            textFormat={textFormat}
-            collaboration={collaboration}
-            onSelectionChange={handleSelectionUpdate}
-            onReady={(editor) => {
-              setTiptapInstance(editor);
-              onEditorReady?.(editor);
-            }}
-            socraticFeedback={socraticFeedback}
-            onSocraticHighlightClick={onSocraticHighlightClick}
-            className="prose prose-lg max-w-none text-black dark:text-gray-100"
-          />
+          {/* ✅ NOUVEAU: Landing View pour Chapitres et Paragraphes */}
+          {(currentContext?.type === 'chapter' || currentContext?.type === 'paragraph') ? (
+            <div className="flex flex-col items-center justify-center py-24 text-center">
+              <div className={`w-20 h-20 rounded-2xl flex items-center justify-center mb-6 shadow-sm border
+                ${currentContext.type === 'chapter' ? 'bg-red-50 border-red-100 text-red-600' : 'bg-amber-50 border-amber-100 text-amber-600'}`}>
+                {currentContext.type === 'chapter' ? <Command size={40} /> : <AlignLeft size={40} />}
+              </div>
+              <h2 className="text-3xl font-bold text-gray-900 mb-2">
+                {currentContext.type === 'chapter' ? `Chapitre : ${currentContext.chapterTitle}` : `Paragraphe : ${currentContext.paraName}`}
+              </h2>
+              <p className="text-gray-500 max-w-md mx-auto">
+                {currentContext.type === 'chapter'
+                  ? "Les chapitres servent à structurer vos grandes thématiques. Ajoutez des paragraphes et des notions à l'intérieur pour commencer à rédiger."
+                  : "Les paragraphes regroupent vos notions. Sélectionnez une notion dans la barre latérale pour éditer son contenu."}
+              </p>
+
+              <div className="mt-8 flex gap-3">
+                <button
+                  onClick={() => currentContext.type === 'chapter' ? onAddParagraph?.() : onAddNotion?.()}
+                  className="px-6 py-2.5 bg-gray-900 text-white rounded-xl hover:bg-black transition-all font-medium text-sm shadow-sm"
+                >
+                  Ajouter une {currentContext.type === 'chapter' ? 'sous-section' : 'notion'}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <TiptapEditor
+              key={collaboration?.documentId || 'static'} // ✅ Only remount if doc ID changes
+              content={content}
+              onChange={handleTiptapUpdate}
+              placeholder={internalPlaceholder}
+              readOnly={readOnly}
+              textFormat={textFormat}
+              collaboration={collaboration}
+              onSelectionChange={handleSelectionUpdate}
+              onReady={(editor) => {
+                setTiptapInstance(editor);
+                onEditorReady?.(editor);
+              }}
+              socraticFeedback={socraticFeedback}
+              onSocraticHighlightClick={onSocraticHighlightClick}
+              className="prose prose-lg max-w-none text-black dark:text-gray-100"
+            />
+          )}
         </div>
 
         {/* Floating Toolbar Selection */}
