@@ -77,98 +77,124 @@ export default function UserManagement() {
     }
 
     return (
-        <div className="space-y-6">
-            <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div>
-                    <h1 className="text-xl font-black text-gray-900 flex items-center gap-3">
-                        <Users className="text-[#99334C]" size={24} /> Gestion des Utilisateurs
+        <div className="space-y-8 max-w-[1600px] mx-auto pb-20">
+            {/* Header Section */}
+            <header className="flex flex-col md:flex-row md:items-end justify-between gap-8">
+                <div className="space-y-1.5">
+                    <h1 className="text-2xl font-black text-gray-900 tracking-tight flex items-center gap-3">
+                        <Users className="text-[#99334C]" size={26} />
+                        <span className="bg-clip-text text-transparent bg-gradient-to-r from-gray-900 to-gray-600">Comptes Utilisateurs</span>
                     </h1>
-                    <p className="text-gray-500 font-medium text-xs">{users.length} membres enregistrés.</p>
+                    <p className="text-[11px] text-gray-400 font-bold uppercase tracking-widest flex items-center gap-2">
+                        <span className="w-1.5 h-1.5 bg-[#99334C] rounded-full animate-pulse" />
+                        Système de Management d'Accès • {users.length} membres
+                    </p>
                 </div>
-                <div className="flex items-center gap-2">
-                    <button
-                        onClick={fetchUsers}
-                        className="p-2 bg-white border border-gray-100 rounded-lg hover:bg-gray-50 text-gray-600 transition-all shadow-sm"
-                        title="Rafraîchir"
-                    >
-                        <RefreshCcw size={16} />
-                    </button>
-                    <div className="relative">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+
+                <div className="flex items-center gap-4">
+                    <div className="relative group">
+                        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-[#99334C] transition-colors" size={14} />
                         <input
                             type="text"
-                            placeholder="Rechercher..."
+                            placeholder="Email, Nom ou ID..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="pl-9 pr-3 py-2 bg-white border border-gray-100 rounded-lg focus:ring-2 focus:ring-[#99334C]/20 outline-none w-56 text-sm shadow-sm transition-all"
+                            className="pl-10 pr-4 py-3 bg-white border border-gray-100 rounded-2xl focus:ring-4 focus:ring-[#99334C]/5 outline-none w-72 text-sm shadow-sm transition-all text-gray-600 font-medium hover:border-gray-200"
                         />
                     </div>
+                    <button
+                        onClick={fetchUsers}
+                        className="p-3 bg-white border border-gray-100 rounded-2xl hover:bg-gray-50 text-gray-400 hover:text-[#99334C] transition-all shadow-sm hover:shadow-md active:scale-95"
+                        title="Rafraîchir la base"
+                    >
+                        <RefreshCcw size={18} />
+                    </button>
                 </div>
             </header>
 
-            <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden text-sm">
+            {/* Table Section - Neo-Glassmorphism subtle feel */}
+            <div className="bg-white rounded-[24px] border border-gray-100 shadow-xl shadow-gray-200/20 overflow-hidden">
                 <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse">
+                    <table className="w-full text-left border-collapse text-sm">
                         <thead>
-                            <tr className="bg-gray-50/50 border-b border-gray-50">
-                                <th className="px-4 py-3 text-[10px] font-black text-gray-400 uppercase tracking-widest">Utilisateur</th>
-                                <th className="px-4 py-3 text-[10px] font-black text-gray-400 uppercase tracking-widest">Rôle</th>
-                                <th className="px-4 py-3 text-[10px] font-black text-gray-400 uppercase tracking-widest">Activité</th>
-                                <th className="px-4 py-3 text-[10px] font-black text-gray-400 uppercase tracking-widest">Rejoint le</th>
-                                <th className="px-4 py-3 text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Actions</th>
+                            <tr className="bg-gray-50/20 border-b border-gray-50">
+                                <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Membre</th>
+                                <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Habilitation</th>
+                                <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Métriques Alpha</th>
+                                <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Adhésion</th>
+                                <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Contrôle</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-gray-50">
+                        <tbody className="divide-y divide-gray-50 text-gray-600">
                             {filteredUsers.map((user) => (
-                                <tr key={user.user_id} className="hover:bg-gray-50/20 transition-colors">
-                                    <td className="px-4 py-3">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-8 h-8 rounded-lg bg-[#99334C]/5 text-[#99334C] flex items-center justify-center font-bold text-xs uppercase">
+                                <tr key={user.user_id} className="hover:bg-gray-50/50 transition-all duration-300 group">
+                                    <td className="px-8 py-5">
+                                        <div className="flex items-center gap-4">
+                                            <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-gray-50 to-white border border-gray-100 flex items-center justify-center font-black text-gray-400 text-xs shadow-inner group-hover:from-[#99334C]/5 group-hover:text-[#99334C] group-hover:border-[#99334C]/10 transition-all duration-500">
                                                 {user.firstname?.[0] || user.email[0]}
                                             </div>
-                                            <div>
-                                                <p className="font-bold text-gray-900 text-xs">{user.firstname} {user.lastname}</p>
-                                                <p className="text-[10px] text-gray-400 font-medium truncate max-w-[150px]">
+                                            <div className="flex flex-col min-w-0">
+                                                <p className="font-black text-gray-900 text-sm tracking-tight leading-tight group-hover:text-[#99334C] transition-colors">
+                                                    {user.firstname} {user.lastname}
+                                                </p>
+                                                <p className="text-[10px] text-gray-400 font-bold truncate lowercase mt-0.5 tracking-tight">
                                                     {user.email}
                                                 </p>
                                             </div>
                                         </div>
                                     </td>
-                                    <td className="px-4 py-3">
-                                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${user.role === 'admin'
-                                            ? 'bg-purple-50 text-purple-600'
-                                            : 'bg-blue-50 text-blue-600'
+                                    <td className="px-8 py-5">
+                                        <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-xl border font-black text-[9px] uppercase tracking-[0.1em] shadow-sm ${user.role === 'admin'
+                                            ? 'bg-purple-50 text-purple-600 border-purple-100 shadow-purple-100/50'
+                                            : 'bg-blue-50 text-blue-600 border-blue-100 shadow-blue-100/50'
                                             }`}>
+                                            <Shield size={10} className={user.role === 'admin' ? 'animate-pulse' : ''} />
                                             {user.role}
-                                        </span>
-                                    </td>
-                                    <td className="px-4 py-3">
-                                        <div className="flex flex-col">
-                                            <p className="text-xs font-bold text-gray-600">{user.projectsCount} projets</p>
-                                            <p className="text-[9px] text-gray-400 font-medium">{user.marketplaceCount} docs</p>
                                         </div>
                                     </td>
-                                    <td className="px-4 py-3">
-                                        <p className="text-xs font-bold text-gray-500 flex items-center gap-1.5">
-                                            <Clock size={12} className="text-gray-300" />
-                                            {new Date(user.created_at).toLocaleDateString('fr-FR', {
-                                                day: '2-digit',
-                                                month: 'short',
-                                                year: 'numeric'
-                                            })}
+                                    <td className="px-8 py-5">
+                                        <div className="flex flex-col gap-1">
+                                            <p className="text-xs font-black text-gray-600 tracking-tight">
+                                                <span className="text-[#99334C]">{user.projectsCount || 0}</span> Espace travail
+                                            </p>
+                                            <div className="flex gap-1.5 items-center">
+                                                <div className="h-1 w-8 bg-gray-100 rounded-full overflow-hidden">
+                                                    <div className="h-full bg-emerald-500" style={{ width: `${Math.min((user.marketplaceCount || 0) * 10, 100)}%` }} />
+                                                </div>
+                                                <p className="text-[9px] text-gray-400 font-bold uppercase tracking-widest">{user.marketplaceCount || 0} Publiés</p>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td className="px-8 py-5">
+                                        <p className="text-xs font-bold text-gray-500 flex items-center gap-2.5">
+                                            <Clock size={14} className="text-gray-300 group-hover:text-[#99334C]/40 transition-colors" />
+                                            <span className="group-hover:text-gray-900 transition-colors">
+                                                {new Date(user.created_at).toLocaleDateString('fr-FR', {
+                                                    day: '2-digit',
+                                                    month: 'long',
+                                                    year: 'numeric'
+                                                })}
+                                            </span>
                                         </p>
                                     </td>
-                                    <td className="px-4 py-3 text-right">
-                                        <div className="flex items-center justify-end gap-1">
+                                    <td className="px-8 py-5 text-right">
+                                        <div className="flex items-center justify-end gap-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                                             <button
                                                 onClick={() => toggleRole(user.user_id, user.role)}
-                                                className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                                                title="Modifier rôle"
+                                                className={`flex items-center gap-2 px-4 py-2 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all shadow-sm border ${user.role === 'admin'
+                                                    ? 'bg-white text-gray-500 hover:text-blue-600 border-gray-100 hover:border-blue-100 hover:shadow-blue-600/5'
+                                                    : 'bg-white text-gray-500 hover:text-purple-600 border-gray-100 hover:border-purple-100 hover:shadow-purple-600/5'
+                                                    }`}
+                                                title={user.role === 'admin' ? "Rétrograder en Utilisateur" : "Promouvoir en Admin"}
                                             >
-                                                <UserCheck size={14} />
+                                                <UserCheck size={13} />
+                                                <span>{user.role === 'admin' ? "Rétrograder" : "Promouvoir"}</span>
                                             </button>
-                                            <button className="p-1.5 text-rose-500 hover:bg-rose-50 rounded-lg transition-colors">
-                                                <Trash2 size={14} />
+                                            <button
+                                                className="p-2.5 text-gray-300 hover:text-rose-500 hover:bg-rose-50 rounded-2xl transition-all hover:scale-110 active:scale-90"
+                                                onClick={() => toast("Sécurité : Suppression bientôt activée.")}
+                                            >
+                                                <Trash2 size={18} />
                                             </button>
                                         </div>
                                     </td>
@@ -177,6 +203,15 @@ export default function UserManagement() {
                         </tbody>
                     </table>
                 </div>
+                {filteredUsers.length === 0 && (
+                    <div className="px-8 py-32 flex flex-col items-center justify-center text-center gap-4">
+                        <Users size={64} className="text-gray-100" />
+                        <div>
+                            <p className="text-sm font-black text-gray-400">Aucune correspondance</p>
+                            <p className="text-[11px] text-gray-300 font-bold uppercase tracking-widest mt-1">Vérifiez les critères de recherche</p>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );
