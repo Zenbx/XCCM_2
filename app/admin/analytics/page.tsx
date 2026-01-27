@@ -28,19 +28,6 @@ import {
     CartesianGrid,
     Tooltip,
     Legend,
-    ResponsiveContainer
-} from 'recharts';
-
-import {
-    LineChart,
-    Line,
-    BarChart,
-    Bar,
-    XAxis,
-    YAxis,
-    CartesianGrid,
-    Tooltip,
-    Legend,
     ResponsiveContainer,
     AreaChart,
     Area,
@@ -189,9 +176,7 @@ const AnalyticsPage = () => {
                             </defs>
                             <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
                             <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fontSize: 9, fontWeight: 900, fill: '#9ca3af' }} />
-                            <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 9, fontWeight: 900, fill: '#9ca3af' }} />
-                            <Tooltip contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 30px rgba(0,0,0,0.1)', fontSize: '10px', fontBold: '900' }} />
-                            <Area type="monotone" dataKey="users" stroke="#99334C" strokeWidth={3} fillOpacity={1} fill="url(#colorUsers)" />
+                            <Tooltip contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 30px rgba(0,0,0,0.1)', fontSize: '10px', fontWeight: '900' }} />
                             <Area type="monotone" dataKey="activity" stroke="#4F46E5" strokeWidth={2} fillOpacity={0} />
                         </AreaChart>
                     </ResponsiveContainer>

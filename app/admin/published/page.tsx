@@ -21,6 +21,8 @@ import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 
+import ConfirmationModal from '@/components/UI/ConfirmationModal';
+
 export default function PublishedProjects() {
     const { isAdmin, isLoading: authLoading } = useAuth();
     const router = useRouter();
@@ -28,6 +30,7 @@ export default function PublishedProjects() {
     const [documents, setDocuments] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [isActionInProgress, setIsActionInProgress] = useState<string | null>(null);
+    const [confirmModal, setConfirmModal] = useState<{ isOpen: boolean; docId: string; docName: string } | null>(null);
 
     useEffect(() => {
         if (!authLoading) {
@@ -53,20 +56,27 @@ export default function PublishedProjects() {
         }
     };
 
-    const handleUnpublish = async (docId: string, docName: string) => {
-        if (!confirm(`Êtes-vous sûr de vouloir dépublier "${docName}" ? Cette action le retirera de la bibliothèque publique.`)) {
-            return;
-        }
+    const handleUnpublishClick = (docId: string, docName: string) => {
+        setConfirmModal({
+            isOpen: true,
+            docId,
+            docName
+        });
+    };
+
+    const confirmUnpublish = async () => {
+        if (!confirmModal?.docId) return;
 
         try {
-            setIsActionInProgress(docId);
-            await documentService.unpublishDocument(docId);
+            setIsActionInProgress(confirmModal.docId);
+            await documentService.unpublishDocument(confirmModal.docId);
             toast.success("Document dépublié avec succès");
-            setDocuments(prev => prev.filter(d => d.doc_id !== docId));
+            setDocuments(prev => prev.filter(d => d.doc_id !== confirmModal.docId));
         } catch (error) {
             toast.error("Échec de la dépublication");
         } finally {
             setIsActionInProgress(null);
+            setConfirmModal(null);
         }
     };
 
@@ -209,7 +219,7 @@ export default function PublishedProjects() {
                                                 </a>
                                                 <button
                                                     disabled={isActionInProgress === doc.doc_id}
-                                                    onClick={() => handleUnpublish(doc.doc_id, doc.doc_name)}
+                                                    onClick={() => handleUnpublishClick(doc.doc_id, doc.doc_name)}
                                                     className="p-2.5 text-gray-300 hover:text-rose-500 hover:bg-rose-50 rounded-2xl transition-all shadow-sm bg-white border border-gray-100 hover:border-rose-100 disabled:opacity-50"
                                                     title="Retirer de la vente"
                                                 >
@@ -239,6 +249,17 @@ export default function PublishedProjects() {
                     </table>
                 </div>
             </div>
+
+            <ConfirmationModal
+                isOpen={!!confirmModal}
+                onClose={() => setConfirmModal(null)}
+                onConfirm={confirmUnpublish}
+                title="Dépublier le document ?"
+                message={`Êtes-vous sûr de vouloir retirer "${confirmModal?.docName}" de la bibliothèque publique ? Il ne sera plus accessible aux autres utilisateurs.`}
+                confirmText="Dépublier"
+                variant="danger"
+                isLoading={!!isActionInProgress}
+            />
         </div>
     );
 }

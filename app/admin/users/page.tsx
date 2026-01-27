@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from 'react';
+import ConfirmationModal from '@/components/UI/ConfirmationModal';
 import {
     Users,
     Search,
@@ -57,6 +58,7 @@ export default function UserManagement() {
             await authService.updateUserRole(userId, newRole);
             toast.success("Rôle mis à jour");
             fetchUsers();
+            setConfirmModal(null);
         } catch (error) {
             toast.error("Échec de la mise à jour");
         }
@@ -75,6 +77,8 @@ export default function UserManagement() {
             </div>
         );
     }
+
+    const [confirmModal, setConfirmModal] = useState<{ isOpen: boolean; type: 'role'; userId: string; currentRole: string } | null>(null);
 
     return (
         <div className="space-y-8 max-w-7xl mx-auto pb-20">
@@ -180,7 +184,7 @@ export default function UserManagement() {
                                     <td className="px-8 py-5 text-right">
                                         <div className="flex items-center justify-end gap-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                                             <button
-                                                onClick={() => toggleRole(user.user_id, user.role)}
+                                                onClick={() => setConfirmModal({ isOpen: true, type: 'role', userId: user.user_id, currentRole: user.role })}
                                                 className={`flex items-center gap-2 px-4 py-2 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all shadow-sm border ${user.role === 'admin'
                                                     ? 'bg-white text-gray-500 hover:text-blue-600 border-gray-100 hover:border-blue-100 hover:shadow-blue-600/5'
                                                     : 'bg-white text-gray-500 hover:text-purple-600 border-gray-100 hover:border-purple-100 hover:shadow-purple-600/5'
@@ -213,6 +217,18 @@ export default function UserManagement() {
                     </div>
                 )}
             </div>
+
+            <ConfirmationModal
+                isOpen={!!confirmModal}
+                onClose={() => setConfirmModal(null)}
+                onConfirm={() => confirmModal && toggleRole(confirmModal.userId, confirmModal.currentRole)}
+                title={confirmModal?.currentRole === 'admin' ? "Rétrograder l'administrateur ?" : "Promouvoir administrateur ?"}
+                message={confirmModal?.currentRole === 'admin'
+                    ? "Cet utilisateur perdra l'accès aux fonctions de gestion et au dashboard Admin OS. Êtes-vous certain de vouloir continuer ?"
+                    : "Cet utilisateur aura un accès complet au dashboard Admin OS et pourra gérer les utilisateurs et le contenu. Confirmer l'élévation de privilèges ?"}
+                confirmText={confirmModal?.currentRole === 'admin' ? "Rétrograder" : "Promouvoir"}
+                variant={confirmModal?.currentRole === 'admin' ? 'warning' : 'info'}
+            />
         </div>
     );
 }

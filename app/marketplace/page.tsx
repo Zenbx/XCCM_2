@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { marketplaceService, MarketplaceItem } from '@/services/marketplaceService';
 import { vaultService } from '@/services/vaultService';
 import toast from 'react-hot-toast';
+import { MarketplaceViewer } from '@/components/Marketplace/MarketplaceViewer';
 
 const MarketplacePage = () => {
     const [searchTerm, setSearchTerm] = useState('');
@@ -289,9 +290,9 @@ const MarketplacePage = () => {
                             </div>
 
                             <div className="p-10 overflow-y-auto flex-1 bg-[#FDFCFB]">
-                                <div
-                                    className="prose prose-lg max-w-none text-gray-700"
-                                    dangerouslySetInnerHTML={{ __html: selectedGranule.content || '<p class="text-gray-400 italic">Aucun aperçu disponible.</p>' }}
+                                <MarketplaceViewer
+                                    content={selectedGranule.content || selectedGranule.description}
+                                    type={selectedGranule.type as any}
                                 />
                             </div>
 
