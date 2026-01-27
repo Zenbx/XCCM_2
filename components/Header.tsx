@@ -57,7 +57,7 @@ export default function Header() {
   };
 
   // Hide header on specific routes that manage their own layout/header
-  if (pathname?.includes('/book-reader') || pathname?.includes('/admin') || pathname?.startsWith('/edit')) return null;
+  if (pathname?.includes('/book-reader') || pathname?.includes('/admin') || (pathname?.startsWith('/edit') && !pathname?.startsWith('/edit-home'))) return null;
 
   return (
     <header className="w-full bg-white dark:bg-gray-900 shadow-md border-b border-gray-100 dark:border-gray-800 fixed top-0 left-0 right-0" style={{ zIndex: 2 }}>

@@ -150,13 +150,13 @@ const RegisterContent = () => {
 
   const handleGoogleSignup = () => {
     const apiBase = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001').trim();
-    const callbackUrl = `${apiBase}/api/auth/bridge?mode=register`;
+    const callbackUrl = `${apiBase}/api/auth/bridge?mode=register&provider=google`;
     window.location.href = `${apiBase}/api/auth/signin/google?callbackUrl=${encodeURIComponent(callbackUrl)}`;
   };
 
   const handleMicrosoftSignup = () => {
     const apiBase = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001').trim();
-    const callbackUrl = `${apiBase}/api/auth/bridge?mode=register`;
+    const callbackUrl = `${apiBase}/api/auth/bridge?mode=register&provider=microsoft`;
     window.location.href = `${apiBase}/api/auth/signin/azure-ad?callbackUrl=${encodeURIComponent(callbackUrl)}`;
   };
 

@@ -6,8 +6,9 @@ import React from "react";
 export default function MainLayoutWrapper({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
 
-    const noPaddingRoutes = ["/edit", "/book-reader", "/admin"];
-    const shouldHidePadding = noPaddingRoutes.some(route => pathname?.startsWith(route));
+    const shouldHidePadding = pathname?.startsWith('/book-reader') ||
+        pathname?.startsWith('/admin') ||
+        (pathname?.startsWith('/edit') && !pathname?.startsWith('/edit-home'));
 
     return (
         <div

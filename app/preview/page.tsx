@@ -198,9 +198,14 @@ const PreviewPage = () => {
             });
             toast.success("Publication réussie !");
             setShowFormatDialog(false);
-        } catch (error) {
+        } catch (error: any) {
             console.error('Erreur lors de la publication:', error);
-            toast.error(`Erreur lors de la publication: ${error instanceof Error ? error.message : 'Erreur inconnue'}`);
+            // Handle duplicate name error specifically
+            if (error.message?.includes('déjà utilisé') || error.message?.includes('snapshot') || error.message?.includes('409')) {
+                toast.error("Ce nom de snapshot est déjà utilisé. Veuillez en choisir un autre.");
+            } else {
+                toast.error(`Erreur lors de la publication: ${error instanceof Error ? error.message : 'Erreur inconnue'}`);
+            }
         } finally {
             setIsPublishing(false);
         }

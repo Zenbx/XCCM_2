@@ -147,9 +147,8 @@ const AccountPage = () => {
       const data = await response.json();
 
       if (data.success && data.data.projects) {
-        // En tant que propriétaire, on filtre uniquement ceux qui sont marqués comme publiés
-        // Le endpoint /api/users/:id peut renvoyer plus d'infos pour le proprio
-        setPublishedDocs(data.data.projects.filter((p: any) => p.is_published));
+        // Aligner sur la structure /profile (déjà filtré par le backend)
+        setPublishedDocs(data.data.projects);
       }
     } catch (err) {
       console.error("Error fetching published projects:", err);

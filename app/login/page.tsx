@@ -73,13 +73,13 @@ const LoginPage = () => {
 
   const handleGoogleLogin = () => {
     const apiBase = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001').trim();
-    const callbackUrl = `${apiBase}/api/auth/bridge?mode=login`;
+    const callbackUrl = `${apiBase}/api/auth/bridge?mode=login&provider=google`;
     window.location.href = `${apiBase}/api/auth/signin/google?callbackUrl=${encodeURIComponent(callbackUrl)}`;
   };
 
   const handleMicrosoftLogin = () => {
     const apiBase = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001').trim();
-    const callbackUrl = `${apiBase}/api/auth/bridge?mode=login`;
+    const callbackUrl = `${apiBase}/api/auth/bridge?mode=login&provider=microsoft`;
     window.location.href = `${apiBase}/api/auth/signin/azure-ad?callbackUrl=${encodeURIComponent(callbackUrl)}`;
   };
 
