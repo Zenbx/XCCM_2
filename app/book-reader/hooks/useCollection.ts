@@ -82,81 +82,34 @@ export const useCollection = (docId: string | null, currentDoc: any) => {
 
     const confirmCollectToProject = async (parentId: string, parentTitle: string) => {
         if (!collectedGranule || !selectedProject) return;
+
+        const projectName = (selectedProject as Project).pr_name;
+        const findPart = () => navigationPath.find(i => i.type === 'part');
+        const findChapter = () => navigationPath.find(i => i.type === 'chapter');
+        const findPara = () => navigationPath.find(i => i.type === 'paragraph');
+
+        const partInPath = findPart();
+        const chapterInPath = findChapter();
+        const paraInPath = findPara();
+
+        // --- OPTIMISTIC UI ---
+        // We close the modal and show success immediately
+        toast.success(`Insertion de "${collectedGranule.title}" démarrée...`, { icon: '🚀' });
+        setShowCollectModal(false);
+        setModalStep('type');
+        setSelectedProject(null);
+        setNavigationPath([]);
+
+        // Record insertion state globally if needed, but here we run it in background
         setIsInserting(true);
-        try {
-            const projectName = (selectedProject as Project).pr_name;
-            const findPart = () => navigationPath.find(i => i.type === 'part');
-            const findChapter = () => navigationPath.find(i => i.type === 'chapter');
-            const findPara = () => navigationPath.find(i => i.type === 'paragraph');
 
-            const partInPath = findPart();
-            const chapterInPath = findChapter();
-            const paraInPath = findPara();
-
-            if (collectedGranule.type === 'part') {
-                const nextPartNum = (projectStructure?.length || 0) + 1;
-                const newPart = await structureService.createPart(projectName, {
-                    part_title: collectedGranule.title,
-                    part_number: nextPartNum,
-                    part_intro: collectedGranule.part_intro || ''
-                });
-
-                if (includeChildren && collectedGranule.chapters) {
-                    for (let i = 0; i < collectedGranule.chapters.length; i++) {
-                        const chapter = collectedGranule.chapters[i];
-                        const newChapter = await structureService.createChapter(projectName, newPart.part_title, {
-                            chapter_title: chapter.chapter_title,
-                            chapter_number: i + 1
-                        });
-                        await recurseChapter(newPart.part_title, newChapter.chapter_title, chapter);
-                    }
-                }
-            } else if (collectedGranule.type === 'chapter') {
-                const partObj = projectStructure?.find(p => p.part_id === parentId);
-                const nextChapNum = (partObj?.chapters?.length || 0) + 1;
-
-                const newChapter = await structureService.createChapter(projectName, parentTitle, {
-                    chapter_title: collectedGranule.title,
-                    chapter_number: nextChapNum
-                });
-
-                if (includeChildren && collectedGranule.paragraphs) {
-                    await recurseChapter(parentTitle, newChapter.chapter_title, collectedGranule);
-                }
-            } else if (collectedGranule.type === 'paragraph') {
-                const partTitle = partInPath?.part_title || '';
-                const partObj = projectStructure?.find(p => p.part_title === partTitle);
-                const chapObj = partObj?.chapters?.find(c => c.chapter_id === parentId);
-                const nextParaNum = (chapObj?.paragraphs?.length || 0) + 1;
-
-                const newPara = await structureService.createParagraph(projectName, partTitle, parentTitle, {
-                    para_name: collectedGranule.title,
-                    para_number: nextParaNum
-                });
-
-                if (includeChildren && collectedGranule.notions) {
-                    await recurseParagraph(partTitle, parentTitle, newPara.para_name, collectedGranule);
-                }
-            } else if (collectedGranule.type === 'notion') {
-                const partTitle = partInPath?.part_title || '';
-                const chapTitle = chapterInPath?.chapter_title || '';
-                const partObj = projectStructure?.find(p => p.part_title === partTitle);
-                const chapObj = partObj?.chapters?.find(c => c.chapter_title === chapTitle);
-                const paraObj = chapObj?.paragraphs?.find(p => p.para_id === parentId);
-                const nextNotionNum = (paraObj?.notions?.length || 0) + 1;
-
-                await structureService.createNotion(projectName, partTitle, chapTitle, parentTitle, {
-                    notion_name: collectedGranule.title,
-                    notion_content: collectedGranule.content || collectedGranule.notion_content || '',
-                    notion_number: nextNotionNum
-                });
-            }
-
+        const performInsertion = async () => {
+            // Helper functions defined within scope to have access to projectName
             async function recurseChapter(pTitle: string, cTitle: string, chapData: any) {
                 if (!chapData.paragraphs) return;
                 for (let j = 0; j < chapData.paragraphs.length; j++) {
                     const para = chapData.paragraphs[j];
-                    const newPara = await structureService.createParagraph(projectName!, pTitle, cTitle, {
+                    const newPara = await structureService.createParagraph(projectName, pTitle, cTitle, {
                         para_name: para.para_name,
                         para_number: j + 1
                     });
@@ -168,7 +121,7 @@ export const useCollection = (docId: string | null, currentDoc: any) => {
                 if (!paraData.notions) return;
                 for (let k = 0; k < paraData.notions.length; k++) {
                     const notion = paraData.notions[k];
-                    await structureService.createNotion(projectName!, pTitle, cTitle, paName, {
+                    await structureService.createNotion(projectName, pTitle, cTitle, paName, {
                         notion_name: notion.notion_name,
                         notion_content: notion.notion_content || '',
                         notion_number: k + 1
@@ -176,16 +129,77 @@ export const useCollection = (docId: string | null, currentDoc: any) => {
                 }
             }
 
-            toast.success(`Granule "${collectedGranule.title}" inséré !`);
-            setShowCollectModal(false);
-            setModalStep('type');
-            setSelectedProject(null);
-            setNavigationPath([]);
-        } catch (err: any) {
-            toast.error(err.message || "Erreur d'insertion");
-        } finally {
-            setIsInserting(false);
-        }
+            try {
+                if (collectedGranule.type === 'part') {
+                    const nextPartNum = (projectStructure?.length || 0) + 1;
+                    const newPart = await structureService.createPart(projectName, {
+                        part_title: collectedGranule.title,
+                        part_number: nextPartNum,
+                        part_intro: collectedGranule.part_intro || ''
+                    });
+
+                    if (includeChildren && collectedGranule.chapters) {
+                        for (let i = 0; i < collectedGranule.chapters.length; i++) {
+                            const chapter = collectedGranule.chapters[i];
+                            const newChapter = await structureService.createChapter(projectName, newPart.part_title, {
+                                chapter_title: chapter.chapter_title,
+                                chapter_number: i + 1
+                            });
+                            await recurseChapter(newPart.part_title, newChapter.chapter_title, chapter);
+                        }
+                    }
+                } else if (collectedGranule.type === 'chapter') {
+                    const partObj = projectStructure?.find(p => p.part_id === parentId);
+                    const nextChapNum = (partObj?.chapters?.length || 0) + 1;
+
+                    const newChapter = await structureService.createChapter(projectName, parentTitle, {
+                        chapter_title: collectedGranule.title,
+                        chapter_number: nextChapNum
+                    });
+
+                    if (includeChildren && collectedGranule.paragraphs) {
+                        await recurseChapter(parentTitle, newChapter.chapter_title, collectedGranule);
+                    }
+                } else if (collectedGranule.type === 'paragraph') {
+                    const partTitle = partInPath?.part_title || '';
+                    const partObj = projectStructure?.find(p => p.part_title === partTitle);
+                    const chapObj = partObj?.chapters?.find(c => c.chapter_id === parentId);
+                    const nextParaNum = (chapObj?.paragraphs?.length || 0) + 1;
+
+                    const newPara = await structureService.createParagraph(projectName, partTitle, parentTitle, {
+                        para_name: collectedGranule.title,
+                        para_number: nextParaNum
+                    });
+
+                    if (includeChildren && collectedGranule.notions) {
+                        await recurseParagraph(partTitle, parentTitle, newPara.para_name, collectedGranule);
+                    }
+                } else if (collectedGranule.type === 'notion') {
+                    const partTitle = partInPath?.part_title || '';
+                    const chapTitle = chapterInPath?.chapter_title || '';
+                    const partObj = projectStructure?.find(p => p.part_title === partTitle);
+                    const chapObj = partObj?.chapters?.find(c => c.chapter_title === chapTitle);
+                    const paraObj = chapObj?.paragraphs?.find(p => p.para_id === parentId);
+                    const nextNotionNum = (paraObj?.notions?.length || 0) + 1;
+
+                    await structureService.createNotion(projectName, partTitle, chapTitle, parentTitle, {
+                        notion_name: collectedGranule.title,
+                        notion_content: collectedGranule.content || collectedGranule.notion_content || '',
+                        notion_number: nextNotionNum
+                    });
+                }
+
+                toast.success(`"${collectedGranule.title}" a été inséré avec succès !`);
+            } catch (err: any) {
+                console.error("Insertion error:", err);
+                toast.error(`Échec de l'insertion de "${collectedGranule.title}": ${err.message}`);
+            } finally {
+                setIsInserting(false);
+            }
+        };
+
+        // Trigger background insertion
+        performInsertion();
     };
 
     return {

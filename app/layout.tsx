@@ -37,6 +37,8 @@ import { NextIntlClientProvider } from 'next-intl';
 import { getMessages } from 'next-intl/server';
 import { cookies } from 'next/headers';
 
+import MainLayoutWrapper from "@/components/MainLayoutWrapper";
+
 export default async function RootLayout({
   children,
 }: Readonly<{
@@ -55,9 +57,9 @@ export default async function RootLayout({
         <NextIntlClientProvider locale={locale} messages={messages}>
           <Providers>
             <Header />
-            <div className="pt-[60px] lg:pt-[70px]" style={{ position: 'relative' }}>
+            <MainLayoutWrapper>
               {children}
-            </div>
+            </MainLayoutWrapper>
             <Footer />
           </Providers>
         </NextIntlClientProvider>
