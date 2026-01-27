@@ -58,6 +58,7 @@ const XCCM2Editor = () => {
     hasUnsavedChanges, setHasUnsavedChanges,
     textFormat, setTextFormat,
     loadProject,
+    fetchComments, // ✅ Needed for real-time
     handleUpdateProjectSettings
   } = useEditorState(projectName);
 
@@ -118,7 +119,7 @@ const XCCM2Editor = () => {
   };
 
   // Mock Granules for ImportPanel (Strict & Rich Hierarchy: Part > Chapter > Paragraph > Notion)
-  const mockGranules = [
+  const [importableGranules, setImportableGranules] = useState<any[]>([
     {
       id: 'g1',
       type: 'part',
@@ -214,7 +215,7 @@ const XCCM2Editor = () => {
         }
       ]
     }
-  ];
+  ]);
 
   const handleDragStart = (e: React.DragEvent, granule: any) => {
     e.dataTransfer.setData('granule', JSON.stringify(granule));
@@ -768,7 +769,7 @@ const XCCM2Editor = () => {
     userId: authUser?.user_id || 'anonymous',
     userName: `${authUser?.firstname || 'L’Auteur'} ${authUser?.lastname || ''}`.trim(),
     serverUrl: process.env.NEXT_PUBLIC_HOCUSPOCUS_URL || 'ws://localhost:1234',
-    enabled: participantCount > 1 // ✅ Lazy activate only when multiple users
+    enabled: true // ✅ Always active to ensure seeding and stability
   });
 
   const collaborationData = useMemo(() => {
@@ -868,14 +869,13 @@ const XCCM2Editor = () => {
 
   // Real-time Structure sync
   const handleStructureChange = useCallback((event: string) => {
-    if (event === 'NOTION_UPDATED' || event === 'STRUCTURE_CHANGED' || event === 'COMMENT_ADDED') {
-      loadProject(true); // Silencieux (isSilent=true)
-      if (event === 'COMMENT_ADDED') {
-        toast.success('💬 Nouveau commentaire');
-      }
-      // Mise à jour collaborative SILENCIEUSE (pas de toast agaçant)
+    if (event === 'NOTION_UPDATED' || event === 'STRUCTURE_CHANGED') {
+      loadProject(true); // Silencieux structure update
+    } else if (event === 'COMMENT_ADDED') {
+      fetchComments(); // ✅ Direct comment refresh
+      toast.success('💬 Nouveau commentaire', { icon: '💬' });
     }
-  }, [loadProject]);
+  }, [loadProject, fetchComments]);
 
   useRealtimeSync({
     projectName: projectData?.pr_name || projectName || '',
@@ -1242,8 +1242,12 @@ const XCCM2Editor = () => {
           structure={structure}
           currentContext={currentContext}
           onUpdateProject={(data: any) => handleUpdateProjectSettings(data, router)}
-          onImportFile={() => toast('Importation bientôt disponible')}
-          granules={mockGranules}
+          onImportFile={(newGranules: any) => {
+            console.log("Importing granules:", newGranules);
+            setImportableGranules(prev => [...newGranules, ...prev]);
+            toast.success(`${newGranules.length} granules importés !`);
+          }}
+          granules={importableGranules}
           onDragStart={handleDragStart}
           socraticData={{
             feedback: socraticFeedback,

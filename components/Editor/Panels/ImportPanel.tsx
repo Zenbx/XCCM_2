@@ -23,17 +23,59 @@ const ImportPanel: React.FC<ImportPanelProps> = ({ granules, onDragStart, onImpo
     reader.onload = (event) => {
       try {
         const json = JSON.parse(event.target?.result as string);
+
+        // Recursive flattener
+        const flattened: GranuleData[] = [];
+
+        const processItem = (item: any) => {
+          // Mapping to GranuleData format
+          const granule: GranuleData = {
+            id: Math.random().toString(36).substr(2, 9),
+            content: item.content || item.part_title || item.chapter_title || item.para_name || item.notion_name || "Sans titre",
+            type: item.type,
+            icon: item.type === 'part' ? 'Folder' : item.type === 'chapter' ? 'Book' : item.type === 'notion' ? 'File' : 'FileText',
+            introduction: item.part_intro || item.introduction,
+            previewContent: item.notion_content || item.previewContent,
+            author: "Importé",
+            // Preserve children for the Granule component's own recursion
+            children: item.children ? item.children.map((child: any) => processChild(child)) : undefined
+          };
+
+          // If the item itself is a valid granule type, add it to top level list if we want flat list
+          // OR we just assume the root JSON is a list of top-level items.
+          // The Granule component handles children recursively, so we just need to format the tree.
+          return granule;
+        };
+
+        const processChild = (item: any): GranuleData => {
+          return {
+            id: Math.random().toString(36).substr(2, 9),
+            content: item.content || item.chapter_title || item.para_name || item.notion_name || "Sans titre",
+            type: item.type,
+            icon: item.type === 'chapter' ? 'Book' : item.type === 'paragraph' ? 'FileText' : 'File',
+            previewContent: item.notion_content,
+            children: item.children ? item.children.map((c: any) => processChild(c)) : undefined
+          };
+        }
+
+        // Handle root as array or single object
+        const rootItems = Array.isArray(json) ? json : [json];
+        const formattedItems = rootItems.map(item => processItem(item));
+
         if (onImportFile) {
-          onImportFile(json);
+          // We pass the RAW json structure for the logic, but for display we might need to update local state too?
+          // Actually ImportPanel props has 'granules'. We can't update props. 
+          // So we should probably call onImportFile with the NEW list so the parent updates the state.
+          onImportFile(formattedItems);
         }
       } catch (err) {
         console.error("Erreur lecture JSON:", err);
-        alert("Fichier invalide. Veuillez sélectionner un fichier JSON de structure XCCM.");
+        alert("Fichier invalide. Structure non reconnue.");
       }
     };
     reader.readAsText(file);
 
-    // Reset input for next same file selection
+    // Reset input
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
