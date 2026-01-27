@@ -585,23 +585,61 @@ const XCCM2Editor = () => {
     if (!currentContext || !projectName) return;
     console.log(`[Save] Saving ${currentContext.type} "${currentContext.notionName || currentContext.partTitle}"...`, { isAuto, contentLength: editorContent.length });
     try {
-      setIsSaving(true);
+      // Auto-save ne bloque PAS l'interface
+      if (!isAuto) setIsSaving(true);
+
       if (currentContext.type === 'notion' && currentContext.notionName) {
         console.log(`[Save] Updating Notion: ${currentContext.notionName} in ${currentContext.paraName}`);
         await structureService.updateNotion(projectName, currentContext.partTitle, currentContext.chapterTitle!, currentContext.paraName!, currentContext.notionName!, { notion_content: editorContent });
-        if (currentContext.notion) currentContext.notion.notion_content = editorContent;
+
+        // CRITIQUE: Mettre à jour structure directement pour éviter perte de contenu
+        setStructure(prev => prev.map(part => {
+          if (part.part_title === currentContext.partTitle) {
+            return {
+              ...part,
+              chapters: part.chapters?.map(chapter => {
+                if (chapter.chapter_title === currentContext.chapterTitle) {
+                  return {
+                    ...chapter,
+                    paragraphs: chapter.paragraphs?.map(para => {
+                      if (para.para_name === currentContext.paraName) {
+                        return {
+                          ...para,
+                          notions: para.notions?.map(notion =>
+                            notion.notion_name === currentContext.notionName
+                              ? { ...notion, notion_content: editorContent }
+                              : notion
+                          )
+                        };
+                      }
+                      return para;
+                    })
+                  };
+                }
+                return chapter;
+              })
+            };
+          }
+          return part;
+        }));
+
       } else if (currentContext.type === 'part' && currentContext.partTitle) {
         await structureService.updatePart(projectName, currentContext.partTitle, { part_intro: editorContent });
-        if (currentContext.part) currentContext.part.part_intro = editorContent;
+
+        // CRITIQUE: Mettre à jour structure directement
+        setStructure(prev => prev.map(part =>
+          part.part_title === currentContext.partTitle
+            ? { ...part, part_intro: editorContent }
+            : part
+        ));
       }
+
       setHasUnsavedChanges(false);
-      // Synchronisation locale de la structure pour éviter le contenu obsolète au retour
-      setStructure([...structure]);
       if (!isAuto) toast.success('Sauvegardé !');
     } catch (err: any) {
       toast.error(err.message || "Erreur de sauvegarde");
     } finally {
-      setIsSaving(false);
+      if (!isAuto) setIsSaving(false);
     }
   };
 
@@ -617,13 +655,11 @@ const XCCM2Editor = () => {
   // Real-time Structure sync
   const handleStructureChange = useCallback((event: string) => {
     if (event === 'NOTION_UPDATED' || event === 'STRUCTURE_CHANGED' || event === 'COMMENT_ADDED') {
-      loadProject(true);
+      loadProject(true); // Silencieux (isSilent=true)
       if (event === 'COMMENT_ADDED') {
-        // Optionnel: On pourrait juste recharger les commentaires, mais structure recharger c'est plus safe
         toast.success('💬 Nouveau commentaire');
-      } else {
-        toast.success('📡 Mise à jour collaborative');
       }
+      // Mise à jour collaborative SILENCIEUSE (pas de toast agaçant)
     }
   }, [loadProject]);
 
