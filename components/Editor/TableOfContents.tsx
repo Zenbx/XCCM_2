@@ -11,6 +11,8 @@ import ContextMenu from './ContextMenu';
 import RichTooltip from '../UI/RichTooltip';
 import { useOptimisticUpdate } from '@/hooks/useOptimisticUpdate';
 import { usePrefetch } from '@/hooks/usePrefetch'; // ✅ Prefetching
+import { showError } from '../UI/ErrorToast'; // ✅ Error messages améliorés
+import { useKeyboardNavigation } from '@/hooks/useKeyboardNavigation'; // ✅ Navigation clavier
 
 // Animation variants pour les conteneurs expandables
 const expandVariants = {
@@ -254,6 +256,63 @@ const moveInTree = (
   return newStructure;
 };
 
+// Helper: Flatten hierarchical structure to flat array for keyboard navigation
+function flattenStructure(
+  structure: Part[],
+  expandedItems: Record<string, boolean>
+): Array<{
+  id: string;
+  type: 'part' | 'chapter' | 'paragraph' | 'notion';
+  depth: number;
+  data: any;
+}> {
+  const result: any[] = [];
+
+  structure.forEach(part => {
+    result.push({
+      type: 'part',
+      data: part,
+      depth: 0,
+      id: part.part_id
+    });
+
+    if (expandedItems[`part-${part.part_id}`] && part.chapters) {
+      part.chapters.forEach(chapter => {
+        result.push({
+          type: 'chapter',
+          data: chapter,
+          depth: 1,
+          id: chapter.chapter_id
+        });
+
+        if (expandedItems[`chapter-${chapter.chapter_id}`] && chapter.paragraphs) {
+          chapter.paragraphs.forEach(para => {
+            result.push({
+              type: 'paragraph',
+              data: para,
+              depth: 2,
+              id: para.para_id
+            });
+
+            if (expandedItems[`paragraph-${para.para_id}`] && para.notions) {
+              para.notions.forEach(notion => {
+                result.push({
+                  type: 'notion',
+                  data: notion,
+                  depth: 3,
+                  id: notion.notion_id
+                });
+              });
+            }
+          });
+        }
+      });
+    }
+  });
+
+  return result;
+}
+
 interface TableOfContentsProps {
   projectName: string;
   structure: Part[];
@@ -338,6 +397,70 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
 
   // ✅ Hover prefetch timers
   const hoverTimers = useRef<Record<string, NodeJS.Timeout>>({});
+
+  // ✅ Navigation clavier - Flatten structure
+  const flatItems = React.useMemo(
+    () => flattenStructure(optimisticStructure, expandedItems),
+    [optimisticStructure, expandedItems]
+  );
+
+  // ✅ Navigation clavier hook
+  const {
+    focusedIndex,
+    isTOCFocused,
+    tocRef,
+    handleTOCFocus,
+    handleTOCBlur
+  } = useKeyboardNavigation({
+    items: flatItems,
+    expandedItems,
+    onSelect: (item) => {
+      if (item.type === 'notion') {
+        const part = optimisticStructure.find(p =>
+          p.chapters?.some(c =>
+            c.paragraphs?.some(pa =>
+              pa.notions?.some(n => n.notion_id === item.id)
+            )
+          )
+        );
+        const chapter = part?.chapters?.find(c =>
+          c.paragraphs?.some(pa =>
+            pa.notions?.some(n => n.notion_id === item.id)
+          )
+        );
+        const para = chapter?.paragraphs?.find(pa =>
+          pa.notions?.some(n => n.notion_id === item.id)
+        );
+
+        if (part && chapter && para) {
+          onSelectNotion({
+            projectName,
+            partTitle: part.part_title,
+            chapterTitle: chapter.chapter_title,
+            paraName: para.para_name,
+            notionName: item.data.notion_name,
+            notion: item.data
+          });
+        }
+      } else if (item.type === 'part' && onSelectPart) {
+        onSelectPart({
+          projectName,
+          partTitle: item.data.part_title,
+          part: item.data
+        });
+      }
+    },
+    onToggleExpand: (id) => toggleExpand(id),
+    onRename: (item) => {
+      const title = item.type === 'part' ? item.data.part_title :
+        item.type === 'chapter' ? item.data.chapter_title :
+          item.type === 'paragraph' ? item.data.para_name :
+            item.data.notion_name;
+      startEditing(null as any, item.id, title);
+    },
+    onDelete: onDelete ? (item) => onDelete(item.type, item.id) : undefined,
+    enabled: true
+  });
 
   // Sync avec les props (le serveur a toujours raison à la fin)
   // Sauf si on est en train de draguer (optionnel, mais safest est react useEffect)
@@ -458,8 +581,12 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
       try {
         await onRename(type, id, newTitle);
       } catch (error) {
-        toast.error("Échec du renommage");
-        toast.error("Échec du renommage");
+        showError({
+          title: "Échec du renommage",
+          message: error instanceof Error ? error.message : "Une erreur est survenue lors du renommage de l'élément.",
+          type: 'network',
+          retry: () => submitRename(type, id)
+        });
       } finally {
         isSubmitting.current = false;
       }
@@ -493,7 +620,13 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
     try {
       await onDelete(contextMenu.type, contextMenu.id);
     } catch (error) {
-      toast.error("Erreur lors de la suppression: " + (error instanceof Error ? error.message : "Erreur inconnue"));
+      const errorMsg = error instanceof Error ? error.message : "Erreur inconnue";
+      showError({
+        title: "Erreur lors de la suppression",
+        message: errorMsg,
+        type: 'network',
+        retry: () => handleContextMenuDelete()
+      });
     }
   };
 
@@ -828,8 +961,18 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
 
   return (
     <div
-      className="bg-white border-r border-gray-200 overflow-y-auto flex flex-col h-full select-none"
-      style={{ width: `${width}px` }}
+      ref={tocRef as React.RefObject<HTMLDivElement>}
+      tabIndex={0}
+      onFocus={handleTOCFocus}
+      onBlur={handleTOCBlur}
+      className={`bg-white border-r border-gray-200 overflow-y-auto flex flex-col h-full select-none transition-all`}
+      style={{
+        width: `${width}px`,
+        ...(isTOCFocused && {
+          boxShadow: 'inset 0 0 0 4px #99334C40'
+        })
+      }}
+      aria-label="Table of Contents - Use arrow keys to navigate, Enter to select, F2 to rename, Delete to remove"
     >
       {/* Header */}
       <div className="p-4 border-b border-gray-100 flex items-center justify-between sticky top-0 z-10 bg-white/95 backdrop-blur-sm">

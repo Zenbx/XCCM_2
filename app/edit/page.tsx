@@ -404,7 +404,9 @@ const XCCM2Editor = () => {
 
         if (notion) {
           const selectUpdate = async () => {
-            if (hasUnsavedChanges) await handleSave(true);
+            // CRITIQUE: Ne PAS attendre la sauvegarde (ferait freezer 4s)
+            if (hasUnsavedChanges) handleSave(true); // Background save, pas d'await
+
             setCurrentContext({
               type: 'notion',
               projectName: projectName!,
@@ -672,7 +674,7 @@ const XCCM2Editor = () => {
   // Lifecycle
   useEffect(() => { loadProject(); }, [projectName]);
 
-  // Content External Sync
+  // Content External Sync - FIXÉ pour ne pas écraser le contenu de l'utilisateur
   useEffect(() => {
     if (!structure || structure.length === 0) return;
     if (currentContext?.type === 'notion' && currentContext.notionName) {
@@ -689,12 +691,31 @@ const XCCM2Editor = () => {
       };
       const foundNotion = findNotion();
       if (foundNotion) {
-        if (foundNotion.notion_content !== editorContent && !hasUnsavedChanges) {
+        // CRITIQUE: Ne jamais écraser le contenu si l'utilisateur est en train d'éditer
+        // On sync seulement si c'est un changement externe ET qu'on n'a pas de modifications locales
+        const isSignificantChange = foundNotion.notion_content !== editorContent;
+        const shouldSync = isSignificantChange && !hasUnsavedChanges && !isSaving;
+
+        if (shouldSync) {
+          console.log('[Content Sync] Updating from external change');
           setEditorContent(foundNotion.notion_content || '');
         }
       }
     }
+    else if (currentContext?.type === 'part' && currentContext.partTitle) {
+      const foundPart = structure.find(p => p.part_id === currentContext.part?.part_id);
+      if (foundPart) {
+        const isSignificantChange = foundPart.part_intro !== editorContent;
+        const shouldSync = isSignificantChange && !hasUnsavedChanges && !isSaving;
+
+        if (shouldSync) {
+          console.log('[Content Sync] Updating part intro from external change');
+          setEditorContent(foundPart.part_intro || '');
+        }
+      }
+    }
   }, [structure]);
+
 
   // Socratic Debounce
   useEffect(() => {
@@ -928,6 +949,17 @@ const XCCM2Editor = () => {
               onEditorReady={setTiptapEditor}
               onDrop={handleDropGranule}
               editorRef={editorRef}
+              placeholder={
+                !currentContext
+                  ? "Sélectionnez ou créez une notion pour commencer..."
+                  : structure.length === 0
+                    ? "Créez votre première partie avec le bouton + dans la barre latérale"
+                    : currentContext.type === 'notion'
+                      ? "Commencez à écrire... Tapez / pour des commandes rapides"
+                      : currentContext.type === 'part'
+                        ? "Rédigez l'introduction de cette partie..."
+                        : "Sélectionnez une notion ou une partie pour éditer"
+              }
               collaboration={collaborationData}
               socraticFeedback={mappedSocraticFeedback as any}
             />
