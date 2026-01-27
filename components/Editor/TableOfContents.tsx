@@ -705,11 +705,6 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
       forbiddenReason = "❌ Impossible de déposer un élément sur lui-même";
     }
 
-    // 2. ✅ NOUVEAU: Block all drops if a notion is currently open
-    if (isNotionOpen && !isForbidden) {
-      isForbidden = true;
-      forbiddenReason = "❌ Fermez la notion actuelle avant de réorganiser la structure";
-    }
 
     // 3. Strict hierarchical rules
     if (!isForbidden && dragType === 'part' && targetType !== 'part') {
@@ -793,12 +788,7 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
 
     if (forbiddenTarget === targetId) {
       triggerShake(targetId);
-      // ✅ NOUVEAU: Show contextual error toast
-      if (isNotionOpen) {
-        showInvalidDropToast("❌ Fermez la notion actuelle avant de réorganiser la structure");
-      } else {
-        showInvalidDropToast("❌ Cette opération n'est pas permise ici");
-      }
+      showInvalidDropToast("❌ Cette opération n'est pas permise ici");
       setDropTarget(null);
       setForbiddenTarget(null);
       return;
