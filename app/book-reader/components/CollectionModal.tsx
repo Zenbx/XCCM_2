@@ -25,12 +25,15 @@ interface CollectionModalProps {
     onConfirmVault: () => void;
     onConfirmProject: (parentId: string, parentTitle: string) => void;
     isInserting: boolean;
+    includeChildren: boolean;
+    setIncludeChildren: (val: boolean) => void;
 }
 
 const CollectionModal: React.FC<CollectionModalProps> = ({
     isOpen, onClose, granule, step, setStep, projects, onSelectProject,
     selectedProject, projectStructure, isLoadingProjects, isLoadingStructure,
-    navigationPath, setNavigationPath, onNavigateIn, onNavigateBack, onConfirmVault, onConfirmProject, isInserting
+    navigationPath, setNavigationPath, onNavigateIn, onNavigateBack, onConfirmVault,
+    onConfirmProject, isInserting, includeChildren, setIncludeChildren
 }) => {
     if (!isOpen || !granule) return null;
 
@@ -86,7 +89,7 @@ const CollectionModal: React.FC<CollectionModalProps> = ({
                             </div>
                             <div>
                                 <h3 className="font-bold text-gray-900">Récupérer le granule</h3>
-                                <p className="text-xs text-gray-500 line-clamp-1">"{granule.title}"</p>
+                                <p className="text-xs text-gray-500 line-clamp-1">\"{granule.title}\"</p>
                             </div>
                         </div>
                         <button onClick={onClose} className="p-2 hover:bg-gray-200 rounded-full transition-colors">
@@ -209,6 +212,24 @@ const CollectionModal: React.FC<CollectionModalProps> = ({
                                         )}
                                     </div>
                                 )}
+
+                                {/* Recursive Toggle */}
+                                {(granule.type === 'part' || granule.type === 'chapter' || granule.type === 'paragraph') && (
+                                    <div className="mt-6 p-4 bg-gray-50 rounded-2xl border border-gray-100 italic">
+                                        <label className="flex items-center gap-3 cursor-pointer">
+                                            <div className="relative inline-flex items-center">
+                                                <input
+                                                    type="checkbox"
+                                                    className="sr-only peer"
+                                                    checked={includeChildren}
+                                                    onChange={e => setIncludeChildren(e.target.checked)}
+                                                />
+                                                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#99334C]"></div>
+                                            </div>
+                                            <span className="text-sm font-medium text-gray-700">Inclure les sous-éléments (chapitres, notions...)</span>
+                                        </label>
+                                    </div>
+                                )}
                             </div>
                         )}
                     </div>
@@ -223,8 +244,8 @@ const CollectionModal: React.FC<CollectionModalProps> = ({
                             >
                                 {isInserting ? <Loader2 className="w-5 h-5 animate-spin" /> : <FolderPlus className="w-5 h-5" />}
                                 {canInsertHere()
-                                    ? (granule.type === 'part' ? "Insérer ici (Racine)" : `Insérer dans "${getParentTitle()}"`)
-                                    : `Navigation requise (${granule.type})`
+                                    ? (granule.type === 'part' ?\"Insérer ici (Racine)\" : `Insérer dans \"${getParentTitle()}\"`)
+                                : `Navigation requise (${granule.type})`
                                 }
                             </button>
                         ) : (

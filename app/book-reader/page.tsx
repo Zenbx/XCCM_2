@@ -48,6 +48,8 @@ const BookReaderPageContent = () => {
     modalStep, setModalStep,
     navigationPath,
     setNavigationPath,
+    includeChildren,
+    setIncludeChildren,
     handleCollect,
     confirmCollectToVault,
     handleSelectProject,
@@ -177,6 +179,8 @@ const BookReaderPageContent = () => {
         onConfirmVault={confirmCollectToVault}
         onConfirmProject={confirmCollectToProject}
         isInserting={isInserting}
+        includeChildren={includeChildren}
+        setIncludeChildren={setIncludeChildren}
       />
     </div>
   );

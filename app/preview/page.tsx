@@ -804,8 +804,7 @@ const PreviewPage = () => {
                         onClick={() => setShowPublishMenu(!showPublishMenu)}
                         className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-[#99334C] to-[#DC3545] text-white rounded-lg shadow-lg hover:shadow-xl hover:scale-105 transition-all font-medium"
                     >
-                        <Share2 size={18} />
-                        Publier
+                        Options
                         <ChevronDown size={16} className={`transition-transform ${showPublishMenu ? 'rotate-180' : ''}`} />
                     </button>
 

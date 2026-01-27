@@ -70,7 +70,7 @@ const ReaderContent: React.FC<ReaderContentProps> = ({
                                         {part.part_title}
                                     </h2>
                                     <button
-                                        onClick={() => onCollect({ type: 'part', title: part.part_title, id: part.part_id })}
+                                        onClick={() => onCollect({ ...part, type: 'part', title: part.part_title, id: part.part_id })}
                                         className="mt-4 p-2 text-gray-400 hover:text-[#99334C] hover:bg-[#99334C]/5 rounded-lg transition-all flex items-center gap-2 group w-fit"
                                         title="Récupérer cette partie"
                                     >
@@ -92,7 +92,7 @@ const ReaderContent: React.FC<ReaderContentProps> = ({
                                             <span className="text-[#99334C]/40 font-normal">#</span>
                                             {chapter.chapter_title}
                                             <button
-                                                onClick={() => onCollect({ type: 'chapter', title: chapter.chapter_title, id: chapter.chapter_id })}
+                                                onClick={() => onCollect({ ...chapter, type: 'chapter', title: chapter.chapter_title, id: chapter.chapter_id })}
                                                 className="p-1.5 text-gray-400 hover:text-[#99334C] hover:bg-[#99334C]/5 rounded-lg transition-all"
                                                 title="Récupérer ce chapitre"
                                             >
@@ -105,7 +105,7 @@ const ReaderContent: React.FC<ReaderContentProps> = ({
                                                 <h4 className="text-xl lg:text-2xl font-bold text-gray-800 mb-4 flex items-center gap-3">
                                                     {para.para_name}
                                                     <button
-                                                        onClick={() => onCollect({ type: 'paragraph', title: para.para_name, id: para.para_id })}
+                                                        onClick={() => onCollect({ ...para, type: 'paragraph', title: para.para_name, id: para.para_id })}
                                                         className="p-1.5 text-gray-400 hover:text-[#99334C] hover:bg-[#99334C]/5 rounded-lg transition-all"
                                                         title="Récupérer ce paragraphe"
                                                     >
