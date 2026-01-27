@@ -869,9 +869,12 @@ const XCCM2Editor = () => {
 
   // Real-time Structure sync
   const handleStructureChange = useCallback((event: string) => {
+    console.log(`[Realtime] Received event: ${event}`);
     if (event === 'NOTION_UPDATED' || event === 'STRUCTURE_CHANGED') {
+      console.log('[Realtime] Reloading structure...');
       loadProject(true); // Silencieux structure update
     } else if (event === 'COMMENT_ADDED') {
+      console.log('[Realtime] Fetching comments...');
       fetchComments(); // ✅ Direct comment refresh
       toast.success('💬 Nouveau commentaire', { icon: '💬' });
     }
