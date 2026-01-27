@@ -14,8 +14,10 @@ import {
     ArrowUpRight,
     MessageSquare,
     Store,
-    Zap
+    Zap,
+    FileText
 } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { useAuth } from '@/context/AuthContext';
 import { authService } from '@/services/authService';
 import { adminService } from '@/services/adminService';
