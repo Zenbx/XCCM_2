@@ -263,8 +263,11 @@ const AccountPage = () => {
     try {
       setIsUnpublishing(true);
       await documentService.unpublishDocument(docToUnpublish.doc_id);
-      setPublishedDocs(prev => prev.filter(d => d.doc_id !== docToUnpublish.doc_id));
       toast.success("Projet dépublié avec succès");
+
+      // Refetch the list to ensure we have the latest data
+      await fetchPublishedDocs();
+
       setShowUnpublishModal(false);
     } catch (err: any) {
       toast.error(err.message || "Erreur lors de la dépublication");
