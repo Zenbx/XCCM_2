@@ -214,15 +214,13 @@ const PreviewPage = () => {
     const handleExportProjectPDF = async () => {
         if (!projectName) return;
 
-        setIsExporting(true);
-        setShowPublishMenu(false);
-
+        const toastId = toast.loading("Préparation de votre PDF...");
         try {
             await exportService.exportAndDownload(projectName, 'pdf');
-            toast.success("Export PDF réussi !");
+            toast.success("Téléchargement du PDF lancé !", { id: toastId });
         } catch (error) {
             console.error('Erreur lors de l\'export PDF:', error);
-            toast.error(`Erreur lors de l'export PDF: ${error instanceof Error ? error.message : 'Erreur inconnue'}`);
+            toast.error("Échec de l'export PDF", { id: toastId });
         } finally {
             setIsExporting(false);
         }
@@ -231,15 +229,13 @@ const PreviewPage = () => {
     const handleExportProjectDOCX = async () => {
         if (!projectName) return;
 
-        setIsExporting(true);
-        setShowPublishMenu(false);
-
+        const toastId = toast.loading("Préparation de votre document Word...");
         try {
             await exportService.exportAndDownload(projectName, 'docx');
-            toast.success("Export DOCX réussi !");
+            toast.success("Téléchargement Word lancé !", { id: toastId });
         } catch (error) {
             console.error('Erreur lors de l\'export DOCX:', error);
-            toast.error(`Erreur lors de l'export DOCX: ${error instanceof Error ? error.message : 'Erreur inconnue'}`);
+            toast.error("Échec de l'export Word", { id: toastId });
         } finally {
             setIsExporting(false);
         }
