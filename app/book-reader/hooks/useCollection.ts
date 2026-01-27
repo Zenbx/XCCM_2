@@ -108,7 +108,7 @@ export const useCollection = (docId: string | null, currentDoc: any) => {
                             chapter_title: chapter.chapter_title,
                             chapter_number: i + 1
                         });
-                        await recurseChapter(projectName, newPart.part_title, newChapter.chapter_title, chapter);
+                        await recurseChapter(newPart.part_title, newChapter.chapter_title, chapter);
                     }
                 }
             } else if (collectedGranule.type === 'chapter') {
@@ -121,7 +121,7 @@ export const useCollection = (docId: string | null, currentDoc: any) => {
                 });
 
                 if (includeChildren && collectedGranule.paragraphs) {
-                    await recurseChapter(projectName, parentTitle, newChapter.chapter_title, collectedGranule);
+                    await recurseChapter(parentTitle, newChapter.chapter_title, collectedGranule);
                 }
             } else if (collectedGranule.type === 'paragraph') {
                 const partTitle = partInPath?.part_title || '';
@@ -135,7 +135,7 @@ export const useCollection = (docId: string | null, currentDoc: any) => {
                 });
 
                 if (includeChildren && collectedGranule.notions) {
-                    await recurseParagraph(projectName, partTitle, parentTitle, newPara.para_name, collectedGranule);
+                    await recurseParagraph(partTitle, parentTitle, newPara.para_name, collectedGranule);
                 }
             } else if (collectedGranule.type === 'notion') {
                 const partTitle = partInPath?.part_title || '';
