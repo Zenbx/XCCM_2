@@ -244,8 +244,8 @@ const CollectionModal: React.FC<CollectionModalProps> = ({
                             >
                                 {isInserting ? <Loader2 className="w-5 h-5 animate-spin" /> : <FolderPlus className="w-5 h-5" />}
                                 {canInsertHere()
-                                    ? (granule.type === 'part' ?\"Insérer ici (Racine)\" : `Insérer dans \"${getParentTitle()}\"`)
-                                : `Navigation requise (${granule.type})`
+                                    ? (granule.type === 'part' ? "Insérer ici (Racine)" : `Insérer dans "${getParentTitle()}"`)
+                                    : `Navigation requise (${granule.type})`
                                 }
                             </button>
                         ) : (

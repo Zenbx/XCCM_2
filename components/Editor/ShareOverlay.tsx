@@ -288,12 +288,12 @@ const ShareOverlay: React.FC<ShareOverlayProps> = ({ isOpen, onClose, projectNam
                                                                 inv.status}
                                                     </span>
 
-                                                    {inv.status === 'Pending' && (
+                                                    {(inv.status === 'Accepted' || inv.status === 'Pending') && (
                                                         <button
                                                             onClick={() => handleRevokeClick(inv.id)}
                                                             disabled={revokingId === inv.id}
                                                             className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-xl transition-all opacity-0 group-hover:opacity-100"
-                                                            title="Révoquer l'invitation"
+                                                            title={inv.status === 'Accepted' ? "Retirer ce collaborateur" : "Révoquer l'invitation"}
                                                         >
                                                             {revokingId === inv.id ? (
                                                                 <Loader2 className="w-4 h-4 animate-spin" />

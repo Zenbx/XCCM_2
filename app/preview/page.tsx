@@ -60,6 +60,13 @@ const PreviewPage = () => {
     const [templateData, setTemplateData] = useState({ name: '', description: '', category: '' });
     const [isCreatingTemplate, setIsCreatingTemplate] = useState(false);
 
+    // Publication Metadata States
+    const [publishCategory, setPublishCategory] = useState('');
+    const [publishLevel, setPublishLevel] = useState('');
+    const [publishTags, setPublishTags] = useState('');
+    const [localCoverFile, setLocalCoverFile] = useState<File | null>(null);
+    const [localCoverPreview, setLocalCoverPreview] = useState<string | null>(null);
+
     // Determine ownership
     const isOwner = projectData?.owner_id && user?.user_id && projectData.owner_id === user.user_id;
 
@@ -131,6 +138,12 @@ const PreviewPage = () => {
             setStructure(fullStructure);
             setLoadingProgress({ current: 100, total: 100 });
 
+            // Initialize publication metadata from project data
+            if (project.category) setPublishCategory(project.category);
+            if (project.level) setPublishLevel(project.level);
+            if (project.tags) setPublishTags(project.tags);
+            if (project.cover_image) setCoverImageUrl(project.cover_image);
+
         } catch (err) {
             console.error(err);
         } finally {
@@ -142,6 +155,19 @@ const PreviewPage = () => {
         }
     };
 
+    const handleLocalImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            setLocalCoverFile(file);
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setLocalCoverPreview(reader.result as string);
+                setCoverImageUrl(''); // URL takes precedence if empty, but here we want to show local
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
     const handlePublishOnline = async () => {
         if (!projectName) return;
 
@@ -149,7 +175,23 @@ const PreviewPage = () => {
         setShowPublishMenu(false);
 
         try {
-            const result = await publishService.publishProject(projectName, publishFormat, snapshotName, coverImageUrl);
+            // If we have a local file, we might need a separate upload step 
+            // but for now we pass the base64 preview or the service handles it.
+            // Assuming publishProject accepts the coverImage as a string (URL or Base64) 
+            // or we'd need to update the service to handle FormData.
+            // Let's use the preview (Base64) for simplicity if no URL is provided.
+            const finalCover = coverImageUrl || localCoverPreview || '';
+
+            const result = await publishService.publishProject(
+                projectName,
+                publishFormat,
+                snapshotName,
+                finalCover,
+                publishCategory,
+                publishLevel,
+                publishTags
+            );
+
             setPublishSuccess({
                 doc_id: result.doc_id,
                 doc_name: result.doc_name
@@ -908,83 +950,131 @@ const PreviewPage = () => {
                         <h2 className="text-2xl font-bold text-gray-900 mb-4">Choisir le format de publication</h2>
                         <p className="text-gray-600 text-sm mb-6">Sélectionnez le format dans lequel vous souhaitez publier votre document.</p>
 
-                        <div className="space-y-3 mb-6">
-                            <label className="flex items-center p-4 border-2 rounded-lg cursor-pointer transition-all"
-                                style={{ borderColor: publishFormat === 'pdf' ? '#99334C' : '#e5e7eb', backgroundColor: publishFormat === 'pdf' ? '#99334c0a' : 'transparent' }}>
-                                <input
-                                    type="radio"
-                                    name="format"
-                                    value="pdf"
-                                    checked={publishFormat === 'pdf'}
-                                    onChange={(e) => setPublishFormat(e.target.value as 'pdf' | 'docx')}
-                                    className="mr-3"
-                                />
-                                <div>
-                                    <div className="font-medium text-gray-900">PDF</div>
-                                    <div className="text-xs text-gray-600">Format universel, lecture seule</div>
+                        <div className="max-h-[60vh] overflow-y-auto px-1 -mx-1 custom-scrollbar space-y-4">
+                            <div className="space-y-3">
+                                <label className="block text-sm font-semibold text-gray-700">Format de publication</label>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <label className="flex items-center p-3 border-2 rounded-xl cursor-pointer transition-all"
+                                        style={{ borderColor: publishFormat === 'pdf' ? '#99334C' : '#e5e7eb', backgroundColor: publishFormat === 'pdf' ? '#99334c0a' : 'transparent' }}>
+                                        <input
+                                            type="radio"
+                                            name="format"
+                                            value="pdf"
+                                            checked={publishFormat === 'pdf'}
+                                            onChange={(e) => setPublishFormat(e.target.value as 'pdf' | 'docx')}
+                                            className="mr-3"
+                                        />
+                                        <div className="font-medium text-gray-900 border-none">PDF</div>
+                                    </label>
+
+                                    <label className="flex items-center p-3 border-2 rounded-xl cursor-pointer transition-all"
+                                        style={{ borderColor: publishFormat === 'docx' ? '#99334C' : '#e5e7eb', backgroundColor: publishFormat === 'docx' ? '#99334c0a' : 'transparent' }}>
+                                        <input
+                                            type="radio"
+                                            name="format"
+                                            value="docx"
+                                            checked={publishFormat === 'docx'}
+                                            onChange={(e) => setPublishFormat(e.target.value as 'pdf' | 'docx')}
+                                            className="mr-3"
+                                        />
+                                        <div className="font-medium text-gray-900 border-none">DOCX</div>
+                                    </label>
                                 </div>
-                            </label>
+                            </div>
 
-                            <label className="flex items-center p-4 border-2 rounded-lg cursor-pointer transition-all"
-                                style={{ borderColor: publishFormat === 'docx' ? '#99334C' : '#e5e7eb', backgroundColor: publishFormat === 'docx' ? '#99334c0a' : 'transparent' }}>
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-1.5 flex items-center gap-2">
+                                    <FileText size={14} className="text-[#99334C]" />
+                                    Nom de la version
+                                </label>
                                 <input
-                                    type="radio"
-                                    name="format"
-                                    value="docx"
-                                    checked={publishFormat === 'docx'}
-                                    onChange={(e) => setPublishFormat(e.target.value as 'pdf' | 'docx')}
-                                    className="mr-3"
+                                    type="text"
+                                    value={snapshotName}
+                                    onChange={(e) => setSnapshotName(e.target.value)}
+                                    placeholder="ex: Édition finale 2024"
+                                    className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-[#99334C]/20 focus:border-[#99334C] transition-all"
                                 />
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <div className="font-medium text-gray-900">DOCX</div>
-                                    <div className="text-xs text-gray-600">Format Word, éditable</div>
+                                    <label className="block text-sm font-semibold text-gray-700 mb-1.5 flex items-center gap-2">
+                                        Catégorie
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={publishCategory}
+                                        onChange={(e) => setPublishCategory(e.target.value)}
+                                        placeholder="Ex: Biologie"
+                                        className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-[#99334C]/20 focus:border-[#99334C] transition-all"
+                                    />
                                 </div>
-                            </label>
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 mb-1.5 flex items-center gap-2">
+                                        Niveau
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={publishLevel}
+                                        onChange={(e) => setPublishLevel(e.target.value)}
+                                        placeholder="Ex: Terminale S"
+                                        className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-[#99334C]/20 focus:border-[#99334C] transition-all"
+                                    />
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-1.5 flex items-center gap-2">
+                                    Tags (séparés par virgules)
+                                </label>
+                                <input
+                                    type="text"
+                                    value={publishTags}
+                                    onChange={(e) => setPublishTags(e.target.value)}
+                                    placeholder="physique, optique, bac"
+                                    className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-[#99334C]/20 focus:border-[#99334C] transition-all"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Image de couverture</label>
+                                <div className="space-y-3">
+                                    <input
+                                        type="text"
+                                        value={coverImageUrl}
+                                        onChange={(e) => { setCoverImageUrl(e.target.value); setLocalCoverPreview(null); }}
+                                        placeholder="URL de l'image (https://...)"
+                                        className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-[#99334C]/20 focus:border-[#99334C] transition-all"
+                                    />
+
+                                    <div className="flex items-center gap-4">
+                                        <label className="flex-1 flex flex-col items-center justify-center border-2 border-dashed border-gray-200 rounded-xl p-4 hover:border-[#99334C]/30 hover:bg-[#99334C]/5 transition-all cursor-pointer">
+                                            <Archive size={20} className="text-gray-400 mb-2" />
+                                            <span className="text-[10px] font-bold text-gray-500 uppercase">Ou importer localement</span>
+                                            <input type="file" className="hidden" accept="image/*" onChange={handleLocalImageChange} />
+                                        </label>
+
+                                        {(coverImageUrl || localCoverPreview) && (
+                                            <div className="w-16 h-16 rounded-lg overflow-hidden border border-gray-100 shadow-sm shrink-0">
+                                                <img src={coverImageUrl || localCoverPreview!} alt="Aperçu" className="w-full h-full object-cover" />
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
-                        <div className="mb-6">
-                            <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                Nom du Snapshot (Version)
-                            </label>
-                            <input
-                                type="text"
-                                value={snapshotName}
-                                onChange={(e) => setSnapshotName(e.target.value)}
-                                placeholder="ex: Version Bêta 1.0"
-                                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-700 focus:ring-2 focus:ring-[#99334C]/20 focus:border-[#99334C] transition-all"
-                            />
-                            <p className="text-[10px] text-gray-400 mt-1 italic">
-                                Ce nom sera affiché dans la bibliothèque.
-                            </p>
-                        </div>
-
-                        <div className="mb-6">
-                            <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                Image de couverture (URL)
-                            </label>
-                            <input
-                                type="text"
-                                value={coverImageUrl}
-                                onChange={(e) => setCoverImageUrl(e.target.value)}
-                                placeholder="https://exemple.com/image.jpg"
-                                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-700 focus:ring-2 focus:ring-[#99334C]/20 focus:border-[#99334C] transition-all"
-                            />
-                            <p className="text-[10px] text-gray-400 mt-1 italic">
-                                Optionnel. Remplace l'icône de base sur la première page.
-                            </p>
-                        </div>
-
-                        <div className="flex gap-3">
+                        <div className="flex gap-3 pt-6 border-t border-gray-50 mt-4">
                             <button
                                 onClick={() => setShowFormatDialog(false)}
-                                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+                                className="flex-1 px-4 py-2.5 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors font-bold text-sm"
                             >
                                 Annuler
                             </button>
                             <button
                                 onClick={handlePublishOnline}
                                 disabled={isPublishing}
-                                className="flex-1 px-4 py-2 bg-gradient-to-r from-[#99334C] to-[#DC3545] text-white rounded-lg hover:shadow-lg transition-all font-medium disabled:opacity-50 flex items-center justify-center gap-2"
+                                className="flex-1 px-4 py-2.5 bg-gradient-to-r from-[#99334C] to-[#DC3545] text-white rounded-xl hover:shadow-lg transition-all font-bold text-sm disabled:opacity-50 flex items-center justify-center gap-2"
                             >
                                 {isPublishing && <Loader2 size={16} className="animate-spin" />}
                                 Publier
@@ -1090,7 +1180,8 @@ const PreviewPage = () => {
                         </div>
                     </div>
                 </div>
-            )}
+            )
+            }
 
 
             {/* Content Area */}
@@ -1267,75 +1358,77 @@ const PreviewPage = () => {
                 </div>
             </div>
             {/* Collect Granule Modal */}
-            {showCollectModal && (
-                <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.9, y: 20 }}
-                        animate={{ opacity: 1, scale: 1, y: 0 }}
-                        className="bg-white rounded-3xl shadow-2xl max-w-lg w-full overflow-hidden border border-gray-100"
-                    >
-                        <div className="bg-gradient-to-r from-[#99334C] to-[#DC3545] p-6 text-white">
-                            <div className="flex justify-between items-center mb-4">
-                                <Box className="w-8 h-8" />
-                                <button onClick={() => setShowCollectModal(false)} className="hover:rotate-90 transition-transform">
-                                    <X size={24} />
+            {
+                showCollectModal && (
+                    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            className="bg-white rounded-3xl shadow-2xl max-w-lg w-full overflow-hidden border border-gray-100"
+                        >
+                            <div className="bg-gradient-to-r from-[#99334C] to-[#DC3545] p-6 text-white">
+                                <div className="flex justify-between items-center mb-4">
+                                    <Box className="w-8 h-8" />
+                                    <button onClick={() => setShowCollectModal(false)} className="hover:rotate-90 transition-transform">
+                                        <X size={24} />
+                                    </button>
+                                </div>
+                                <h3 className="text-2xl font-bold">Récupérer le granule</h3>
+                                <p className="text-white/80 text-sm mt-1 line-clamp-1 italic">"{collectedGranule?.title}"</p>
+                            </div>
+
+                            <div className="p-8 space-y-6">
+                                <button
+                                    onClick={confirmCollectToVault}
+                                    className="w-full flex items-center gap-4 p-5 rounded-2xl border-2 border-gray-50 hover:border-[#99334C]/30 hover:bg-[#99334C]/5 transition-all group text-left"
+                                >
+                                    <div className="w-12 h-12 rounded-xl bg-gray-100 flex items-center justify-center text-gray-500 group-hover:bg-[#99334C] group-hover:text-white transition-all">
+                                        <Lock size={24} />
+                                    </div>
+                                    <div className="flex-1">
+                                        <div className="font-bold text-gray-900">Enregistrer dans mon coffre-fort</div>
+                                        <div className="text-xs text-gray-500 mt-0.5">Pour une réutilisation future dans n'importe quel projet</div>
+                                    </div>
+                                </button>
+
+                                <div className="relative">
+                                    <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 border-t border-gray-100" />
+                                    <span className="relative bg-white px-4 text-[10px] font-black uppercase tracking-widest text-gray-300 left-1/2 -translate-x-1/2">OU</span>
+                                </div>
+
+                                <div className="space-y-3">
+                                    <p className="text-xs font-black text-gray-400 uppercase tracking-widest pl-1">Insérer directement dans :</p>
+                                    <div className="grid grid-cols-1 gap-2">
+                                        {['Projet Biologie', 'Cours Informatique', 'Physique Quantique'].map(proj => (
+                                            <button
+                                                key={proj}
+                                                onClick={() => confirmCollectToProject(proj)}
+                                                className="flex items-center justify-between p-4 rounded-xl border border-gray-100 hover:border-[#99334C] hover:bg-gray-50 transition-all group"
+                                            >
+                                                <div className="flex items-center gap-3">
+                                                    <FolderPlus size={18} className="text-gray-400 group-hover:text-[#99334C]" />
+                                                    <span className="text-sm font-bold text-gray-700">{proj}</span>
+                                                </div>
+                                                <span className="text-[10px] font-bold text-gray-300 group-hover:text-[#99334C]">SÉLECTIONNER</span>
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="p-6 bg-gray-50/50 border-t border-gray-100 flex justify-end">
+                                <button
+                                    onClick={() => setShowCollectModal(false)}
+                                    className="px-6 py-2 text-sm font-bold text-gray-500 hover:text-gray-700 transition-colors"
+                                >
+                                    Annuler
                                 </button>
                             </div>
-                            <h3 className="text-2xl font-bold">Récupérer le granule</h3>
-                            <p className="text-white/80 text-sm mt-1 line-clamp-1 italic">"{collectedGranule?.title}"</p>
-                        </div>
-
-                        <div className="p-8 space-y-6">
-                            <button
-                                onClick={confirmCollectToVault}
-                                className="w-full flex items-center gap-4 p-5 rounded-2xl border-2 border-gray-50 hover:border-[#99334C]/30 hover:bg-[#99334C]/5 transition-all group text-left"
-                            >
-                                <div className="w-12 h-12 rounded-xl bg-gray-100 flex items-center justify-center text-gray-500 group-hover:bg-[#99334C] group-hover:text-white transition-all">
-                                    <Lock size={24} />
-                                </div>
-                                <div className="flex-1">
-                                    <div className="font-bold text-gray-900">Enregistrer dans mon coffre-fort</div>
-                                    <div className="text-xs text-gray-500 mt-0.5">Pour une réutilisation future dans n'importe quel projet</div>
-                                </div>
-                            </button>
-
-                            <div className="relative">
-                                <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 border-t border-gray-100" />
-                                <span className="relative bg-white px-4 text-[10px] font-black uppercase tracking-widest text-gray-300 left-1/2 -translate-x-1/2">OU</span>
-                            </div>
-
-                            <div className="space-y-3">
-                                <p className="text-xs font-black text-gray-400 uppercase tracking-widest pl-1">Insérer directement dans :</p>
-                                <div className="grid grid-cols-1 gap-2">
-                                    {['Projet Biologie', 'Cours Informatique', 'Physique Quantique'].map(proj => (
-                                        <button
-                                            key={proj}
-                                            onClick={() => confirmCollectToProject(proj)}
-                                            className="flex items-center justify-between p-4 rounded-xl border border-gray-100 hover:border-[#99334C] hover:bg-gray-50 transition-all group"
-                                        >
-                                            <div className="flex items-center gap-3">
-                                                <FolderPlus size={18} className="text-gray-400 group-hover:text-[#99334C]" />
-                                                <span className="text-sm font-bold text-gray-700">{proj}</span>
-                                            </div>
-                                            <span className="text-[10px] font-bold text-gray-300 group-hover:text-[#99334C]">SÉLECTIONNER</span>
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="p-6 bg-gray-50/50 border-t border-gray-100 flex justify-end">
-                            <button
-                                onClick={() => setShowCollectModal(false)}
-                                className="px-6 py-2 text-sm font-bold text-gray-500 hover:text-gray-700 transition-colors"
-                            >
-                                Annuler
-                            </button>
-                        </div>
-                    </motion.div>
-                </div>
-            )}
-        </div>
+                        </motion.div>
+                    </div>
+                )
+            }
+        </div >
     );
 };
 

@@ -20,6 +20,7 @@ export interface Project {
   user_role?: 'OWNER' | 'EDITOR' | 'VIEWER';
   invitation_status?: 'Pending' | 'Accepted' | 'Declined' | null;
   invitation_token?: string | null;
+  cover_image?: string | null;
 }
 
 // ... (autres interfaces)
