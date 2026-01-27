@@ -38,6 +38,10 @@ interface EditorToolbarProps {
   disabled?: boolean;
   isZenMode?: boolean;
   onToggleZen?: () => void;
+  onUndo?: () => void; // ✅ Added
+  onRedo?: () => void; // ✅ Added
+  canUndo?: boolean; // ✅ Added
+  canRedo?: boolean; // ✅ Added
 }
 
 const EditorToolbar: React.FC<EditorToolbarProps> = ({
@@ -50,6 +54,10 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
   disabled = false,
   isZenMode = false,
   onToggleZen,
+  onUndo,
+  onRedo,
+  canUndo,
+  canRedo,
 }) => {
   return (
     <div className={`bg-white border-b border-gray-200 p-1.5 flex items-center gap-1 transition-all duration-300 overflow-hidden ${disabled ? 'opacity-40 pointer-events-none select-none' : ''
@@ -162,11 +170,29 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
       <div className="w-[1.5px] h-6 bg-gray-300 mx-1 flex-shrink-0" />
 
       <RichTooltip title="Annuler" description="Annuler la dernière action." shortcut="Ctrl+Z">
-        <button className="p-2 hover:bg-gray-100 rounded text-gray-700 transition-colors" onClick={() => onFormatChange('undo')}><Undo size={18} /></button>
+        <button
+          className="p-2 hover:bg-gray-100 rounded text-gray-700 transition-colors disabled:opacity-30"
+          onClick={() => {
+            onUndo?.();
+            onFormatChange('undo');
+          }}
+          disabled={!canUndo}
+        >
+          <Undo size={18} />
+        </button>
       </RichTooltip>
 
       <RichTooltip title="Rétablir" description="Rétablir l'action annulée." shortcut="Ctrl+Y">
-        <button className="p-2 hover:bg-gray-100 rounded text-gray-700 transition-colors" onClick={() => onFormatChange('redo')}><Redo size={18} /></button>
+        <button
+          className="p-2 hover:bg-gray-100 rounded text-gray-700 transition-colors disabled:opacity-30"
+          onClick={() => {
+            onRedo?.();
+            onFormatChange('redo');
+          }}
+          disabled={!canRedo}
+        >
+          <Redo size={18} />
+        </button>
       </RichTooltip>
 
       <div className="w-[1.5px] h-6 bg-gray-300 mx-1 flex-shrink-0" />

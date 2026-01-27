@@ -24,7 +24,7 @@ import CommentsPanel from './Panels/CommentsPanel';
 import InfoPanel from './Panels/InfoPanel';
 import SettingsPanel from './Panels/SettingsPanel';
 import TutorialPanel from './Panels/TutorialPanel';
-import SocraticPanel from './Panels/SocraticPanel';
+import { SocraticPanel } from '../Socratic/SocraticPanel';
 
 const RightPanel = ({
   activePanel,
@@ -39,7 +39,8 @@ const RightPanel = ({
   isFetchingComments,
   onImportFile,
   granules,
-  onDragStart = () => { }
+  onDragStart = () => { },
+  socraticData
 }: any) => {
   const panels = [
     { id: 'import', icon: Cloud, title: 'Importer Fichier', description: 'Gérez vos ressources et importez des modules de connaissance.' },
@@ -140,7 +141,15 @@ const RightPanel = ({
               {activePanel === 'settings' && <SettingsPanel project={project} onUpdateProject={onUpdateProject} />}
               {activePanel === 'tutorial' && <TutorialPanel />}
               {activePanel === 'socratic' && (
-                <SocraticPanel content={currentContext?.notionContent || ''} />
+                <SocraticPanel
+                  feedback={socraticData?.feedback || []}
+                  bloomScore={socraticData?.bloomScore || null}
+                  isAnalyzing={socraticData?.isAnalyzing || false}
+                  onApplySuggestion={() => { }} // To implement if needed
+                  onDismissFeedback={socraticData?.onDismissFeedback || (() => { })}
+                  isVisible={true}
+                  onClose={() => onToggle(null)}
+                />
               )}
             </div>
           </motion.div>

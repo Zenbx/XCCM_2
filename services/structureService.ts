@@ -505,6 +505,28 @@ class StructureService {
     const result = await response.json();
     return result.data;
   }
+
+  // ============= REORDER BULK =============
+  async reorderGranules(
+    projectName: string,
+    type: 'part' | 'chapter' | 'paragraph' | 'notion',
+    items: { id: string; number: number }[]
+  ): Promise<void> {
+    const response = await fetch(
+      `${API_BASE_URL}/api/projects/${encodeURIComponent(projectName)}/reorder`,
+      {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ type, items }),
+      }
+    );
+
+    if (!response.ok) {
+      if (response.status === 401) throw new Error('Token invalide ou expiré.');
+      const error = await response.json();
+      throw new Error(error.message || 'Erreur lors du réordonnancement');
+    }
+  }
 }
 
 export const structureService = new StructureService();

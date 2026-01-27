@@ -18,10 +18,6 @@ interface EditorHeaderProps {
     localClientId: number | null;
     authUser: any;
     projectName: string;
-    onUndo?: () => void; // ✅ Added
-    onRedo?: () => void; // ✅ Added
-    canUndo?: boolean; // ✅ Added
-    canRedo?: boolean; // ✅ Added
 }
 
 const EditorHeader: React.FC<EditorHeaderProps> = ({
@@ -37,10 +33,6 @@ const EditorHeader: React.FC<EditorHeaderProps> = ({
     localClientId,
     authUser,
     projectName,
-    onUndo,
-    onRedo,
-    canUndo,
-    canRedo
 }) => {
     return (
         <div className="bg-white border-b border-gray-200 flex items-center justify-between px-4 py-2">
@@ -103,29 +95,6 @@ const EditorHeader: React.FC<EditorHeaderProps> = ({
                     </TactileButton>
                 </RichTooltip>
 
-                <div className="flex items-center gap-1 mr-2 pr-4 border-r border-gray-100 dark:border-gray-800">
-                    <RichTooltip title="Annuler" description="Annuler la dernière action structurelle." shortcut="Ctrl+Z">
-                        <TactileButton
-                            variant="ghost"
-                            onClick={onUndo}
-                            disabled={!canUndo}
-                            className="p-2 text-gray-500 hover:text-[#99334C] hover:bg-gray-100 disabled:opacity-30 rounded-lg transition-all"
-                        >
-                            <Undo2 className="w-4 h-4" />
-                        </TactileButton>
-                    </RichTooltip>
-
-                    <RichTooltip title="Rétablir" description="Rétablir l'action annulée." shortcut="Ctrl+Y">
-                        <TactileButton
-                            variant="ghost"
-                            onClick={onRedo}
-                            disabled={!canRedo}
-                            className="p-2 text-gray-500 hover:text-[#99334C] hover:bg-gray-100 disabled:opacity-30 rounded-lg transition-all"
-                        >
-                            <Redo2 className="w-4 h-4" />
-                        </TactileButton>
-                    </RichTooltip>
-                </div>
 
                 <div className="ml-2 pl-4 border-l border-gray-100 dark:border-gray-800">
                     <PresenceIndicator

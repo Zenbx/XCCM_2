@@ -598,23 +598,21 @@ const XCCM2Editor = () => {
     });
 
     try {
-      console.log(`[Reorder] Optimistic update applied. Syncing ${items.length} ${type}s...`);
-      if (type === 'part') {
-        for (let i = 0; i < items.length; i++) {
-          await structureService.updatePart(projectName, items[i].part_title, { part_number: i + 1 });
-        }
-      } else {
-        for (let i = 0; i < items.length; i++) {
-          const item = items[i];
-          const itemId = item.chapter_id || item.para_id || item.notion_id;
-          await structureService.moveGranule(projectName, type as any, itemId, parentId!, i + 1);
-        }
-      }
+      console.log(`[Reorder] Bulk syncing ${items.length} ${type}s...`);
+
+      // Préparer les items pour l'API Bulk
+      const bulkItems = items.map((item, idx) => ({
+        id: item.part_id || item.chapter_id || item.para_id || item.notion_id,
+        number: idx + 1
+      }));
+
+      await structureService.reorderGranules(projectName, type as any, bulkItems);
+
       // Rechargement silencieux pour assurer la cohérence finale
       await loadProject(true);
     } catch (err: any) {
-      console.error("[Reorder] Sync failed, rolling back:", err);
-      toast.error("Échec de la synchronisation du re-ordonnancement");
+      console.error("[Reorder] Bulk sync failed, rolling back:", err);
+      toast.error("Échec du réordonnancement");
       setStructure(previousStructure); // Rollback
       await loadProject(true);
     }
@@ -1144,10 +1142,6 @@ const XCCM2Editor = () => {
             connectedUsers={connectedUsers}
             localClientId={localClientId}
             authUser={authUser}
-            onUndo={undo}
-            onRedo={redo}
-            canUndo={canUndo}
-            canRedo={canRedo}
           />
         )}
 
@@ -1187,6 +1181,10 @@ const XCCM2Editor = () => {
           disabled={(currentContext?.type === 'chapter' || currentContext?.type === 'paragraph')}
           isZenMode={isZenMode}
           onToggleZen={() => setIsZenMode(prev => !prev)}
+          onUndo={undo}
+          onRedo={redo}
+          canUndo={canUndo}
+          canRedo={canRedo}
         />
 
         <main className="flex-1 overflow-y-auto bg-gray-50/50 p-4 lg:p-12">
@@ -1247,6 +1245,12 @@ const XCCM2Editor = () => {
           onImportFile={() => toast('Importation bientôt disponible')}
           granules={mockGranules}
           onDragStart={handleDragStart}
+          socraticData={{
+            feedback: socraticFeedback,
+            bloomScore,
+            isAnalyzing,
+            onDismissFeedback: dismissFeedback
+          }}
         />
       )}
 
