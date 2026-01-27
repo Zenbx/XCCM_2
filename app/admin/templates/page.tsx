@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     LayoutTemplate,
     Search,
@@ -19,27 +19,37 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
-
-// Mock data for initial state
-const INITIAL_TEMPLATES = [
-    { id: '1', name: 'Rapport d\'Activité Pro', category: 'Professionnel', pages: 12, usage: 1450, status: 'Active', visibility: 'Public', lastUpdate: '2024-01-20' },
-    { id: '2', name: 'Thèse Académique Standard', category: 'Éducation', pages: 45, usage: 890, status: 'Active', visibility: 'Public', lastUpdate: '2024-01-15' },
-    { id: '3', name: 'Guide Utilisateur SaaS', category: 'Technique', pages: 8, usage: 2300, status: 'Active', visibility: 'Propriétaire', lastUpdate: '2024-01-10' },
-    { id: '4', name: 'Portfolio Créatif Alpha', category: 'Design', pages: 5, usage: 450, status: 'Draft', visibility: 'Privé', lastUpdate: '2024-01-25' },
-];
+import { adminService } from '@/services/adminService';
 
 export default function TemplateManagement() {
     const [searchTerm, setSearchTerm] = useState('');
-    const [templates, setTemplates] = useState(INITIAL_TEMPLATES);
-    const [loading, setLoading] = useState(false);
+    const [templates, setTemplates] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        fetchTemplates();
+    }, []);
+
+    const fetchTemplates = async () => {
+        try {
+            setLoading(true);
+            const data = await adminService.getAllTemplates();
+            setTemplates(data);
+        } catch (error) {
+            console.error('Error fetching templates:', error);
+            toast.error("Échec du chargement des modèles");
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const filteredTemplates = templates.filter(t =>
-        t.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        t.category.toLowerCase().includes(searchTerm.toLowerCase())
+        t.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        t.category?.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     return (
-        <div className="space-y-8 max-w-[1600px] mx-auto pb-20 font-sans">
+        <div className="space-y-8 max-w-7xl mx-auto pb-20 font-sans">
             {/* Header Section */}
             <header className="flex flex-col md:flex-row md:items-end justify-between gap-8">
                 <div className="space-y-1.5">
@@ -49,11 +59,17 @@ export default function TemplateManagement() {
                     </h1>
                     <p className="text-[11px] text-gray-400 font-bold uppercase tracking-widest flex items-center gap-2">
                         <span className="w-1.5 h-1.5 bg-[#99334C] rounded-full" />
-                        Standardisation & Structures de Documents • {templates.length} modèles
+                        Standardisation & Structures de Documents • {templates.length} modèles réels
                     </p>
                 </div>
 
                 <div className="flex items-center gap-4">
+                    <button
+                        onClick={fetchTemplates}
+                        className="p-3 bg-white border border-gray-100 rounded-2xl hover:bg-gray-50 text-gray-400 transition-all shadow-sm"
+                    >
+                        <RefreshCcw size={18} className={loading ? 'animate-spin' : ''} />
+                    </button>
                     <div className="relative group">
                         <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-[#99334C] transition-colors" size={14} />
                         <input
@@ -61,12 +77,9 @@ export default function TemplateManagement() {
                             placeholder="Rechercher un modèle..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="pl-10 pr-4 py-3 bg-white border border-gray-100 rounded-2xl focus:ring-4 focus:ring-[#99334C]/5 outline-none w-80 text-sm shadow-sm transition-all text-gray-600 font-medium hover:border-gray-200"
+                            className="pl-10 pr-4 py-3 bg-white border border-gray-100 rounded-2xl focus:ring-4 focus:ring-[#99334C]/5 outline-none w-72 text-sm shadow-sm transition-all text-gray-600 font-medium hover:border-gray-200"
                         />
                     </div>
-                    <button className="flex items-center gap-2 px-5 py-3 bg-[#99334C] text-white rounded-2xl font-black text-[11px] uppercase tracking-widest hover:bg-[#7a283d] transition-all shadow-lg shadow-[#99334C]/20 active:scale-95">
-                        <Plus size={16} /> Nouveau Template
-                    </button>
                 </div>
             </header>
 
@@ -120,8 +133,8 @@ export default function TemplateManagement() {
                                     </div>
                                 </div>
                                 <div className="absolute top-4 right-4 flex gap-2">
-                                    <div className={`p-1.5 rounded-lg backdrop-blur-md bg-white/80 shadow-sm border border-white ${item.visibility === 'Public' ? 'text-emerald-600' : 'text-amber-600'}`}>
-                                        {item.visibility === 'Public' ? <Globe size={14} /> : <Lock size={14} />}
+                                    <div className={`p-1.5 rounded-lg backdrop-blur-md bg-white/80 shadow-sm border border-white ${item.is_public ? 'text-emerald-600' : 'text-amber-600'}`}>
+                                        {item.is_public ? <Globe size={14} /> : <Lock size={14} />}
                                     </div>
                                 </div>
                                 <div className="absolute inset-0 bg-[#99334C]/0 group-hover:bg-[#99334C]/5 transition-colors duration-500" />
@@ -131,17 +144,18 @@ export default function TemplateManagement() {
                             <div className="p-5 flex-1 flex flex-col gap-4">
                                 <div className="space-y-1">
                                     <p className="text-[9px] font-black text-[#99334C] uppercase tracking-widest leading-none">
-                                        {item.category}
+                                        {item.category || 'Général'}
                                     </p>
                                     <h3 className="font-black text-gray-900 leading-tight group-hover:text-[#99334C] transition-colors">
                                         {item.name}
                                     </h3>
+                                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-tight mt-1">Par {item.creator?.firstname} {item.creator?.lastname}</p>
                                 </div>
 
                                 <div className="flex items-center justify-between mt-auto pt-4 border-t border-gray-50">
                                     <div className="flex flex-col">
-                                        <span className="text-[10px] font-black text-gray-900 leading-none">{item.usage.toLocaleString()}</span>
-                                        <span className="text-[8px] text-gray-400 font-bold uppercase tracking-tighter">Utilisations</span>
+                                        <span className="text-[10px] font-black text-gray-900 leading-none">{new Date(item.created_at).toLocaleDateString('fr-FR')}</span>
+                                        <span className="text-[8px] text-gray-400 font-bold uppercase tracking-tighter">Créé le</span>
                                     </div>
                                     <div className="flex items-center gap-2">
                                         <button

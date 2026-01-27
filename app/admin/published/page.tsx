@@ -84,7 +84,7 @@ export default function PublishedProjects() {
     }
 
     return (
-        <div className="space-y-8 max-w-[1600px] mx-auto pb-20">
+        <div className="space-y-8 max-w-7xl mx-auto pb-20">
             {/* Header Section */}
             <header className="flex flex-col md:flex-row md:items-end justify-between gap-8">
                 <div className="space-y-1.5">

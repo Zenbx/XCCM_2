@@ -91,6 +91,32 @@ class AdminService {
         const data = await response.json();
         return data.data;
     }
+
+    /**
+     * Récupère tous les templates (Admin)
+     */
+    async getAllTemplates() {
+        const token = authService.getAuthToken();
+        const response = await fetch(`${API_BASE_URL}/api/templates`, {
+            headers: { Authorization: `Bearer ${token}` }
+        });
+        if (!response.ok) throw new Error('Erreur templates');
+        const data = await response.json();
+        return data.data.templates || [];
+    }
+
+    /**
+     * Récupère tous les items de la marketplace (Admin)
+     */
+    async getMarketplaceItems() {
+        const token = authService.getAuthToken();
+        const response = await fetch(`${API_BASE_URL}/api/marketplace`, {
+            headers: { Authorization: `Bearer ${token}` }
+        });
+        if (!response.ok) throw new Error('Erreur marketplace');
+        const data = await response.json();
+        return data.data || [];
+    }
 }
 
 export const adminService = new AdminService();

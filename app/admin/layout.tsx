@@ -117,17 +117,33 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
             {/* Main Content Area */}
             <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-                {/* Redundant Top Header Removed to fix stacking issues */}
+                {/* Mobile Top Bar (Only visible < 1024px) */}
+                <div className="lg:hidden h-16 bg-white border-b border-gray-100 flex items-center justify-between px-6 shrink-0 relative z-20">
+                    <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 bg-[#99334C] rounded-lg flex items-center justify-center">
+                            <ShieldCheck className="text-white w-4 h-4" />
+                        </div>
+                        <span className="font-black text-gray-900 tracking-tight">Admin<span className="text-[#99334C]">OS</span></span>
+                    </div>
+                    <button
+                        onClick={() => setIsMobileMenuOpen(true)}
+                        className="p-2 hover:bg-gray-50 rounded-lg text-gray-500 transition-colors"
+                    >
+                        <Menu className="w-6 h-6" />
+                    </button>
+                </div>
 
                 {/* Content Section */}
-                <main className="flex-1 overflow-y-auto p-4 md:p-6 relative">
-                    <motion.div
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.3 }}
-                    >
-                        {children}
-                    </motion.div>
+                <main className="flex-1 overflow-y-auto p-4 md:p-8 relative">
+                    <div className="max-w-7xl mx-auto">
+                        <motion.div
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.3 }}
+                        >
+                            {children}
+                        </motion.div>
+                    </div>
                 </main>
             </div>
 

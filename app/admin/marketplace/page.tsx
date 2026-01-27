@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     Store,
     Layers,
@@ -17,16 +17,38 @@ import {
     Tag,
     Globe,
     Zap,
-    Layout
+    Layout,
+    RefreshCcw
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 
+import { adminService } from '@/services/adminService';
+
 export default function MarketplaceManagement() {
     const [activeTab, setActiveTab] = useState('categories');
+    const [items, setItems] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        fetchMarketplaceData();
+    }, []);
+
+    const fetchMarketplaceData = async () => {
+        try {
+            setLoading(true);
+            const data = await adminService.getMarketplaceItems();
+            setItems(data);
+        } catch (error) {
+            console.error('Error fetching marketplace:', error);
+            toast.error("Échec du chargement du marché");
+        } finally {
+            setLoading(false);
+        }
+    };
 
     return (
-        <div className="space-y-8 max-w-[1600px] mx-auto pb-20 font-sans">
+        <div className="space-y-8 max-w-7xl mx-auto pb-20 font-sans">
             {/* Header Section */}
             <header className="flex flex-col md:flex-row md:items-end justify-between gap-8">
                 <div className="space-y-1.5">
@@ -36,9 +58,15 @@ export default function MarketplaceManagement() {
                     </h1>
                     <p className="text-[11px] text-gray-400 font-bold uppercase tracking-widest flex items-center gap-2">
                         <span className="w-1.5 h-1.5 bg-[#99334C] rounded-full animate-pulse" />
-                        Curation & Économie de Contenu • Admin OS
+                        Curation & Économie de Contenu • {items.length} items réels
                     </p>
                 </div>
+                <button
+                    onClick={fetchMarketplaceData}
+                    className="p-3 bg-white border border-gray-100 rounded-2xl hover:bg-gray-50 text-gray-400 transition-all shadow-sm"
+                >
+                    <RefreshCcw size={18} className={loading ? 'animate-spin' : ''} />
+                </button>
             </header>
 
             {/* Quick Stats Grid */}
@@ -81,8 +109,8 @@ export default function MarketplaceManagement() {
                             key={tab.id}
                             onClick={() => setActiveTab(tab.id)}
                             className={`w-full text-left p-4 rounded-2xl transition-all duration-300 flex items-center gap-4 group border ${activeTab === tab.id
-                                    ? 'bg-white border-gray-100 shadow-md translate-x-1'
-                                    : 'hover:bg-gray-100/50 border-transparent'
+                                ? 'bg-white border-gray-100 shadow-md translate-x-1'
+                                : 'hover:bg-gray-100/50 border-transparent'
                                 }`}
                         >
                             <div className={`p-2.5 rounded-xl transition-colors ${activeTab === tab.id ? 'bg-[#99334C] text-white' : 'bg-gray-100 text-gray-400 group-hover:text-gray-600'
