@@ -242,11 +242,10 @@ const TiptapEditor: React.FC<TiptapEditorProps> = (props) => {
 
   // Mettre à jour le contenu si prop change de l'extérieur (seulement si pas de collaboration)
   useEffect(() => {
-    // AJOUT: Ne pas écraser si l'éditeur est focusé (l'utilisateur est en train de taper)
-    if (editor && !collaboration && !editor.isFocused && content !== editor.getHTML()) {
+    if (editor && !collaboration && content !== editor.getHTML()) {
       // Avoid "flushSync was called from inside a lifecycle method" error
       queueMicrotask(() => {
-        if (editor && !editor.isDestroyed && !editor.isFocused) {
+        if (editor && !editor.isDestroyed) {
           editor.commands.setContent(content, false);
         }
       });

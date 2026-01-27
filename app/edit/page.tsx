@@ -564,20 +564,26 @@ const XCCM2Editor = () => {
   const handleReorderGranule = async (type: string, parentId: string | null, items: any[]) => {
     if (!projectName) return;
     try {
+      console.log(`[Reorder] Reordering ${items.length} ${type}s...`);
+      // CRITIQUE: Utiliser une boucle séquentielle plutôt que Promise.all 
+      // pour éviter les race conditions et les erreurs transactionnelles au backend
       if (type === 'part') {
-        await Promise.all(items.map((item, idx) =>
-          structureService.updatePart(projectName, item.part_title, { part_number: idx + 1 })
-        ));
+        for (let i = 0; i < items.length; i++) {
+          await structureService.updatePart(projectName, items[i].part_title, { part_number: i + 1 });
+        }
       } else {
-        await Promise.all(items.map((item, idx) => {
+        for (let i = 0; i < items.length; i++) {
+          const item = items[i];
           const itemId = item.chapter_id || item.para_id || item.notion_id;
-          return structureService.moveGranule(projectName, type as any, itemId, parentId!, idx + 1);
-        }));
+          await structureService.moveGranule(projectName, type as any, itemId, parentId!, i + 1);
+        }
       }
-      loadProject(true);
+      console.log(`[Reorder] Successfully reordered ${type}s`);
+      await loadProject(true);
     } catch (err: any) {
+      console.error("[Reorder] Failed:", err);
       toast.error("Échec de la réorganisation");
-      loadProject(true);
+      await loadProject(true);
     }
   };
 

@@ -457,7 +457,7 @@ const EditorArea: React.FC<EditorAreaProps> = ({
             </div>
           ) : (
             <TiptapEditor
-              key={collaboration?.documentId || 'static'} // ✅ Only remount if doc ID changes
+              key={`${currentContext?.notion?.notion_id || currentContext?.paraId || currentContext?.chapterId || currentContext?.part?.part_id || 'static'}-${collaboration?.documentId || ''}`}
               content={content}
               onChange={handleTiptapUpdate}
               placeholder={internalPlaceholder}
