@@ -7,13 +7,14 @@ const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
 interface UseRealtimeSyncOptions {
     projectName: string;
     onStructureChange: (event: string, data: any) => void;
+    onPresenceChange?: (count: number, members: any[]) => void; // ✅ Added
     enabled?: boolean;
 }
 
 /**
  * Hook pour écouter les changements temps réel d'un projet via Ably
  */
-export function useRealtimeSync({ projectName, onStructureChange, enabled = true }: UseRealtimeSyncOptions) {
+export function useRealtimeSync({ projectName, onStructureChange, onPresenceChange, enabled = true }: UseRealtimeSyncOptions) {
     const ablyRef = useRef<Realtime | null>(null);
     const isConnectedRef = useRef(false);
     const channelRef = useRef<any>(null);
@@ -78,14 +79,22 @@ export function useRealtimeSync({ projectName, onStructureChange, enabled = true
                 channelRef.current = channel;
 
                 // 4. Écouter tous les événements
-                channel.subscribe((message) => {
-                    if (!mounted) return;
-                    if (!message.name) return;
-                    console.log(`📡 Received realtime event: ${message.name}`, message.data);
-                    callbackRef.current(message.name, message.data);
-                });
-
                 console.log(`✅ Subscribed to channel: project:${projectName}`);
+
+                // 5. Gérer la présence (pour savoir si on est plusieurs)
+                if (onPresenceChange) {
+                    const presence = channel.presence;
+
+                    const updatePresence = async () => {
+                        const members = await presence.get();
+                        onPresenceChange(members.length, members);
+                    };
+
+                    presence.subscribe('enter', updatePresence);
+                    presence.subscribe('leave', updatePresence);
+                    presence.enter(); // Signaler notre arrivée
+                    updatePresence(); // Initiale
+                }
             } catch (error) {
                 console.error('❌ Error setting up realtime sync:', error);
             }

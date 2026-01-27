@@ -18,7 +18,7 @@ interface EditorAreaProps {
   };
   onChange: (content: string) => void;
   onEditorReady?: (editor: any) => void;
-  onDrop: (content: any) => void;
+  onDrop: (content: any, targetType?: string, targetId?: string, targetParentId?: string | null) => void;
   editorRef: React.RefObject<HTMLDivElement | null>;
   placeholder?: string;
   isImporting?: boolean;
@@ -297,7 +297,12 @@ const EditorArea: React.FC<EditorAreaProps> = ({
         const granule = JSON.parse(granuleData);
 
         if (['part', 'chapter', 'paragraph', 'notion'].includes(granule.type)) {
-          onDrop(granule);
+          // Utiliser le contexte actuel comme cible si on drop dans l'éditeur
+          const targetType = currentContext?.type;
+          const targetId = currentContext?.notion?.notion_id || currentContext?.paraId || currentContext?.chapterId || currentContext?.part?.part_id;
+          const targetParentId = currentContext?.paraId || currentContext?.chapterId || currentContext?.part?.part_id;
+
+          onDrop(granule, targetType, targetId, targetParentId);
           return;
         }
 

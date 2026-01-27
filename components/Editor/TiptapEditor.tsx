@@ -172,7 +172,9 @@ const TiptapEditor: React.FC<TiptapEditorProps> = (props) => {
   const editor = useEditor({
     immediatelyRender: false,
     extensions: [
-      StarterKit,
+      StarterKit.configure({
+        history: hasValidCollaboration ? false : {} as any, // ✅ Use false to disable, or empty config to enable
+      }),
       Underline,
       TextStyle,
       Color,

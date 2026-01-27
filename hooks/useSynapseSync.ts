@@ -32,6 +32,7 @@ export interface SynapseSyncOptions {
     onDisconnect?: () => void;
     onSynced?: () => void;
     onAwarenessChange?: (users: UserPresence[]) => void;
+    enabled?: boolean; // ✅ Added
 }
 
 export interface SynapseSyncResult {
@@ -110,6 +111,7 @@ export function useSynapseSync(options: SynapseSyncOptions): SynapseSyncResult {
         onDisconnect,
         onSynced,
         onAwarenessChange,
+        enabled = true, // ✅ Added
     } = options;
 
     // Default values that remain stable
@@ -138,7 +140,7 @@ export function useSynapseSync(options: SynapseSyncOptions): SynapseSyncResult {
 
     // Initialisation de la connexion
     useEffect(() => {
-        if (!documentId || !userId) return;
+        if (!enabled || !documentId || !userId) return;
 
         // Créer le document Y.js
         const yDoc = new Y.Doc();

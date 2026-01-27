@@ -67,6 +67,7 @@ const XCCM2Editor = () => {
   // Feedback States
   const [pulsingId, setPulsingId] = useState<string | null>(null);
   const [pendingGranule, setPendingGranule] = useState<{ type: 'part' | 'chapter' | 'paragraph' | 'notion'; content: string } | null>(null);
+  const [participantCount, setParticipantCount] = useState(1); // ✅ Added for Smart Sync
 
   // Marketplace Modal State
   const [showMarketplaceModal, setShowMarketplaceModal] = useState(false);
@@ -236,40 +237,57 @@ const XCCM2Editor = () => {
       let dropParaName = '';
 
       if (targetType === 'part') {
-        const part = structure.find(p => p.part_id === targetId);
-        dropPartTitle = part?.part_title || '';
+        const part = structure.find(p => p.part_id === targetId) || structure.find(p => p.part_title === currentContext?.partTitle);
+        dropPartTitle = part?.part_title || currentContext?.partTitle || (structure[0]?.part_title) || '';
         if (granule.type === 'notion') {
           const firstChap = part?.chapters?.[0];
           dropChapterTitle = firstChap?.chapter_title || '';
           dropParaName = firstChap?.paragraphs?.[0]?.para_name || '';
         }
       } else if (targetType === 'chapter') {
-        const part = structure.find(p => p.part_id === targetParentId);
-        dropPartTitle = part?.part_title || '';
+        const part = structure.find(p => p.part_id === targetParentId) || structure.find(p => p.part_title === currentContext?.partTitle);
+        dropPartTitle = part?.part_title || currentContext?.partTitle || '';
         const chapter = part?.chapters?.find(c => c.chapter_id === targetId);
-        dropChapterTitle = chapter?.chapter_title || '';
+        dropChapterTitle = chapter?.chapter_title || currentContext?.chapterTitle || '';
         if (granule.type === 'notion') {
           dropParaName = chapter?.paragraphs?.[0]?.para_name || '';
         }
       } else if (targetType === 'paragraph') {
+        let found = false;
         for (const p of structure) {
           const ch = p.chapters?.find(c => c.chapter_id === targetParentId);
           if (ch) {
             dropPartTitle = p.part_title;
             dropChapterTitle = ch.chapter_title;
             dropParaName = ch.paragraphs?.find(pa => pa.para_id === targetId)?.para_name || '';
+            found = true;
             break;
           }
         }
+        if (!found) {
+          dropPartTitle = currentContext?.partTitle || '';
+          dropChapterTitle = currentContext?.chapterTitle || '';
+          dropParaName = currentContext?.paraName || '';
+        }
       }
 
+      // FALLBACK GLOBAL: Si toujours rien, on prend le contexte actuel ou le premier élément
       if (!dropPartTitle && structure.length > 0) {
         dropPartTitle = currentContext?.partTitle || structure[0].part_title;
         const partObj = structure.find(p => p.part_title === dropPartTitle) || structure[0];
-        dropChapterTitle = currentContext?.chapterTitle || partObj.chapters?.[0]?.chapter_title || '';
-        const chapObj = partObj.chapters?.find(c => c.chapter_title === dropChapterTitle) || partObj.chapters?.[0];
-        dropParaName = currentContext?.paraName || chapObj?.paragraphs?.[0]?.para_name || '';
+        dropPartTitle = partObj.part_title; // Ensure we have the actual name from the object
+
+        if (!dropChapterTitle) {
+          dropChapterTitle = currentContext?.chapterTitle || partObj.chapters?.[0]?.chapter_title || '';
+        }
+
+        if (!dropParaName && dropChapterTitle) {
+          const chapObj = partObj.chapters?.find(c => c.chapter_title === dropChapterTitle) || partObj.chapters?.[0];
+          dropParaName = currentContext?.paraName || chapObj?.paragraphs?.[0]?.para_name || '';
+        }
       }
+
+      console.log("[Drop Context Resolved]", { dropPartTitle, dropChapterTitle, dropParaName });
 
       // Tracking du premier granule Notion pour sélection automatique
       let firstNotionToSelect: {
@@ -462,6 +480,7 @@ const XCCM2Editor = () => {
   const [isZenMode, setIsZenMode] = useState(false);
   const [tiptapEditor, setTiptapEditor] = useState<any>(null);
   const lastSaveTimestamp = useRef<number>(0); // ✅ Prevent transition race conditions
+  const isSavingInProgress = useRef<boolean>(false); // ✅ Prevent save concurrency
 
   const editorRef = useRef<HTMLDivElement>(null);
 
@@ -651,6 +670,7 @@ const XCCM2Editor = () => {
     userId: authUser?.user_id || 'anonymous',
     userName: `${authUser?.firstname || 'L’Auteur'} ${authUser?.lastname || ''}`.trim(),
     serverUrl: process.env.NEXT_PUBLIC_HOCUSPOCUS_URL || 'ws://localhost:1234',
+    enabled: participantCount > 1 // ✅ Lazy activate only when multiple users
   });
 
   const collaborationData = useMemo(() => {
@@ -668,8 +688,14 @@ const XCCM2Editor = () => {
   // Action: Save
   const handleSave = async (isAuto = false) => {
     if (!currentContext || !projectName) return;
+    if (isSavingInProgress.current) {
+      console.log("[Save] Skip: save already in progress");
+      return;
+    }
+
     console.log(`[Save] Saving ${currentContext.type} "${currentContext.notionName || currentContext.partTitle}"...`, { isAuto, contentLength: editorContent.length });
     try {
+      isSavingInProgress.current = true;
       // Auto-save ne bloque PAS l'interface
       if (!isAuto) setIsSaving(true);
 
@@ -728,6 +754,7 @@ const XCCM2Editor = () => {
     } catch (err: any) {
       toast.error(err.message || "Erreur de sauvegarde");
     } finally {
+      isSavingInProgress.current = false;
       if (!isAuto) setIsSaving(false);
     }
   };
@@ -755,7 +782,8 @@ const XCCM2Editor = () => {
   useRealtimeSync({
     projectName: projectData?.pr_name || projectName || '',
     enabled: !!(projectData?.pr_name || projectName),
-    onStructureChange: handleStructureChange
+    onStructureChange: handleStructureChange,
+    onPresenceChange: (count) => setParticipantCount(count) // ✅ Track participants
   });
 
   // Lifecycle
