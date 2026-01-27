@@ -238,7 +238,7 @@ const TiptapEditor: React.FC<TiptapEditorProps> = (props) => {
         class: `focus:outline-none min-h-[800px] ${className}`,
       },
     },
-  });
+  }, [hasValidCollaboration, effectiveDoc]); // ✅ Re-init editor when collab status changes
 
   // Mettre à jour le contenu si prop change de l'extérieur (seulement si pas de collaboration)
   useEffect(() => {
@@ -272,7 +272,11 @@ const TiptapEditor: React.FC<TiptapEditorProps> = (props) => {
 
         if (docSize === 0) {
           console.log('[TiptapEditor] Seeding Yjs document from DB content');
-          editor.commands.setContent(content);
+          try {
+            editor.commands.setContent(content);
+          } catch (e) {
+            console.error('[TiptapEditor] Seeding failed:', e);
+          }
         }
       }
     }
