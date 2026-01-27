@@ -43,7 +43,7 @@ const AccountPage = () => {
 
   // New States for Publications
   const [activeTab, setActiveTab] = useState<'general' | 'publications'>('general');
-  const [publishedDocs, setPublishedDocs] = useState<Document[]>([]);
+  const [publishedDocs, setPublishedDocs] = useState<any[]>([]);
   const [loadingDocs, setLoadingDocs] = useState(false);
   const [showUnpublishModal, setShowUnpublishModal] = useState(false);
   const [docToUnpublish, setDocToUnpublish] = useState<Document | null>(null);
@@ -142,8 +142,15 @@ const AccountPage = () => {
     if (!user?.user_id) return;
     try {
       setLoadingDocs(true);
-      const result = await documentService.getMyPublishedDocuments();
-      setPublishedDocs(result.documents);
+      const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001').replace(/\/$/, '');
+      const response = await fetch(`${API_BASE_URL}/api/users/${user.user_id}`);
+      const data = await response.json();
+
+      if (data.success && data.data.projects) {
+        // En tant que propriétaire, on filtre uniquement ceux qui sont marqués comme publiés
+        // Le endpoint /api/users/:id peut renvoyer plus d'infos pour le proprio
+        setPublishedDocs(data.data.projects.filter((p: any) => p.is_published));
+      }
     } catch (err) {
       console.error("Error fetching published projects:", err);
     } finally {
@@ -629,11 +636,11 @@ const AccountPage = () => {
                     </div>
                   ) : publishedDocs.length > 0 ? (
                     <div className="grid sm:grid-cols-2 gap-4">
-                      {publishedDocs.map((doc: Document) => (
-                        <div key={doc.doc_id} className="group border border-gray-100 rounded-2xl p-4 hover:border-[#99334C]/30 hover:bg-[#99334C]/5 transition-all flex flex-col">
+                      {publishedDocs.map((project: any) => (
+                        <div key={project.pr_id} className="group border border-gray-100 rounded-2xl p-4 hover:border-[#99334C]/30 hover:bg-[#99334C]/5 transition-all flex flex-col">
                           <div className="aspect-video bg-gray-100 rounded-xl mb-4 overflow-hidden relative">
-                            {doc.cover_image ? (
-                              <img src={doc.cover_image} alt={doc.doc_name} className="w-full h-full object-cover" />
+                            {project.cover_image ? (
+                              <img src={project.cover_image} alt={project.pr_name} className="w-full h-full object-cover" />
                             ) : (
                               <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-[#99334C]/10 to-[#99334C]/5">
                                 <BookOpen className="w-10 h-10 text-[#99334C]/30" />
@@ -641,21 +648,21 @@ const AccountPage = () => {
                             )}
                           </div>
                           <div className="flex-1">
-                            <h4 className="font-bold text-gray-900 mb-1 line-clamp-1">{doc.doc_name}</h4>
+                            <h4 className="font-bold text-gray-900 mb-1 line-clamp-1">{project.pr_name}</h4>
                             <div className="flex items-center gap-3 text-[10px] text-gray-400 mb-4">
-                              <span className="flex items-center gap-1"><Eye size={12} /> {doc.consult || 0}</span>
-                              <span className="flex items-center gap-1"><Heart size={12} /> {doc.likes || 0}</span>
+                              <span className="flex items-center gap-1"><Eye size={12} /> {project.views || 0}</span>
+                              <span className="flex items-center gap-1"><Heart size={12} /> {project.likes || 0}</span>
                             </div>
                           </div>
                           <div className="flex gap-2">
                             <button
-                              onClick={() => router.push(`/book-reader?docId=${doc.doc_id}`)}
+                              onClick={() => router.push(`/book-reader?docId=${project.documents?.[0]?.doc_id || ''}`)}
                               className="flex-1 py-2 text-xs font-bold bg-white text-gray-700 border border-gray-200 rounded-lg hover:border-[#99334C] hover:text-[#99334C] transition-all"
                             >
                               Voir
                             </button>
                             <button
-                              onClick={() => handleUnpublishClick(doc)}
+                              onClick={() => project.documents?.[0]?.doc_id && handleUnpublishClick(project.documents[0])}
                               className="px-3 py-2 text-xs font-bold text-red-500 hover:bg-red-50 rounded-lg transition-all border border-transparent hover:border-red-100"
                             >
                               Dépublier
