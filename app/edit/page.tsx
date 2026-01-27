@@ -563,10 +563,42 @@ const XCCM2Editor = () => {
 
   const handleReorderGranule = async (type: string, parentId: string | null, items: any[]) => {
     if (!projectName) return;
+
+    // 1. Mise à jour OPTIMISTE de la structure (UI instantanée)
+    const previousStructure = [...structure];
+    setStructure(prev => {
+      if (type === 'part') return items; // Simple remplacement pour les parties
+
+      return prev.map(part => {
+        // Cas Chapitres (parent = Part)
+        if (type === 'chapter' && part.part_id === parentId) {
+          return { ...part, chapters: items };
+        }
+
+        // Cas Paragraphes/Notions (on doit chercher plus profond)
+        return {
+          ...part,
+          chapters: part.chapters?.map(chapter => {
+            if (type === 'paragraph' && chapter.chapter_id === parentId) {
+              return { ...chapter, paragraphs: items };
+            }
+            if (type === 'notion' && chapter.paragraphs) {
+              return {
+                ...chapter,
+                paragraphs: chapter.paragraphs.map(para => {
+                  if (para.para_id === parentId) return { ...para, notions: items };
+                  return para;
+                })
+              };
+            }
+            return chapter;
+          })
+        };
+      });
+    });
+
     try {
-      console.log(`[Reorder] Reordering ${items.length} ${type}s...`);
-      // CRITIQUE: Utiliser une boucle séquentielle plutôt que Promise.all 
-      // pour éviter les race conditions et les erreurs transactionnelles au backend
+      console.log(`[Reorder] Optimistic update applied. Syncing ${items.length} ${type}s...`);
       if (type === 'part') {
         for (let i = 0; i < items.length; i++) {
           await structureService.updatePart(projectName, items[i].part_title, { part_number: i + 1 });
@@ -578,17 +610,82 @@ const XCCM2Editor = () => {
           await structureService.moveGranule(projectName, type as any, itemId, parentId!, i + 1);
         }
       }
-      console.log(`[Reorder] Successfully reordered ${type}s`);
+      // Rechargement silencieux pour assurer la cohérence finale
       await loadProject(true);
     } catch (err: any) {
-      console.error("[Reorder] Failed:", err);
-      toast.error("Échec de la réorganisation");
+      console.error("[Reorder] Sync failed, rolling back:", err);
+      toast.error("Échec de la synchronisation du re-ordonnancement");
+      setStructure(previousStructure); // Rollback
       await loadProject(true);
     }
   };
 
   const handleMoveGranule = async (type: string, itemId: string, newParentId: string) => {
     if (!projectName) return;
+
+    // 1. Mise à jour OPTIMISTE (mouvement entre parents)
+    const previousStructure = [...structure];
+
+    // On utilise un helper local pour simuler le move dans l'arbre React
+    // (Note: moveInTree est disponible dans TableOfContents, on peut soit le dupliquer soit faire une logique simplifiée ici)
+    setStructure(prev => {
+      // Logique de move simplifiée : Trouver l'item, le retirer de son ancien parent, l'ajouter au nouveau
+      let itemToMove: any = null;
+
+      // Phase A : Extraction + Nettoyage
+      const cleanStructure = prev.map(part => {
+        if (type === 'chapter' && part.chapters?.find(c => c.chapter_id === itemId)) {
+          itemToMove = part.chapters.find(c => c.chapter_id === itemId);
+          return { ...part, chapters: part.chapters.filter(c => c.chapter_id !== itemId) };
+        }
+        return {
+          ...part,
+          chapters: part.chapters?.map(chapter => {
+            if (type === 'paragraph' && chapter.paragraphs?.find(p => p.para_id === itemId)) {
+              itemToMove = chapter.paragraphs.find(p => p.para_id === itemId);
+              return { ...chapter, paragraphs: chapter.paragraphs.filter(p => p.para_id !== itemId) };
+            }
+            return {
+              ...chapter,
+              paragraphs: chapter.paragraphs?.map(para => {
+                if (type === 'notion' && para.notions?.find(n => n.notion_id === itemId)) {
+                  itemToMove = para.notions.find(n => n.notion_id === itemId);
+                  return { ...para, notions: para.notions.filter(n => n.notion_id !== itemId) };
+                }
+                return para;
+              })
+            };
+          })
+        };
+      });
+
+      if (!itemToMove) return prev;
+
+      // Phase B : Insertion dans le nouveau parent
+      return cleanStructure.map(part => {
+        if (type === 'chapter' && part.part_id === newParentId) {
+          return { ...part, chapters: [...(part.chapters || []), itemToMove] };
+        }
+        return {
+          ...part,
+          chapters: part.chapters?.map(chapter => {
+            if (type === 'paragraph' && chapter.chapter_id === newParentId) {
+              return { ...chapter, paragraphs: [...(chapter.paragraphs || []), itemToMove] };
+            }
+            return {
+              ...chapter,
+              paragraphs: chapter.paragraphs?.map(para => {
+                if (type === 'notion' && para.para_id === newParentId) {
+                  return { ...para, notions: [...(para.notions || []), itemToMove] };
+                }
+                return para;
+              })
+            };
+          })
+        };
+      });
+    });
+
     try {
       await structureService.moveGranule(projectName, type as any, itemId, newParentId);
       await loadProject(true);
@@ -597,17 +694,14 @@ const XCCM2Editor = () => {
       addAction({
         type: 'move',
         description: `Déplacer ${type}`,
-        undo: async () => {
-          // Simplifié: Nécessiterait de connaître l'ancien parentId et position
-          await loadProject(true);
-        },
-        redo: async () => {
-          await loadProject(true);
-        }
+        undo: async () => { await loadProject(true); },
+        redo: async () => { await loadProject(true); }
       });
     } catch (err: any) {
+      console.error("[Move] Failed:", err);
       toast.error("Échec du déplacement");
-      loadProject(true);
+      setStructure(previousStructure);
+      await loadProject(true);
     }
   };
 
