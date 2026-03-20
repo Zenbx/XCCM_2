@@ -8,7 +8,7 @@ import { FaHome, FaInfoCircle, FaEdit, FaBook, FaQuestionCircle, FaGlobe, FaUser
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/context/AuthContext";
 import { useState, useEffect } from "react";
-import { LogOut, Settings, User as UserIcon, Menu, X, BarChart2, ShieldCheck } from "lucide-react";
+import { LogOut, Settings, User as UserIcon, Menu, X, BarChart2, ShieldCheck, GraduationCap } from "lucide-react";
 import LanguageToggle from '@/components/LanguageToggle';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { useTranslations } from 'next-intl';
@@ -31,6 +31,7 @@ export default function Header() {
     { label: tHeader('links.edit'), href: '/edit-home', authOnly: true, icon: <FaEdit /> },
     { label: tHeader('links.library'), href: '/library', icon: <FaBook /> },
     { label: tHeader('links.marketplace'), href: '/marketplace', authOnly: true, icon: <FaStore /> },
+    { label: 'Mes Classes', href: '/classrooms', authOnly: true, icon: <GraduationCap className="w-4 h-4" /> },
     { label: tHeader('links.help'), href: '/help', icon: <FaQuestionCircle /> },
   ];
 

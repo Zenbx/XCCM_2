@@ -14,7 +14,7 @@ import type { NextRequest } from 'next/server';
 import { jwtVerify } from 'jose';
 
 // Routes qui nécessitent une authentification
-const protectedRoutes = ['/edit-home', '/edit', '/account', '/settings', '/admin', '/invitations'];
+const protectedRoutes = ['/edit-home', '/edit', '/account', '/settings', '/admin', '/invitations', '/classrooms'];
 
 // Routes réservées aux administrateurs
 const adminRoutes = ['/admin'];
