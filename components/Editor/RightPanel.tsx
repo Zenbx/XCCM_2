@@ -12,7 +12,8 @@ import {
   Brain,
   Bot,
   ChevronRight,
-  BookOpen
+  BookOpen,
+  ClipboardList
 } from 'lucide-react';
 import RichTooltip from '@/components/UI/RichTooltip';
 
@@ -25,6 +26,7 @@ import InfoPanel from './Panels/InfoPanel';
 import SettingsPanel from './Panels/SettingsPanel';
 import TutorialPanel from './Panels/TutorialPanel';
 import { SocraticPanel } from '../Socratic/SocraticPanel';
+import ExercisePanel from './Panels/ExercisePanel';
 
 const RightPanel = ({
   activePanel,
@@ -40,7 +42,8 @@ const RightPanel = ({
   onImportFile,
   granules,
   onDragStart = () => { },
-  socraticData
+  socraticData,
+  onNavigateToGranule
 }: any) => {
   const panels = [
     { id: 'import', icon: Cloud, title: 'Importer Fichier', description: 'Gérez vos ressources et importez des modules de connaissance.' },
@@ -51,6 +54,7 @@ const RightPanel = ({
     { id: 'comments', icon: MessageSquare, title: 'Commentaires', description: 'Collaborez et discutez des modifications avec votre équipe.' },
     { id: 'info', icon: Info, title: 'Informations', description: 'Détails techniques et métadonnées du projet actuel.' },
     { id: 'settings', icon: Settings, title: 'Paramètres', description: 'Configurez les options d\'export et de publication du projet.' },
+    { id: 'exercises', icon: ClipboardList, title: 'Exercices', description: 'Créez et gérez les exercices attachés au granule sélectionné.' },
     { id: 'tutorial', icon: BookOpen, title: 'Tutoriel', description: 'Apprenez à utiliser les commandes slash et les raccourcis de l\'éditeur.' }
   ];
 
@@ -139,6 +143,7 @@ const RightPanel = ({
               )}
               {activePanel === 'info' && <InfoPanel project={project} structure={structure} />}
               {activePanel === 'settings' && <SettingsPanel project={project} onUpdateProject={onUpdateProject} />}
+              {activePanel === 'exercises' && <ExercisePanel currentContext={currentContext} structure={structure} onNavigateToGranule={onNavigateToGranule} />}
               {activePanel === 'tutorial' && <TutorialPanel />}
               {activePanel === 'socratic' && (
                 <SocraticPanel

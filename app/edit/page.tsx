@@ -35,6 +35,47 @@ import PublishToMarketplaceModal from '@/components/Editor/PublishToMarketplaceM
 import { structureService } from '@/services/structureService';
 import { commentService } from '@/services/commentService';
 import '../../styles/view-transitions.css';
+import OnboardingModal, { OnboardingStep } from '@/components/Onboarding/OnboardingModal';
+import { BookOpen, LayoutGrid, FileEdit, PanelRight, ClipboardList, Wand2 } from 'lucide-react';
+
+const EDITOR_ONBOARDING_STEPS: OnboardingStep[] = [
+  {
+    icon: <FileEdit className="w-6 h-6" />,
+    title: "Votre Éditeur de Contenu",
+    description: "Bienvenue dans l'éditeur XCCM2 ! C'est ici que vous créez et structurez vos cours. Votre projet est organisé en Parties > Chapitres > Paragraphes > Notions.",
+    accentColor: '#99334C',
+  },
+  {
+    icon: <LayoutGrid className="w-6 h-6" />,
+    title: "Barre d'Outils",
+    description: "La barre d'outils en haut vous permet de créer des parties, chapitres, paragraphes et notions. Vous y trouverez aussi les options de formatage, sauvegarde et publication.",
+    accentColor: '#8b5cf6',
+  },
+  {
+    icon: <BookOpen className="w-6 h-6" />,
+    title: "Table des Matières",
+    description: "Le panneau de gauche affiche la structure de votre cours. Cliquez sur un élément pour y naviguer, faites un clic droit pour accéder aux options (renommer, supprimer, déplacer).",
+    accentColor: '#22c55e',
+  },
+  {
+    icon: <FileEdit className="w-6 h-6" />,
+    title: "Zone d'Édition",
+    description: "La zone centrale est votre espace d'écriture. Écrivez le contenu de chaque notion avec un éditeur riche : gras, italique, listes, code, images, et plus encore.",
+    accentColor: '#3b82f6',
+  },
+  {
+    icon: <PanelRight className="w-6 h-6" />,
+    title: "Panneaux Latéraux",
+    description: "Le panneau droit donne accès à des outils avancés : commentaires, historique des modifications, propriétés du document, et le panneau d'exercices.",
+    accentColor: '#f59e0b',
+  },
+  {
+    icon: <ClipboardList className="w-6 h-6" />,
+    title: "Exercices & IA",
+    description: "🎯 Créez des exercices (QCU, QCM, code, texte à trous...) directement depuis le panneau Exercices. 🤖 L'assistant IA vous aide à améliorer votre contenu.",
+    accentColor: '#ec4899',
+  },
+];
 
 const XCCM2Editor = () => {
   const searchParams = useSearchParams();
@@ -1258,6 +1299,72 @@ const XCCM2Editor = () => {
             isAnalyzing,
             onDismissFeedback: dismissFeedback
           }}
+          onNavigateToGranule={(ctx: any) => {
+            // Navigate to the granule corresponding to an exercise
+            if (ctx.type === 'part') {
+              const part = structure.find((p: any) => p.part_title === ctx.partTitle);
+              if (part) {
+                setCurrentContext({
+                  type: 'part',
+                  projectName: projectData?.pr_name || '',
+                  partTitle: ctx.partTitle,
+                  part
+                });
+                setEditorContent(part.part_intro || '');
+                setHasUnsavedChanges(false);
+              }
+            } else if (ctx.type === 'chapter') {
+              const part = structure.find((p: any) => p.part_title === ctx.partTitle);
+              const chapter = part?.chapters?.find((c: any) => c.chapter_title === ctx.chapterTitle);
+              if (chapter) {
+                setCurrentContext({
+                  type: 'chapter',
+                  projectName: projectData?.pr_name || '',
+                  partTitle: ctx.partTitle,
+                  chapterTitle: ctx.chapterTitle,
+                  chapterId: chapter.chapter_id,
+                  chapter
+                });
+                setEditorContent('');
+                setHasUnsavedChanges(false);
+              }
+            } else if (ctx.type === 'paragraph') {
+              const part = structure.find((p: any) => p.part_title === ctx.partTitle);
+              const chapter = part?.chapters?.find((c: any) => c.chapter_title === ctx.chapterTitle);
+              const para = chapter?.paragraphs?.find((pa: any) => pa.para_name === ctx.paraName);
+              if (para) {
+                setCurrentContext({
+                  type: 'paragraph',
+                  projectName: projectData?.pr_name || '',
+                  partTitle: ctx.partTitle,
+                  chapterTitle: ctx.chapterTitle,
+                  paraName: ctx.paraName,
+                  paraId: para.para_id,
+                  paragraph: para
+                });
+                setEditorContent('');
+                setHasUnsavedChanges(false);
+              }
+            } else if (ctx.type === 'notion') {
+              const part = structure.find((p: any) => p.part_title === ctx.partTitle);
+              const chapter = part?.chapters?.find((c: any) => c.chapter_title === ctx.chapterTitle);
+              const para = chapter?.paragraphs?.find((pa: any) => pa.para_name === ctx.paraName);
+              const notion = para?.notions?.find((n: any) => n.notion_name === ctx.notionName);
+              if (notion) {
+                setCurrentContext({
+                  type: 'notion',
+                  projectName: projectData?.pr_name || '',
+                  partTitle: ctx.partTitle,
+                  chapterTitle: ctx.chapterTitle,
+                  paraName: ctx.paraName,
+                  notionName: ctx.notionName,
+                  notion
+                });
+                setEditorContent(notion.notion_content || '');
+                setHasUnsavedChanges(false);
+              }
+            }
+          }}
         />
       )}
 
@@ -1277,6 +1384,14 @@ const XCCM2Editor = () => {
           header { display: none !important; }
         `}</style>
       )}
+
+      {/* ═══════ ONBOARDING ═══════ */}
+      <OnboardingModal
+        flowId="editor"
+        title="L'Éditeur XCCM2"
+        subtitle="Découvrez les outils pour créer des cours professionnels."
+        steps={EDITOR_ONBOARDING_STEPS}
+      />
 
 
     </div>

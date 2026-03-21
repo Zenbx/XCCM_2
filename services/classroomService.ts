@@ -135,6 +135,35 @@ class ClassroomService {
         if (!response.ok) throw new Error(data.message || 'Erreur lors de l\'inscription');
         return data.data.enrollment;
     }
+
+    /**
+     * Assigne un projet (cours) à une classe
+     */
+    async assignProject(classId: string, projectId: string): Promise<any> {
+        const response = await fetch(`${API_BASE_URL}/api/classrooms/${classId}/projects`, {
+            method: 'POST',
+            headers: this.getHeaders(),
+            body: JSON.stringify({ project_id: projectId }),
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || 'Erreur lors de l\'ajout du cours');
+        return data.data.link;
+    }
+
+    /**
+     * Retire un projet d'une classe
+     */
+    async unassignProject(classId: string, projectId: string): Promise<void> {
+        const response = await fetch(`${API_BASE_URL}/api/classrooms/${classId}/projects`, {
+            method: 'DELETE',
+            headers: this.getHeaders(),
+            body: JSON.stringify({ project_id: projectId }),
+        });
+        if (!response.ok) {
+            const data = await response.json();
+            throw new Error(data.message || 'Erreur lors du retrait du cours');
+        }
+    }
 }
 
 export const classroomService = new ClassroomService();

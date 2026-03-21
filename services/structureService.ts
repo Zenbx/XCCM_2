@@ -133,7 +133,7 @@ class StructureService {
   }
 
   // ============= CHAPTERS =============
-  async createChapter(projectName: string, partTitle: string, data: { chapter_title: string; chapter_number: number }): Promise<Chapter> {
+  async createChapter(projectName: string, partTitle: string, data: { chapter_title: string; chapter_number: number; chapter_intro?: string }): Promise<Chapter> {
     const response = await fetch(
       `${API_BASE_URL}/api/projects/${encodeURIComponent(projectName)}/parts/${encodeURIComponent(partTitle)}/chapters`,
       {
@@ -180,7 +180,7 @@ class StructureService {
     projectName: string,
     partTitle: string,
     chapterTitle: string,
-    data: { chapter_title?: string; chapter_number?: number }
+    data: { chapter_title?: string; chapter_number?: number; chapter_intro?: string }
   ): Promise<Chapter> {
     const response = await fetch(
       `${API_BASE_URL}/api/projects/${encodeURIComponent(projectName)}/parts/${encodeURIComponent(partTitle)}/chapters/${encodeURIComponent(chapterTitle)}`,
@@ -206,7 +206,7 @@ class StructureService {
     projectName: string,
     partTitle: string,
     chapterTitle: string,
-    data: { para_name: string; para_number: number }
+    data: { para_name: string; para_number: number; para_intro?: string }
   ): Promise<Paragraph> {
     const response = await fetch(
       `${API_BASE_URL}/api/projects/${encodeURIComponent(projectName)}/parts/${encodeURIComponent(partTitle)}/chapters/${encodeURIComponent(chapterTitle)}/paragraphs`,
@@ -255,7 +255,7 @@ class StructureService {
     partTitle: string,
     chapterTitle: string,
     paraName: string,
-    data: { para_name?: string; para_number?: number }
+    data: { para_name?: string; para_number?: number; para_intro?: string }
   ): Promise<Paragraph> {
     const response = await fetch(
       `${API_BASE_URL}/api/projects/${encodeURIComponent(projectName)}/parts/${encodeURIComponent(partTitle)}/chapters/${encodeURIComponent(chapterTitle)}/paragraphs/${encodeURIComponent(paraName)}`,

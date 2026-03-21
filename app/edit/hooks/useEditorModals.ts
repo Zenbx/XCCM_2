@@ -23,8 +23,8 @@ export const useEditorModals = (
     }>({});
 
     const [partFormData, setPartFormData] = useState({ title: '', number: 1 });
-    const [chapterFormData, setChapterFormData] = useState({ title: '', number: 1 });
-    const [paragraphFormData, setParagraphFormData] = useState({ name: '', number: 1 });
+    const [chapterFormData, setChapterFormData] = useState({ title: '', number: 1, intro: '' });
+    const [paragraphFormData, setParagraphFormData] = useState({ name: '', number: 1, intro: '' });
     const [notionFormData, setNotionFormData] = useState({ name: '', number: 1 });
 
     const [isCreatingPart, setIsCreatingPart] = useState(false);
@@ -58,7 +58,7 @@ export const useEditorModals = (
         const maxNum = part?.chapters?.reduce((max: number, c: any) => Math.max(max, c.chapter_number || 0), 0) || 0;
 
         setModalContext({ partTitle });
-        setChapterFormData({ title: '', number: maxNum + 1 });
+        setChapterFormData({ title: '', number: maxNum + 1, intro: '' });
         setShowChapterModal(true);
     };
 
@@ -68,7 +68,7 @@ export const useEditorModals = (
         const maxNum = chapter?.paragraphs?.reduce((max: number, p: any) => Math.max(max, p.para_number || 0), 0) || 0;
 
         setModalContext({ partTitle, chapterTitle });
-        setParagraphFormData({ name: '', number: maxNum + 1 });
+        setParagraphFormData({ name: '', number: maxNum + 1, intro: '' });
         setShowParagraphModal(true);
     };
 
@@ -131,7 +131,8 @@ export const useEditorModals = (
             setPendingGranule?.({ type: 'chapter', content: chapterFormData.title });
             const newChapter = await structureService.createChapter(projectName, modalContext.partTitle, {
                 chapter_title: chapterFormData.title,
-                chapter_number: chapterFormData.number
+                chapter_number: chapterFormData.number,
+                ...(chapterFormData.intro ? { chapter_intro: chapterFormData.intro } : {})
             });
             toast.success("Chapitre créé");
             setShowChapterModal(false);
@@ -177,7 +178,8 @@ export const useEditorModals = (
             setPendingGranule?.({ type: 'paragraph', content: paragraphFormData.name });
             const newPara = await structureService.createParagraph(projectName, modalContext.partTitle, modalContext.chapterTitle, {
                 para_name: paragraphFormData.name,
-                para_number: paragraphFormData.number
+                para_number: paragraphFormData.number,
+                ...(paragraphFormData.intro ? { para_intro: paragraphFormData.intro } : {})
             });
             toast.success("Paragraphe créé");
             setShowParagraphModal(false);

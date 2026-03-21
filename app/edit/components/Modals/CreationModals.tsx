@@ -133,6 +133,16 @@ const CreationModals: React.FC<CreationModalsProps> = ({
                                     className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#99334C] text-gray-900"
                                 />
                             </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Texte introductif (optionnel)</label>
+                                <textarea
+                                    value={chapterFormData.intro || ''}
+                                    onChange={(e) => setChapterFormData({ ...chapterFormData, intro: e.target.value })}
+                                    placeholder="Présentez brièvement ce chapitre..."
+                                    rows={3}
+                                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#99334C] text-gray-900 outline-none resize-none"
+                                />
+                            </div>
                         </div>
                         <div className="flex gap-3 mt-6">
                             <button onClick={() => setShowChapterModal(false)} className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50">Annuler</button>
@@ -184,6 +194,16 @@ const CreationModals: React.FC<CreationModalsProps> = ({
                                     value={paragraphFormData.number}
                                     onChange={(e) => setParagraphFormData({ ...paragraphFormData, number: parseInt(e.target.value) || 1 })}
                                     className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#99334C] text-gray-900"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Texte introductif (optionnel)</label>
+                                <textarea
+                                    value={paragraphFormData.intro || ''}
+                                    onChange={(e) => setParagraphFormData({ ...paragraphFormData, intro: e.target.value })}
+                                    placeholder="Présentez brièvement ce paragraphe..."
+                                    rows={3}
+                                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#99334C] text-gray-900 outline-none resize-none"
                                 />
                             </div>
                         </div>

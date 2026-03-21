@@ -3,7 +3,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
     GraduationCap, Users, BookOpen, Copy, Check, ArrowLeft,
     Settings, Trash2, UserPlus, ChevronRight, Loader2,
-    AlertCircle, School, Link2, Edit3, X, Plus
+    AlertCircle, School, Link2, Edit3, X, Plus, BarChart3
 } from 'lucide-react';
 import { useRouter, useParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -157,6 +157,14 @@ const ClassroomDetailPage = () => {
 
                         {isTeacher && (
                             <div className="flex items-center gap-3">
+                                <TactileButton
+                                    variant="ghost"
+                                    className="!text-white !border-white/30 border hover:!bg-white/10"
+                                    leftIcon={<BarChart3 className="w-4 h-4" />}
+                                    onClick={() => router.push(`/classrooms/${classId}/analytics`)}
+                                >
+                                    Analytics
+                                </TactileButton>
                                 <TactileButton
                                     variant="ghost"
                                     className="!text-white !border-white/30 border hover:!bg-white/10"

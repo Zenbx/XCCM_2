@@ -39,6 +39,40 @@ import { invitationService } from '@/services/invitationService';
 import { useAuth } from '@/context/AuthContext';
 import toast from 'react-hot-toast';
 import { TEMPLATE_DATA, GENERIC_TEMPLATE } from '@/app/templates/TemplateData';
+import OnboardingModal, { OnboardingStep } from '@/components/Onboarding/OnboardingModal';
+
+const EDIT_HOME_ONBOARDING_STEPS: OnboardingStep[] = [
+  {
+    icon: <BookTemplate className="w-6 h-6" />,
+    title: "Votre Espace Créatif",
+    description: "Bienvenue dans votre espace de création ! Ici, vous retrouvez tous vos projets de cours et compositions. C'est votre point de départ pour créer du contenu pédagogique.",
+    accentColor: '#99334C',
+  },
+  {
+    icon: <Star className="w-6 h-6" />,
+    title: "Templates Prêts à l'Emploi",
+    description: "Gagnez du temps avec nos modèles prédéfinis ! Choisissez un template adapté (cours universitaire, tutoriel, formation pro...) et commencez avec une structure déjà en place.",
+    accentColor: '#8b5cf6',
+  },
+  {
+    icon: <Plus className="w-6 h-6" />,
+    title: "Créer une Composition",
+    description: "Cliquez sur « Créer une Nouvelle Composition » pour démarrer un projet vide. Donnez-lui un nom et vous serez redirigé vers l'éditeur pour structurer votre contenu.",
+    accentColor: '#22c55e',
+  },
+  {
+    icon: <Filter className="w-6 h-6" />,
+    title: "Filtrez vos Projets",
+    description: "Utilisez les filtres (Tous, Mes Projets, Partagés, En attente) pour naviguer rapidement. La barre de recherche vous aide à trouver n'importe quel projet.",
+    accentColor: '#3b82f6',
+  },
+  {
+    icon: <Edit3 className="w-6 h-6" />,
+    title: "Actions Rapides",
+    description: "Sur chaque projet, vous pouvez : ✏️ Renommer, 📥 Exporter en PDF, ou 🗑️ Supprimer. Cliquez sur un projet pour ouvrir l'éditeur directement.",
+    accentColor: '#f59e0b',
+  },
+];
 
 const EditHomePage = () => {
   // --- États Globaux ---
@@ -876,6 +910,14 @@ const EditHomePage = () => {
           </div>
         </div>
       )}
+
+      {/* ═══════ ONBOARDING ═══════ */}
+      <OnboardingModal
+        flowId="edit-home"
+        title="Bienvenue sur XCCM2 !"
+        subtitle="Découvrez votre espace de création en quelques étapes."
+        steps={EDIT_HOME_ONBOARDING_STEPS}
+      />
     </div>
   );
 };

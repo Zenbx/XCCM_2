@@ -12,6 +12,34 @@ import { TactileButton } from '@/components/UI/TactileButton';
 import GlassPanel from '@/components/UI/GlassPanel';
 import { Skeleton } from '@/components/UI/Skeleton';
 import toast from 'react-hot-toast';
+import OnboardingModal, { OnboardingStep } from '@/components/Onboarding/OnboardingModal';
+
+const CLASSROOM_ONBOARDING_STEPS: OnboardingStep[] = [
+  {
+    icon: <GraduationCap className="w-6 h-6" />,
+    title: "Espace Classes",
+    description: "Bienvenue dans votre espace Classes ! Ici, vous gérez vos classes en tant que professeur et retrouvez celles que vous suivez en tant qu'étudiant.",
+    accentColor: '#99334C',
+  },
+  {
+    icon: <Plus className="w-6 h-6" />,
+    title: "Créer une Classe",
+    description: "En tant que professeur, créez une classe en un clic. Un code d'invitation unique sera généré automatiquement pour vos étudiants.",
+    accentColor: '#22c55e',
+  },
+  {
+    icon: <KeyRound className="w-6 h-6" />,
+    title: "Rejoindre avec un Code",
+    description: "En tant qu'étudiant, entrez le code fourni par votre professeur pour rejoindre sa classe et accéder aux cours et exercices associés.",
+    accentColor: '#3b82f6',
+  },
+  {
+    icon: <Users className="w-6 h-6" />,
+    title: "Suivi & Analytics",
+    description: "En tant que professeur, accédez au dashboard d'analytics depuis chaque classe pour suivre la progression de vos étudiants en temps réel.",
+    accentColor: '#f59e0b',
+  },
+];
 
 // ─────────────────────────────────────────────────────────
 // CREATE CLASSROOM MODAL
@@ -607,6 +635,14 @@ const ClassroomsPage = () => {
                 isOpen={showJoinModal}
                 onClose={() => setShowJoinModal(false)}
                 onJoined={fetchClassrooms}
+            />
+
+            {/* ═══════ ONBOARDING ═══════ */}
+            <OnboardingModal
+                flowId="classrooms"
+                title="Vos Classes"
+                subtitle="Enseignez ou apprenez, tout se passe ici !"
+                steps={CLASSROOM_ONBOARDING_STEPS}
             />
         </div>
     );

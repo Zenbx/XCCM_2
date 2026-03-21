@@ -1,6 +1,8 @@
 import React from 'react';
 import { BookOpen, User, Archive } from 'lucide-react';
 import { Part, Chapter, Paragraph, Notion } from '@/services/documentService';
+import { Exercise, Submission, SubmissionResult } from '@/services/exerciseService';
+import ExerciseBlock from './ExerciseBlock';
 
 interface ReaderContentProps {
     doc: any;
@@ -8,11 +10,51 @@ interface ReaderContentProps {
     structure: Part[];
     fontSize: number;
     onCollect: (granule: any) => void;
+    // Exercise integration
+    exercises?: Exercise[];
+    submissions?: Submission[];
+    submittingId?: string | null;
+    onSubmitAnswer?: (exerciseId: string, answers: any) => Promise<SubmissionResult | null>;
+    getExercisesForGranule?: (granuleId: string, granuleType: string) => Exercise[];
+    getLatestSubmission?: (exerciseId: string) => Submission | undefined;
 }
 
-const ReaderContent: React.FC<ReaderContentProps> = ({
-    doc, project, structure, fontSize, onCollect
+const RenderExercises = ({
+    granuleId, granuleType, getExercisesForGranule, getLatestSubmission, submittingId, onSubmitAnswer
+}: {
+    granuleId: string;
+    granuleType: string;
+    getExercisesForGranule?: (id: string, type: string) => Exercise[];
+    getLatestSubmission?: (id: string) => Submission | undefined;
+    submittingId?: string | null;
+    onSubmitAnswer?: (exerciseId: string, answers: any) => Promise<SubmissionResult | null>;
 }) => {
+    if (!getExercisesForGranule || !onSubmitAnswer) return null;
+    const exs = getExercisesForGranule(granuleId, granuleType);
+    if (exs.length === 0) return null;
+
+    return (
+        <div className="mt-4 mb-8">
+            {exs.map((exercise) => (
+                <ExerciseBlock
+                    key={exercise.id}
+                    exercise={exercise}
+                    submission={getLatestSubmission?.(exercise.id)}
+                    isSubmitting={submittingId === exercise.id}
+                    onSubmit={onSubmitAnswer}
+                />
+            ))}
+        </div>
+    );
+};
+
+const ReaderContent: React.FC<ReaderContentProps> = ({
+    doc, project, structure, fontSize, onCollect,
+    exercises, submissions, submittingId, onSubmitAnswer,
+    getExercisesForGranule, getLatestSubmission
+}) => {
+    const exerciseProps = { getExercisesForGranule, getLatestSubmission, submittingId, onSubmitAnswer };
+
     return (
         <div className="max-w-4xl mx-auto py-8 px-4 lg:px-8">
             {/* Title Card */}
@@ -86,6 +128,9 @@ const ReaderContent: React.FC<ReaderContentProps> = ({
                                     />
                                 )}
 
+                                {/* Exercises attached to this Part */}
+                                <RenderExercises granuleId={part.part_id} granuleType="part" {...exerciseProps} />
+
                                 {part.chapters.map((chapter: Chapter) => (
                                     <div key={chapter.chapter_id} id={chapter.chapter_id} className="mb-12 scroll-mt-24">
                                         <h3 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-6 flex items-center gap-3">
@@ -99,6 +144,9 @@ const ReaderContent: React.FC<ReaderContentProps> = ({
                                                 <Archive size={16} />
                                             </button>
                                         </h3>
+
+                                        {/* Exercises attached to this Chapter */}
+                                        <RenderExercises granuleId={chapter.chapter_id} granuleType="chapter" {...exerciseProps} />
 
                                         {chapter.paragraphs.map((para: Paragraph) => (
                                             <div key={para.para_id} id={para.para_id} className="mb-10 scroll-mt-24">
@@ -148,8 +196,14 @@ const ReaderContent: React.FC<ReaderContentProps> = ({
                               "
                                                             dangerouslySetInnerHTML={{ __html: notion.notion_content }}
                                                         />
+
+                                                        {/* Exercises attached to this Notion */}
+                                                        <RenderExercises granuleId={notion.notion_id} granuleType="notion" {...exerciseProps} />
                                                     </div>
                                                 ))}
+
+                                                {/* Exercises attached to this Paragraph */}
+                                                <RenderExercises granuleId={para.para_id} granuleType="paragraph" {...exerciseProps} />
                                             </div>
                                         ))}
                                     </div>

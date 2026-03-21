@@ -8,6 +8,7 @@ import { useRouter } from 'next/navigation';
 // Hooks
 import { useReaderState } from './hooks/useReaderState';
 import { useCollection } from './hooks/useCollection';
+import { useExerciseProgress } from './hooks/useExerciseProgress';
 
 // Components
 import ReaderHeader from './components/ReaderHeader';
@@ -15,6 +16,7 @@ import ReaderTOC from './components/ReaderTOC';
 import ReaderContent from './components/ReaderContent';
 import CollectionModal from './components/CollectionModal';
 import ReaderSkeleton from './components/ReaderSkeleton';
+import ProgressBar from './components/ProgressBar';
 
 const BookReaderPageContent = () => {
   const searchParams = useSearchParams();
@@ -57,6 +59,16 @@ const BookReaderPageContent = () => {
     handleNavigateBack,
     confirmCollectToProject
   } = useCollection(docId, data?.document);
+
+  // Exercise progress
+  const {
+    exercises, submissions, submittingId,
+    totalExercises, completedExercises, attemptedExercises, progressPercentage,
+    submitAnswer, getExercisesForGranule, getLatestSubmission
+  } = useExerciseProgress({
+    projectId: data?.project?.pr_id,
+    structure: data?.structure
+  });
 
   const contentRef = useRef<HTMLDivElement>(null);
 
@@ -129,6 +141,16 @@ const BookReaderPageContent = () => {
         isDownloading={isDownloading}
       />
 
+      {/* Progress Bar */}
+      {totalExercises > 0 && (
+        <ProgressBar
+          completed={completedExercises}
+          total={totalExercises}
+          percentage={progressPercentage}
+          attempted={attemptedExercises}
+        />
+      )}
+
       <div className="flex flex-1 max-w-screen-2xl mx-auto w-full">
         <aside className={`fixed lg:sticky top-[73px] left-0 z-40 w-80 h-[calc(100vh-73px)] bg-white border-r border-gray-200 overflow-y-auto transition-transform duration-300 lg:translate-x-0 ${tocOpen ? 'translate-x-0' : '-translate-x-full'} print:hidden`}>
           <ReaderTOC
@@ -156,6 +178,12 @@ const BookReaderPageContent = () => {
             structure={data.structure}
             fontSize={fontSize}
             onCollect={handleCollect}
+            exercises={exercises}
+            submissions={submissions}
+            submittingId={submittingId}
+            onSubmitAnswer={submitAnswer}
+            getExercisesForGranule={getExercisesForGranule}
+            getLatestSubmission={getLatestSubmission}
           />
         </main>
       </div>
