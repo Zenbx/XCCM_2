@@ -165,6 +165,25 @@ class ExerciseService {
     }
 
     /**
+     * Modifie un exercice existant
+     */
+    async updateExercise(id: string, updates: {
+        title?: string;
+        parameters?: any;
+        settings?: any;
+    }): Promise<Exercise> {
+        const url = `${API_BASE_URL}/api/exercises/${id}`;
+        const response = await fetch(url, {
+            method: 'PUT',
+            headers: this.getHeaders(),
+            body: JSON.stringify(updates),
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || 'Erreur lors de la modification');
+        return data.data.exercise;
+    }
+
+    /**
      * Supprime un exercice
      */
     async deleteExercise(exerciseId: string): Promise<void> {

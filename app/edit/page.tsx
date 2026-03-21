@@ -1148,7 +1148,7 @@ const XCCM2Editor = () => {
                     chapterId: cId,
                     chapter: chapter // ✅ Pass actual object
                   });
-                  setEditorContent('');
+                  setEditorContent(chapter?.chapter_intro || '');
                   setHasUnsavedChanges(false);
                 };
                 // @ts-ignore
@@ -1172,7 +1172,7 @@ const XCCM2Editor = () => {
                     paraId: paId,
                     paragraph: paragraph // ✅ Pass actual object
                   });
-                  setEditorContent('');
+                  setEditorContent(paragraph?.para_intro || '');
                   setHasUnsavedChanges(false);
                 };
                 // @ts-ignore
@@ -1266,7 +1266,7 @@ const XCCM2Editor = () => {
           onFontSizeChange={(e) => setTextFormat(prev => ({ ...prev, fontSize: e.target.value }))}
           onChatToggle={() => setShowChatBot(prev => !prev)}
           textFormat={textFormat}
-          disabled={(currentContext?.type === 'chapter' || currentContext?.type === 'paragraph')}
+          disabled={!currentContext}
           isZenMode={isZenMode}
           onToggleZen={() => setIsZenMode(prev => !prev)}
           onUndo={undo}
@@ -1278,6 +1278,7 @@ const XCCM2Editor = () => {
         <main className="flex-1 overflow-y-auto bg-gray-50/50 p-4 lg:p-12">
           <div className="max-w-4xl mx-auto min-h-full">
             <EditorArea
+              key={collaborationData ? collaborationData.documentId : currentContext?.type + "-" + ((currentContext as any)?.[(currentContext?.type || '') + 'Id'] || 'no-id')}
               content={editorContent}
               textFormat={textFormat}
               onChange={(val) => {
@@ -1294,9 +1295,13 @@ const XCCM2Editor = () => {
                     ? "Créez votre première partie avec le bouton + dans la barre latérale"
                     : currentContext.type === 'notion'
                       ? "Commencez à écrire... Tapez / pour des commandes rapides"
-                      : currentContext.type === 'part'
-                        ? "Rédigez l'introduction de cette partie..."
-                        : "Sélectionnez une notion ou une partie pour éditer"
+                      : currentContext.type === 'chapter'
+                        ? "Rédigez l'introduction de ce chapitre..."
+                        : currentContext.type === 'paragraph'
+                          ? "Rédigez l'introduction de ce paragraphe..."
+                          : currentContext.type === 'part'
+                            ? "Rédigez l'introduction de cette partie..."
+                            : "Sélectionnez un élément pour éditer"
               }
               collaboration={collaborationData}
               socraticFeedback={mappedSocraticFeedback as any}
@@ -1369,7 +1374,7 @@ const XCCM2Editor = () => {
                   chapterId: chapter.chapter_id,
                   chapter
                 });
-                setEditorContent('');
+                setEditorContent(chapter.chapter_intro || '');
                 setHasUnsavedChanges(false);
               }
             } else if (ctx.type === 'paragraph') {
@@ -1386,7 +1391,7 @@ const XCCM2Editor = () => {
                   paraId: para.para_id,
                   paragraph: para
                 });
-                setEditorContent('');
+                setEditorContent(para.para_intro || '');
                 setHasUnsavedChanges(false);
               }
             } else if (ctx.type === 'notion') {

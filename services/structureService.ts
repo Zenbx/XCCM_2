@@ -16,6 +16,7 @@ export interface Part {
 export interface Chapter {
   chapter_id: string;
   chapter_title: string;
+  chapter_intro?: string | null;
   chapter_number: number;
   parent_part: string;
   paragraphs?: Paragraph[];
@@ -24,6 +25,7 @@ export interface Chapter {
 export interface Paragraph {
   para_id: string;
   para_name: string;
+  para_intro?: string | null;
   para_number: number;
   parent_chapter: string;
   notions?: Notion[];

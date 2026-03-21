@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import {
-    Plus, Trash2, Check, X, Loader2,
+    Plus, Trash2, Check, X, Loader2, Edit3,
     CircleDot, CheckSquare, Type, Brain, Code2, PuzzleIcon,
     AlertCircle, Sparkles, Target, ExternalLink, MapPin
 } from 'lucide-react';
@@ -262,6 +262,9 @@ const ExercisePanel = ({ currentContext, structure, onNavigateToGranule }: Exerc
     const [isBlocking, setIsBlocking] = useState(false);
     const [maxAttempts, setMaxAttempts] = useState(3);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    
+    // Edit mode state
+    const [editingExerciseId, setEditingExerciseId] = useState<string | null>(null);
 
     // Set deepest level as default
     useEffect(() => {
@@ -397,6 +400,7 @@ const ExercisePanel = ({ currentContext, structure, onNavigateToGranule }: Exerc
     useEffect(() => { fetchExercises(); }, [fetchExercises]);
 
     const resetForm = () => {
+        setEditingExerciseId(null);
         setSelectedType(null); setTitle(''); setQuestion('');
         setOptions([{ id: 'opt_1', text: '', isCorrect: false }, { id: 'opt_2', text: '', isCorrect: false }]);
         setExpectedAnswer(''); setEvaluationPrompt(''); setStarterCode(''); setLanguage('python');
@@ -436,22 +440,58 @@ const ExercisePanel = ({ currentContext, structure, onNavigateToGranule }: Exerc
         if (!validateForm()) return;
         setIsSubmitting(true);
         try {
-            const target = resolveGranuleIds(selectedLevel);
-            const exercise = await exerciseService.createExercise({
-                type: selectedType!,
-                title,
-                parameters: buildParameters(),
-                settings: { isBlocking, maxAttempts, points: 10 },
-                ...target
-            });
-            toast.success("Exercice créé !");
-            setExercises(prev => [exercise, ...prev]);
+            const params = buildParameters();
+            if (editingExerciseId) {
+                // Update mode
+                const updatedEx = await exerciseService.updateExercise(editingExerciseId, {
+                    title,
+                    parameters: params,
+                    settings: { isBlocking, maxAttempts, points: 10 }
+                });
+                setExercises(prev => prev.map(e => e.id === editingExerciseId ? updatedEx : e));
+                toast.success("Exercice modifié !");
+            } else {
+                // Create mode
+                const target = resolveGranuleIds(selectedLevel);
+                const exercise = await exerciseService.createExercise({
+                    type: selectedType!,
+                    title,
+                    parameters: params,
+                    settings: { isBlocking, maxAttempts, points: 10 },
+                    ...target
+                });
+                toast.success("Exercice créé !");
+                setExercises(prev => [exercise, ...prev]);
+            }
             resetForm();
         } catch (err: any) {
             toast.error(err.message || "Erreur");
         } finally {
             setIsSubmitting(false);
         }
+    };
+
+    const handleEditExercise = (exercise: Exercise) => {
+        setEditingExerciseId(exercise.id);
+        setSelectedType(exercise.type);
+        setTitle(exercise.title);
+        
+        // Restore params
+        const params = exercise.parameters || {};
+        if (params.question) setQuestion(params.question);
+        if (params.options) setOptions(params.options);
+        if (params.expectedAnswer) setExpectedAnswer(params.expectedAnswer);
+        if (params.evaluationPrompt) setEvaluationPrompt(params.evaluationPrompt);
+        if (params.starterCode) setStarterCode(params.starterCode);
+        if (params.language) setLanguage(params.language);
+        if (params.text) setFillText(params.text);
+        
+        // Restore settings
+        const settings = exercise.settings || {};
+        setIsBlocking(!!settings.isBlocking);
+        setMaxAttempts(settings.maxAttempts || 3);
+        
+        setShowCreator(true);
     };
 
     const handleDelete = async (exerciseId: string) => {
@@ -500,7 +540,7 @@ const ExercisePanel = ({ currentContext, structure, onNavigateToGranule }: Exerc
                     className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
                     <div className="p-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
                         <h4 className="font-bold text-sm text-gray-900 dark:text-white flex items-center gap-2">
-                            <Sparkles className="w-4 h-4 text-[#99334C]" /> Créer un exercice
+                            <Sparkles className="w-4 h-4 text-[#99334C]" /> {editingExerciseId ? 'Modifier l\'exercice' : 'Créer un exercice'}
                         </h4>
                         <button onClick={resetForm} className="text-gray-400 hover:text-gray-600"><X className="w-4 h-4" /></button>
                     </div>
@@ -512,18 +552,20 @@ const ExercisePanel = ({ currentContext, structure, onNavigateToGranule }: Exerc
                                 className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-[#99334C]/20 focus:border-[#99334C] transition-all dark:bg-gray-800 dark:border-gray-700 dark:text-white" autoFocus />
                         </div>
 
-                        {/* Granule Level Selector */}
-                        <GranuleLevelSelector currentContext={currentContext} structure={structure || []} selectedLevel={selectedLevel} setSelectedLevel={setSelectedLevel} />
+                        {/* Granule Level Selector (Hidden in edit mode since level can't easily be changed) */}
+                        {!editingExerciseId && (
+                            <GranuleLevelSelector currentContext={currentContext} structure={structure || []} selectedLevel={selectedLevel} setSelectedLevel={setSelectedLevel} />
+                        )}
 
-                        {/* Type Selector */}
+                        {/* Type Selector (Disabled or visually distinct in edit mode) */}
                         <div>
                             <label className="block text-xs font-semibold text-gray-500 uppercase mb-1.5">Type d&apos;exercice</label>
                             <div className="grid grid-cols-2 gap-2">
                                 {EXERCISE_TYPES.map((et) => (
-                                    <button key={et.type} onClick={() => setSelectedType(et.type)}
+                                    <button key={et.type} onClick={() => !editingExerciseId && setSelectedType(et.type)}
                                         className={`p-2.5 rounded-xl border-2 text-left transition-all ${selectedType === et.type
                                             ? 'border-[#99334C] bg-[#99334C]/5 ring-1 ring-[#99334C]/20'
-                                            : 'border-gray-200 dark:border-gray-700 hover:border-gray-300'}`}>
+                                            : editingExerciseId ? 'border-gray-100 opacity-50 cursor-not-allowed' : 'border-gray-200 dark:border-gray-700 hover:border-gray-300'}`}>
                                         <div className={`inline-flex p-1.5 rounded-lg mb-1 ${et.color}`}>{et.icon}</div>
                                         <p className="text-xs font-bold text-gray-900 dark:text-white">{et.label}</p>
                                         <p className="text-[10px] text-gray-400">{et.description}</p>
@@ -564,7 +606,9 @@ const ExercisePanel = ({ currentContext, structure, onNavigateToGranule }: Exerc
                         {selectedType && (
                             <div className="flex gap-2 pt-2">
                                 <TactileButton variant="secondary" size="sm" onClick={resetForm} className="flex-1">Annuler</TactileButton>
-                                <TactileButton variant="primary" size="sm" isLoading={isSubmitting} leftIcon={<Check className="w-4 h-4" />} onClick={handleSubmit} className="flex-1">Créer</TactileButton>
+                                <TactileButton variant="primary" size="sm" isLoading={isSubmitting} leftIcon={<Check className="w-4 h-4" />} onClick={handleSubmit} className="flex-1">
+                                    {editingExerciseId ? 'Sauvegarder' : 'Créer'}
+                                </TactileButton>
                             </div>
                         )}
                     </div>
@@ -601,35 +645,17 @@ const ExercisePanel = ({ currentContext, structure, onNavigateToGranule }: Exerc
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-1 flex-shrink-0">
-                                        {/* 🔗 NAVIGATE TO GRANULE BUTTON */}
-                                        {canNavigate && (
-                                            <button
-                                                onClick={() => handleNavigate(exercise)}
-                                                className="p-1.5 text-gray-400 hover:text-[#99334C] opacity-0 group-hover:opacity-100 transition-all"
-                                                title="Aller au granule"
-                                            >
-                                                <MapPin className="w-3.5 h-3.5" />
-                                            </button>
-                                        )}
+                                        {/* 🔗 Éditer */}
+                                        <button onClick={() => handleEditExercise(exercise)}
+                                            className="p-1.5 text-gray-400 hover:text-blue-500 opacity-0 group-hover:opacity-100 transition-all" title="Modifier">
+                                            <Edit3 className="w-3.5 h-3.5" />
+                                        </button>
                                         <button onClick={() => handleDelete(exercise.id)}
                                             className="p-1.5 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all" title="Supprimer">
                                             <Trash2 className="w-3.5 h-3.5" />
                                         </button>
                                     </div>
                                 </div>
-
-                                {/* 📍 GRANULE BREADCRUMB */}
-                                {breadcrumb && (
-                                    <button
-                                        onClick={() => canNavigate ? handleNavigate(exercise) : null}
-                                        className={`mt-2 flex items-center gap-1 text-[10px] px-2 py-1 rounded-lg ${canNavigate
-                                            ? 'bg-gray-50 dark:bg-gray-800 text-gray-500 hover:text-[#99334C] hover:bg-[#99334C]/5 cursor-pointer transition-all'
-                                            : 'bg-gray-50 dark:bg-gray-800 text-gray-400 cursor-default'}`}
-                                    >
-                                        <MapPin className="w-3 h-3 flex-shrink-0" />
-                                        <span className="truncate">{breadcrumb}</span>
-                                    </button>
-                                )}
                             </motion.div>
                         );
                     })
