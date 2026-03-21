@@ -2,7 +2,7 @@
 
 import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronRight, Plus, Folder, FolderOpen, FileText, GripVertical } from 'lucide-react';
+import { ChevronRight, Plus, Folder, FolderOpen, FileText, GripVertical, Search, X } from 'lucide-react';
 import { Part, Chapter, Paragraph, Notion } from '@/services/structureService';
 import { Language } from '@/services/locales';
 import { useTranslations } from 'next-intl';
@@ -385,6 +385,8 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
   const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({});
   const [editingId, setEditingId] = useState<string | null>(null);
   const [tempTitle, setTempTitle] = useState("");
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const [optimisticStructure, setOptimisticStructure] = useState<Part[]>(structure);
   const { execute } = useOptimisticUpdate<Part[]>();
@@ -629,6 +631,75 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
       });
     }
   };
+
+  // ============= SEARCH LOGIC =============
+  const stripHtml = (html: string) => {
+    if (!html) return '';
+    if (typeof window === 'undefined') return html.replace(/<[^>]*>?/gm, ''); // Fallback SSR
+    const tempDiv = document.createElement("div");
+    tempDiv.innerHTML = html;
+    return tempDiv.textContent || tempDiv.innerText || "";
+  };
+
+  const searchResults = React.useMemo(() => {
+    if (!searchQuery.trim() || !structure) return [];
+    const query = searchQuery.toLowerCase();
+    const results: Array<{ item: any, type: string, score: number, snippet?: string, path: string }> = [];
+
+    flatItems.forEach(flat => {
+      let title = '';
+      let content = '';
+      let path = '';
+      
+      if (flat.type === 'part') {
+        title = flat.data.part_title || '';
+        content = flat.data.part_intro || '';
+        path = title;
+      } else if (flat.type === 'chapter') {
+        title = flat.data.chapter_title || '';
+        content = flat.data.chapter_intro || '';
+        const part = structure.find(p => p.chapters?.some(c => c.chapter_id === flat.id));
+        path = part ? `${part.part_title} > ${title}` : title;
+      } else if (flat.type === 'paragraph') {
+        title = flat.data.para_name || '';
+        content = flat.data.para_intro || '';
+        const part = structure.find(p => p.chapters?.some(c => c.paragraphs?.some(pa => pa.para_id === flat.id)));
+        const chap = part?.chapters?.find(c => c.paragraphs?.some(pa => pa.para_id === flat.id));
+        path = `${part?.part_title} > ${chap?.chapter_title} > ${title}`;
+      } else if (flat.type === 'notion') {
+        title = flat.data.notion_name || '';
+        content = flat.data.notion_content || '';
+        const part = structure.find(p => p.chapters?.some(c => c.paragraphs?.some(pa => pa.notions?.some(n => n.notion_id === flat.id))));
+        const chap = part?.chapters?.find(c => c.paragraphs?.some(pa => pa.notions?.some(n => n.notion_id === flat.id)));
+        const para = chap?.paragraphs?.find(pa => pa.notions?.some(n => n.notion_id === flat.id));
+        path = `${part?.part_title} > ${chap?.chapter_title} > ${para?.para_name} > ${title}`;
+      }
+
+      const cleanContent = stripHtml(content);
+      const titleMatch = title.toLowerCase().includes(query);
+      const contentMatchIdx = cleanContent.toLowerCase().indexOf(query);
+
+      if (titleMatch || contentMatchIdx !== -1) {
+        let snippet = '';
+        if (contentMatchIdx !== -1) {
+          const start = Math.max(0, contentMatchIdx - 40);
+          const end = Math.min(cleanContent.length, contentMatchIdx + query.length + 40);
+          snippet = (start > 0 ? '...' : '') + cleanContent.substring(start, end) + (end < cleanContent.length ? '...' : '');
+        }
+
+        results.push({
+          item: flat.data,
+          type: flat.type,
+          score: titleMatch ? 2 : 1,
+          snippet,
+          path
+        });
+      }
+    });
+
+    return results.sort((a, b) => b.score - a.score);
+  }, [searchQuery, flatItems, structure]);
+
 
   // ============= DRAG & DROP =============
 
@@ -968,6 +1039,18 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
       <div className="p-4 border-b border-gray-100 flex items-center justify-between sticky top-0 z-10 bg-white/95 backdrop-blur-sm">
         <h2 className="text-gray-800 font-bold text-sm uppercase tracking-wider">{t('title')}</h2>
         <div className="flex items-center gap-2">
+          {isSearching ? (
+             <button onClick={() => { setIsSearching(false); setSearchQuery(''); }} className="p-1.5 text-gray-400 hover:text-gray-800 hover:bg-gray-100 rounded-md transition-all">
+               <X size={18} />
+             </button>
+          ) : (
+            <RichTooltip title="Rechercher" description="Chercher un mot ou une phrase dans tout le projet (Titre et contenu).">
+              <button onClick={() => setIsSearching(true)} className="p-1.5 text-gray-500 hover:text-[#99334C] hover:bg-[#99334C]/10 rounded-md transition-all">
+                <Search size={18} />
+              </button>
+            </RichTooltip>
+          )}
+
           {/* ✅ NOUVEAU: Info tooltip */}
           <RichTooltip
             title="💡 Guide Drag & Drop"
@@ -992,6 +1075,93 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
 
 
       {/* Contenu */}
+      {isSearching ? (
+        <div className="flex-1 flex flex-col overflow-hidden bg-white">
+          <div className="p-3 border-b border-gray-100 bg-gray-50">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <input 
+                autoFocus
+                type="text"
+                placeholder="Chercher dans le cours..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-9 pr-4 py-2 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-[#99334C] outline-none transition-all placeholder:text-gray-400"
+              />
+            </div>
+          </div>
+          <div className="flex-1 overflow-y-auto p-2 space-y-2 custom-scrollbar">
+            {searchQuery.trim() === '' ? (
+              <div className="text-center py-10 text-gray-400">
+                <Search className="w-8 h-8 mx-auto mb-2 opacity-20" />
+                <p className="text-xs">Tapez pour chercher dans tous les contenus.</p>
+              </div>
+            ) : searchResults.length === 0 ? (
+              <div className="text-center py-10 text-gray-400">
+                <p className="text-sm">Aucun résultat trouvé.</p>
+              </div>
+            ) : (
+              searchResults.map((res, i) => (
+                <div 
+                  key={i} 
+                  className="p-2.5 rounded-xl hover:bg-[#99334C]/5 border border-transparent hover:border-[#99334C]/20 transition-all cursor-pointer group"
+                  onClick={() => {
+                     // trigger focus
+                     if (res.type === 'notion') {
+                        const part = structure.find(p => p.chapters?.some(c => c.paragraphs?.some(pa => pa.notions?.some(n => n.notion_id === res.item.notion_id))));
+                        const chap = part?.chapters?.find(c => c.paragraphs?.some(pa => pa.notions?.some(n => n.notion_id === res.item.notion_id)));
+                        const para = chap?.paragraphs?.find(pa => pa.notions?.some(n => n.notion_id === res.item.notion_id));
+                        if(part && chap && para) {
+                           onSelectNotion({
+                             projectName, partTitle: part.part_title, chapterTitle: chap.chapter_title, paraName: para.para_name, notionName: res.item.notion_name, notion: res.item
+                           });
+                        }
+                     } else if (res.type === 'part') {
+                        onSelectPart?.({ projectName, partTitle: res.item.part_title, part: res.item });
+                     } else if (res.type === 'chapter') {
+                        const part = structure.find(p => p.chapters?.some(c => c.chapter_id === res.item.chapter_id));
+                        if(part) onSelectChapter?.(projectName, part.part_title, res.item.chapter_title, res.item.chapter_id);
+                     } else if (res.type === 'paragraph') {
+                        const part = structure.find(p => p.chapters?.some(c => c.paragraphs?.some(pa => pa.para_id === res.item.para_id)));
+                        const chap = part?.chapters?.find(c => c.paragraphs?.some(pa => pa.para_id === res.item.para_id));
+                        if(part && chap) onSelectParagraph?.(projectName, part.part_title, chap.chapter_title, res.item.para_name, res.item.para_id);
+                     }
+                     
+                     // Expand the tree so it shows up natively in the standard view as well
+                     if (res.type !== 'part') {
+                        const newExpanded = {...expandedItems};
+                        const p = structure.find(pt => pt.chapters?.some(c => c.chapter_id === res.item.chapter_id || c.paragraphs?.some(pa => pa.para_id === res.item.para_id || pa.notions?.some(n => n.notion_id === res.item.notion_id))));
+                        if(p) newExpanded[`part-${p.part_id}`] = true;
+                        if (res.type === 'paragraph' || res.type === 'notion') {
+                           const c = p?.chapters?.find(ch => ch.paragraphs?.some(pa => pa.para_id === res.item.para_id || pa.notions?.some(n => n.notion_id === res.item.notion_id)));
+                           if (c) newExpanded[`chapter-${c.chapter_id}`] = true;
+                        }
+                        if (res.type === 'notion') {
+                           const c = p?.chapters?.find(ch => ch.paragraphs?.some(pa => pa.notions?.some(n => n.notion_id === res.item.notion_id)));
+                           const pa = c?.paragraphs?.find(pg => pg.notions?.some(n => n.notion_id === res.item.notion_id));
+                           if (pa) newExpanded[`paragraph-${pa.para_id}`] = true;
+                        }
+                        setExpandedItems(newExpanded);
+                     }
+                  }}
+                >
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-gray-400">
+                      {res.type === 'part' ? <Folder size={14}/> : res.type === 'chapter' ? <FolderOpen size={14}/> : res.type === 'paragraph' ? <FileText size={14}/> : <FileText size={14} color="#99334C"/>}
+                    </span>
+                    <span className="text-[11px] font-black text-gray-700 truncate" title={res.path}>{res.path}</span>
+                  </div>
+                  {res.snippet && (
+                     <div className="text-[11px] text-gray-500 italic bg-white p-2 rounded-lg border border-gray-100 group-hover:border-[#99334C]/20 shadow-sm mt-1.5 leading-relaxed">
+                       <span dangerouslySetInnerHTML={{ __html: res.snippet.replace(new RegExp(`(${searchQuery})`, 'gi'), '<mark class="bg-amber-100 text-[#99334C] font-black p-0.5 rounded shadow-sm">$1</mark>') }} />
+                     </div>
+                  )}
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      ) : (
       <div
         className="p-3 flex-1 overflow-y-auto space-y-2 relative"
         onDragOver={(e) => {
@@ -1384,6 +1554,7 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
           Déposer ici
         </div>
       </div>
+      )}
 
       <ContextMenu
         isOpen={contextMenu.isOpen}

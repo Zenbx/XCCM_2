@@ -1,7 +1,7 @@
 "use client";
 
-import React from 'react';
-import { Cloud } from 'lucide-react';
+import React, { useState } from 'react';
+import { Cloud, Search, Folder, Book, FileText, File } from 'lucide-react';
 import Granule, { GranuleData } from '../Granule';
 
 // ============= COMPOSANT: ImportPanel =============
@@ -14,6 +14,8 @@ interface ImportPanelProps {
 
 const ImportPanel: React.FC<ImportPanelProps> = ({ granules, onDragStart, onImportFile }) => {
   const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterType, setFilterType] = useState<any>('all');
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -103,10 +105,57 @@ const ImportPanel: React.FC<ImportPanelProps> = ({ granules, onDragStart, onImpo
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto space-y-4 pr-2">
-          {granules.map((granule) => (
-            <Granule key={granule.id} granule={granule} onDragStart={onDragStart} />
-          ))}
+        <div className="relative mb-3">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+            <input
+                type="text"
+                placeholder="Rechercher un granule..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-9 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-gray-700 placeholder:text-gray-400 text-sm focus:ring-2 focus:ring-[#99334C] focus:bg-white outline-none transition-all"
+            />
+        </div>
+
+        <div className="flex gap-2 overflow-x-auto pb-4 scrollbar-hide">
+            <button
+                onClick={() => setFilterType('all')}
+                className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all ${filterType === 'all' ? 'bg-[#99334C] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+            >
+                Tous
+            </button>
+            {([
+                { id: 'part', label: 'Parties', icon: Folder },
+                { id: 'chapter', label: 'Chapitres', icon: Book },
+                { id: 'paragraph', label: 'Paragraphes', icon: FileText },
+                { id: 'notion', label: 'Notions', icon: File }
+            ]).map(f => (
+                <button
+                    key={f.id}
+                    onClick={() => setFilterType(f.id)}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all ${filterType === f.id ? 'bg-[#99334C] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                >
+                    <f.icon className="w-3 h-3" />
+                    {f.label}
+                </button>
+            ))}
+        </div>
+
+        <div className="flex-1 overflow-y-auto space-y-4 pr-2 custom-scrollbar">
+          {granules.filter(g => 
+            (filterType === 'all' || g.type === filterType) && 
+            g.content.toLowerCase().includes(searchTerm.toLowerCase())
+          ).length > 0 ? (
+            granules.filter(g => 
+              (filterType === 'all' || g.type === filterType) && 
+              g.content.toLowerCase().includes(searchTerm.toLowerCase())
+            ).map((granule) => (
+              <Granule key={granule.id} granule={granule} onDragStart={onDragStart} />
+            ))
+          ) : (
+            <div className="text-center py-8 text-gray-400">
+                <p className="text-sm">Aucun granule trouvé.</p>
+            </div>
+          )}
         </div>
       </div>
 

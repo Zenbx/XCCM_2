@@ -10,7 +10,6 @@ export default function ForgotPasswordPage() {
     const [email, setEmail] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [isSent, setIsSent] = useState(false);
-    const [simulatedToken, setSimulatedToken] = useState('');
     const router = useRouter();
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -28,10 +27,6 @@ export default function ForgotPasswordPage() {
 
             if (response.ok) {
                 setIsSent(true);
-                // On récupère le token simulé pour faciliter la démo/test
-                if (result.data?.resetToken) {
-                    setSimulatedToken(result.data.resetToken);
-                }
                 toast.success("Demande envoyée !");
             } else {
                 toast.error(result.message || "Une erreur est survenue");
@@ -98,21 +93,6 @@ export default function ForgotPasswordPage() {
                         <p className="text-gray-500 font-medium mb-8">
                             Si un compte existe pour <strong>{email}</strong>, vous recevrez bientôt un lien de réinitialisation.
                         </p>
-
-                        {simulatedToken && (
-                            <div className="bg-amber-50 border border-amber-100 rounded-2xl p-6 mb-8 text-left">
-                                <p className="text-xs font-black text-amber-700 uppercase mb-2 tracking-widest">Mode Démo : Token simulé</p>
-                                <code className="block bg-white p-3 rounded-lg border border-amber-200 text-[#99334C] font-mono break-all text-sm mb-4">
-                                    {simulatedToken}
-                                </code>
-                                <Link
-                                    href={`/reset-password?token=${simulatedToken}`}
-                                    className="block w-full text-center py-3 bg-[#99334C] text-white rounded-xl font-bold text-sm shadow-md"
-                                >
-                                    Aller à la page de réinitialisation
-                                </Link>
-                            </div>
-                        )}
 
                         <Link
                             href="/login"
