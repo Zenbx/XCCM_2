@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { Home, ChevronRight, Eye, Share2, Save, Loader2, Undo2, Redo2 } from 'lucide-react';
 import RichTooltip from '@/components/UI/RichTooltip';
 import { TactileButton } from '@/components/UI/TactileButton';
-import { PresenceIndicator } from '@/components/Editor/CollaborativeCursors';
+import { PresenceIndicator, ConnectionStatus } from '@/components/Editor/CollaborativeCursors';
 
 interface EditorHeaderProps {
     projectData: any;
@@ -18,6 +18,8 @@ interface EditorHeaderProps {
     localClientId: number | null;
     authUser: any;
     projectName: string;
+    connectionStatus?: 'connecting' | 'connected' | 'disconnected' | 'error';
+    onReconnect?: () => void;
 }
 
 const EditorHeader: React.FC<EditorHeaderProps> = ({
@@ -33,6 +35,8 @@ const EditorHeader: React.FC<EditorHeaderProps> = ({
     localClientId,
     authUser,
     projectName,
+    connectionStatus,
+    onReconnect,
 }) => {
     return (
         <div className="bg-white border-b border-gray-200 flex items-center justify-between px-4 py-2">
@@ -96,11 +100,17 @@ const EditorHeader: React.FC<EditorHeaderProps> = ({
                 </RichTooltip>
 
 
-                <div className="ml-2 pl-4 border-l border-gray-100 dark:border-gray-800">
+                <div className="ml-2 pl-4 border-l border-gray-100 dark:border-gray-800 flex items-center gap-3">
                     <PresenceIndicator
                         users={connectedUsers}
                         localClientId={localClientId}
                     />
+                    {connectionStatus && (
+                        <ConnectionStatus
+                            status={connectionStatus}
+                            onReconnect={onReconnect}
+                        />
+                    )}
                 </div>
 
                 <RichTooltip title="Enregistrer" description="Sauvegarder manuellement vos modifications." shortcut="Ctrl+S">

@@ -804,7 +804,9 @@ const XCCM2Editor = () => {
     connectedUsers,
     localClientId,
     provider,
-    yDoc
+    yDoc,
+    connectionStatus: synapseStatus,
+    reconnect: synapseReconnect,
   } = useSynapseSync({
     documentId: synapseDocId,
     userId: authUser?.user_id || 'anonymous',
@@ -830,6 +832,49 @@ const XCCM2Editor = () => {
     if (!currentContext || !projectName) return;
     if (isSavingInProgress.current) {
       console.log("[Save] Skip: save already in progress");
+      return;
+    }
+
+    // ✅ CRDT FIX: If Hocuspocus is managing this Notion via CRDT, skip HTTP save
+    // Hocuspocus onStoreDocument handles persistence automatically
+    const isCrdtManaged = currentContext.type === 'notion' && synapseDocId && provider && synapseStatus === 'connected';
+
+    if (isCrdtManaged) {
+      console.log(`[Save] Skipping HTTP save for Notion (CRDT managed by Hocuspocus)`);
+      // Still update the local structure state for UI consistency
+      if (currentContext.notionName) {
+        setStructure(prev => prev.map(part => {
+          if (part.part_title === currentContext.partTitle) {
+            return {
+              ...part,
+              chapters: part.chapters?.map(chapter => {
+                if (chapter.chapter_title === currentContext.chapterTitle) {
+                  return {
+                    ...chapter,
+                    paragraphs: chapter.paragraphs?.map(para => {
+                      if (para.para_name === currentContext.paraName) {
+                        return {
+                          ...para,
+                          notions: para.notions?.map(notion =>
+                            notion.notion_name === currentContext.notionName
+                              ? { ...notion, notion_content: editorContent }
+                              : notion
+                          )
+                        };
+                      }
+                      return para;
+                    })
+                  };
+                }
+                return chapter;
+              })
+            };
+          }
+          return part;
+        }));
+      }
+      setHasUnsavedChanges(false);
+      if (!isAuto) toast.success('☁️ Syncé en temps réel');
       return;
     }
 
@@ -874,9 +919,6 @@ const XCCM2Editor = () => {
           }
           return part;
         }));
-
-        // Optimisation: Si on a beaucoup d'items, ne pas trigger un re-render complet du composant
-        // SI le contenu n'a pas bougé depuis l'appel API (cohérence)
 
       } else if (currentContext.type === 'part' && currentContext.partTitle) {
         await structureService.updatePart(projectName, currentContext.partTitle, { part_intro: editorContent });
@@ -1186,6 +1228,8 @@ const XCCM2Editor = () => {
             connectedUsers={connectedUsers}
             localClientId={localClientId}
             authUser={authUser}
+            connectionStatus={synapseStatus}
+            onReconnect={synapseReconnect}
           />
         )}
 
