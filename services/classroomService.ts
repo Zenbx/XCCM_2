@@ -132,7 +132,13 @@ class ClassroomService {
             body: JSON.stringify({ join_code: joinCode }),
         });
         const data = await response.json();
-        if (!response.ok) throw new Error(data.message || 'Erreur lors de l\'inscription');
+        if (!response.ok) {
+            if (data.errors) {
+                const firstError = Object.values(data.errors).flat()[0];
+                throw new Error((firstError as string) || data.message || "Erreur de validation");
+            }
+            throw new Error(data.message || 'Erreur lors de l\'inscription');
+        }
         return data.data.enrollment;
     }
 
