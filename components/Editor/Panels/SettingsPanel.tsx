@@ -1,7 +1,9 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { BookOpen, FileText, Palette, Settings as SettingsIcon, Globe } from 'lucide-react';
+import { BookOpen, FileText, Palette, Settings as SettingsIcon, Globe, School, Loader2 } from 'lucide-react';
+import { classroomService } from '@/services/classroomService';
+import toast from 'react-hot-toast';
 
 // ============= COMPOSANT: SettingsPanel =============
 
@@ -129,7 +131,27 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ project, onUpdateProject 
     collaborativeMode: false
   });
 
+  // Classes LMS
+  const [teachingClasses, setTeachingClasses] = useState<any[]>([]);
+  const [assignedClassIds, setAssignedClassIds] = useState<Set<string>>(new Set());
+  const [isLoadingClasses, setIsLoadingClasses] = useState(false);
+
   const saveTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    const fetchClasses = async () => {
+      setIsLoadingClasses(true);
+      try {
+        const data = await classroomService.getMyClassrooms();
+        setTeachingClasses(data.teaching);
+      } catch (err) {
+        console.error("Erreur chargement des classes:", err);
+      } finally {
+        setIsLoadingClasses(false);
+      }
+    };
+    fetchClasses();
+  }, []);
 
   useEffect(() => {
     if (project) {
@@ -145,6 +167,9 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ project, onUpdateProject 
       });
       if ((project as any).styles) {
         setCourseStyles((project as any).styles);
+      }
+      if (project.classroom_links) {
+        setAssignedClassIds(new Set(project.classroom_links.map((link: any) => link.classroom_id)));
       }
     }
   }, [project]);
@@ -168,6 +193,37 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ project, onUpdateProject 
     else dbData[field] = value;
 
     debouncedSave(dbData);
+  };
+
+  const handleToggleClassAssignment = async (classId: string, isAssigned: boolean) => {
+    if (!project?.pr_id) return;
+    
+    // Optimistic update
+    setAssignedClassIds(prev => {
+        const next = new Set(prev);
+        if (isAssigned) next.add(classId);
+        else next.delete(classId);
+        return next;
+    });
+
+    try {
+        if (isAssigned) {
+            await classroomService.assignProject(classId, project.pr_id);
+            toast.success("Cours ajouté à la classe");
+        } else {
+            await classroomService.unassignProject(classId, project.pr_id);
+            toast.success("Cours retiré de la classe");
+        }
+    } catch (err: any) {
+        // Revert on error
+        setAssignedClassIds(prev => {
+            const next = new Set(prev);
+            if (!isAssigned) next.add(classId);
+            else next.delete(classId);
+            return next;
+        });
+        toast.error(err.message || "Erreur lors de la modification");
+    }
   };
 
   const handleStyleChange = (
@@ -320,6 +376,46 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ project, onUpdateProject 
             </div>
           </label>
         </div>
+      </div>
+
+      {/* CLASSES (LMS) */}
+      <div className="pt-4 border-t border-gray-100">
+        <div className="flex items-center gap-2 mb-3">
+          <School className="w-4 h-4 text-[#99334C]" />
+          <h4 className="text-sm font-bold text-gray-500">Classes (LMS)</h4>
+        </div>
+        
+        {isLoadingClasses ? (
+          <div className="flex items-center gap-2 text-sm text-gray-500 py-2">
+            <Loader2 className="w-4 h-4 animate-spin" />
+            Chargement de vos classes...
+          </div>
+        ) : teachingClasses.length > 0 ? (
+          <div className="space-y-2 mt-2">
+            <p className="text-xs text-gray-500 mb-3">Assignez ce cours à vos classes pour que vos élèves y aient accès.</p>
+            {teachingClasses.map(cls => (
+              <label key={cls.id} className="flex items-center gap-3 cursor-pointer p-3 bg-gray-50 border border-gray-100 hover:border-gray-200 rounded-lg transition-colors">
+                <input
+                  type="checkbox"
+                  checked={assignedClassIds.has(cls.id)}
+                  onChange={(e) => handleToggleClassAssignment(cls.id, e.target.checked)}
+                  className="w-4 h-4 text-[#99334C] rounded focus:ring-[#99334C]"
+                />
+                <div className="flex-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-bold text-gray-700">{cls.name}</span>
+                    <span className="text-xs px-2 py-0.5 bg-gray-200 text-gray-600 rounded-full font-mono">{cls.join_code}</span>
+                  </div>
+                  {cls.description && <p className="text-xs text-gray-500 mt-1 line-clamp-1">{cls.description}</p>}
+                </div>
+              </label>
+            ))}
+          </div>
+        ) : (
+           <p className="text-sm text-gray-500 italic py-2">
+             Vous n'avez créé aucune classe. Allez dans le menu "LMS Classes" pour en créer une.
+           </p>
+        )}
       </div>
 
       {/* 4. STYLES DE LA STRUCTURE */}

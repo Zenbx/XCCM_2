@@ -641,7 +641,22 @@ const ExercisePanel = ({ currentContext, structure, onNavigateToGranule }: Exerc
                                         </div>
                                         <div className="min-w-0">
                                             <p className="text-sm font-bold text-gray-900 dark:text-white truncate">{exercise.title}</p>
-                                            <p className="text-xs text-gray-400">{typeConfig?.label}</p>
+                                            <div className="flex items-center gap-2">
+                                                <p className="text-xs text-gray-400">{typeConfig?.label}</p>
+                                                {selectedLevel === 'project' && canNavigate && breadcrumb && (
+                                                    <>
+                                                        <span className="text-gray-300">•</span>
+                                                        <button 
+                                                            onClick={(e) => { e.stopPropagation(); handleNavigate(exercise); }}
+                                                            className="flex items-center gap-1 text-[10px] text-gray-500 hover:text-[#99334C] transition-colors truncate max-w-[150px]"
+                                                            title={`Aller à: ${breadcrumb}`}
+                                                        >
+                                                            <MapPin className="w-3 h-3 flex-shrink-0" />
+                                                            <span className="truncate">{breadcrumb}</span>
+                                                        </button>
+                                                    </>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-1 flex-shrink-0">
