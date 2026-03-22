@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { BookOpen, FileText, Palette, Settings as SettingsIcon, Globe, School, Loader2 } from 'lucide-react';
+import { BookOpen, FileText, Palette, Settings as SettingsIcon, Globe, School, Loader2, RefreshCw } from 'lucide-react';
 import { classroomService } from '@/services/classroomService';
 import toast from 'react-hot-toast';
 
@@ -135,6 +135,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ project, onUpdateProject 
   const [teachingClasses, setTeachingClasses] = useState<any[]>([]);
   const [assignedClassIds, setAssignedClassIds] = useState<Set<string>>(new Set());
   const [isLoadingClasses, setIsLoadingClasses] = useState(false);
+  const [syncingClassIds, setSyncingClassIds] = useState<Set<string>>(new Set());
 
   const saveTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
 
@@ -196,33 +197,45 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ project, onUpdateProject 
   };
 
   const handleToggleClassAssignment = async (classId: string, isAssigned: boolean) => {
-    if (!project?.pr_id) return;
+    if (!project) return;
     
     // Optimistic update
-    setAssignedClassIds(prev => {
-        const next = new Set(prev);
-        if (isAssigned) next.add(classId);
-        else next.delete(classId);
-        return next;
-    });
+    const newIds = new Set(assignedClassIds);
+    if (isAssigned) newIds.add(classId);
+    else newIds.delete(classId);
+    setAssignedClassIds(newIds);
 
     try {
-        if (isAssigned) {
-            await classroomService.assignProject(classId, project.pr_id);
-            toast.success("Cours ajouté à la classe");
-        } else {
-            await classroomService.unassignProject(classId, project.pr_id);
-            toast.success("Cours retiré de la classe");
-        }
+      if (isAssigned) {
+        await classroomService.assignProject(classId, project.pr_id);
+        toast.success("Cours assigné à la classe");
+        // Optionnel: On peut lancer un sync auto dès l'assignation
+        handleSyncProject(classId);
+      } else {
+        await classroomService.unassignProject(classId, project.pr_id);
+        toast.success("Cours retiré de la classe");
+      }
     } catch (err: any) {
-        // Revert on error
-        setAssignedClassIds(prev => {
-            const next = new Set(prev);
-            if (!isAssigned) next.add(classId);
-            else next.delete(classId);
-            return next;
-        });
-        toast.error(err.message || "Erreur lors de la modification");
+      setAssignedClassIds(assignedClassIds); // Rollback
+      toast.error(err.message || "Erreur lors de la modification");
+    }
+  };
+
+  const handleSyncProject = async (classId: string) => {
+    if (!project) return;
+    
+    setSyncingClassIds(prev => new Set(prev).add(classId));
+    try {
+      await classroomService.syncProject(classId, project.pr_id);
+      toast.success("Contenu mis à jour pour cette classe !");
+    } catch (err: any) {
+      toast.error(err.message || "Erreur lors de la synchronisation");
+    } finally {
+      setSyncingClassIds(prev => {
+        const next = new Set(prev);
+        next.delete(classId);
+        return next;
+      });
     }
   };
 
@@ -394,21 +407,34 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ project, onUpdateProject 
           <div className="space-y-2 mt-2">
             <p className="text-xs text-gray-500 mb-3">Assignez ce cours à vos classes pour que vos élèves y aient accès.</p>
             {teachingClasses.map(cls => (
-              <label key={cls.id} className="flex items-center gap-3 cursor-pointer p-3 bg-gray-50 border border-gray-100 hover:border-gray-200 rounded-lg transition-colors">
-                <input
-                  type="checkbox"
-                  checked={assignedClassIds.has(cls.id)}
-                  onChange={(e) => handleToggleClassAssignment(cls.id, e.target.checked)}
-                  className="w-4 h-4 text-[#99334C] rounded focus:ring-[#99334C]"
-                />
-                <div className="flex-1">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-bold text-gray-700">{cls.name}</span>
-                    <span className="text-xs px-2 py-0.5 bg-gray-200 text-gray-600 rounded-full font-mono">{cls.join_code}</span>
+              <div key={cls.id} className="flex items-center gap-2">
+                <label className="flex-1 flex items-center gap-3 cursor-pointer p-3 bg-gray-50 border border-gray-100 hover:border-gray-200 rounded-lg transition-colors overflow-hidden">
+                  <input
+                    type="checkbox"
+                    checked={assignedClassIds.has(cls.id)}
+                    onChange={(e) => handleToggleClassAssignment(cls.id, e.target.checked)}
+                    className="w-4 h-4 text-[#99334C] rounded focus:ring-[#99334C]"
+                  />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-bold text-gray-700 truncate">{cls.name}</span>
+                      <span className="text-xs px-2 py-0.5 bg-gray-200 text-gray-600 rounded-full font-mono flex-shrink-0 ml-2">{cls.join_code}</span>
+                    </div>
+                    {cls.description && <p className="text-xs text-gray-500 mt-1 line-clamp-1">{cls.description}</p>}
                   </div>
-                  {cls.description && <p className="text-xs text-gray-500 mt-1 line-clamp-1">{cls.description}</p>}
-                </div>
-              </label>
+                </label>
+                
+                {assignedClassIds.has(cls.id) && (
+                  <button
+                    onClick={() => handleSyncProject(cls.id)}
+                    disabled={syncingClassIds.has(cls.id)}
+                    title="Mettre à jour le contenu pour cette classe"
+                    className="p-3 bg-white border border-gray-100 hover:border-[#99334C] hover:text-[#99334C] rounded-lg transition-all disabled:opacity-50 group flex-shrink-0"
+                  >
+                    <RefreshCw className={`w-4 h-4 ${syncingClassIds.has(cls.id) ? 'animate-spin' : 'group-hover:rotate-180 transition-transform duration-500'}`} />
+                  </button>
+                )}
+              </div>
             ))}
           </div>
         ) : (

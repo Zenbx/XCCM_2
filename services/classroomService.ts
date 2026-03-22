@@ -35,6 +35,7 @@ export interface ClassroomDetail extends Classroom {
             level?: string;
             author?: string;
         };
+        doc_id?: string | null;
     }>;
     enrollments: Array<{
         student: {
@@ -166,9 +167,24 @@ class ClassroomService {
             body: JSON.stringify({ project_id: projectId }),
         });
         if (!response.ok) {
-            const data = await response.json();
-            throw new Error(data.message || 'Erreur lors du retrait du cours');
+            const error = await response.json();
+            throw new Error(error.message || "Erreur lors du retrait du cours");
         }
+    }
+
+    async syncProject(classId: string, projectId: string): Promise<{ doc_id: string; updated_at: string }> {
+        const response = await fetch(`${API_BASE_URL}/api/classrooms/${classId}/projects/${projectId}/sync`, {
+            method: 'POST',
+            headers: this.getHeaders()
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.message || "Erreur lors de la synchronisation");
+        }
+
+        const result = await response.json();
+        return result.data;
     }
 }
 

@@ -321,12 +321,27 @@ const ClassroomDetailPage = () => {
                                 key={cp.project.pr_id}
                                 whileHover={{ y: -4 }}
                                 transition={{ type: "spring", stiffness: 400, damping: 17 }}
-                                className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm hover:shadow-lg transition-all p-6 cursor-pointer group"
-                                onClick={() => router.push(`/edit/${encodeURIComponent(cp.project.pr_name)}`)}
+                                className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm hover:shadow-lg transition-all p-6 cursor-pointer group relative"
+                                onClick={() => {
+                                    if (isTeacher) {
+                                        router.push(`/edit/${encodeURIComponent(cp.project.pr_name)}`);
+                                    } else if (cp.doc_id) {
+                                        router.push(`/book-reader?docId=${cp.doc_id}`);
+                                    } else {
+                                        toast.error("Le professeur n'a pas encore publié le contenu de ce cours.");
+                                    }
+                                }}
                             >
                                 <div className="w-12 h-12 bg-green-50 dark:bg-green-900/20 rounded-xl flex items-center justify-center mb-4 group-hover:bg-green-500 transition-colors">
                                     <BookOpen className="w-6 h-6 text-green-600 group-hover:text-white transition-colors" />
                                 </div>
+
+                                {isTeacher && !cp.doc_id && (
+                                    <span className="absolute top-4 right-4 px-2 py-0.5 bg-amber-50 text-amber-600 text-[10px] font-bold rounded-full border border-amber-100">
+                                        Non publié
+                                    </span>
+                                )}
+
                                 <h3 className="font-bold text-gray-900 dark:text-white mb-1 group-hover:text-[#99334C] transition-colors">
                                     {cp.project.pr_name}
                                 </h3>
