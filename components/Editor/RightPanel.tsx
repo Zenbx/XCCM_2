@@ -13,7 +13,8 @@ import {
   Bot,
   ChevronRight,
   BookOpen,
-  ClipboardList
+  ClipboardList,
+  Sparkles
 } from 'lucide-react';
 import RichTooltip from '@/components/UI/RichTooltip';
 
@@ -25,7 +26,7 @@ import CommentsPanel from './Panels/CommentsPanel';
 import InfoPanel from './Panels/InfoPanel';
 import SettingsPanel from './Panels/SettingsPanel';
 import TutorialPanel from './Panels/TutorialPanel';
-import { SocraticPanel } from '../Socratic/SocraticPanel';
+import UnifiedAIPanel from './Panels/UnifiedAIPanel';
 import ExercisePanel from './Panels/ExercisePanel';
 
 const RightPanel = ({
@@ -43,14 +44,14 @@ const RightPanel = ({
   granules,
   onDragStart = () => { },
   socraticData,
-  onNavigateToGranule
+  onNavigateToGranule,
+  editorContent
 }: any) => {
   const panels = [
     { id: 'import', icon: Cloud, title: 'Importer Fichier', description: 'Gérez vos ressources et importez des modules de connaissance.' },
     { id: 'marketplace', icon: ShoppingBag, title: 'Marketplace', description: 'Découvrez et achetez de nouveaux contenus pédagogiques.' },
     { id: 'vault', icon: Lock, title: 'Coffre-fort', description: 'Accédez à votre bibliothèque personnelle d\'éléments sauvegardés.' },
-    { id: 'assistant', icon: Bot, title: 'Assistant IA', description: 'Utilisez l\'IA pour générer ou corriger votre contenu.' },
-    { id: 'socratic', icon: Brain, title: 'Socrate AI', description: 'Recevez des conseils pédagogiques personnalisés sur votre contenu.' },
+    { id: 'ai', icon: Sparkles, title: 'XCCM AI', description: 'Votre coach pédagogique intelligent. Audit socratique et accompagnement.' },
     { id: 'comments', icon: MessageSquare, title: 'Commentaires', description: 'Collaborez et discutez des modifications avec votre équipe.' },
     { id: 'info', icon: Info, title: 'Informations', description: 'Détails techniques et métadonnées du projet actuel.' },
     { id: 'settings', icon: Settings, title: 'Paramètres', description: 'Configurez les options d\'export et de publication du projet.' },
@@ -145,15 +146,11 @@ const RightPanel = ({
               {activePanel === 'settings' && <SettingsPanel project={project} onUpdateProject={onUpdateProject} />}
               {activePanel === 'exercises' && <ExercisePanel currentContext={currentContext} structure={structure} onNavigateToGranule={onNavigateToGranule} />}
               {activePanel === 'tutorial' && <TutorialPanel />}
-              {activePanel === 'socratic' && (
-                <SocraticPanel
-                  feedback={socraticData?.feedback || []}
-                  bloomScore={socraticData?.bloomScore || null}
-                  isAnalyzing={socraticData?.isAnalyzing || false}
-                  onApplySuggestion={() => { }} // To implement if needed
-                  onDismissFeedback={socraticData?.onDismissFeedback || (() => { })}
-                  isVisible={true}
-                  onClose={() => onToggle(null)}
+              {activePanel === 'ai' && (
+                <UnifiedAIPanel
+                  currentContext={currentContext}
+                  editorContent={editorContent}
+                  socraticData={socraticData}
                 />
               )}
             </div>

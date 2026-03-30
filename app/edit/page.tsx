@@ -23,7 +23,6 @@ import TableOfContents from '@/components/Editor/TableOfContents';
 import EditorToolbar from '@/components/Editor/EditorToolBar';
 import EditorArea from '@/components/Editor/EditorArea';
 import RightPanel from '@/components/Editor/RightPanel';
-import ChatBotOverlay from '@/components/Editor/ChatBotOverlay';
 import ShareOverlay from '@/components/Editor/ShareOverlay';
 import EditorHeader from './components/EditorHeader';
 import CreationModals from './components/Modals/CreationModals';
@@ -516,7 +515,6 @@ const XCCM2Editor = () => {
   // States remaining in component
   const [rightPanel, setRightPanel] = useState<string | null>(null);
   const [showShareOverlay, setShowShareOverlay] = useState(false);
-  const [showChatBot, setShowChatBot] = useState(false);
   const [sidebarWidth, setSidebarWidth] = useState(320);
   const [isResizing, setIsResizing] = useState(false);
   const [isZenMode, setIsZenMode] = useState(false);
@@ -1264,7 +1262,7 @@ const XCCM2Editor = () => {
           }}
           onFontChange={(e) => setTextFormat(prev => ({ ...prev, font: e.target.value }))}
           onFontSizeChange={(e) => setTextFormat(prev => ({ ...prev, fontSize: e.target.value }))}
-          onChatToggle={() => setShowChatBot(prev => !prev)}
+          onChatToggle={() => setRightPanel(prev => prev === 'ai' ? null : 'ai')}
           textFormat={textFormat}
           disabled={!currentContext}
           isZenMode={isZenMode}
@@ -1316,10 +1314,6 @@ const XCCM2Editor = () => {
         <RightPanel
           activePanel={rightPanel}
           onToggle={(id: string) => {
-            if (id === 'assistant') {
-              setShowChatBot(prev => !prev);
-              return;
-            }
             setRightPanel(prev => prev === id ? null : id);
           }}
           comments={comments}
@@ -1346,6 +1340,7 @@ const XCCM2Editor = () => {
             feedback: socraticFeedback,
             bloomScore,
             isAnalyzing,
+            analyzeContent,
             onDismissFeedback: dismissFeedback
           }}
           onNavigateToGranule={(ctx: any) => {
@@ -1421,7 +1416,6 @@ const XCCM2Editor = () => {
       <CreationModals {...{ showPartModal, setShowPartModal, showChapterModal, setShowChapterModal, showParagraphModal, setShowParagraphModal, showNotionModal, setShowNotionModal, modalContext, partFormData, setPartFormData, chapterFormData, setChapterFormData, paragraphFormData, setParagraphFormData, notionFormData, setNotionFormData, isCreatingPart, isCreatingChapter, isCreatingParagraph, isCreatingNotion, handleCreatePart, handleCreateChapter, handleCreateParagraph, handleCreateNotion, confirmCreatePart, confirmCreateChapter, confirmCreateParagraph, confirmCreateNotion }} />
       <DeleteModal config={deleteModalConfig} onClose={() => setDeleteModalConfig(prev => ({ ...prev, isOpen: false }))} onConfirm={() => confirmDelete(structure)} />
       {showShareOverlay && <ShareOverlay projectName={projectName || ''} isOpen={showShareOverlay} onClose={() => setShowShareOverlay(false)} />}
-      {showChatBot && <ChatBotOverlay isOpen={showChatBot} onClose={() => setShowChatBot(false)} currentContext={currentContext as any} editorContent={editorContent} />}
       <PublishToMarketplaceModal
         isOpen={showMarketplaceModal}
         onClose={() => setShowMarketplaceModal(false)}

@@ -1,0 +1,380 @@
+"use client";
+
+import React, { useState, useRef, useEffect, useMemo } from 'react';
+import { 
+  Bot, 
+  Send, 
+  Sparkles, 
+  MessageSquare, 
+  Brain, 
+  RefreshCw, 
+  BarChart3, 
+  ChevronDown, 
+  ChevronUp,
+  Lightbulb,
+  CheckCircle2,
+  AlertCircle
+} from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { chatbotService } from '@/services/chatbotService';
+import { socraticService, SocraticAuditResult } from '@/services/socraticService';
+import toast from 'react-hot-toast';
+
+interface UnifiedAIPanelProps {
+  currentContext: {
+    projectName: string;
+    partTitle: string;
+    chapterTitle: string;
+    paraName: string;
+    notionName: string;
+    notion?: any;
+    type?: string;
+  } | null;
+  editorContent: string;
+  socraticData: {
+    feedback: any[];
+    bloomScore: any;
+    isAnalyzing: boolean;
+    analyzeContent: (content: string) => Promise<void>;
+    onDismissFeedback: (id: string) => void;
+  };
+}
+
+interface Message {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+}
+
+const UnifiedAIPanel: React.FC<UnifiedAIPanelProps> = ({ 
+  currentContext, 
+  editorContent,
+  socraticData
+}) => {
+  const [activeTab, setActiveTab] = useState<'chat' | 'audit'>('chat');
+  const [messages, setMessages] = useState<Message[]>([
+    {
+      id: 'welcome',
+      role: 'assistant',
+      content: "Bonjour ! Je suis votre coach pédagogique XCCM. Je peux analyser votre contenu, le reformuler ou répondre à vos questions sur la pédagogie. Que puis-je faire pour vous ?"
+    }
+  ]);
+  const [input, setInput] = useState('');
+  const [isTyping, setIsTyping] = useState(false);
+  const [showScores, setShowScores] = useState(true);
+  
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, isTyping]);
+
+  const handleAudit = async () => {
+    if (!editorContent) {
+      toast.error("Le contenu est vide !");
+      return;
+    }
+    setActiveTab('audit');
+    await socraticData.analyzeContent(editorContent);
+    
+    // Add a message in chat about the audit
+    setMessages(prev => [...prev, {
+      id: Date.now().toString(),
+      role: 'assistant',
+      content: "J'ai terminé l'analyse de votre contenu. Vous pouvez voir les scores et les suggestions dans l'onglet 'Audit'. Souhaitez-vous que je vous explique certains points ?"
+    }]);
+  };
+
+  const handleSend = async () => {
+    if (!input.trim()) return;
+
+    const userMsg: Message = { id: Date.now().toString(), role: 'user', content: input };
+    setMessages(prev => [...prev, userMsg]);
+    setInput('');
+    setIsTyping(true);
+
+    // Détection de style pour le rephrasing (legacy support logic)
+    const lowerInput = input.toLowerCase();
+    let style = '';
+    if (lowerInput.includes('simple')) style = 'simple';
+    else if (lowerInput.includes('formal')) style = 'formal';
+    else if (lowerInput.includes('summary') || lowerInput.includes('résumé')) style = 'summary';
+    else if (lowerInput.includes('detailed') || lowerInput.includes('détail')) style = 'detailed';
+
+    try {
+      if (style && currentContext?.type === 'notion') {
+        const result = await chatbotService.rephraseNotion(
+          currentContext.projectName,
+          currentContext.partTitle,
+          currentContext.chapterTitle,
+          currentContext.paraName,
+          currentContext.notionName,
+          style,
+          editorContent
+        );
+        
+        setMessages(prev => [...prev, {
+          id: (Date.now() + 1).toString(),
+          role: 'assistant',
+          content: `Voici une version "${style}" de votre contenu :\n\n${result.rephrased_content}`
+        }]);
+      } else {
+        // Simple chat simulation for now (should be a real conversational endpoint)
+        setTimeout(() => {
+          setMessages(prev => [...prev, {
+            id: (Date.now() + 1).toString(),
+            role: 'assistant',
+            content: "Je comprends. En tant qu'assistant XCCM, mon rôle est de vous aider à structurer vos connaissances. Pour l'instant, je me concentre sur la reformulation pédagogique et l'audit. Comment puis-je vous aider plus précisément ?"
+          }]);
+          setIsTyping(false);
+        }, 1000);
+        return;
+      }
+    } catch (error: any) {
+      toast.error("L'IA est occupée ou indisponible.");
+    } finally {
+      setIsTyping(false);
+    }
+  };
+
+  const ScoreCard = ({ label, score, icon: Icon, color }: any) => (
+    <div className="bg-white dark:bg-gray-800 p-3 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm">
+      <div className="flex items-center justify-between mb-1">
+        <div className="flex items-center gap-2">
+          <div className={`p-1.5 rounded-lg ${color}`}>
+            <Icon size={14} className="text-white" />
+          </div>
+          <span className="text-xs font-medium text-gray-500 dark:text-gray-400">{label}</span>
+        </div>
+        <span className="text-sm font-bold text-gray-900 dark:text-gray-100">{score}%</span>
+      </div>
+      <div className="w-full bg-gray-100 dark:bg-gray-700 h-1.5 rounded-full overflow-hidden">
+        <motion.div 
+          className={`h-full ${color.replace('/10', '')}`}
+          initial={{ width: 0 }}
+          animate={{ width: `${score}%` }}
+          transition={{ duration: 1, ease: "easeOut" }}
+        />
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="flex flex-col h-full bg-gray-50/50 dark:bg-gray-950/50">
+      {/* Tabs */}
+      <div className="flex p-1 bg-gray-200/50 dark:bg-gray-800/50 rounded-xl mx-4 mt-2">
+        <button
+          onClick={() => setActiveTab('chat')}
+          className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-medium transition-all ${
+            activeTab === 'chat' 
+              ? 'bg-white dark:bg-gray-700 text-[#99334C] shadow-sm' 
+              : 'text-gray-500 hover:text-gray-700'
+          }`}
+        >
+          <MessageSquare size={16} />
+          Chat
+        </button>
+        <button
+          onClick={() => setActiveTab('audit')}
+          className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-medium transition-all ${
+            activeTab === 'audit' 
+              ? 'bg-white dark:bg-gray-700 text-[#99334C] shadow-sm' 
+              : 'text-gray-500 hover:text-gray-700'
+          }`}
+        >
+          <Brain size={16} />
+          Audit
+        </button>
+      </div>
+
+      <div className="flex-1 min-h-0 relative">
+        <AnimatePresence mode="wait">
+          {activeTab === 'chat' ? (
+            <motion.div 
+              key="chat"
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -10 }}
+              className="flex flex-col h-full p-4"
+            >
+              <div className="flex-1 overflow-y-auto space-y-4 pr-2 custom-scrollbar">
+                {messages.map((msg) => (
+                  <div key={msg.id} className={`flex gap-3 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
+                      msg.role === 'assistant' ? 'bg-[#99334C] text-white' : 'bg-gray-200 text-gray-500'
+                    }`}>
+                      {msg.role === 'assistant' ? <Bot size={16} /> : <Sparkles size={16} />}
+                    </div>
+                    <div className={`p-3 rounded-2xl text-sm leading-relaxed max-w-[85%] ${
+                      msg.role === 'user' 
+                        ? 'bg-[#99334C] text-white rounded-tr-none' 
+                        : 'bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm rounded-tl-none'
+                    }`}>
+                      {msg.content}
+                    </div>
+                  </div>
+                ))}
+                {isTyping && (
+                  <div className="flex gap-3">
+                    <div className="w-8 h-8 rounded-full bg-[#99334C] text-white flex items-center justify-center flex-shrink-0 animate-pulse">
+                      <Bot size={16} />
+                    </div>
+                    <div className="bg-white dark:bg-gray-800 p-3 rounded-2xl rounded-tl-none shadow-sm flex gap-1 items-center">
+                      <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce"></div>
+                      <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce [animation-delay:0.2s]"></div>
+                      <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce [animation-delay:0.4s]"></div>
+                    </div>
+                  </div>
+                )}
+                <div ref={messagesEndRef} />
+              </div>
+
+              {/* Suggestions chips */}
+              <div className="flex flex-wrap gap-2 mt-4">
+                <button 
+                  onClick={() => setInput("Peux-tu simplifier ce texte ?")}
+                  className="text-[10px] px-2 py-1 bg-white border border-gray-100 rounded-full hover:border-[#99334C] transition-colors"
+                >
+                  ✨ Simplifier
+                </button>
+                <button 
+                  onClick={() => setInput("Fais un résumé synthétique")}
+                  className="text-[10px] px-2 py-1 bg-white border border-gray-100 rounded-full hover:border-[#99334C] transition-colors"
+                >
+                  📝 Résumer
+                </button>
+                <button 
+                  onClick={handleAudit}
+                  className="text-[10px] px-2 py-1 bg-white border border-gray-100 rounded-full hover:border-[#99334C] transition-colors"
+                >
+                  🔍 Auditer pedagogy
+                </button>
+              </div>
+
+              {/* Chat Input */}
+              <div className="mt-4 relative">
+                <input
+                  type="text"
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+                  placeholder="Posez une question à l'IA..."
+                  className="w-full pl-4 pr-10 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-[#99334C] outline-none text-sm transition-all shadow-sm"
+                />
+                <button 
+                  onClick={handleSend}
+                  className="absolute right-2 top-2 p-1.5 bg-[#99334C] text-white rounded-lg hover:bg-[#802a3f] transition-colors"
+                >
+                  <Send size={16} />
+                </button>
+              </div>
+            </motion.div>
+          ) : (
+            <motion.div 
+              key="audit"
+              initial={{ opacity: 0, x: 10 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 10 }}
+              className="flex flex-col h-full p-4 overflow-y-auto custom-scrollbar"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <h4 className="text-sm font-bold flex items-center gap-2">
+                  <BarChart3 size={16} className="text-[#99334C]" />
+                  Scores Pédagogiques
+                </h4>
+                <button 
+                  onClick={() => setShowScores(!showScores)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  {showScores ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                </button>
+              </div>
+
+              {showScores && (
+                <div className="grid grid-cols-1 gap-3 mb-6">
+                  <ScoreCard 
+                    label="Clarté" 
+                    score={socraticData.bloomScore?.clarityScore || 0} 
+                    icon={Sparkles} 
+                    color="bg-blue-500" 
+                  />
+                  <ScoreCard 
+                    label="Engagement" 
+                    score={socraticData.bloomScore?.engagementScore || 0} 
+                    icon={Lightbulb} 
+                    color="bg-amber-500" 
+                  />
+                  <div className="bg-white dark:bg-gray-800 p-3 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm flex items-center justify-between">
+                    <span className="text-xs font-medium text-gray-500">Bloom :</span>
+                    <span className="text-sm font-bold text-[#99334C]">{socraticData.bloomScore?.bloomLevel || '—'}</span>
+                  </div>
+                </div>
+              )}
+
+              <h4 className="text-sm font-bold flex items-center gap-2 mb-3">
+                <Lightbulb size={16} className="text-[#99334C]" />
+                Suggestions de l'IA
+              </h4>
+              
+              <div className="space-y-3">
+                {socraticData.bloomScore?.suggestions?.map((s: string, idx: number) => (
+                  <div key={idx} className="p-3 bg-white dark:bg-gray-800 rounded-xl border-l-4 border-amber-400 shadow-sm text-xs italic text-gray-600 leading-relaxed">
+                    "{s}"
+                  </div>
+                ))}
+                
+                {(!socraticData.bloomScore?.suggestions || socraticData.bloomScore.suggestions.length === 0) && (
+                  <div className="text-center py-8 opacity-40">
+                    <RefreshCw size={32} className="mx-auto mb-2 animate-spin-slow" />
+                    <p className="text-xs">Lancez un audit pour voir les suggestions.</p>
+                  </div>
+                )}
+              </div>
+
+              <div className="mt-6">
+                <h4 className="text-sm font-bold flex items-center gap-2 mb-3">
+                  <Sparkles size={16} className="text-[#99334C]" />
+                  Blocs recommandés
+                </h4>
+                <div className="flex flex-wrap gap-2">
+                  {socraticData.bloomScore?.recommendedBlocks?.map((b: string) => (
+                    <span key={b} className="px-3 py-1 bg-[#99334C]/10 text-[#99334C] text-[10px] font-bold rounded-full uppercase tracking-wider">
+                      {b}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              <button 
+                onClick={handleAudit}
+                disabled={socraticData.isAnalyzing}
+                className="mt-8 w-full py-3 bg-[#99334C] text-white rounded-xl font-bold text-sm shadow-lg shadow-[#99334C]/20 hover:bg-[#802a3f] active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+              >
+                {socraticData.isAnalyzing ? <RefreshCw size={18} className="animate-spin" /> : <RefreshCw size={18} />}
+                Relancer l'Analyse
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+
+      {/* Highlights indicator */}
+      {socraticData.feedback.length > 0 && (
+        <div className="px-4 py-2 bg-[#99334C]/5 border-t border-[#99334C]/10 flex items-center justify-between">
+          <span className="text-[10px] font-medium text-[#99334C] flex items-center gap-1">
+            <AlertCircle size={12} />
+            {socraticData.feedback.length} zones d'amélioration détectées
+          </span>
+          <button 
+            onClick={() => setActiveTab('audit')}
+            className="text-[10px] font-bold text-[#99334C] underline"
+          >
+            Voir
+          </button>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default UnifiedAIPanel;
