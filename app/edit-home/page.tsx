@@ -664,16 +664,23 @@ const EditHomePage = () => {
                               <div className="flex flex-col">
                                 <span className="font-semibold text-gray-900">{project.pr_name}</span>
                                 {project.invitation_status && (
-                                  <span className={clsx(
-                                    "text-[10px] font-bold uppercase tracking-wider w-fit px-1.5 py-0.5 rounded",
-                                    project.invitation_status === 'Pending' ? "bg-amber-100 text-amber-600" :
-                                      project.invitation_status === 'Accepted' ? "bg-green-100 text-green-600" :
-                                        "bg-red-100 text-red-600"
-                                  )}>
-                                    {project.invitation_status === 'Pending' ? 'Invitation en attente' :
-                                      project.invitation_status === 'Accepted' ? 'Partagé avec vous' :
-                                        'Refusé'}
-                                  </span>
+                                  <div className="flex flex-col gap-1">
+                                    <span className={clsx(
+                                      "text-[10px] font-bold uppercase tracking-wider w-fit px-1.5 py-0.5 rounded",
+                                      project.invitation_status === 'Pending' ? "bg-amber-100 text-amber-600" :
+                                        project.invitation_status === 'Accepted' ? "bg-green-100 text-green-600" :
+                                          "bg-red-100 text-red-600"
+                                    )}>
+                                      {project.invitation_status === 'Pending' ? 'Invitation en attente' :
+                                        project.invitation_status === 'Accepted' ? 'Partagé avec vous' :
+                                          'Refusé'}
+                                    </span>
+                                    {project.invitation_status === 'Accepted' && (project as any).owner && (
+                                      <span className="text-[10px] text-gray-500 italic">
+                                        Par {(project as any).owner.firstname} {(project as any).owner.lastname}
+                                      </span>
+                                    )}
+                                  </div>
                                 )}
                               </div>
                             </div>

@@ -50,9 +50,21 @@ const EditorHeader: React.FC<EditorHeaderProps> = ({
                     </Link>
                 </RichTooltip>
 
-                <h1 className="text-lg font-bold text-gray-900 border-l pl-4 border-gray-200">
-                    {projectData?.pr_name || projectName}
-                </h1>
+                <div className="flex flex-col">
+                    <h1 className="text-lg font-bold text-gray-900 border-l pl-4 border-gray-200">
+                        {projectData?.pr_name || projectName}
+                    </h1>
+                    {projectData && projectData.owner_id !== authUser?.user_id && (
+                        <div className="pl-4 flex items-center gap-2">
+                            <span className="text-[10px] bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded font-bold uppercase tracking-tighter">Projet Partagé</span>
+                            {projectData.owner && (
+                                <span className="text-[10px] text-gray-400 italic">
+                                    Propriétaire : {projectData.owner.firstname} {projectData.owner.lastname}
+                                </span>
+                            )}
+                        </div>
+                    )}
+                </div>
 
                 {currentContext && (
                     <div className="flex items-center gap-2 text-[11px] text-gray-400 dark:text-gray-500 ml-5 pl-5 border-l border-gray-100 dark:border-gray-700 max-w-xl truncate">
