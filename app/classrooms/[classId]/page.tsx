@@ -24,7 +24,10 @@ const ClassroomDetailPage = () => {
     const [error, setError] = useState<string | null>(null);
     const [copied, setCopied] = useState(false);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const [showCourseDeleteConfirm, setShowCourseDeleteConfirm] = useState(false);
+    const [courseToDelete, setCourseToDelete] = useState<{ pr_id: string; pr_name: string } | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
+    const [isRemovingCourse, setIsRemovingCourse] = useState(false);
 
     const isTeacher = classroom?.teacher_id === user?.user_id;
 
@@ -72,6 +75,26 @@ const ClassroomDetailPage = () => {
         } finally {
             setIsDeleting(false);
             setShowDeleteConfirm(false);
+        }
+    };
+
+    const handleRemoveCourse = async () => {
+        if (!classroom || !courseToDelete) return;
+        setIsRemovingCourse(true);
+        try {
+            await classroomService.unassignProject(classroom.id, courseToDelete.pr_id);
+            toast.success("Cours retiré de la classe");
+            // Refresh local state
+            setClassroom({
+                ...classroom,
+                projects: classroom.projects.filter(p => p.project.pr_id !== courseToDelete.pr_id)
+            });
+        } catch (err: any) {
+            toast.error(err.message || "Erreur lors du retrait du cours");
+        } finally {
+            setIsRemovingCourse(false);
+            setShowCourseDeleteConfirm(false);
+            setCourseToDelete(null);
         }
     };
 
@@ -336,8 +359,22 @@ const ClassroomDetailPage = () => {
                                     <BookOpen className="w-6 h-6 text-green-600 group-hover:text-white transition-colors" />
                                 </div>
 
+                                {isTeacher && (
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setCourseToDelete({ pr_id: cp.project.pr_id, pr_name: cp.project.pr_name });
+                                            setShowCourseDeleteConfirm(true);
+                                        }}
+                                        className="absolute top-4 right-4 p-2 bg-red-50 text-red-600 rounded-lg opacity-0 group-hover:opacity-100 transition-all hover:bg-red-600 hover:text-white z-10"
+                                        title="Retirer du cours"
+                                    >
+                                        <Trash2 className="w-4 h-4" />
+                                    </button>
+                                )}
+
                                 {isTeacher && !cp.doc_id && (
-                                    <span className="absolute top-4 right-4 px-2 py-0.5 bg-amber-50 text-amber-600 text-[10px] font-bold rounded-full border border-amber-100">
+                                    <span className="absolute bottom-4 right-4 px-2 py-0.5 bg-amber-50 text-amber-600 text-[10px] font-bold rounded-full border border-amber-100">
                                         Non publié
                                     </span>
                                 )}
@@ -421,6 +458,53 @@ const ClassroomDetailPage = () => {
                                     className="flex-1"
                                 >
                                     Supprimer
+                                </TactileButton>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+            <AnimatePresence>
+                {showCourseDeleteConfirm && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
+                        onClick={() => setShowCourseDeleteConfirm(false)}
+                    >
+                        <motion.div
+                            initial={{ scale: 0.9 }}
+                            animate={{ scale: 1 }}
+                            exit={{ scale: 0.9 }}
+                            className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-md w-full p-8"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <div className="flex items-center gap-3 mb-4">
+                                <div className="w-12 h-12 bg-amber-50 dark:bg-amber-900/20 rounded-xl flex items-center justify-center">
+                                    <BookOpen className="w-6 h-6 text-amber-600" />
+                                </div>
+                                <h2 className="text-xl font-bold text-gray-900 dark:text-white">Retirer le cours ?</h2>
+                            </div>
+                            <p className="text-gray-500 mb-6">
+                                Êtes-vous sûr de vouloir retirer le cours <span className="font-bold text-gray-900 dark:text-white">&quot;{courseToDelete?.pr_name}&quot;</span> de cette classe ? Les élèves ne pourront plus y accéder via cette classe.
+                            </p>
+                            <div className="flex gap-3">
+                                <TactileButton
+                                    variant="secondary"
+                                    onClick={() => setShowCourseDeleteConfirm(false)}
+                                    className="flex-1"
+                                >
+                                    Annuler
+                                </TactileButton>
+                                <TactileButton
+                                    variant="danger"
+                                    onClick={handleRemoveCourse}
+                                    isLoading={isRemovingCourse}
+                                    leftIcon={<X className="w-4 h-4" />}
+                                    className="flex-1"
+                                >
+                                    Retirer
                                 </TactileButton>
                             </div>
                         </motion.div>
