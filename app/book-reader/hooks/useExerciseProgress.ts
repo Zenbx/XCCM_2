@@ -86,6 +86,69 @@ export const useExerciseProgress = ({ projectId, structure }: UseExerciseProgres
         ? Math.round((completedExercises / totalExercises) * 100) 
         : 0;
 
+    // Linear Progression Logic
+    const lockedIds = React.useMemo(() => {
+        if (!structure || exercises.length === 0) return new Set<string>();
+
+        const locked = new Set<string>();
+        let isForwardLocked = false;
+
+        // Flatten the structure in reading order: Part > Chapter > Paragraph > Notion
+        for (const part of structure) {
+            // Note: If anything before was locked, this part is locked
+            if (isForwardLocked) locked.add(part.part_id);
+            
+            // Check blocking exercises for Part
+            const partExs = exercises.filter(ex => ex.part_id === part.part_id);
+            const hasUncompletedBlockingPart = partExs.some(ex => 
+                (ex.settings as any)?.isBlocking && 
+                !submissions.some(s => s.exercise_id === ex.id && s.score && s.score > 0)
+            );
+
+            for (const chapter of (part.chapters || [])) {
+                if (isForwardLocked) locked.add(chapter.chapter_id);
+
+                // Check blocking exercises for Chapter
+                const chapExs = exercises.filter(ex => ex.chapter_id === chapter.chapter_id);
+                const hasUncompletedBlockingChap = chapExs.some(ex => 
+                    (ex.settings as any)?.isBlocking && 
+                    !submissions.some(s => s.exercise_id === ex.id && s.score && s.score > 0)
+                );
+
+                for (const para of (chapter.paragraphs || [])) {
+                    if (isForwardLocked) locked.add(para.para_id);
+
+                    // Check blocking exercises for Paragraph
+                    const paraExs = exercises.filter(ex => ex.para_id === para.para_id);
+                    const hasUncompletedBlockingPara = paraExs.some(ex => 
+                        (ex.settings as any)?.isBlocking && 
+                        !submissions.some(s => s.exercise_id === ex.id && s.score && s.score > 0)
+                    );
+
+                    for (const notion of (para.notions || [])) {
+                        // A notion is locked if anything BEFORE was locked
+                        if (isForwardLocked) locked.add(notion.notion_id);
+
+                        // BUT: If this notion has a blocking exercise, it LURKS at the end of the notion.
+                        // So the NEXT notion should be locked.
+                        const notionExs = exercises.filter(ex => ex.notion_id === notion.notion_id);
+                        const hasUncompletedBlockingNotion = notionExs.some(ex => 
+                            (ex.settings as any)?.isBlocking && 
+                            !submissions.some(s => s.exercise_id === ex.id && s.score && s.score > 0)
+                        );
+                        
+                        // If any blocking exercise at ANY level (Para, Chap, Part, Notion) is not done, 
+                        // the NEXT notions/sections are locked.
+                        if (hasUncompletedBlockingPart || hasUncompletedBlockingChap || hasUncompletedBlockingPara || hasUncompletedBlockingNotion) {
+                            isForwardLocked = true;
+                        }
+                    }
+                }
+            }
+        }
+        return locked;
+    }, [structure, exercises, submissions]);
+
     return {
         exercises,
         submissions,
@@ -95,6 +158,7 @@ export const useExerciseProgress = ({ projectId, structure }: UseExerciseProgres
         completedExercises,
         attemptedExercises,
         progressPercentage,
+        lockedIds,
         submitAnswer,
         getExercisesForGranule,
         getLatestSubmission,

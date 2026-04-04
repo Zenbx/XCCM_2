@@ -1,5 +1,5 @@
 import React from 'react';
-import { BookOpen, User, Archive } from 'lucide-react';
+import { BookOpen, User, Archive, Lock } from 'lucide-react';
 import { Part, Chapter, Paragraph, Notion } from '@/services/documentService';
 import { Exercise, Submission, SubmissionResult } from '@/services/exerciseService';
 import ExerciseBlock from './ExerciseBlock';
@@ -17,10 +17,11 @@ interface ReaderContentProps {
     onSubmitAnswer?: (exerciseId: string, answers: any) => Promise<SubmissionResult | null>;
     getExercisesForGranule?: (granuleId: string, granuleType: string) => Exercise[];
     getLatestSubmission?: (exerciseId: string) => Submission | undefined;
+    lockedIds?: Set<string>;
 }
 
 const RenderExercises = ({
-    granuleId, granuleType, getExercisesForGranule, getLatestSubmission, submittingId, onSubmitAnswer
+    granuleId, granuleType, getExercisesForGranule, getLatestSubmission, submittingId, onSubmitAnswer, isLocked
 }: {
     granuleId: string;
     granuleType: string;
@@ -28,13 +29,14 @@ const RenderExercises = ({
     getLatestSubmission?: (id: string) => Submission | undefined;
     submittingId?: string | null;
     onSubmitAnswer?: (exerciseId: string, answers: any) => Promise<SubmissionResult | null>;
+    isLocked?: boolean;
 }) => {
     if (!getExercisesForGranule || !onSubmitAnswer) return null;
     const exs = getExercisesForGranule(granuleId, granuleType);
     if (exs.length === 0) return null;
 
     return (
-        <div className="mt-4 mb-8">
+        <div className={`mt-4 mb-8 transition-all duration-500 ${isLocked ? 'blur-sm opacity-50 pointer-events-none select-none' : ''}`}>
             {exs.map((exercise) => (
                 <ExerciseBlock
                     key={exercise.id}
@@ -51,7 +53,7 @@ const RenderExercises = ({
 const ReaderContent: React.FC<ReaderContentProps> = ({
     doc, project, structure, fontSize, onCollect,
     exercises, submissions, submittingId, onSubmitAnswer,
-    getExercisesForGranule, getLatestSubmission
+    getExercisesForGranule, getLatestSubmission, lockedIds = new Set()
 }) => {
     const exerciseProps = { getExercisesForGranule, getLatestSubmission, submittingId, onSubmitAnswer };
 
@@ -129,7 +131,7 @@ const ReaderContent: React.FC<ReaderContentProps> = ({
                                 )}
 
                                 {/* Exercises attached to this Part */}
-                                <RenderExercises granuleId={part.part_id} granuleType="part" {...exerciseProps} />
+                                <RenderExercises granuleId={part.part_id} granuleType="part" {...exerciseProps} isLocked={lockedIds.has(part.part_id)} />
 
                                 {part.chapters.map((chapter: Chapter) => (
                                     <div key={chapter.chapter_id} id={chapter.chapter_id} className="mb-12 scroll-mt-24">
@@ -146,7 +148,7 @@ const ReaderContent: React.FC<ReaderContentProps> = ({
                                         </h3>
 
                                         {/* Exercises attached to this Chapter */}
-                                        <RenderExercises granuleId={chapter.chapter_id} granuleType="chapter" {...exerciseProps} />
+                                        <RenderExercises granuleId={chapter.chapter_id} granuleType="chapter" {...exerciseProps} isLocked={lockedIds.has(chapter.chapter_id)} />
 
                                         {chapter.paragraphs.map((para: Paragraph) => (
                                             <div key={para.para_id} id={para.para_id} className="mb-10 scroll-mt-24">
@@ -175,35 +177,49 @@ const ReaderContent: React.FC<ReaderContentProps> = ({
                                                                 </button>
                                                             </h5>
                                                         )}
-                                                        <div
-                                                            className="prose prose-lg max-w-none text-gray-700 leading-relaxed
-                                [&_p]:mb-4
-                                [&_h1]:text-2xl [&_h1]:font-bold [&_h1]:mb-4 [&_h1]:mt-6
-                                [&_h2]:text-xl [&_h2]:font-bold [&_h2]:mb-3 [&_h2]:mt-5
-                                [&_h3]:text-lg [&_h3]:font-bold [&_h3]:mb-2 [&_h3]:mt-4
-                                [&_ul]:list-disc [&_ul]:ml-6 [&_ul]:mb-4
-                                [&_ol]:list-decimal [&_ol]:ml-6 [&_ol]:mb-4
-                                [&_li]:mb-2
-                                [&_blockquote]:border-l-4 [&_blockquote]:border-[#99334C]/30 [&_blockquote]:pl-4 [&_blockquote]:italic [&_blockquote]:text-gray-600 [&_blockquote]:my-4
-                                [&_a]:text-[#99334C] [&_a]:underline [&_a]:hover:text-[#7a283d]
-                                [&_strong]:font-bold [&_strong]:text-gray-900
-                                [&_code]:bg-gray-100 [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-sm [&_code]:font-mono
-                                [&_pre]:bg-gray-900 [&_pre]:text-gray-100 [&_pre]:p-4 [&_pre]:rounded-lg [&_pre]:overflow-x-auto [&_pre]:my-4
-                                [&_img]:max-w-full [&_img]:h-auto [&_img]:rounded-lg [&_img]:my-4
-                                [&_table]:w-full [&_table]:border-collapse [&_table]:my-4
-                                [&_th]:bg-gray-100 [&_th]:border [&_th]:border-gray-200 [&_th]:px-4 [&_th]:py-2 [&_th]:text-left
-                                [&_td]:border [&_td]:border-gray-200 [&_td]:px-4 [&_td]:py-2
-                              "
-                                                            dangerouslySetInnerHTML={{ __html: notion.notion_content }}
-                                                        />
+                                                        <div className="relative group/notion">
+                                                            {lockedIds.has(notion.notion_id) && (
+                                                                <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-gray-50/60 backdrop-blur-md rounded-xl border-2 border-dashed border-gray-200 p-6 text-center transition-all">
+                                                                    <div className="w-12 h-12 bg-white rounded-full shadow-sm flex items-center justify-center mb-3">
+                                                                        <Lock className="w-6 h-6 text-gray-400" />
+                                                                    </div>
+                                                                    <h6 className="font-bold text-gray-900 mb-1">Section verrouillée</h6>
+                                                                    <p className="text-xs text-gray-500 max-w-[200px]">
+                                                                        Complétez les exercices précédents pour débloquer ce contenu.
+                                                                    </p>
+                                                                </div>
+                                                            )}
+                                                            <div
+                                                                className={`prose prose-lg max-w-none text-gray-700 leading-relaxed transition-all duration-500
+                                                                    ${lockedIds.has(notion.notion_id) ? 'blur-sm select-none opacity-40 pointer-events-none' : ''}
+                                                                    [&_p]:mb-4
+                                                                    [&_h1]:text-2xl [&_h1]:font-bold [&_h1]:mb-4 [&_h1]:mt-6
+                                                                    [&_h2]:text-xl [&_h2]:font-bold [&_h2]:mb-3 [&_h2]:mt-5
+                                                                    [&_h3]:text-lg [&_h3]:font-bold [&_h3]:mb-2 [&_h3]:mt-4
+                                                                    [&_ul]:list-disc [&_ul]:ml-6 [&_ul]:mb-4
+                                                                    [&_ol]:list-decimal [&_ol]:ml-6 [&_ol]:mb-4
+                                                                    [&_li]:mb-2
+                                                                    [&_blockquote]:border-l-4 [&_blockquote]:border-[#99334C]/30 [&_blockquote]:pl-4 [&_blockquote]:italic [&_blockquote]:text-gray-600 [&_blockquote]:my-4
+                                                                    [&_a]:text-[#99334C] [&_a]:underline [&_a]:hover:text-[#7a283d]
+                                                                    [&_strong]:font-bold [&_strong]:text-gray-900
+                                                                    [&_code]:bg-gray-100 [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-sm [&_code]:font-mono
+                                                                    [&_pre]:bg-gray-900 [&_pre]:text-gray-100 [&_pre]:p-4 [&_pre]:rounded-lg [&_pre]:overflow-x-auto [&_pre]:my-4
+                                                                    [&_img]:max-w-full [&_img]:h-auto [&_img]:rounded-lg [&_img]:my-4
+                                                                    [&_table]:w-full [&_table]:border-collapse [&_table]:my-4
+                                                                    [&_th]:bg-gray-100 [&_th]:border [&_th]:border-gray-200 [&_th]:px-4 [&_th]:py-2 [&_th]:text-left
+                                                                    [&_td]:border [&_td]:border-gray-200 [&_td]:px-4 [&_td]:py-2
+                                                                `}
+                                                                dangerouslySetInnerHTML={{ __html: notion.notion_content }}
+                                                            />
+                                                        </div>
 
                                                         {/* Exercises attached to this Notion */}
-                                                        <RenderExercises granuleId={notion.notion_id} granuleType="notion" {...exerciseProps} />
+                                                        <RenderExercises granuleId={notion.notion_id} granuleType="notion" {...exerciseProps} isLocked={lockedIds.has(notion.notion_id)} />
                                                     </div>
                                                 ))}
 
                                                 {/* Exercises attached to this Paragraph */}
-                                                <RenderExercises granuleId={para.para_id} granuleType="paragraph" {...exerciseProps} />
+                                                <RenderExercises granuleId={para.para_id} granuleType="paragraph" {...exerciseProps} isLocked={lockedIds.has(para.para_id)} />
                                             </div>
                                         ))}
                                     </div>

@@ -17,12 +17,15 @@ interface ReaderTOCProps {
     publishedAt: string;
     consultations: number;
     downloads: number;
+    lockedIds?: Set<string>;
 }
+
+import { Lock } from 'lucide-react';
 
 const ReaderTOC: React.FC<ReaderTOCProps> = ({
     structure, expandedParts, togglePart, expandedChapters, toggleChapter,
     scrollToSection, activeSection, projectAuthor, docPages, publishedAt,
-    consultations, downloads
+    consultations, downloads, lockedIds = new Set()
 }) => {
     return (
         <div className="p-6">
@@ -51,14 +54,18 @@ const ReaderTOC: React.FC<ReaderTOCProps> = ({
                                 )}
                             </button>
                             <button
-                                onClick={() => scrollToSection(part.part_id)}
-                                className={`flex-1 text-left px-3 py-2 rounded-lg font-semibold text-sm transition-colors ${activeSection === part.part_id
+                                onClick={() => !lockedIds.has(part.part_id) && scrollToSection(part.part_id)}
+                                disabled={lockedIds.has(part.part_id)}
+                                className={`flex-1 text-left px-3 py-2 rounded-lg font-semibold text-sm transition-colors flex items-center justify-between ${activeSection === part.part_id
                                     ? 'bg-[#99334C] text-white'
                                     : 'text-gray-900 hover:bg-gray-100'
-                                    }`}
+                                    } ${lockedIds.has(part.part_id) ? 'opacity-50 cursor-not-allowed' : ''}`}
                             >
-                                <span className="text-xs opacity-60 mr-2">Partie {partIndex + 1}</span>
-                                <span className="line-clamp-1">{part.part_title}</span>
+                                <div className="flex items-center">
+                                    <span className="text-xs opacity-60 mr-2 whitespace-nowrap">Partie {partIndex + 1}</span>
+                                    <span className="line-clamp-1">{part.part_title}</span>
+                                </div>
+                                {lockedIds.has(part.part_id) && <Lock className="w-3.5 h-3.5 ml-2" />}
                             </button>
                         </div>
 
@@ -80,13 +87,15 @@ const ReaderTOC: React.FC<ReaderTOCProps> = ({
                                                 </button>
                                             )}
                                             <button
-                                                onClick={() => scrollToSection(chapter.chapter_id)}
-                                                className={`flex-1 text-left px-3 py-1.5 rounded-lg text-sm transition-colors ${activeSection === chapter.chapter_id
+                                                onClick={() => !lockedIds.has(chapter.chapter_id) && scrollToSection(chapter.chapter_id)}
+                                                disabled={lockedIds.has(chapter.chapter_id)}
+                                                className={`flex-1 text-left px-3 py-1.5 rounded-lg text-sm transition-colors flex items-center justify-between ${activeSection === chapter.chapter_id
                                                     ? 'bg-[#99334C] text-white font-medium shadow-sm'
                                                     : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                                                    }`}
+                                                    } ${lockedIds.has(chapter.chapter_id) ? 'opacity-50 cursor-not-allowed' : ''}`}
                                             >
                                                 <span className="line-clamp-1">{chapter.chapter_title}</span>
+                                                {lockedIds.has(chapter.chapter_id) && <Lock className="w-3 h-3 ml-2 opacity-60" />}
                                             </button>
                                         </div>
 
@@ -95,13 +104,15 @@ const ReaderTOC: React.FC<ReaderTOCProps> = ({
                                                 {chapter.paragraphs.map((para: Paragraph) => (
                                                     <button
                                                         key={para.para_id}
-                                                        onClick={() => scrollToSection(para.para_id)}
-                                                        className={`block w-full text-left px-3 py-1 text-xs transition-colors rounded ${activeSection === para.para_id
+                                                        onClick={() => !lockedIds.has(para.para_id) && scrollToSection(para.para_id)}
+                                                        disabled={lockedIds.has(para.para_id)}
+                                                        className={`w-full text-left px-3 py-1 text-xs transition-colors rounded flex items-center justify-between ${activeSection === para.para_id
                                                             ? 'bg-[#99334C] text-white font-medium'
                                                             : 'text-gray-500 hover:text-gray-700'
-                                                            }`}
+                                                            } ${lockedIds.has(para.para_id) ? 'opacity-50 cursor-not-allowed' : ''}`}
                                                     >
                                                         <span className="line-clamp-1">{para.para_name}</span>
+                                                        {lockedIds.has(para.para_id) && <Lock className="w-3 h-3 ml-1.5 opacity-40" />}
                                                     </button>
                                                 ))}
                                             </div>

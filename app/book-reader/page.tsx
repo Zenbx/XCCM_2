@@ -64,6 +64,7 @@ const BookReaderPageContent = () => {
   const {
     exercises, submissions, submittingId,
     totalExercises, completedExercises, attemptedExercises, progressPercentage,
+    lockedIds,
     submitAnswer, getExercisesForGranule, getLatestSubmission
   } = useExerciseProgress({
     projectId: data?.project?.pr_id,
@@ -166,6 +167,7 @@ const BookReaderPageContent = () => {
             publishedAt={data.document.published_at}
             consultations={data.document.consult}
             downloads={data.document.downloaded}
+            lockedIds={lockedIds}
           />
         </aside>
 
@@ -184,6 +186,7 @@ const BookReaderPageContent = () => {
             onSubmitAnswer={submitAnswer}
             getExercisesForGranule={getExercisesForGranule}
             getLatestSubmission={getLatestSubmission}
+            lockedIds={lockedIds}
           />
         </main>
       </div>
