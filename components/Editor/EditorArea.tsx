@@ -4,10 +4,11 @@ import { AlignLeft, AlignCenter, AlignRight, Trash2, X, Command } from 'lucide-r
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { SlashMenu } from './SlashMenu';
 import { FloatingToolbar } from './FloatingToolbar';
-import { AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
-import TiptapEditor from './TiptapEditor'; // ✅ Import de Tiptap
+import TiptapEditor from './TiptapEditor';
 import { SocraticHighlight } from '@/extensions/SocraticExtension';
+import { AlertCircle, RefreshCcw } from 'lucide-react';
 
 interface EditorAreaProps {
   content: string;
@@ -41,6 +42,8 @@ interface EditorAreaProps {
   socraticFeedback?: SocraticHighlight[];
   onSocraticHighlightClick?: (id: string, event: Event) => void;
   currentContext?: any; // ✅ Added to detect type
+  saveError?: string | null;
+  onRetrySave?: () => void;
 }
 
 const EditorArea: React.FC<EditorAreaProps> = ({
@@ -62,7 +65,9 @@ const EditorArea: React.FC<EditorAreaProps> = ({
   collaboration,
   socraticFeedback = [],
   onSocraticHighlightClick,
-  currentContext, // ✅ Added
+  currentContext,
+  saveError,
+  onRetrySave,
 }) => {
   const isInitialLoad = useRef(true);
   const [internalPlaceholder, setInternalPlaceholder] = useState(placeholder);
@@ -426,9 +431,31 @@ const EditorArea: React.FC<EditorAreaProps> = ({
       <div
         className="max-w-4xl mx-auto bg-white dark:bg-gray-900 shadow-sm transition-all min-h-[800px] dark:border dark:border-gray-800"
         onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
         onDrop={handleDrop}
       >
+        <AnimatePresence>
+          {saveError && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="bg-red-50 border-b border-red-100 px-6 py-3 flex items-center justify-between sticky top-0 z-20"
+            >
+              <div className="flex items-center gap-3">
+                <AlertCircle className="w-5 h-5 text-red-500" />
+                <p className="text-sm font-medium text-red-700">{saveError}</p>
+              </div>
+              <button
+                onClick={onRetrySave}
+                className="flex items-center gap-2 px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-md text-xs font-bold transition-colors shadow-sm"
+              >
+                <RefreshCcw className="w-3.5 h-3.5" />
+                Réessayer
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         <div className="w-full h-full p-10" style={{ viewTransitionName: 'editor-content' }}>
 
             <TiptapEditor

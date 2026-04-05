@@ -1,6 +1,6 @@
 import React from 'react';
 import Link from 'next/link';
-import { Home, ChevronRight, Eye, Share2, Save, Loader2, Undo2, Redo2 } from 'lucide-react';
+import { Home, ChevronRight, Eye, Share2, Save, Loader2, Undo2, Redo2, Cloud, CloudOff, Check, Menu } from 'lucide-react';
 import RichTooltip from '@/components/UI/RichTooltip';
 import { TactileButton } from '@/components/UI/TactileButton';
 import { PresenceIndicator, ConnectionStatus } from '@/components/Editor/CollaborativeCursors';
@@ -20,6 +20,7 @@ interface EditorHeaderProps {
     projectName: string;
     connectionStatus?: 'connecting' | 'connected' | 'disconnected' | 'error';
     onReconnect?: () => void;
+    onToggleMobileTOC?: () => void;
 }
 
 const EditorHeader: React.FC<EditorHeaderProps> = ({
@@ -37,10 +38,19 @@ const EditorHeader: React.FC<EditorHeaderProps> = ({
     projectName,
     connectionStatus,
     onReconnect,
+    onToggleMobileTOC,
 }) => {
     return (
         <div className="bg-white border-b border-gray-200 flex items-center justify-between px-4 py-2">
             <div className="flex items-center gap-4">
+                <TactileButton
+                    variant="ghost"
+                    onClick={onToggleMobileTOC}
+                    className="lg:hidden p-2 text-gray-600 hover:text-[#99334C]"
+                >
+                    <Menu className="w-5 h-5" />
+                </TactileButton>
+
                 <RichTooltip title="Accueil" description="Retourner à la gestion de vos projets." shortcut="Alt+H">
                     <Link
                         href="/edit-home"
@@ -67,7 +77,7 @@ const EditorHeader: React.FC<EditorHeaderProps> = ({
                 </div>
 
                 {currentContext && (
-                    <div className="flex items-center gap-2 text-[11px] text-gray-400 dark:text-gray-500 ml-5 pl-5 border-l border-gray-100 dark:border-gray-700 max-w-xl truncate">
+                    <div className="flex items-center gap-2 text-[11px] text-gray-400 dark:text-gray-500 ml-5 pl-5 border-l border-gray-100 dark:border-gray-700 max-w-sm truncate">
                         {currentContext.type === 'notion' ? (
                             <>
                                 <span className="hover:text-gray-700 dark:hover:text-gray-300 transition-colors uppercase text-[10px] font-bold tracking-wider">{currentContext.partTitle}</span>
@@ -88,6 +98,26 @@ const EditorHeader: React.FC<EditorHeaderProps> = ({
                         )}
                     </div>
                 )}
+
+                {/* Save & Sync Status Pill */}
+                <div className="ml-4 flex items-center gap-2 px-2 py-1 bg-gray-50 dark:bg-gray-900/50 rounded-full border border-gray-100 dark:border-gray-800 transition-all duration-500">
+                    {isSaving ? (
+                        <>
+                            <Loader2 className="w-3.5 h-3.5 text-[#99334C] animate-spin" />
+                            <span className="text-[10px] font-medium text-gray-500 animate-pulse">Enregistrement...</span>
+                        </>
+                    ) : hasUnsavedChanges ? (
+                        <>
+                            <div className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                            <span className="text-[10px] font-medium text-amber-600">Modifications non enregistrées</span>
+                        </>
+                    ) : (
+                        <>
+                            <Cloud className="w-3.5 h-3.5 text-green-500" />
+                            <span className="text-[10px] font-medium text-green-600">Modifications enregistrées</span>
+                        </>
+                    )}
+                </div>
             </div>
 
             <div className="flex items-center gap-3">

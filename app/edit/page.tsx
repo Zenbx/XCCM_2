@@ -3,8 +3,9 @@
 import React, { useState, useRef, useEffect, Suspense, useMemo, useCallback } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import {
-  Loader2, AlertCircle, Bot
+  Loader2, AlertCircle, Bot, X
 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 
 // Custom Hooks
@@ -109,6 +110,8 @@ const XCCM2Editor = () => {
   const [pulsingId, setPulsingId] = useState<string | null>(null);
   const [pendingGranule, setPendingGranule] = useState<{ type: 'part' | 'chapter' | 'paragraph' | 'notion'; content: string } | null>(null);
   const [participantCount, setParticipantCount] = useState(1); // ✅ Added for Smart Sync
+  const [isMobileTOCOpen, setIsMobileTOCOpen] = useState(false); // ✅ Responsive state
+  const [saveError, setSaveError] = useState<string | null>(null); // ✅ Fine error handling
 
   // Marketplace Modal State
   const [showMarketplaceModal, setShowMarketplaceModal] = useState(false);
@@ -833,6 +836,8 @@ const XCCM2Editor = () => {
       return;
     }
 
+    setSaveError(null); // Clear previous errors
+
     // ✅ CRDT FIX: If Hocuspocus is managing this Notion via CRDT, skip HTTP save
     // Hocuspocus onStoreDocument handles persistence automatically
     const isCrdtManaged = currentContext.type === 'notion' && synapseDocId && provider && synapseStatus === 'connected';
@@ -930,9 +935,12 @@ const XCCM2Editor = () => {
       }
 
       setHasUnsavedChanges(false);
+      setSaveError(null);
       if (!isAuto) toast.success('Sauvegardé !');
     } catch (err: any) {
-      toast.error(err.message || "Erreur de sauvegarde");
+      console.error("[Save] Error:", err);
+      setSaveError(err.message || "Erreur de sauvegarde. Vérifiez votre connexion.");
+      if (!isAuto) toast.error(err.message || "Erreur de sauvegarde");
     } finally {
       isSavingInProgress.current = false;
       if (!isAuto) setIsSaving(false);
@@ -1088,127 +1096,162 @@ const XCCM2Editor = () => {
 
   return (
     <div className="h-screen flex bg-white overflow-hidden selection:bg-[#99334C]/10 w-full max-w-[100vw]">
-      {/* 1. Sidebar TOC - Pleine Hauteur (Gauche) */}
-      {!isZenMode && (
-        <>
-          <aside style={{ width: `${sidebarWidth}px` }} className="h-full flex flex-col border-r border-gray-100 bg-gray-50/30 shrink-0">
-            <TableOfContents
-              projectName={projectName || ''}
-              structure={structure}
-              width={sidebarWidth}
-              onSelectNotion={async (ctx) => {
-                const update = async () => {
-                  if (hasUnsavedChanges) await handleSave(true);
-                  setCurrentContext({
-                    type: 'notion',
-                    projectName: projectData?.pr_name || '',
-                    partTitle: ctx.partTitle,
-                    chapterTitle: ctx.chapterTitle,
-                    paraName: ctx.paraName,
-                    notionName: ctx.notionName,
-                    notion: ctx.notion
-                  });
-                  setEditorContent(ctx.notion.notion_content || '');
-                  setHasUnsavedChanges(false);
-                };
-                // @ts-ignore
-                if (document.startViewTransition) document.startViewTransition(update);
-                else await update();
-              }}
-              onSelectPart={async (ctx) => {
-                const update = async () => {
-                  if (hasUnsavedChanges) await handleSave(true);
-                  setCurrentContext({
-                    type: 'part',
-                    projectName: projectData?.pr_name || '',
-                    partTitle: ctx.partTitle,
-                    part: ctx.part
-                  });
-                  setEditorContent(ctx.part.part_intro || '');
-                  setHasUnsavedChanges(false);
-                };
-                // @ts-ignore
-                if (document.startViewTransition) document.startViewTransition(update);
-                else await update();
-              }}
-              onSelectChapter={async (pName, cTitle, cId) => {
-                const update = async () => {
-                  if (hasUnsavedChanges) await handleSave(true);
-                  // ✅ Resolve chapter object for Landing Page
-                  const part = structure.find(p => p.part_title === pName);
-                  const chapter = part?.chapters?.find(c => c.chapter_id === cId);
+      {/* 1. Sidebar TOC - Desktop (Sticky) & Mobile (Drawer) */}
+      <AnimatePresence>
+        {(isMobileTOCOpen || sidebarWidth > 0) && (
+          <>
+            {/* Mobile Backdrop */}
+            {isMobileTOCOpen && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setIsMobileTOCOpen(false)}
+                className="fixed inset-0 bg-black/20 backdrop-blur-[2px] z-[60] lg:hidden"
+              />
+            )}
 
-                  setCurrentContext({
-                    type: 'chapter',
-                    projectName: projectData?.pr_name || '',
-                    partTitle: pName,
-                    chapterTitle: cTitle,
-                    chapterId: cId,
-                    chapter: chapter // ✅ Pass actual object
-                  });
-                  setEditorContent(chapter?.chapter_intro || '');
-                  setHasUnsavedChanges(false);
-                };
-                // @ts-ignore
-                if (document.startViewTransition) document.startViewTransition(update);
-                else await update();
-              }}
-              onSelectParagraph={async (pName, cTitle, paName, paId) => {
-                const update = async () => {
-                  if (hasUnsavedChanges) await handleSave(true);
-                  // ✅ Resolve paragraph object for Landing Page
-                  const part = structure.find(p => p.part_title === pName);
-                  const chapter = part?.chapters?.find(c => c.chapter_title === cTitle);
-                  const paragraph = chapter?.paragraphs?.find(pa => pa.para_id === paId);
+            <motion.aside
+              initial={isMobileTOCOpen ? { x: -320 } : false}
+              animate={{ x: 0 }}
+              exit={{ x: -320 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              style={{ width: `${sidebarWidth}px` }}
+              className={`
+                h-full flex flex-col border-r border-gray-100 bg-gray-50/30 shrink-0 z-[70]
+                fixed lg:relative lg:flex inset-y-0 left-0
+                ${isMobileTOCOpen ? 'flex shadow-2xl' : 'hidden lg:flex'}
+              `}
+            >
+              <div className="lg:hidden absolute right-4 top-4 z-10">
+                <button
+                  onClick={() => setIsMobileTOCOpen(false)}
+                  className="p-2 hover:bg-gray-100 rounded-full text-gray-400 hover:text-[#99334C] transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
 
-                  setCurrentContext({
-                    type: 'paragraph',
-                    projectName: projectData?.pr_name || '',
-                    partTitle: pName,
-                    chapterTitle: cTitle,
-                    paraName: paName,
-                    paraId: paId,
-                    paragraph: paragraph // ✅ Pass actual object
-                  });
-                  setEditorContent(paragraph?.para_intro || '');
-                  setHasUnsavedChanges(false);
-                };
-                // @ts-ignore
-                if (document.startViewTransition) document.startViewTransition(update);
-                else await update();
-              }}
-              onPublishToMarketplace={handlePublishToMarketplace}
-              onCreatePart={handleCreatePart}
-              onCreateChapter={handleCreateChapter}
-              onCreateParagraph={handleCreateParagraph}
-              onCreateNotion={handleCreateNotion}
-              onRename={handleRenameGranule}
-              onReorder={handleReorderGranule}
-              onMove={handleMoveGranule}
-              onExternalDrop={handleDropGranule}
-              onDelete={async (type, id) => {
-                const findTitle = () => {
-                  if (type === 'part') return structure.find(p => p.part_id === id)?.part_title;
-                  if (type === 'chapter') return structure.flatMap(p => p.chapters || []).find(c => c.chapter_id === id)?.chapter_title;
-                  if (type === 'paragraph') return structure.flatMap(p => p.chapters || []).flatMap(c => c.paragraphs || []).find(pa => pa.para_id === id)?.para_name;
-                  if (type === 'notion') return structure.flatMap(p => p.chapters || []).flatMap(c => c.paragraphs || []).flatMap(pa => pa.notions || []).find(n => n.notion_id === id)?.notion_name;
-                  return '';
-                };
-                handleDelete(type, id, findTitle() || '');
-              }}
-              selectedPartId={currentContext?.type === 'part' ? currentContext.part?.part_id || structure.find(p => p.part_title === currentContext.partTitle)?.part_id : undefined}
-              selectedChapterId={currentContext?.chapterId}
-              selectedParagraphId={currentContext?.paraId}
-              selectedNotionId={currentContext?.notion?.notion_id}
-              pulsingId={pulsingId}
-              pendingGranule={pendingGranule}
-              isNotionOpen={currentContext?.type === 'notion'}
-              isLoading={isLoading}
-            />
-          </aside>
-          <div onMouseDown={() => setIsResizing(true)} className="w-1 cursor-col-resize hover:bg-[#99334C] transition-colors z-10" />
-        </>
-      )}
+              <TableOfContents
+                projectName={projectName || ''}
+                structure={structure}
+                width={sidebarWidth}
+                onSelectNotion={async (ctx) => {
+                  const update = async () => {
+                    if (hasUnsavedChanges) await handleSave(true);
+                    setCurrentContext({
+                      type: 'notion',
+                      projectName: projectData?.pr_name || '',
+                      partTitle: ctx.partTitle,
+                      chapterTitle: ctx.chapterTitle,
+                      paraName: ctx.paraName,
+                      notionName: ctx.notionName,
+                      notion: ctx.notion
+                    });
+                    setEditorContent(ctx.notion.notion_content || '');
+                    setHasUnsavedChanges(false);
+                    setIsMobileTOCOpen(false); // ✅ Auto-close on mobile
+                  };
+                  // @ts-ignore
+                  if (document.startViewTransition) document.startViewTransition(update);
+                  else await update();
+                }}
+                onSelectPart={async (ctx) => {
+                  const update = async () => {
+                    if (hasUnsavedChanges) await handleSave(true);
+                    setCurrentContext({
+                      type: 'part',
+                      projectName: projectData?.pr_name || '',
+                      partTitle: ctx.partTitle,
+                      part: ctx.part
+                    });
+                    setEditorContent(ctx.part.part_intro || '');
+                    setHasUnsavedChanges(false);
+                    setIsMobileTOCOpen(false); // ✅ Auto-close on mobile
+                  };
+                  // @ts-ignore
+                  if (document.startViewTransition) document.startViewTransition(update);
+                  else await update();
+                }}
+                onSelectChapter={async (pName, cTitle, cId) => {
+                  const update = async () => {
+                    if (hasUnsavedChanges) await handleSave(true);
+                    const part = structure.find(p => p.part_title === pName);
+                    const chapter = part?.chapters?.find(c => c.chapter_id === cId);
+
+                    setCurrentContext({
+                      type: 'chapter',
+                      projectName: projectData?.pr_name || '',
+                      partTitle: pName,
+                      chapterTitle: cTitle,
+                      chapterId: cId,
+                      chapter: chapter
+                    });
+                    setEditorContent(chapter?.chapter_intro || '');
+                    setHasUnsavedChanges(false);
+                    setIsMobileTOCOpen(false); // ✅ Auto-close on mobile
+                  };
+                  // @ts-ignore
+                  if (document.startViewTransition) document.startViewTransition(update);
+                  else await update();
+                }}
+                onSelectParagraph={async (pName, cTitle, paName, paId) => {
+                  const update = async () => {
+                    if (hasUnsavedChanges) await handleSave(true);
+                    const part = structure.find(p => p.part_title === pName);
+                    const chapter = part?.chapters?.find(c => c.chapter_title === cTitle);
+                    const paragraph = chapter?.paragraphs?.find(pa => pa.para_id === paId);
+
+                    setCurrentContext({
+                      type: 'paragraph',
+                      projectName: projectData?.pr_name || '',
+                      partTitle: pName,
+                      chapterTitle: cTitle,
+                      paraName: paName,
+                      paraId: paId,
+                      paragraph: paragraph
+                    });
+                    setEditorContent(paragraph?.para_intro || '');
+                    setHasUnsavedChanges(false);
+                    setIsMobileTOCOpen(false); // ✅ Auto-close on mobile
+                  };
+                  // @ts-ignore
+                  if (document.startViewTransition) document.startViewTransition(update);
+                  else await update();
+                }}
+                onPublishToMarketplace={handlePublishToMarketplace}
+                onCreatePart={handleCreatePart}
+                onCreateChapter={handleCreateChapter}
+                onCreateParagraph={handleCreateParagraph}
+                onCreateNotion={handleCreateNotion}
+                onRename={handleRenameGranule}
+                onReorder={handleReorderGranule}
+                onMove={handleMoveGranule}
+                onExternalDrop={handleDropGranule}
+                onDelete={async (type, id) => {
+                  const findTitle = () => {
+                    if (type === 'part') return structure.find(p => p.part_id === id)?.part_title;
+                    if (type === 'chapter') return structure.flatMap(p => p.chapters || []).find(c => c.chapter_id === id)?.chapter_title;
+                    if (type === 'paragraph') return structure.flatMap(p => p.chapters || []).flatMap(c => c.paragraphs || []).find(pa => pa.para_id === id)?.para_name;
+                    if (type === 'notion') return structure.flatMap(p => p.chapters || []).flatMap(c => c.paragraphs || []).flatMap(pa => pa.notions || []).find(n => n.notion_id === id)?.notion_name;
+                    return '';
+                  };
+                  handleDelete(type, id, findTitle() || '');
+                }}
+                selectedPartId={currentContext?.type === 'part' ? currentContext.part?.part_id || structure.find(p => p.part_title === currentContext.partTitle)?.part_id : undefined}
+                selectedChapterId={currentContext?.chapterId}
+                selectedParagraphId={currentContext?.paraId}
+                selectedNotionId={currentContext?.notion?.notion_id}
+                pulsingId={pulsingId}
+                pendingGranule={pendingGranule}
+                isNotionOpen={currentContext?.type === 'notion'}
+                isLoading={isLoading}
+              />
+            </motion.aside>
+            <div onMouseDown={() => setIsResizing(true)} className="hidden lg:block w-1 cursor-col-resize hover:bg-[#99334C] transition-colors z-10" />
+          </>
+        )}
+      </AnimatePresence>
 
       {/* 2. Centre : Header + Toolbar + Content Area (Sandwich) */}
       <div className={`flex-1 flex flex-col min-w-0 h-full relative overflow-hidden bg-white ${isZenMode ? 'fixed inset-0 z-[100]' : ''}`}>
@@ -1228,6 +1271,7 @@ const XCCM2Editor = () => {
             authUser={authUser}
             connectionStatus={synapseStatus}
             onReconnect={synapseReconnect}
+            onToggleMobileTOC={() => setIsMobileTOCOpen(prev => !prev)}
           />
         )}
 
@@ -1304,6 +1348,8 @@ const XCCM2Editor = () => {
               collaboration={collaborationData}
               socraticFeedback={mappedSocraticFeedback as any}
               currentContext={currentContext}
+              saveError={saveError}
+              onRetrySave={() => handleSave(false)}
             />
           </div>
         </main>
