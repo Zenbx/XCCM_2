@@ -1,7 +1,7 @@
 import React from 'react';
 import {
     Menu, X, ArrowLeft, ZoomOut, ZoomIn, BookmarkCheck, Bookmark,
-    Heart, Check, Share2, Printer, Loader2, Download
+    Heart, Check, Share2, Printer, Loader2, Download, BarChart2
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
@@ -13,6 +13,8 @@ interface ReaderHeaderProps {
     pages: number;
     fontSize: number;
     setFontSize: React.Dispatch<React.SetStateAction<number>>;
+    showProgressBar: boolean;
+    setShowProgressBar: (b: boolean) => void;
     isBookmarked: boolean;
     setIsBookmarked: (b: boolean) => void;
     userLiked: boolean;
@@ -27,6 +29,7 @@ interface ReaderHeaderProps {
 
 const ReaderHeader: React.FC<ReaderHeaderProps> = ({
     tocOpen, setTocOpen, docName, author, pages, fontSize, setFontSize,
+    showProgressBar, setShowProgressBar,
     isBookmarked, setIsBookmarked, userLiked, likesCount, onToggleLike,
     onShare, copied, onPrint, onDownload, isDownloading
 }) => {
@@ -82,6 +85,14 @@ const ReaderHeader: React.FC<ReaderHeaderProps> = ({
                                 <ZoomIn className="w-4 h-4" />
                             </button>
                         </div>
+
+                        <button
+                            onClick={() => setShowProgressBar(!showProgressBar)}
+                            className={`p-2.5 rounded-lg transition-colors ${showProgressBar ? 'bg-[#99334C]/10 text-[#99334C]' : 'hover:bg-gray-100 text-gray-600'}`}
+                            title={showProgressBar ? "Masquer la progression" : "Afficher la progression"}
+                        >
+                            <BarChart2 className="w-5 h-5" />
+                        </button>
 
                         <button
                             onClick={() => setIsBookmarked(!isBookmarked)}

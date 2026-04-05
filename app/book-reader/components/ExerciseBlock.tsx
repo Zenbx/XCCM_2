@@ -27,11 +27,12 @@ interface ExerciseBlockProps {
     exercise: Exercise;
     submission?: Submission;
     isSubmitting: boolean;
+    submissionCount?: number;
     onSubmit: (exerciseId: string, answers: any) => Promise<SubmissionResult | null>;
 }
 
 const ExerciseBlock: React.FC<ExerciseBlockProps> = ({
-    exercise, submission, isSubmitting, onSubmit
+    exercise, submission, isSubmitting, submissionCount = 0, onSubmit
 }) => {
     const [isExpanded, setIsExpanded] = useState(!submission);
     const [lastResult, setLastResult] = useState<SubmissionResult | null>(null);
@@ -39,10 +40,16 @@ const ExerciseBlock: React.FC<ExerciseBlockProps> = ({
     const config = TYPE_CONFIG[exercise.type];
     const params = exercise.parameters || {};
     const settings = (exercise.settings || {}) as any;
-    const hasSubmitted = !!submission;
-    const isPerfect = submission?.score !== null && submission?.score !== undefined && submission.score > 0 && submission.score >= (settings.points || 10);
+    
+    const hasSubmitted = !!submission || !!lastResult;
+    const isPerfect = (submission?.score !== null && submission?.score !== undefined && submission.score >= (settings.points || 10)) || 
+                      (lastResult?.result?.isPerfect);
+
+    const maxAttempts = settings.maxAttempts || 0;
+    const isMaxAttemptsReached = maxAttempts > 0 && submissionCount >= maxAttempts;
 
     const handleSubmitAnswer = async (answers: any) => {
+        if (isMaxAttemptsReached && !isPerfect) return;
         const result = await onSubmit(exercise.id, answers);
         if (result) {
             setLastResult(result);
@@ -70,6 +77,11 @@ const ExerciseBlock: React.FC<ExerciseBlockProps> = ({
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
+                    {maxAttempts > 0 && (
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${isMaxAttemptsReached ? 'bg-red-100 text-red-600' : 'bg-gray-100 text-gray-500'}`}>
+                            Tentatives : {submissionCount} / {maxAttempts}
+                        </span>
+                    )}
                     {isPerfect && (
                         <span className="flex items-center gap-1 text-xs font-bold text-green-600 bg-green-100 px-2 py-1 rounded-full">
                             <Award className="w-3 h-3" /> Réussi
@@ -77,7 +89,7 @@ const ExerciseBlock: React.FC<ExerciseBlockProps> = ({
                     )}
                     {hasSubmitted && !isPerfect && (
                         <span className="flex items-center gap-1 text-xs font-bold text-amber-600 bg-amber-100 px-2 py-1 rounded-full">
-                            <RefreshCw className="w-3 h-3" /> Tenté
+                            <RefreshCw className="w-3 h-3" /> {isMaxAttemptsReached ? 'Terminé' : 'Tenté'}
                         </span>
                     )}
                     {isExpanded ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
@@ -108,22 +120,22 @@ const ExerciseBlock: React.FC<ExerciseBlockProps> = ({
                     {/* Exercise form */}
                     <div className="mt-4">
                         {exercise.type === 'QCU' && (
-                            <QCUResolver params={params} isSubmitting={isSubmitting} onSubmit={handleSubmitAnswer} hasSubmitted={hasSubmitted} isPerfect={isPerfect} settings={settings} />
+                            <QCUResolver params={params} isSubmitting={isSubmitting} onSubmit={handleSubmitAnswer} hasSubmitted={hasSubmitted} isPerfect={isPerfect} settings={settings} isMaxAttemptsReached={isMaxAttemptsReached} />
                         )}
                         {exercise.type === 'QCM' && (
-                            <QCMResolver params={params} isSubmitting={isSubmitting} onSubmit={handleSubmitAnswer} hasSubmitted={hasSubmitted} isPerfect={isPerfect} settings={settings} />
+                            <QCMResolver params={params} isSubmitting={isSubmitting} onSubmit={handleSubmitAnswer} hasSubmitted={hasSubmitted} isPerfect={isPerfect} settings={settings} isMaxAttemptsReached={isMaxAttemptsReached} />
                         )}
                         {exercise.type === 'QRO' && (
-                            <QROResolver params={params} isSubmitting={isSubmitting} onSubmit={handleSubmitAnswer} hasSubmitted={hasSubmitted} isPerfect={isPerfect} settings={settings} />
+                            <QROResolver params={params} isSubmitting={isSubmitting} onSubmit={handleSubmitAnswer} hasSubmitted={hasSubmitted} isPerfect={isPerfect} settings={settings} isMaxAttemptsReached={isMaxAttemptsReached} />
                         )}
                         {exercise.type === 'QROA' && (
-                            <QROAResolver params={params} isSubmitting={isSubmitting} onSubmit={handleSubmitAnswer} hasSubmitted={hasSubmitted} settings={settings} />
+                            <QROAResolver params={params} isSubmitting={isSubmitting} onSubmit={handleSubmitAnswer} hasSubmitted={hasSubmitted} settings={settings} isMaxAttemptsReached={isMaxAttemptsReached} />
                         )}
                         {exercise.type === 'CODE' && (
-                            <CodeResolver params={params} isSubmitting={isSubmitting} onSubmit={handleSubmitAnswer} hasSubmitted={hasSubmitted} settings={settings} />
+                            <CodeResolver params={params} isSubmitting={isSubmitting} onSubmit={handleSubmitAnswer} hasSubmitted={hasSubmitted} settings={settings} isMaxAttemptsReached={isMaxAttemptsReached} />
                         )}
                         {exercise.type === 'FILL_BLANKS' && (
-                            <FillBlanksResolver params={params} isSubmitting={isSubmitting} onSubmit={handleSubmitAnswer} hasSubmitted={hasSubmitted} isPerfect={isPerfect} settings={settings} />
+                            <FillBlanksResolver params={params} isSubmitting={isSubmitting} onSubmit={handleSubmitAnswer} hasSubmitted={hasSubmitted} isPerfect={isPerfect} settings={settings} isMaxAttemptsReached={isMaxAttemptsReached} />
                         )}
                     </div>
                 </div>
@@ -135,7 +147,7 @@ const ExerciseBlock: React.FC<ExerciseBlockProps> = ({
 // ═══════════════════════════════════════════
 // QCU RESOLVER
 // ═══════════════════════════════════════════
-const QCUResolver = ({ params, isSubmitting, onSubmit, hasSubmitted, isPerfect, settings }: any) => {
+const QCUResolver = ({ params, isSubmitting, onSubmit, hasSubmitted, isPerfect, settings, isMaxAttemptsReached }: any) => {
     const [selected, setSelected] = useState<string | null>(null);
 
     return (
@@ -164,7 +176,7 @@ const QCUResolver = ({ params, isSubmitting, onSubmit, hasSubmitted, isPerfect, 
                     </button>
                 ))}
             </div>
-            {!isPerfect && (
+            {!isPerfect && !isMaxAttemptsReached && (
                 <button
                     onClick={() => selected && onSubmit({ selectedOptionId: selected })}
                     disabled={!selected || isSubmitting}
@@ -174,6 +186,11 @@ const QCUResolver = ({ params, isSubmitting, onSubmit, hasSubmitted, isPerfect, 
                     {hasSubmitted ? 'Réessayer' : 'Valider'}
                 </button>
             )}
+            {isMaxAttemptsReached && !isPerfect && (
+                <p className="text-xs text-red-500 font-medium flex items-center gap-1">
+                    <AlertCircle className="w-3 h-3" /> Nombre maximum de tentatives atteint.
+                </p>
+            )}
         </div>
     );
 };
@@ -181,7 +198,7 @@ const QCUResolver = ({ params, isSubmitting, onSubmit, hasSubmitted, isPerfect, 
 // ═══════════════════════════════════════════
 // QCM RESOLVER
 // ═══════════════════════════════════════════
-const QCMResolver = ({ params, isSubmitting, onSubmit, hasSubmitted, isPerfect, settings }: any) => {
+const QCMResolver = ({ params, isSubmitting, onSubmit, hasSubmitted, isPerfect, settings, isMaxAttemptsReached }: any) => {
     const [selected, setSelected] = useState<Set<string>>(new Set());
 
     const toggle = (id: string) => {
@@ -220,7 +237,7 @@ const QCMResolver = ({ params, isSubmitting, onSubmit, hasSubmitted, isPerfect, 
                     </button>
                 ))}
             </div>
-            {!isPerfect && (
+            {!isPerfect && !isMaxAttemptsReached && (
                 <button
                     onClick={() => selected.size > 0 && onSubmit({ selectedOptionIds: Array.from(selected) })}
                     disabled={selected.size === 0 || isSubmitting}
@@ -230,6 +247,11 @@ const QCMResolver = ({ params, isSubmitting, onSubmit, hasSubmitted, isPerfect, 
                     {hasSubmitted ? 'Réessayer' : 'Valider'}
                 </button>
             )}
+            {isMaxAttemptsReached && !isPerfect && (
+                <p className="text-xs text-red-500 font-medium flex items-center gap-1">
+                    <AlertCircle className="w-3 h-3" /> Nombre maximum de tentatives atteint.
+                </p>
+            )}
         </div>
     );
 };
@@ -237,7 +259,7 @@ const QCMResolver = ({ params, isSubmitting, onSubmit, hasSubmitted, isPerfect, 
 // ═══════════════════════════════════════════
 // QRO RESOLVER
 // ═══════════════════════════════════════════
-const QROResolver = ({ params, isSubmitting, onSubmit, hasSubmitted, isPerfect, settings }: any) => {
+const QROResolver = ({ params, isSubmitting, onSubmit, hasSubmitted, isPerfect, settings, isMaxAttemptsReached }: any) => {
     const [text, setText] = useState('');
 
     return (
@@ -251,7 +273,7 @@ const QROResolver = ({ params, isSubmitting, onSubmit, hasSubmitted, isPerfect, 
                 placeholder="Votre réponse..."
                 className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-sm focus:border-green-500 focus:ring-2 focus:ring-green-500/20 transition-all disabled:opacity-60"
             />
-            {!isPerfect && (
+            {!isPerfect && !isMaxAttemptsReached && (
                 <button
                     onClick={() => text.trim() && onSubmit({ text })}
                     disabled={!text.trim() || isSubmitting}
@@ -261,6 +283,11 @@ const QROResolver = ({ params, isSubmitting, onSubmit, hasSubmitted, isPerfect, 
                     {hasSubmitted ? 'Réessayer' : 'Valider'}
                 </button>
             )}
+            {isMaxAttemptsReached && !isPerfect && (
+                <p className="text-xs text-red-500 font-medium flex items-center gap-1">
+                    <AlertCircle className="w-3 h-3" /> Nombre maximum de tentatives atteint.
+                </p>
+            )}
         </div>
     );
 };
@@ -268,7 +295,7 @@ const QROResolver = ({ params, isSubmitting, onSubmit, hasSubmitted, isPerfect, 
 // ═══════════════════════════════════════════
 // QROA RESOLVER
 // ═══════════════════════════════════════════
-const QROAResolver = ({ params, isSubmitting, onSubmit, hasSubmitted, settings }: any) => {
+const QROAResolver = ({ params, isSubmitting, onSubmit, hasSubmitted, settings, isMaxAttemptsReached }: any) => {
     const [text, setText] = useState('');
 
     return (
@@ -285,15 +312,22 @@ const QROAResolver = ({ params, isSubmitting, onSubmit, hasSubmitted, settings }
                 <p className="text-xs text-gray-400 flex items-center gap-1">
                     <Brain className="w-3 h-3" /> Évaluation par IA
                 </p>
-                <button
-                    onClick={() => text.trim() && onSubmit({ text })}
-                    disabled={!text.trim() || isSubmitting}
-                    className="flex items-center gap-2 px-4 py-2.5 bg-amber-600 text-white rounded-xl text-sm font-bold hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-                >
-                    {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                    {hasSubmitted ? 'Soumettre à nouveau' : 'Soumettre'}
-                </button>
+                {!isMaxAttemptsReached && (
+                    <button
+                        onClick={() => text.trim() && onSubmit({ text })}
+                        disabled={!text.trim() || isSubmitting}
+                        className="flex items-center gap-2 px-4 py-2.5 bg-amber-600 text-white rounded-xl text-sm font-bold hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                    >
+                        {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                        {hasSubmitted ? 'Soumettre à nouveau' : 'Soumettre'}
+                    </button>
+                )}
             </div>
+            {isMaxAttemptsReached && (
+                <p className="text-xs text-red-500 font-medium flex items-center gap-1">
+                    <AlertCircle className="w-3 h-3" /> Nombre maximum de tentatives atteint.
+                </p>
+            )}
         </div>
     );
 };
@@ -301,7 +335,7 @@ const QROAResolver = ({ params, isSubmitting, onSubmit, hasSubmitted, settings }
 // ═══════════════════════════════════════════
 // CODE RESOLVER
 // ═══════════════════════════════════════════
-const CodeResolver = ({ params, isSubmitting, onSubmit, hasSubmitted, settings }: any) => {
+const CodeResolver = ({ params, isSubmitting, onSubmit, hasSubmitted, settings, isMaxAttemptsReached }: any) => {
     const [code, setCode] = useState(params.starterCode || '');
 
     return (
@@ -318,14 +352,21 @@ const CodeResolver = ({ params, isSubmitting, onSubmit, hasSubmitted, settings }
                 className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-sm font-mono bg-gray-900 text-green-400 focus:border-slate-500 focus:ring-2 focus:ring-slate-500/20 transition-all resize-y"
                 spellCheck={false}
             />
-            <button
-                onClick={() => code.trim() && onSubmit({ code, language: params.language })}
-                disabled={!code.trim() || isSubmitting}
-                className="flex items-center gap-2 px-4 py-2.5 bg-slate-700 text-white rounded-xl text-sm font-bold hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-            >
-                {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                {hasSubmitted ? 'Soumettre à nouveau' : 'Exécuter & Soumettre'}
-            </button>
+            {!isMaxAttemptsReached && (
+                <button
+                    onClick={() => code.trim() && onSubmit({ code, language: params.language })}
+                    disabled={!code.trim() || isSubmitting}
+                    className="flex items-center gap-2 px-4 py-2.5 bg-slate-700 text-white rounded-xl text-sm font-bold hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                >
+                    {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                    {hasSubmitted ? 'Soumettre à nouveau' : 'Exécuter & Soumettre'}
+                </button>
+            )}
+            {isMaxAttemptsReached && (
+                <p className="text-xs text-red-500 font-medium flex items-center gap-1">
+                    <AlertCircle className="w-3 h-3" /> Nombre maximum de tentatives atteint.
+                </p>
+            )}
         </div>
     );
 };
@@ -333,7 +374,7 @@ const CodeResolver = ({ params, isSubmitting, onSubmit, hasSubmitted, settings }
 // ═══════════════════════════════════════════
 // FILL_BLANKS RESOLVER
 // ═══════════════════════════════════════════
-const FillBlanksResolver = ({ params, isSubmitting, onSubmit, hasSubmitted, isPerfect, settings }: any) => {
+const FillBlanksResolver = ({ params, isSubmitting, onSubmit, hasSubmitted, isPerfect, settings, isMaxAttemptsReached }: any) => {
     const [blanksState, setBlanksState] = useState<Record<string, string>>({});
 
     // Parse text to split into parts with blank placeholders
@@ -386,7 +427,7 @@ const FillBlanksResolver = ({ params, isSubmitting, onSubmit, hasSubmitted, isPe
                     );
                 })}
             </div>
-            {!isPerfect && (
+            {!isPerfect && !isMaxAttemptsReached && (
                 <button
                     onClick={() => allFilled && onSubmit({ blanks: blanksState })}
                     disabled={!allFilled || isSubmitting}
@@ -395,6 +436,11 @@ const FillBlanksResolver = ({ params, isSubmitting, onSubmit, hasSubmitted, isPe
                     {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
                     {hasSubmitted ? 'Réessayer' : 'Valider'}
                 </button>
+            )}
+            {isMaxAttemptsReached && !isPerfect && (
+                <p className="text-xs text-red-500 font-medium flex items-center gap-1">
+                    <AlertCircle className="w-3 h-3" /> Nombre maximum de tentatives atteint.
+                </p>
             )}
         </div>
     );

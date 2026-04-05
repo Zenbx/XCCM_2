@@ -174,6 +174,11 @@ export const useExerciseProgress = ({ projectId, structure }: UseExerciseProgres
         return locked;
     }, [structure, exercises, submissions]);
 
+    // Get submission count for an exercise
+    const getSubmissionCount = useCallback((exerciseId: string): number => {
+        return submissions.filter(s => s.exercise_id === exerciseId).length;
+    }, [submissions]);
+
     return {
         exercises,
         submissions,
@@ -187,6 +192,7 @@ export const useExerciseProgress = ({ projectId, structure }: UseExerciseProgres
         submitAnswer,
         getExercisesForGranule,
         getLatestSubmission,
+        getSubmissionCount,
         refetch: fetchData,
     };
 };

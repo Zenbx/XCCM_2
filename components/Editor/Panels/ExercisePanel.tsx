@@ -263,6 +263,7 @@ const ExercisePanel = ({ currentContext, structure, project, onNavigateToGranule
     const [isBlocking, setIsBlocking] = useState(false);
     const [maxAttempts, setMaxAttempts] = useState(3);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isReordering, setIsReordering] = useState(false);
     
     // Edit mode state
     const [editingExerciseId, setEditingExerciseId] = useState<string | null>(null);
@@ -507,6 +508,31 @@ const ExercisePanel = ({ currentContext, structure, project, onNavigateToGranule
         }
     };
 
+    const handleMove = async (index: number, direction: 'up' | 'down') => {
+        const newExercises = [...exercises];
+        const targetIndex = direction === 'up' ? index - 1 : index + 1;
+        
+        if (targetIndex < 0 || targetIndex >= newExercises.length) return;
+
+        // Swap
+        [newExercises[index], newExercises[targetIndex]] = [newExercises[targetIndex], newExercises[index]];
+        
+        // Optimistic update
+        setExercises(newExercises);
+        setIsReordering(true);
+
+        try {
+            await exerciseService.reorderExercises(newExercises.map(ex => ex.id));
+            toast.success("Ordre mis à jour");
+        } catch (err: any) {
+            toast.error("Erreur réordonnancement");
+            // Rollback if needed (could refetch)
+            fetchExercises();
+        } finally {
+            setIsReordering(false);
+        }
+    };
+
     const handleNavigate = (exercise: Exercise) => {
         const ctx = buildGranuleContextFromExercise(exercise);
         if (ctx && onNavigateToGranule) {
@@ -590,9 +616,12 @@ const ExercisePanel = ({ currentContext, structure, project, onNavigateToGranule
                                     {/* Settings */}
                                     <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-800 space-y-3">
                                         <label className="block text-xs font-semibold text-gray-500 uppercase">Paramètres</label>
-                                        <label className="flex items-center gap-3 cursor-pointer">
-                                            <div className={`w-10 h-6 rounded-full transition-all relative ${isBlocking ? 'bg-[#99334C]' : 'bg-gray-200 dark:bg-gray-700'}`}>
-                                                <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${isBlocking ? 'translate-x-4.5' : 'translate-x-0.5'}`} />
+                                        <label className="flex items-center gap-3 cursor-pointer group/toggle">
+                                            <div 
+                                                onClick={() => setIsBlocking(!isBlocking)}
+                                                className={`w-10 h-6 rounded-full transition-all relative ${isBlocking ? 'bg-[#99334C]' : 'bg-gray-200 dark:bg-gray-700'}`}
+                                            >
+                                                <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${isBlocking ? 'translate-x-[18px]' : 'translate-x-0.5'}`} />
                                             </div>
                                             <span className="text-sm text-gray-700 dark:text-gray-300">Bloquant pour la suite</span>
                                         </label>
@@ -663,6 +692,24 @@ const ExercisePanel = ({ currentContext, structure, project, onNavigateToGranule
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-1 flex-shrink-0">
+                                        {/* Reordering */}
+                                        <div className="flex flex-col gap-0.5 mr-1">
+                                            <button 
+                                                onClick={() => handleMove(exercises.indexOf(exercise), 'up')}
+                                                disabled={exercises.indexOf(exercise) === 0 || isReordering}
+                                                className="p-1 text-gray-300 hover:text-[#99334C] disabled:opacity-30 transition-colors"
+                                            >
+                                                <ChevronUp className="w-3.5 h-3.5" />
+                                            </button>
+                                            <button 
+                                                onClick={() => handleMove(exercises.indexOf(exercise), 'down')}
+                                                disabled={exercises.indexOf(exercise) === exercises.length - 1 || isReordering}
+                                                className="p-1 text-gray-300 hover:text-[#99334C] disabled:opacity-30 transition-colors"
+                                            >
+                                                <ChevronDown className="w-3.5 h-3.5" />
+                                            </button>
+                                        </div>
+
                                         {/* 🔗 Éditer */}
                                         <button onClick={() => handleEditExercise(exercise)}
                                             className="p-1.5 text-gray-400 hover:text-blue-500 opacity-0 group-hover:opacity-100 transition-all" title="Modifier">

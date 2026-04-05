@@ -229,6 +229,19 @@ class ExerciseService {
         const data = await response.json();
         if (!response.ok) throw new Error(data.message || 'Erreur');
         return data.data.submissions;
+    /**
+     * Met à jour l'ordre des exercices
+     */
+    async reorderExercises(exerciseIds: string[]): Promise<void> {
+        const response = await fetch(`${API_BASE_URL}/api/exercises`, {
+            method: 'PATCH',
+            headers: this.getHeaders(),
+            body: JSON.stringify({ exerciseIds }),
+        });
+        if (!response.ok) {
+            const data = await response.json().catch(() => ({}));
+            throw new Error(data.message || 'Erreur lors du réordonnancement');
+        }
     }
 }
 

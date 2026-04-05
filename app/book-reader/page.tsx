@@ -28,6 +28,7 @@ const BookReaderPageContent = () => {
     tocOpen, setTocOpen,
     activeSection, setActiveSection,
     fontSize, setFontSize,
+    showProgressBar, setShowProgressBar,
     isBookmarked, setIsBookmarked,
     expandedParts, setExpandedParts,
     expandedChapters, setExpandedChapters,
@@ -65,7 +66,7 @@ const BookReaderPageContent = () => {
     exercises, submissions, submittingId,
     totalExercises, completedExercises, attemptedExercises, progressPercentage,
     lockedIds,
-    submitAnswer, getExercisesForGranule, getLatestSubmission
+    submitAnswer, getExercisesForGranule, getLatestSubmission, getSubmissionCount
   } = useExerciseProgress({
     projectId: data?.project?.pr_id,
     structure: data?.structure
@@ -130,6 +131,8 @@ const BookReaderPageContent = () => {
         pages={data.document.pages}
         fontSize={fontSize}
         setFontSize={setFontSize}
+        showProgressBar={showProgressBar}
+        setShowProgressBar={setShowProgressBar}
         isBookmarked={isBookmarked}
         setIsBookmarked={setIsBookmarked}
         userLiked={userLiked}
@@ -143,7 +146,7 @@ const BookReaderPageContent = () => {
       />
 
       {/* Progress Bar */}
-      {totalExercises > 0 && (
+      {showProgressBar && totalExercises > 0 && (
         <ProgressBar
           completed={completedExercises}
           total={totalExercises}
@@ -186,6 +189,7 @@ const BookReaderPageContent = () => {
             onSubmitAnswer={submitAnswer}
             getExercisesForGranule={getExercisesForGranule}
             getLatestSubmission={getLatestSubmission}
+            getSubmissionCount={getSubmissionCount}
             lockedIds={lockedIds}
           />
         </main>

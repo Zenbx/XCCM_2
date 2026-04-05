@@ -17,16 +17,18 @@ interface ReaderContentProps {
     onSubmitAnswer?: (exerciseId: string, answers: any) => Promise<SubmissionResult | null>;
     getExercisesForGranule?: (granuleId: string, granuleType: string) => Exercise[];
     getLatestSubmission?: (exerciseId: string) => Submission | undefined;
+    getSubmissionCount?: (exerciseId: string) => number;
     lockedIds?: Set<string>;
 }
 
 const RenderExercises = ({
-    granuleId, granuleType, getExercisesForGranule, getLatestSubmission, submittingId, onSubmitAnswer, isLocked
+    granuleId, granuleType, getExercisesForGranule, getLatestSubmission, getSubmissionCount, submittingId, onSubmitAnswer, isLocked
 }: {
     granuleId: string;
     granuleType: string;
     getExercisesForGranule?: (id: string, type: string) => Exercise[];
     getLatestSubmission?: (id: string) => Submission | undefined;
+    getSubmissionCount?: (id: string) => number;
     submittingId?: string | null;
     onSubmitAnswer?: (exerciseId: string, answers: any) => Promise<SubmissionResult | null>;
     isLocked?: boolean;
@@ -42,6 +44,7 @@ const RenderExercises = ({
                     key={exercise.id}
                     exercise={exercise}
                     submission={getLatestSubmission?.(exercise.id)}
+                    submissionCount={getSubmissionCount?.(exercise.id)}
                     isSubmitting={submittingId === exercise.id}
                     onSubmit={onSubmitAnswer}
                 />
@@ -53,9 +56,9 @@ const RenderExercises = ({
 const ReaderContent: React.FC<ReaderContentProps> = ({
     doc, project, structure, fontSize, onCollect,
     exercises, submissions, submittingId, onSubmitAnswer,
-    getExercisesForGranule, getLatestSubmission, lockedIds = new Set()
+    getExercisesForGranule, getLatestSubmission, getSubmissionCount, lockedIds = new Set()
 }) => {
-    const exerciseProps = { getExercisesForGranule, getLatestSubmission, submittingId, onSubmitAnswer };
+    const exerciseProps = { getExercisesForGranule, getLatestSubmission, getSubmissionCount, submittingId, onSubmitAnswer };
 
     return (
         <div className="max-w-4xl mx-auto py-8 px-4 lg:px-8">

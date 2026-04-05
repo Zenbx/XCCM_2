@@ -14,6 +14,7 @@ export const useReaderState = (docId: string | null) => {
     const [isBookmarked, setIsBookmarked] = useState(false);
     const [expandedParts, setExpandedParts] = useState<Record<string, boolean>>({});
     const [expandedChapters, setExpandedChapters] = useState<Record<string, boolean>>({});
+    const [showProgressBar, setShowProgressBar] = useState(true);
     const [isDownloading, setIsDownloading] = useState(false);
     const [copied, setCopied] = useState(false);
 
@@ -125,6 +126,7 @@ export const useReaderState = (docId: string | null) => {
         tocOpen, setTocOpen,
         activeSection, setActiveSection,
         fontSize, setFontSize,
+        showProgressBar, setShowProgressBar,
         isBookmarked, setIsBookmarked,
         expandedParts, setExpandedParts,
         expandedChapters, setExpandedChapters,
