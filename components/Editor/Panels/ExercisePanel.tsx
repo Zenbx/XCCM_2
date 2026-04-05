@@ -4,7 +4,8 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
     Plus, Trash2, Check, X, Loader2, Edit3,
     CircleDot, CheckSquare, Type, Brain, Code2, PuzzleIcon,
-    AlertCircle, Sparkles, Target, ExternalLink, MapPin
+    AlertCircle, Sparkles, Target, ExternalLink, MapPin,
+    ChevronUp, ChevronDown
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { exerciseService, Exercise, ExerciseType, QCMOption } from '@/services/exerciseService';
