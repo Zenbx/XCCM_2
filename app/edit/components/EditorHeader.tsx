@@ -41,8 +41,8 @@ const EditorHeader: React.FC<EditorHeaderProps> = ({
     onToggleMobileTOC,
 }) => {
     return (
-        <div className="bg-white border-b border-gray-200 flex items-center justify-between px-4 py-2">
-            <div className="flex items-center gap-4">
+        <div className="bg-white border-b border-gray-200 flex items-center justify-between px-4 h-16 shrink-0 z-30">
+            <div className="flex items-center gap-4 min-w-0 flex-1">
                 <TactileButton
                     variant="ghost"
                     onClick={onToggleMobileTOC}
@@ -60,12 +60,12 @@ const EditorHeader: React.FC<EditorHeaderProps> = ({
                     </Link>
                 </RichTooltip>
 
-                <div className="flex flex-col">
-                    <h1 className="text-lg font-bold text-gray-900 border-l pl-4 border-gray-200">
+                <div className="flex flex-col min-w-0 max-w-[200px]">
+                    <h1 className="text-base font-bold text-gray-900 border-l pl-4 border-gray-200 truncate">
                         {projectData?.pr_name || projectName}
                     </h1>
                     {projectData && projectData.owner_id !== authUser?.user_id && (
-                        <div className="pl-4 flex items-center gap-2">
+                        <div className="pl-4 flex items-center gap-2 truncate">
                             <span className="text-[10px] bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded font-bold uppercase tracking-tighter">Projet Partagé</span>
                             {projectData.owner && (
                                 <span className="text-[10px] text-gray-400 italic">
@@ -77,30 +77,30 @@ const EditorHeader: React.FC<EditorHeaderProps> = ({
                 </div>
 
                 {currentContext && (
-                    <div className="flex items-center gap-2 text-[11px] text-gray-400 dark:text-gray-500 ml-5 pl-5 border-l border-gray-100 dark:border-gray-700 max-w-sm truncate">
+                    <div className="hidden md:flex items-center gap-2 text-[10px] text-gray-400 dark:text-gray-500 ml-5 pl-5 border-l border-gray-100 dark:border-gray-700 min-w-0 flex-1 truncate">
                         {currentContext.type === 'notion' ? (
                             <>
-                                <span className="hover:text-gray-700 dark:hover:text-gray-300 transition-colors uppercase text-[10px] font-bold tracking-wider">{currentContext.partTitle}</span>
-                                <ChevronRight className="w-3 h-3 text-gray-300 dark:text-gray-600" />
-                                <span className="hover:text-gray-700 dark:hover:text-gray-300 transition-colors uppercase text-[10px] font-bold tracking-wider">{currentContext.chapterTitle}</span>
-                                <ChevronRight className="w-3 h-3 text-gray-300 dark:text-gray-600" />
-                                <span className="hover:text-gray-700 dark:hover:text-gray-300 transition-colors uppercase text-[10px] font-bold tracking-wider">{currentContext.paraName}</span>
-                                <ChevronRight className="w-3 h-3 text-gray-300 dark:text-gray-600" />
-                                <span className="font-bold text-[#99334C] dark:text-[#ff9daf]">{currentContext.notionName}</span>
+                                <span className="hover:text-gray-700 dark:hover:text-gray-300 transition-colors uppercase text-[9px] font-bold tracking-wider shrink-0">{currentContext.partTitle}</span>
+                                <ChevronRight className="w-3 h-3 text-gray-300 dark:text-gray-600 shrink-0" />
+                                <span className="hover:text-gray-700 dark:hover:text-gray-300 transition-colors uppercase text-[9px] font-bold tracking-wider shrink-0">{currentContext.chapterTitle}</span>
+                                <ChevronRight className="w-3 h-3 text-gray-300 dark:text-gray-600 shrink-0" />
+                                <span className="hover:text-gray-700 dark:hover:text-gray-300 transition-colors uppercase text-[9px] font-bold tracking-wider shrink-0">{currentContext.paraName}</span>
+                                <ChevronRight className="w-3 h-3 text-gray-300 dark:text-gray-600 shrink-0" />
+                                <span className="font-bold text-[#99334C] dark:text-[#ff9daf] truncate">{currentContext.notionName}</span>
                             </>
                         ) : (
                             <>
-                                <span className="uppercase text-[10px] font-bold tracking-wider">{t('part')}</span>
-                                <ChevronRight className="w-3 h-3 text-gray-300 dark:text-gray-600" />
-                                <span className="font-bold text-[#99334C] dark:text-[#ff9daf]">{currentContext.partTitle}</span>
-                                <span className="ml-1 text-gray-400 font-normal dark:text-gray-500">(Intro)</span>
+                                <span className="uppercase text-[9px] font-bold tracking-wider shrink-0">{t('part')}</span>
+                                <ChevronRight className="w-3 h-3 text-gray-300 dark:text-gray-600 shrink-0" />
+                                <span className="font-bold text-[#99334C] dark:text-[#ff9daf] truncate">{currentContext.partTitle}</span>
+                                <span className="ml-1 text-gray-400 font-normal dark:text-gray-500 shrink-0">(Intro)</span>
                             </>
                         )}
                     </div>
                 )}
 
-                {/* Save & Sync Status Pill */}
-                <div className="ml-4 flex items-center gap-2 px-2 py-1 bg-gray-50 dark:bg-gray-900/50 rounded-full border border-gray-100 dark:border-gray-800 transition-all duration-500">
+                {/* Save & Sync Status Pill - Always visible, small on mobile */}
+                <div className="ml-auto lg:ml-4 flex items-center gap-2 px-2 py-1 bg-gray-50 dark:bg-gray-900/50 rounded-full border border-gray-100 dark:border-gray-800 shrink-0 transition-all duration-500">
                     {isSaving ? (
                         <>
                             <Loader2 className="w-3.5 h-3.5 text-[#99334C] animate-spin" />
@@ -120,7 +120,7 @@ const EditorHeader: React.FC<EditorHeaderProps> = ({
                 </div>
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 ml-4 shrink-0">
                 <RichTooltip title="Aperçu" description="Visualiser le projet tel qu'il sera publié." shortcut="Alt+P">
                     <TactileButton
                         variant="ghost"
