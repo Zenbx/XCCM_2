@@ -1,4 +1,4 @@
-import { getAuthHeaders } from '@/lib/apiHelper';
+import { authenticatedFetch } from '@/lib/apiHelper';
 
 const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001').trim();
 
@@ -25,9 +25,8 @@ class VaultService {
         content?: string;
     }): Promise<VaultItem> {
         try {
-            const response = await fetch(`${API_BASE_URL}/api/vault`, {
+            const response = await authenticatedFetch(`${API_BASE_URL}/api/vault`, {
                 method: 'POST',
-                headers: getAuthHeaders(),
                 body: JSON.stringify(item)
             });
 
@@ -46,9 +45,8 @@ class VaultService {
 
     async getVaultItems(): Promise<VaultItem[]> {
         try {
-            const response = await fetch(`${API_BASE_URL}/api/vault`, {
-                method: 'GET',
-                headers: getAuthHeaders()
+            const response = await authenticatedFetch(`${API_BASE_URL}/api/vault`, {
+                method: 'GET'
             });
 
             if (!response.ok) {
@@ -66,9 +64,8 @@ class VaultService {
 
     async removeFromVault(vaultItemId: string): Promise<void> {
         try {
-            const response = await fetch(`${API_BASE_URL}/api/vault/${vaultItemId}`, {
-                method: 'DELETE',
-                headers: getAuthHeaders()
+            const response = await authenticatedFetch(`${API_BASE_URL}/api/vault/${vaultItemId}`, {
+                method: 'DELETE'
             });
 
             if (!response.ok) {

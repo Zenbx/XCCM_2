@@ -1,5 +1,5 @@
 // services/documentService.ts
-import { getAuthHeaders } from '@/lib/apiHelper';
+import { authenticatedFetch } from '@/lib/apiHelper';
 
 const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001').trim();
 
@@ -72,11 +72,10 @@ export interface Notion {
 class DocumentService {
   async getPublishedDocuments(page: number = 1, limit: number = 20): Promise<{ documents: Document[], hasMore: boolean }> {
     try {
-      const response = await fetch(
+      const response = await authenticatedFetch(
         `${API_BASE_URL}/api/documents?page=${page}&limit=${limit}`,
         {
-          method: 'GET',
-          headers: getAuthHeaders()
+          method: 'GET'
         }
       );
 
@@ -97,11 +96,10 @@ class DocumentService {
 
   async getDocumentById(docId: string): Promise<DocumentWithStructure> {
     try {
-      const response = await fetch(
+      const response = await authenticatedFetch(
         `${API_BASE_URL}/api/documents/${docId}`,
         {
-          method: 'GET',
-          headers: getAuthHeaders()
+          method: 'GET'
         }
       );
 
@@ -143,11 +141,10 @@ class DocumentService {
 
   async toggleLike(docId: string): Promise<{ likes: number, isLiked: boolean }> {
     try {
-      const response = await fetch(
+      const response = await authenticatedFetch(
         `${API_BASE_URL}/api/documents/${docId}/like`,
         {
-          method: 'POST',
-          headers: getAuthHeaders()
+          method: 'POST'
         }
       );
 
@@ -165,11 +162,10 @@ class DocumentService {
 
   async getMyPublishedDocuments(): Promise<{ documents: Document[] }> {
     try {
-      const response = await fetch(
+      const response = await authenticatedFetch(
         `${API_BASE_URL}/api/documents/me`,
         {
-          method: 'GET',
-          headers: getAuthHeaders()
+          method: 'GET'
         }
       );
 
@@ -189,11 +185,10 @@ class DocumentService {
 
   async unpublishDocument(docId: string): Promise<boolean> {
     try {
-      const response = await fetch(
+      const response = await authenticatedFetch(
         `${API_BASE_URL}/api/documents/${docId}`,
         {
-          method: 'DELETE',
-          headers: getAuthHeaders()
+          method: 'DELETE'
         }
       );
 

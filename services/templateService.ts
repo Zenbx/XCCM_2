@@ -1,4 +1,4 @@
-import { getAuthHeaders } from '@/lib/apiHelper';
+import { authenticatedFetch } from '@/lib/apiHelper';
 
 const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001').trim();
 
@@ -13,11 +13,10 @@ export const templateService = {
         is_public?: boolean;
     }) {
         try {
-            const response = await fetch(
+            const response = await authenticatedFetch(
                 `${API_BASE_URL}/api/projects/${encodeURIComponent(projectName)}/convert-to-template`,
                 {
                     method: 'POST',
-                    headers: getAuthHeaders(),
                     body: JSON.stringify(data)
                 }
             );
@@ -39,8 +38,8 @@ export const templateService = {
      */
     async getTemplates() {
         try {
-            const response = await fetch(`${API_BASE_URL}/api/templates`, {
-                headers: getAuthHeaders()
+            const response = await authenticatedFetch(`${API_BASE_URL}/api/templates`, {
+                method: 'GET'
             });
 
             if (!response.ok) {

@@ -2,7 +2,7 @@
  * @fileoverview Service pour gérer les invitations côté frontend
  */
 
-import { getAuthHeaders } from '@/lib/apiHelper';
+import { authenticatedFetch } from '@/lib/apiHelper';
 
 const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001').trim();
 
@@ -59,11 +59,10 @@ class InvitationService {
      * Envoyer une invitation par email
      */
     async sendInvitation(projectName: string, data: SendInvitationData) {
-        const response = await fetch(
+        const response = await authenticatedFetch(
             `${API_BASE_URL}/api/projects/${encodeURIComponent(projectName)}/invitations/email`,
             {
                 method: 'POST',
-                headers: getAuthHeaders(),
                 body: JSON.stringify(data),
             }
         );
@@ -104,11 +103,10 @@ class InvitationService {
      * Accepter une invitation
      */
     async acceptInvitation(token: string) {
-        const response = await fetch(
+        const response = await authenticatedFetch(
             `${API_BASE_URL}/api/invitations/${token}/accept`,
             {
                 method: 'PATCH',
-                headers: getAuthHeaders(),
             }
         );
 
@@ -125,11 +123,10 @@ class InvitationService {
      * Refuser une invitation
      */
     async declineInvitation(token: string) {
-        const response = await fetch(
+        const response = await authenticatedFetch(
             `${API_BASE_URL}/api/invitations/${token}/decline`,
             {
                 method: 'PATCH',
-                headers: getAuthHeaders(),
             }
         );
 
@@ -146,11 +143,10 @@ class InvitationService {
      * Révoquer une invitation (pour le créateur)
      */
     async revokeInvitation(token: string) {
-        const response = await fetch(
+        const response = await authenticatedFetch(
             `${API_BASE_URL}/api/invitations/${token}/revoke`,
             {
                 method: 'DELETE',
-                headers: getAuthHeaders(),
             }
         );
 
@@ -167,11 +163,10 @@ class InvitationService {
      * Récupérer toutes les invitations pour un projet
      */
     async getProjectInvitations(projectName: string) {
-        const response = await fetch(
+        const response = await authenticatedFetch(
             `${API_BASE_URL}/api/projects/${encodeURIComponent(projectName)}/invitations`,
             {
                 method: 'GET',
-                headers: getAuthHeaders(),
             }
         );
 

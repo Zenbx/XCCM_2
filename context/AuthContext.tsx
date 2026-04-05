@@ -86,6 +86,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     router.push('/');
   };
 
+  // Écouteur global pour l'expiration de session (401)
+  useEffect(() => {
+    const handleAuthExpired = () => {
+      console.warn("🔔 [AuthContext] Session expirée détectée globalement. Déconnexion...");
+      logout();
+    };
+
+    window.addEventListener('xccm2:auth-expired', handleAuthExpired);
+    return () => window.removeEventListener('xccm2:auth-expired', handleAuthExpired);
+  }, [logout]);
+
   const register = async (userData: any) => {
     const newUser = await authService.register(userData);
     setUser(newUser);

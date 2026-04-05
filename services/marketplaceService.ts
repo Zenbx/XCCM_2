@@ -1,4 +1,4 @@
-import { getAuthHeaders } from '@/lib/apiHelper';
+import { authenticatedFetch } from '@/lib/apiHelper';
 
 const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001').trim();
 
@@ -37,10 +37,10 @@ export const marketplaceService = {
             if (filters?.category) params.append('category', filters.category);
             if (filters?.search) params.append('search', filters.search);
 
-            const response = await fetch(
+            const response = await authenticatedFetch(
                 `${API_BASE_URL}/api/marketplace?${params.toString()}`,
                 {
-                    headers: getAuthHeaders()
+                    method: 'GET'
                 }
             );
 
@@ -70,11 +70,10 @@ export const marketplaceService = {
         category?: string;
     }): Promise<MarketplaceItem> {
         try {
-            const response = await fetch(
+            const response = await authenticatedFetch(
                 `${API_BASE_URL}/api/marketplace`,
                 {
                     method: 'POST',
-                    headers: getAuthHeaders(),
                     body: JSON.stringify(data)
                 }
             );
@@ -97,11 +96,10 @@ export const marketplaceService = {
      */
     async deleteItem(itemId: string): Promise<void> {
         try {
-            const response = await fetch(
+            const response = await authenticatedFetch(
                 `${API_BASE_URL}/api/marketplace/${itemId}`,
                 {
-                    method: 'DELETE',
-                    headers: getAuthHeaders()
+                    method: 'DELETE'
                 }
             );
 
@@ -120,11 +118,10 @@ export const marketplaceService = {
      */
     async recordDownload(itemId: string): Promise<void> {
         try {
-            await fetch(
+            await authenticatedFetch(
                 `${API_BASE_URL}/api/marketplace/${itemId}`,
                 {
-                    method: 'PATCH',
-                    headers: getAuthHeaders()
+                    method: 'PATCH'
                 }
             );
         } catch (error) {

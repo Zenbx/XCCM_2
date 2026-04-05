@@ -1,5 +1,6 @@
 // services/exerciseService.ts
 import { authService } from './authService';
+import { authenticatedFetch } from '@/lib/apiHelper';
 
 const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001').trim();
 
@@ -94,13 +95,7 @@ export interface SubmissionResult {
 }
 
 class ExerciseService {
-    private getHeaders(): HeadersInit {
-        const token = authService.getAuthToken();
-        return {
-            'Content-Type': 'application/json',
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        };
-    }
+    // Les headers sont maintenant gérés par authenticatedFetch
 
     /**
      * Récupère les exercices avec filtres optionnels par granule (mode enseignant)
@@ -122,7 +117,7 @@ class ExerciseService {
         const queryString = params.toString();
         const url = `${API_BASE_URL}/api/exercises${queryString ? `?${queryString}` : ''}`;
 
-        const response = await fetch(url, { headers: this.getHeaders() });
+        const response = await authenticatedFetch(url);
         const data = await response.json();
         if (!response.ok) throw new Error(data.message || 'Erreur lors de la récupération des exercices');
         return data.data.exercises;
@@ -133,7 +128,7 @@ class ExerciseService {
      */
     async getProjectExercises(projectId: string): Promise<Exercise[]> {
         const url = `${API_BASE_URL}/api/exercises?project_id=${projectId}&mode=student`;
-        const response = await fetch(url, { headers: this.getHeaders() });
+        const response = await authenticatedFetch(url);
         const data = await response.json();
         if (!response.ok) throw new Error(data.message || 'Erreur');
         return data.data.exercises;
@@ -143,20 +138,10 @@ class ExerciseService {
      * Crée un nouvel exercice
      */
     async createExercise(exerciseData: {
-        type: ExerciseType;
-        title: string;
-        description?: string;
-        parameters: any;
-        settings?: ExerciseSettings;
-        project_id?: string;
-        part_id?: string;
-        chapter_id?: string;
-        para_id?: string;
-        notion_id?: string;
+        // ...
     }): Promise<Exercise> {
-        const response = await fetch(`${API_BASE_URL}/api/exercises`, {
+        const response = await authenticatedFetch(`${API_BASE_URL}/api/exercises`, {
             method: 'POST',
-            headers: this.getHeaders(),
             body: JSON.stringify(exerciseData),
         });
         const data = await response.json();
@@ -173,9 +158,8 @@ class ExerciseService {
         settings?: any;
     }): Promise<Exercise> {
         const url = `${API_BASE_URL}/api/exercises/${id}`;
-        const response = await fetch(url, {
+        const response = await authenticatedFetch(url, {
             method: 'PUT',
-            headers: this.getHeaders(),
             body: JSON.stringify(updates),
         });
         const data = await response.json();
@@ -187,9 +171,8 @@ class ExerciseService {
      * Supprime un exercice
      */
     async deleteExercise(exerciseId: string): Promise<void> {
-        const response = await fetch(`${API_BASE_URL}/api/exercises/${exerciseId}`, {
+        const response = await authenticatedFetch(`${API_BASE_URL}/api/exercises/${exerciseId}`, {
             method: 'DELETE',
-            headers: this.getHeaders(),
         });
         if (!response.ok) {
             const data = await response.json().catch(() => ({}));
@@ -201,9 +184,8 @@ class ExerciseService {
      * Soumettre une réponse à un exercice
      */
     async submitAnswer(exerciseId: string, answers: any): Promise<SubmissionResult> {
-        const response = await fetch(`${API_BASE_URL}/api/submissions`, {
+        const response = await authenticatedFetch(`${API_BASE_URL}/api/submissions`, {
             method: 'POST',
-            headers: this.getHeaders(),
             body: JSON.stringify({ exercise_id: exerciseId, answers }),
         });
         const data = await response.json();
@@ -225,7 +207,7 @@ class ExerciseService {
         const queryString = params.toString();
         const url = `${API_BASE_URL}/api/submissions${queryString ? `?${queryString}` : ''}`;
 
-        const response = await fetch(url, { headers: this.getHeaders() });
+        const response = await authenticatedFetch(url);
         const data = await response.json();
         if (!response.ok) throw new Error(data.message || 'Erreur');
         return data.data.submissions;
@@ -235,9 +217,8 @@ class ExerciseService {
      * Met à jour l'ordre des exercices
      */
     async reorderExercises(exerciseIds: string[]): Promise<void> {
-        const response = await fetch(`${API_BASE_URL}/api/exercises`, {
+        const response = await authenticatedFetch(`${API_BASE_URL}/api/exercises`, {
             method: 'PATCH',
-            headers: this.getHeaders(),
             body: JSON.stringify({ exerciseIds }),
         });
         if (!response.ok) {

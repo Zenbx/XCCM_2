@@ -1,5 +1,5 @@
 // services/structureService.ts
-import { getAuthToken, getAuthHeaders } from '@/lib/apiHelper';
+import { authenticatedFetch } from '@/lib/apiHelper';
 import pLimit from 'p-limit';
 
 const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001').trim();
@@ -50,11 +50,8 @@ class StructureService {
    * Remplace les multiples appels à getParts() + fillPartDetails()
    */
   async getProjectStructureOptimized(projectName: string): Promise<Part[]> {
-    const response = await fetch(
-      `${API_BASE_URL}/api/projects/${encodeURIComponent(projectName)}/structure`,
-      {
-        headers: getAuthHeaders(),
-      }
+    const response = await authenticatedFetch(
+      `${API_BASE_URL}/api/projects/${encodeURIComponent(projectName)}/structure`
     );
 
     if (!response.ok) {
@@ -68,19 +65,15 @@ class StructureService {
 
   // ============= PARTS =============
   async createPart(projectName: string, data: { part_title: string; part_intro?: string; part_number: number }): Promise<Part> {
-    const response = await fetch(
+    const response = await authenticatedFetch(
       `${API_BASE_URL}/api/projects/${encodeURIComponent(projectName)}/parts`,
       {
         method: 'POST',
-        headers: getAuthHeaders(),
         body: JSON.stringify(data),
       }
     );
 
     if (!response.ok) {
-      if (response.status === 401) {
-        throw new Error('Token invalide ou expiré.');
-      }
       const error = await response.json();
       throw new Error(error.message || 'Erreur lors de la création de la partie');
     }
@@ -90,18 +83,14 @@ class StructureService {
   }
 
   async getParts(projectName: string): Promise<Part[]> {
-    const response = await fetch(
+    const response = await authenticatedFetch(
       `${API_BASE_URL}/api/projects/${encodeURIComponent(projectName)}/parts`,
       {
-        method: 'GET',
-        headers: getAuthHeaders(),
+        method: 'GET'
       }
     );
 
     if (!response.ok) {
-      if (response.status === 401) {
-        throw new Error('Token invalide ou expiré.');
-      }
       const error = await response.json();
       throw new Error(error.message || 'Erreur lors de la récupération des parties');
     }
@@ -115,11 +104,10 @@ class StructureService {
     partTitle: string, // Ancien titre pour l'URL
     data: { part_title?: string; part_intro?: string; part_number?: number }
   ): Promise<Part> {
-    const response = await fetch(
+    const response = await authenticatedFetch(
       `${API_BASE_URL}/api/projects/${encodeURIComponent(projectName)}/parts/${encodeURIComponent(partTitle)}`,
       {
         method: 'PATCH', // ou PUT selon l'API
-        headers: getAuthHeaders(),
         body: JSON.stringify(data),
       }
     );
@@ -136,19 +124,15 @@ class StructureService {
 
   // ============= CHAPTERS =============
   async createChapter(projectName: string, partTitle: string, data: { chapter_title: string; chapter_number: number; chapter_intro?: string }): Promise<Chapter> {
-    const response = await fetch(
+    const response = await authenticatedFetch(
       `${API_BASE_URL}/api/projects/${encodeURIComponent(projectName)}/parts/${encodeURIComponent(partTitle)}/chapters`,
       {
         method: 'POST',
-        headers: getAuthHeaders(),
         body: JSON.stringify(data),
       }
     );
 
     if (!response.ok) {
-      if (response.status === 401) {
-        throw new Error('Token invalide ou expiré.');
-      }
       const error = await response.json();
       throw new Error(error.message || 'Erreur lors de la création du chapitre');
     }
@@ -158,18 +142,14 @@ class StructureService {
   }
 
   async getChapters(projectName: string, partTitle: string): Promise<Chapter[]> {
-    const response = await fetch(
+    const response = await authenticatedFetch(
       `${API_BASE_URL}/api/projects/${encodeURIComponent(projectName)}/parts/${encodeURIComponent(partTitle)}/chapters`,
       {
-        method: 'GET',
-        headers: getAuthHeaders(),
+        method: 'GET'
       }
     );
 
     if (!response.ok) {
-      if (response.status === 401) {
-        throw new Error('Token invalide ou expiré.');
-      }
       const error = await response.json();
       throw new Error(error.message || 'Erreur lors de la récupération des chapitres');
     }
@@ -184,11 +164,10 @@ class StructureService {
     chapterTitle: string,
     data: { chapter_title?: string; chapter_number?: number; chapter_intro?: string }
   ): Promise<Chapter> {
-    const response = await fetch(
+    const response = await authenticatedFetch(
       `${API_BASE_URL}/api/projects/${encodeURIComponent(projectName)}/parts/${encodeURIComponent(partTitle)}/chapters/${encodeURIComponent(chapterTitle)}`,
       {
         method: 'PATCH',
-        headers: getAuthHeaders(),
         body: JSON.stringify(data),
       }
     );
@@ -210,19 +189,15 @@ class StructureService {
     chapterTitle: string,
     data: { para_name: string; para_number: number; para_intro?: string }
   ): Promise<Paragraph> {
-    const response = await fetch(
+    const response = await authenticatedFetch(
       `${API_BASE_URL}/api/projects/${encodeURIComponent(projectName)}/parts/${encodeURIComponent(partTitle)}/chapters/${encodeURIComponent(chapterTitle)}/paragraphs`,
       {
         method: 'POST',
-        headers: getAuthHeaders(),
         body: JSON.stringify(data),
       }
     );
 
     if (!response.ok) {
-      if (response.status === 401) {
-        throw new Error('Token invalide ou expiré.');
-      }
       const error = await response.json();
       throw new Error(error.message || 'Erreur lors de la création du paragraphe');
     }
@@ -232,18 +207,14 @@ class StructureService {
   }
 
   async getParagraphs(projectName: string, partTitle: string, chapterTitle: string): Promise<Paragraph[]> {
-    const response = await fetch(
+    const response = await authenticatedFetch(
       `${API_BASE_URL}/api/projects/${encodeURIComponent(projectName)}/parts/${encodeURIComponent(partTitle)}/chapters/${encodeURIComponent(chapterTitle)}/paragraphs`,
       {
-        method: 'GET',
-        headers: getAuthHeaders(),
+        method: 'GET'
       }
     );
 
     if (!response.ok) {
-      if (response.status === 401) {
-        throw new Error('Token invalide ou expiré.');
-      }
       const error = await response.json();
       throw new Error(error.message || 'Erreur lors de la récupération des paragraphes');
     }
@@ -259,11 +230,10 @@ class StructureService {
     paraName: string,
     data: { para_name?: string; para_number?: number; para_intro?: string }
   ): Promise<Paragraph> {
-    const response = await fetch(
+    const response = await authenticatedFetch(
       `${API_BASE_URL}/api/projects/${encodeURIComponent(projectName)}/parts/${encodeURIComponent(partTitle)}/chapters/${encodeURIComponent(chapterTitle)}/paragraphs/${encodeURIComponent(paraName)}`,
       {
         method: 'PATCH',
-        headers: getAuthHeaders(),
         body: JSON.stringify(data),
       }
     );
@@ -286,19 +256,15 @@ class StructureService {
     paraName: string,
     data: { notion_name: string; notion_content: string; notion_number: number }
   ): Promise<Notion> {
-    const response = await fetch(
+    const response = await authenticatedFetch(
       `${API_BASE_URL}/api/projects/${encodeURIComponent(projectName)}/parts/${encodeURIComponent(partTitle)}/chapters/${encodeURIComponent(chapterTitle)}/paragraphs/${encodeURIComponent(paraName)}/notions`,
       {
         method: 'POST',
-        headers: getAuthHeaders(),
         body: JSON.stringify(data),
       }
     );
 
     if (!response.ok) {
-      if (response.status === 401) {
-        throw new Error('Token invalide ou expiré.');
-      }
       const error = await response.json();
       throw new Error(error.message || 'Erreur lors de la création de la notion');
     }
@@ -313,18 +279,14 @@ class StructureService {
     chapterTitle: string,
     paraName: string
   ): Promise<Notion[]> {
-    const response = await fetch(
+    const response = await authenticatedFetch(
       `${API_BASE_URL}/api/projects/${encodeURIComponent(projectName)}/parts/${encodeURIComponent(partTitle)}/chapters/${encodeURIComponent(chapterTitle)}/paragraphs/${encodeURIComponent(paraName)}/notions`,
       {
-        method: 'GET',
-        headers: getAuthHeaders(),
+        method: 'GET'
       }
     );
 
     if (!response.ok) {
-      if (response.status === 401) {
-        throw new Error('Token invalide ou expiré.');
-      }
       const error = await response.json();
       throw new Error(error.message || 'Erreur lors de la récupération des notions');
     }
@@ -341,19 +303,15 @@ class StructureService {
     notionName: string,
     data: { notion_name?: string, notion_content?: string, notion_number?: number }
   ): Promise<Notion> {
-    const response = await fetch(
+    const response = await authenticatedFetch(
       `${API_BASE_URL}/api/projects/${encodeURIComponent(projectName)}/parts/${encodeURIComponent(partTitle)}/chapters/${encodeURIComponent(chapterTitle)}/paragraphs/${encodeURIComponent(paraName)}/notions/${encodeURIComponent(notionName)}`,
       {
         method: 'PATCH',
-        headers: getAuthHeaders(),
         body: JSON.stringify(data),
       }
     );
 
     if (!response.ok) {
-      if (response.status === 401) {
-        throw new Error('Token invalide ou expiré.');
-      }
       const error = await response.json();
       throw new Error(error.message || 'Erreur lors de la mise à jour de la notion');
     }
@@ -395,36 +353,28 @@ class StructureService {
   // ============= DELETE METHODS =============
 
   async deletePart(projectName: string, partTitle: string): Promise<void> {
-    const response = await fetch(
+    const response = await authenticatedFetch(
       `${API_BASE_URL}/api/projects/${encodeURIComponent(projectName)}/parts/${encodeURIComponent(partTitle)}`,
       {
-        method: 'DELETE',
-        headers: getAuthHeaders(),
+        method: 'DELETE'
       }
     );
 
     if (!response.ok) {
-      if (response.status === 401) {
-        throw new Error('Token invalide ou expiré.');
-      }
       const error = await response.json();
       throw new Error(error.message || 'Erreur lors de la suppression de la partie');
     }
   }
 
   async deleteChapter(projectName: string, partTitle: string, chapterTitle: string): Promise<void> {
-    const response = await fetch(
+    const response = await authenticatedFetch(
       `${API_BASE_URL}/api/projects/${encodeURIComponent(projectName)}/parts/${encodeURIComponent(partTitle)}/chapters/${encodeURIComponent(chapterTitle)}`,
       {
-        method: 'DELETE',
-        headers: getAuthHeaders(),
+        method: 'DELETE'
       }
     );
 
     if (!response.ok) {
-      if (response.status === 401) {
-        throw new Error('Token invalide ou expiré.');
-      }
       const error = await response.json();
       throw new Error(error.message || 'Erreur lors de la suppression du chapitre');
     }
@@ -436,18 +386,14 @@ class StructureService {
     chapterTitle: string,
     paraName: string
   ): Promise<void> {
-    const response = await fetch(
+    const response = await authenticatedFetch(
       `${API_BASE_URL}/api/projects/${encodeURIComponent(projectName)}/parts/${encodeURIComponent(partTitle)}/chapters/${encodeURIComponent(chapterTitle)}/paragraphs/${encodeURIComponent(paraName)}`,
       {
-        method: 'DELETE',
-        headers: getAuthHeaders(),
+        method: 'DELETE'
       }
     );
 
     if (!response.ok) {
-      if (response.status === 401) {
-        throw new Error('Token invalide ou expiré.');
-      }
       const error = await response.json();
       throw new Error(error.message || 'Erreur lors de la suppression du paragraphe');
     }
@@ -460,18 +406,14 @@ class StructureService {
     paraName: string,
     notionName: string
   ): Promise<void> {
-    const response = await fetch(
+    const response = await authenticatedFetch(
       `${API_BASE_URL}/api/projects/${encodeURIComponent(projectName)}/parts/${encodeURIComponent(partTitle)}/chapters/${encodeURIComponent(chapterTitle)}/paragraphs/${encodeURIComponent(paraName)}/notions/${encodeURIComponent(notionName)}`,
       {
-        method: 'DELETE',
-        headers: getAuthHeaders(),
+        method: 'DELETE'
       }
     );
 
     if (!response.ok) {
-      if (response.status === 401) {
-        throw new Error('Token invalide ou expiré.');
-      }
       const error = await response.json();
       throw new Error(error.message || 'Erreur lors de la suppression de la notion');
     }
@@ -485,19 +427,15 @@ class StructureService {
     newParentId: string,
     newNumber?: number
   ): Promise<any> {
-    const response = await fetch(
+    const response = await authenticatedFetch(
       `${API_BASE_URL}/api/projects/${encodeURIComponent(projectName)}/move`,
       {
         method: 'PATCH',
-        headers: getAuthHeaders(),
         body: JSON.stringify({ type, itemId, newParentId, newNumber }),
       }
     );
 
     if (!response.ok) {
-      if (response.status === 401) {
-        throw new Error('Token invalide ou expiré.');
-      }
       const error = await response.json();
       const detailedError = new Error(error.message || 'Erreur lors du déplacement') as any;
       detailedError.details = error.details || error.error; // Suivant le format de api-response
@@ -514,11 +452,10 @@ class StructureService {
     type: 'part' | 'chapter' | 'paragraph' | 'notion',
     items: { id: string; number: number }[]
   ): Promise<void> {
-    const response = await fetch(
+    const response = await authenticatedFetch(
       `${API_BASE_URL}/api/projects/${encodeURIComponent(projectName)}/reorder`,
       {
         method: 'POST',
-        headers: getAuthHeaders(),
         body: JSON.stringify({ type, items }),
       }
     );

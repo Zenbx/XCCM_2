@@ -36,8 +36,19 @@ export async function authenticatedFetch(url: string, options: RequestInit = {})
     ...options.headers,
   };
 
-  return fetch(url, {
+  const response = await fetch(url, {
     ...options,
     headers,
   });
+
+  // Détection globale de l'expiration du token
+  if (response.status === 401 && typeof window !== 'undefined') {
+    // Éviter les boucles si on est déjà en train de vérifier l'auth ou de se déconnecter
+    if (!url.includes('/api/auth/me') && !url.includes('/api/auth/logout')) {
+      console.warn("🔒 Session expirée détectée via 401. Notification globale envoyée.");
+      window.dispatchEvent(new CustomEvent('xccm2:auth-expired'));
+    }
+  }
+
+  return response;
 }
