@@ -238,9 +238,10 @@ interface ExercisePanelProps {
         paraName?: string;
         notionName?: string;
     }) => void;
+    project?: any;
 }
 
-const ExercisePanel = ({ currentContext, structure, onNavigateToGranule }: ExercisePanelProps) => {
+const ExercisePanel = ({ currentContext, structure, project, onNavigateToGranule }: ExercisePanelProps) => {
     const [exercises, setExercises] = useState<Exercise[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [showCreator, setShowCreator] = useState(false);
@@ -285,9 +286,11 @@ const ExercisePanel = ({ currentContext, structure, onNavigateToGranule }: Exerc
         // The project_id might be available via currentContext or projectData
         // For now, we resolve from the TOC structure
 
+        if (project?.pr_id) {
+            target.project_id = project.pr_id;
+        }
+
         if (level === 'project') {
-            // Exercise attached to project level - we don't have pr_id in parts
-            // We'll use project_id if available on currentContext or skip
             return target;
         }
 

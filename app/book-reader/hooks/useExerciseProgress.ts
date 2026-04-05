@@ -28,7 +28,32 @@ export const useExerciseProgress = ({ projectId, structure }: UseExerciseProgres
                 exerciseService.getProjectExercises(projectId),
                 exerciseService.getMySubmissions({ project_id: projectId }),
             ]);
-            setExercises(exs);
+            // Extract embedded exercises from structure as fallback
+            const embeddedExercises: Exercise[] = [];
+            if (structure) {
+                structure.forEach((part: any) => {
+                    if (part.exercises) embeddedExercises.push(...part.exercises);
+                    part.chapters?.forEach((chapter: any) => {
+                        if (chapter.exercises) embeddedExercises.push(...chapter.exercises);
+                        chapter.paragraphs?.forEach((para: any) => {
+                            if (para.exercises) embeddedExercises.push(...para.exercises);
+                            para.notions?.forEach((notion: any) => {
+                                if (notion.exercises) embeddedExercises.push(...notion.exercises);
+                            });
+                        });
+                    });
+                });
+            }
+
+            // Merge exercises (prioritize API ones if they match by ID)
+            const mergedExercises = [...exs];
+            embeddedExercises.forEach(ee => {
+                if (!mergedExercises.some(me => me.id === ee.id)) {
+                    mergedExercises.push(ee);
+                }
+            });
+
+            setExercises(mergedExercises);
             setSubmissions(subs);
         } catch (err) {
             console.error('Error loading exercises/submissions:', err);
