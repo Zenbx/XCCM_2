@@ -229,6 +229,8 @@ class ExerciseService {
         const data = await response.json();
         if (!response.ok) throw new Error(data.message || 'Erreur');
         return data.data.submissions;
+    }
+
     /**
      * Met à jour l'ordre des exercices
      */
