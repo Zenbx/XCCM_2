@@ -466,6 +466,57 @@ class StructureService {
       throw new Error(error.message || 'Erreur lors du réordonnancement');
     }
   }
+
+  // ============= UUID-BASED OPERATIONS (ROBUST) =============
+  
+  /**
+   * ✅ PATCH par UUID — Immunisé aux renommages
+   * Utilise /api/projects/[pr_name]/granules/[id]
+   */
+  async updateGranuleById(
+    projectName: string,
+    id: string,
+    data: Record<string, any>
+  ): Promise<any> {
+    const response = await authenticatedFetch(
+      `${API_BASE_URL}/api/projects/${encodeURIComponent(projectName)}/granules/${encodeURIComponent(id)}`,
+      {
+        method: 'PATCH',
+        body: JSON.stringify(data),
+      }
+    );
+
+    if (!response.ok) {
+      if (response.status === 401) throw new Error('Token invalide ou expiré.');
+      const error = await response.json();
+      throw new Error(error.message || 'Erreur lors de la mise à jour');
+    }
+
+    const result = await response.json();
+    return result.data;
+  }
+
+  /**
+   * ✅ DELETE par UUID — Immunisé aux renommages
+   * Utilise /api/projects/[pr_name]/granules/[id]
+   */
+  async deleteGranuleById(
+    projectName: string,
+    id: string
+  ): Promise<void> {
+    const response = await authenticatedFetch(
+      `${API_BASE_URL}/api/projects/${encodeURIComponent(projectName)}/granules/${encodeURIComponent(id)}`,
+      {
+        method: 'DELETE'
+      }
+    );
+
+    if (!response.ok) {
+      if (response.status === 401) throw new Error('Token invalide ou expiré.');
+      const error = await response.json();
+      throw new Error(error.message || 'Erreur lors de la suppression');
+    }
+  }
 }
 
 export const structureService = new StructureService();

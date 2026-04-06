@@ -524,6 +524,7 @@ const XCCM2Editor = () => {
   const [tiptapEditor, setTiptapEditor] = useState<any>(null);
   const lastSaveTimestamp = useRef<number>(0); // ✅ Prevent transition race conditions
   const isSavingInProgress = useRef<boolean>(false); // ✅ Prevent save concurrency
+  const contextVersionRef = useRef<number>(0); // ✅ Prevent stale saves during rapid navigation
 
   const editorRef = useRef<HTMLDivElement>(null);
 
@@ -536,63 +537,28 @@ const XCCM2Editor = () => {
           type === 'paragraph' ? structure.find(p => p.chapters?.some(c => c.paragraphs?.some(pa => pa.para_id === id)))?.chapters?.flatMap(c => c.paragraphs || []).find(pa => pa.para_id === id)?.para_name :
             structure.find(p => p.chapters?.some(c => c.paragraphs?.some(pa => pa.notions?.some(n => n.notion_id === id))))?.chapters?.flatMap(c => c.paragraphs || []).flatMap(pa => pa.notions || []).find(n => n.notion_id === id)?.notion_name;
 
-      if (type === 'part') {
-        const p = structure.find(p => p.part_id === id);
-        if (p) await structureService.updatePart(projectName, p.part_title, { part_title: newTitle });
-      } else if (type === 'chapter') {
-        const part = structure.find(p => p.chapters?.some(c => c.chapter_id === id));
-        const chapter = part?.chapters?.find(c => c.chapter_id === id);
-        if (part && chapter) await structureService.updateChapter(projectName, part.part_title, chapter.chapter_title, { chapter_title: newTitle });
-      } else if (type === 'paragraph') {
-        const part = structure.find(p => p.chapters?.some(c => c.paragraphs?.some(pa => pa.para_id === id)));
-        const chapter = part?.chapters?.find(c => c.paragraphs?.some(pa => pa.para_id === id));
-        const para = chapter?.paragraphs?.find(pa => pa.para_id === id);
-        if (part && chapter && para) await structureService.updateParagraph(projectName, part.part_title, chapter.chapter_title, para.para_name, { para_name: newTitle });
-      } else if (type === 'notion') {
-        const part = structure.find(p => p.chapters?.some(c => c.paragraphs?.some(pa => pa.notions?.some(n => n.notion_id === id))));
-        const chapter = part?.chapters?.find(c => c.paragraphs?.some(pa => pa.notions?.some(n => n.notion_id === id)));
-        const para = chapter?.paragraphs?.find(pa => pa.notions?.some(n => n.notion_id === id));
-        const notion = para?.notions?.find(n => n.notion_id === id);
-        if (part && chapter && para && notion) await structureService.updateNotion(projectName, part.part_title, chapter.chapter_title, para.para_name, notion.notion_name, { notion_name: newTitle });
-      }
+      // ✅ UUID-based rename — immunisé aux renommages
+      const renameField = type === 'part' ? 'part_title' 
+        : type === 'chapter' ? 'chapter_title'
+        : type === 'paragraph' ? 'para_name'
+        : 'notion_name';
+      await structureService.updateGranuleById(projectName, id, { [renameField]: newTitle });
 
       // ✅ Track history for rename
       if (oldTitle) {
+        const renameField = type === 'part' ? 'part_title' 
+          : type === 'chapter' ? 'chapter_title'
+          : type === 'paragraph' ? 'para_name'
+          : 'notion_name';
         addAction({
           type: 'rename',
           description: `Renommer "${oldTitle}" en "${newTitle}"`,
           undo: async () => {
-            if (type === 'part') await structureService.updatePart(projectName!, newTitle, { part_title: oldTitle });
-            else if (type === 'chapter') {
-              const part = structure.find(p => p.chapters?.some(c => c.chapter_id === id));
-              if (part) await structureService.updateChapter(projectName!, part.part_title, newTitle, { chapter_title: oldTitle });
-            } else if (type === 'paragraph') {
-              const part = structure.find(p => p.chapters?.some(c => c.paragraphs?.some(pa => pa.para_id === id)));
-              const chapter = part?.chapters?.find(c => c.paragraphs?.some(pa => pa.para_id === id));
-              if (part && chapter) await structureService.updateParagraph(projectName!, part.part_title, chapter.chapter_title, newTitle, { para_name: oldTitle });
-            } else if (type === 'notion') {
-              const part = structure.find(p => p.chapters?.some(c => c.paragraphs?.some(pa => pa.notions?.some(n => n.notion_id === id))));
-              const chapter = part?.chapters?.find(c => c.paragraphs?.some(pa => pa.notions?.some(n => n.notion_id === id)));
-              const para = chapter?.paragraphs?.find(pa => pa.notions?.some(n => n.notion_id === id));
-              if (part && chapter && para) await structureService.updateNotion(projectName!, part.part_title, chapter.chapter_title, para.para_name, newTitle, { notion_name: oldTitle });
-            }
+            await structureService.updateGranuleById(projectName!, id, { [renameField]: oldTitle });
             await loadProject(true);
           },
           redo: async () => {
-            if (type === 'part') await structureService.updatePart(projectName!, oldTitle, { part_title: newTitle });
-            else if (type === 'chapter') {
-              const part = structure.find(p => p.chapters?.some(c => c.chapter_id === id));
-              if (part) await structureService.updateChapter(projectName!, part.part_title, oldTitle, { chapter_title: newTitle });
-            } else if (type === 'paragraph') {
-              const part = structure.find(p => p.chapters?.some(c => c.paragraphs?.some(pa => pa.para_id === id)));
-              const chapter = part?.chapters?.find(c => c.paragraphs?.some(pa => pa.para_id === id));
-              if (part && chapter) await structureService.updateParagraph(projectName!, part.part_title, chapter.chapter_title, oldTitle, { para_name: newTitle });
-            } else if (type === 'notion') {
-              const part = structure.find(p => p.chapters?.some(c => c.paragraphs?.some(pa => pa.notions?.some(n => n.notion_id === id))));
-              const chapter = part?.chapters?.find(c => c.paragraphs?.some(pa => pa.notions?.some(n => n.notion_id === id)));
-              const para = chapter?.paragraphs?.find(pa => pa.notions?.some(n => n.notion_id === id));
-              if (part && chapter && para) await structureService.updateNotion(projectName!, part.part_title, chapter.chapter_title, para.para_name, oldTitle, { notion_name: newTitle });
-            }
+            await structureService.updateGranuleById(projectName!, id, { [renameField]: newTitle });
             await loadProject(true);
           }
         });
@@ -881,15 +847,24 @@ const XCCM2Editor = () => {
       return;
     }
 
+    // ✅ Capture context version to detect stale saves
+    const saveVersion = contextVersionRef.current;
+
     console.log(`[Save] Saving ${currentContext.type} "${currentContext.notionName || currentContext.partTitle}"...`, { isAuto, contentLength: editorContent.length });
     try {
       isSavingInProgress.current = true;
       // Auto-save ne bloque PAS l'interface
       if (!isAuto) setIsSaving(true);
 
-      if (currentContext.type === 'notion' && currentContext.notionName) {
-        console.log(`[Save] Updating Notion: ${currentContext.notionName} in ${currentContext.paraName}`);
-        await structureService.updateNotion(projectName, currentContext.partTitle, currentContext.chapterTitle!, currentContext.paraName!, currentContext.notionName!, { notion_content: editorContent });
+      // ✅ Guard: Abort if context changed during save prep
+      if (contextVersionRef.current !== saveVersion) {
+        console.log('[Save] Context changed during save, aborting stale save');
+        return;
+      }
+
+      if (currentContext.type === 'notion' && currentContext.notion?.notion_id) {
+        console.log(`[Save] Updating Notion by UUID: ${currentContext.notion.notion_id}`);
+        await structureService.updateGranuleById(projectName, currentContext.notion.notion_id, { notion_content: editorContent });
         lastSaveTimestamp.current = Date.now(); // ✅ Update cooldown
 
         // CRITIQUE: Mettre à jour structure directement pour éviter perte de contenu
@@ -923,8 +898,8 @@ const XCCM2Editor = () => {
           return part;
         }));
 
-      } else if (currentContext.type === 'part' && currentContext.partTitle) {
-        await structureService.updatePart(projectName, currentContext.partTitle, { part_intro: editorContent });
+      } else if (currentContext.type === 'part' && currentContext.part?.part_id) {
+        await structureService.updateGranuleById(projectName, currentContext.part.part_id, { part_intro: editorContent });
 
         // CRITIQUE: Mettre à jour structure directement
         setStructure(prev => prev.map(part =>
@@ -1098,7 +1073,7 @@ const XCCM2Editor = () => {
     <div className="h-screen flex bg-white overflow-hidden selection:bg-[#99334C]/10 w-full max-w-[100vw]">
       {/* 1. Sidebar TOC - Desktop (Sticky) & Mobile (Drawer) */}
       <AnimatePresence>
-        {(isMobileTOCOpen || sidebarWidth > 0) && (
+        {!isZenMode && (isMobileTOCOpen || sidebarWidth > 0) && (
           <>
             {/* Mobile Backdrop */}
             {isMobileTOCOpen && (
@@ -1139,14 +1114,24 @@ const XCCM2Editor = () => {
                 onSelectNotion={async (ctx) => {
                   const update = async () => {
                     if (hasUnsavedChanges) await handleSave(true);
+                    // Lookup ancestor IDs for robust TOC highlight
+                    const part = structure.find(p => p.part_title === ctx.partTitle);
+                    const chapter = part?.chapters?.find(c => c.chapter_title === ctx.chapterTitle);
+                    const paragraph = chapter?.paragraphs?.find(pa => pa.para_name === ctx.paraName);
+                    contextVersionRef.current++;
                     setCurrentContext({
                       type: 'notion',
                       projectName: projectData?.pr_name || '',
                       partTitle: ctx.partTitle,
                       chapterTitle: ctx.chapterTitle,
+                      chapterId: chapter?.chapter_id,
                       paraName: ctx.paraName,
+                      paraId: paragraph?.para_id,
                       notionName: ctx.notionName,
-                      notion: ctx.notion
+                      notion: ctx.notion,
+                      part: part || null,
+                      chapter: chapter,
+                      paragraph: paragraph
                     });
                     setEditorContent(ctx.notion.notion_content || '');
                     setHasUnsavedChanges(false);
@@ -1159,6 +1144,7 @@ const XCCM2Editor = () => {
                 onSelectPart={async (ctx) => {
                   const update = async () => {
                     if (hasUnsavedChanges) await handleSave(true);
+                    contextVersionRef.current++;
                     setCurrentContext({
                       type: 'part',
                       projectName: projectData?.pr_name || '',
@@ -1179,13 +1165,15 @@ const XCCM2Editor = () => {
                     const part = structure.find(p => p.part_title === pName);
                     const chapter = part?.chapters?.find(c => c.chapter_id === cId);
 
+                    contextVersionRef.current++;
                     setCurrentContext({
                       type: 'chapter',
                       projectName: projectData?.pr_name || '',
                       partTitle: pName,
                       chapterTitle: cTitle,
                       chapterId: cId,
-                      chapter: chapter
+                      chapter: chapter,
+                      part: part || null
                     });
                     setEditorContent(chapter?.chapter_intro || '');
                     setHasUnsavedChanges(false);
@@ -1202,14 +1190,18 @@ const XCCM2Editor = () => {
                     const chapter = part?.chapters?.find(c => c.chapter_title === cTitle);
                     const paragraph = chapter?.paragraphs?.find(pa => pa.para_id === paId);
 
+                    contextVersionRef.current++;
                     setCurrentContext({
                       type: 'paragraph',
                       projectName: projectData?.pr_name || '',
                       partTitle: pName,
                       chapterTitle: cTitle,
+                      chapterId: chapter?.chapter_id,
                       paraName: paName,
                       paraId: paId,
-                      paragraph: paragraph
+                      paragraph: paragraph,
+                      part: part || null,
+                      chapter: chapter
                     });
                     setEditorContent(paragraph?.para_intro || '');
                     setHasUnsavedChanges(false);
@@ -1238,7 +1230,7 @@ const XCCM2Editor = () => {
                   };
                   handleDelete(type, id, findTitle() || '');
                 }}
-                selectedPartId={currentContext?.type === 'part' ? currentContext.part?.part_id || structure.find(p => p.part_title === currentContext.partTitle)?.part_id : undefined}
+                selectedPartId={currentContext?.part?.part_id || structure.find(p => p.part_title === currentContext?.partTitle)?.part_id}
                 selectedChapterId={currentContext?.chapterId}
                 selectedParagraphId={currentContext?.paraId}
                 selectedNotionId={currentContext?.notion?.notion_id}

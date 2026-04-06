@@ -323,17 +323,8 @@ export const useEditorModals = (
                 }
             }
 
-            if (type === 'part') {
-                await structureService.deletePart(projectName, title);
-            } else if (type === 'chapter') {
-                if (parentContext.partTitle) await structureService.deleteChapter(projectName, parentContext.partTitle, title);
-            } else if (type === 'paragraph') {
-                if (parentContext.partTitle && parentContext.chapterTitle)
-                    await structureService.deleteParagraph(projectName, parentContext.partTitle, parentContext.chapterTitle, title);
-            } else if (type === 'notion') {
-                if (parentContext.partTitle && parentContext.chapterTitle && parentContext.paraName)
-                    await structureService.deleteNotion(projectName, parentContext.partTitle, parentContext.chapterTitle, parentContext.paraName, title);
-            }
+            // ✅ UUID-based delete — immunisé aux renommages
+            await structureService.deleteGranuleById(projectName, id);
 
             toast.success("Supprimé avec succès");
             setDeleteModalConfig(prev => ({ ...prev, isOpen: false }));
@@ -357,6 +348,7 @@ export const useEditorModals = (
                         await loadProject(true);
                     },
                     redo: async () => {
+                        // Re-delete uses slug-based fallback (since ID might change after undo recreate)
                         if (type === 'part') await structureService.deletePart(projectName, title);
                         else if (type === 'chapter') await structureService.deleteChapter(projectName, parentContext.partTitle, title);
                         else if (type === 'paragraph') await structureService.deleteParagraph(projectName, parentContext.partTitle, parentContext.chapterTitle, title);
