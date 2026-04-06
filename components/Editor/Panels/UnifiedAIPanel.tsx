@@ -20,6 +20,7 @@ import { useAuth } from '@/context/AuthContext';
 import { socraticService, SocraticAuditResult } from '@/services/socraticService';
 import { useChat } from '@ai-sdk/react';
 import { authService } from '@/services/authService';
+import { DefaultChatTransport } from 'ai';
 import toast from 'react-hot-toast';
 
 interface UnifiedAIPanelProps {
@@ -56,41 +57,57 @@ const UnifiedAIPanel: React.FC<UnifiedAIPanelProps> = ({
   const { isAdmin } = useAuth();
   const [activeTab, setActiveTab] = useState<'chat' | 'audit'>('chat');
   const [showScores, setShowScores] = useState(true);
+  const [input, setInput] = useState('');
 
   // Vercel AI SDK - useChat Integration
-  const { messages, input, handleInputChange, handleSubmit, setMessages, isLoading: isStreaming } = useChat({
-    api: `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/ai/socratic`,
-    headers: {
-      Authorization: `Bearer ${authService.getAuthToken() || ''}`,
-    },
-    body: {
-      context: {
-        notionContent: editorContent,
-        partTitle: currentContext?.partTitle,
-        chapterTitle: currentContext?.chapterTitle,
-        paraName: currentContext?.paraName,
-        notionName: currentContext?.notionName,
+  const { messages, sendMessage, setMessages, status } = useChat({
+    transport: new DefaultChatTransport({
+      api: `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/ai/socratic`,
+      headers: {
+        Authorization: `Bearer ${authService.getAuthToken() || ''}`,
+      },
+      body: {
+        context: {
+          notionContent: editorContent,
+          partTitle: currentContext?.partTitle,
+          chapterTitle: currentContext?.chapterTitle,
+          paraName: currentContext?.paraName,
+          notionName: currentContext?.notionName,
+        }
       }
-    },
-    initialMessages: [
+    }),
+    messages: [
       {
         id: 'welcome',
         role: 'assistant',
-        content: isAdmin 
-          ? "Bonjour ! Je suis votre assistant de conception pédagogique. Je peux vous aider à structurer vos cours, clarifier vos notions ou générer des évaluations. Comment puis-je vous assister ?"
-          : "Bonjour ! Je suis votre coach pédagogique XCCM. Je vous accompagne dans votre apprentissage via une approche socratique. Que souhaitez-vous approfondir aujourd'hui ?"
+        parts: [{ 
+          type: 'text', 
+          text: isAdmin 
+            ? "Bonjour ! Je suis votre assistant de conception pédagogique. Je peux vous aider à structurer vos cours, clarifier vos notions ou générer des évaluations. Comment puis-je vous assister ?"
+            : "Bonjour ! Je suis votre coach pédagogique XCCM. Je vous accompagne dans votre apprentissage via une approche socratique. Que souhaitez-vous approfondir aujourd'hui ?"
+        }]
       }
     ],
-    onResponse: (response: Response) => {
-      if (!response.ok) {
-        toast.error("Erreur de connexion à l'IA.");
-      }
-    },
     onError: (error: Error) => {
       console.error("AI Chat Error:", error);
       toast.error("Une erreur est survenue lors de la discussion.");
     }
   });
+
+  const isStreaming = status === 'streaming';
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement> | React.ChangeEvent<HTMLTextAreaElement>) => {
+    setInput(e.target.value);
+  };
+
+  const handleSubmit = async (e?: { preventDefault?: () => void }) => {
+    e?.preventDefault?.();
+    if (!input.trim() || isStreaming) return;
+    
+    const currentInput = input;
+    setInput('');
+    await sendMessage({ text: currentInput });
+  };
 
   const isTyping = isStreaming;
   
@@ -112,17 +129,17 @@ const UnifiedAIPanel: React.FC<UnifiedAIPanelProps> = ({
     setMessages((prev: any[]) => [...prev, {
       id: Date.now().toString(),
       role: 'assistant',
-      content: "J'ai terminé l'analyse de votre contenu. Vous pouvez voir les scores et les suggestions dans l'onglet 'Audit'. Souhaitez-vous que je vous explique certains points ?"
+      parts: [{ 
+        type: 'text', 
+        text: "J'ai terminé l'analyse de votre contenu. Vous pouvez voir les scores et les suggestions dans l'onglet 'Audit'. Souhaitez-vous que je vous explique certains points ?" 
+      }]
     }]);
   };
 
   const handleSendRequest = (customInput?: string) => {
-    // If customInput is provided, we simulate a form submission with that value
+    // If customInput is provided, we send that message directly
     if (customInput) {
-      const event = {
-        preventDefault: () => { },
-      } as React.FormEvent;
-      handleSubmit(event, { body: { customInput } });
+      sendMessage({ text: customInput });
     } else {
       handleSubmit();
     }
@@ -201,7 +218,9 @@ const UnifiedAIPanel: React.FC<UnifiedAIPanelProps> = ({
                         ? 'bg-[#99334C] text-white rounded-tr-none' 
                         : 'bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm rounded-tl-none'
                     }`}>
-                      {msg.content}
+                      {msg.parts?.map((part: any, i: number) => (
+                        part.type === 'text' ? <React.Fragment key={i}>{part.text}</React.Fragment> : null
+                      ))}
                     </div>
                   </div>
                 ))}
