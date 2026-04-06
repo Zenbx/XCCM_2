@@ -165,7 +165,7 @@ const LibraryPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white dark:from-gray-950 dark:to-gray-900 transition-colors">
       {/* Hero Section */}
       <section className="relative bg-gradient-to-br from-[#99334C] to-[#7a283d] text-white overflow-hidden py-20">
         <div className="absolute inset-0 opacity-10">
@@ -207,7 +207,7 @@ const LibraryPage = () => {
       </section>
 
       {/* Barre de recherche et filtres */}
-      <section className="py-6 px-6 bg-white border-b border-gray-200 shadow-sm sticky top-0 z-40">
+      <section className="py-6 px-6 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 shadow-sm sticky top-0 z-40 transition-colors">
         <div className="max-w-7xl mx-auto">
           <div className="flex flex-col gap-4">
             <div className="flex flex-col lg:flex-row gap-4 items-center justify-between">
@@ -218,7 +218,7 @@ const LibraryPage = () => {
                   placeholder={t('searchPlaceholder')}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-xl text-gray-700 placeholder-gray-400 focus:ring-2 focus:ring-[#99334C]/20 focus:border-[#99334C] transition-all"
+                  className="w-full pl-12 pr-4 py-3 border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-100 placeholder-gray-400 focus:ring-2 focus:ring-[#99334C]/20 focus:border-[#99334C] transition-all"
                 />
                 {searchQuery && (
                   <button
@@ -234,7 +234,7 @@ const LibraryPage = () => {
                 <select
                   value={levelFilter}
                   onChange={(e) => setLevelFilter(e.target.value)}
-                  className="px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#99334C]/20 focus:border-[#99334C] transition-all cursor-pointer hover:bg-gray-100"
+                  className="px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm font-medium text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-[#99334C]/20 focus:border-[#99334C] transition-all cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
                 >
                   <option value="all">{t('allLevels')}</option>
                   <option value="Debutant">{t('levels.Debutant')}</option>
@@ -242,16 +242,16 @@ const LibraryPage = () => {
                   <option value="Avance">{t('levels.Avance')}</option>
                 </select>
 
-                <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1 h-[46px]">
+                <div className="flex items-center gap-1 bg-gray-100 dark:bg-gray-800 rounded-lg p-1 h-[46px]">
                   <button
                     onClick={() => setViewMode('grid')}
-                    className={`p-2 rounded-lg transition-all h-full ${viewMode === 'grid' ? 'bg-white shadow-sm text-[#99334C]' : 'text-gray-500'}`}
+                    className={`p-2 rounded-lg transition-all h-full ${viewMode === 'grid' ? 'bg-white dark:bg-gray-700 shadow-sm text-[#99334C] dark:text-[#ff9daf]' : 'text-gray-500'}`}
                   >
                     <Grid3x3 className="w-5 h-5" />
                   </button>
                   <button
                     onClick={() => setViewMode('list')}
-                    className={`p-2 rounded-lg transition-all h-full ${viewMode === 'list' ? 'bg-white shadow-sm text-[#99334C]' : 'text-gray-500'}`}
+                    className={`p-2 rounded-lg transition-all h-full ${viewMode === 'list' ? 'bg-white dark:bg-gray-700 shadow-sm text-[#99334C] dark:text-[#ff9daf]' : 'text-gray-500'}`}
                   >
                     <List className="w-5 h-5" />
                   </button>
@@ -261,8 +261,8 @@ const LibraryPage = () => {
 
             <div className="pt-2">
               <div className="flex items-center gap-2 mb-4">
-                <Filter className="w-5 h-5 text-gray-600" />
-                <span className="font-bold text-gray-700">{t('filterCategory')}</span>
+                <Filter className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+                <span className="font-bold text-gray-700 dark:text-gray-200 shadow-sm">{t('filterCategory')}</span>
               </div>
               <div className="flex flex-wrap gap-2">
                 {categories.map((cat) => (
@@ -271,7 +271,7 @@ const LibraryPage = () => {
                     onClick={() => setSelectedCategory(cat)}
                     className={`px-5 py-2 rounded-xl text-sm font-bold whitespace-nowrap transition-all border ${selectedCategory === cat
                       ? 'bg-[#99334C] text-white border-[#99334C] shadow-md'
-                      : 'bg-white text-gray-600 border-gray-200 hover:border-[#99334C]/30 hover:bg-[#99334C]/5'
+                      : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-700 hover:border-[#99334C]/30 hover:bg-[#99334C]/5'
                       }`}
                   >
                     {cat === 'all' ? t('allCategories') : cat}
@@ -309,15 +309,15 @@ const LibraryPage = () => {
           ) : (
             <>
               {/* Résultats */}
-              <div className="mb-6 text-sm text-gray-600">
+              <div className="mb-6 text-sm text-gray-600 dark:text-gray-400">
                 {t('results', { count: filteredCourses.length })} ({t('docsLoaded', { count: courses.length })})
               </div>
 
               {viewMode === 'grid' ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
                   {filteredCourses.map((course) => (
-                    <div key={course.doc_id} className="bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all border border-gray-100 group">
-                      <div className="relative h-48 bg-gray-100 overflow-hidden">
+                    <div key={course.doc_id} className="bg-white dark:bg-gray-800 rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all border border-gray-100 dark:border-gray-700 group">
+                      <div className="relative h-48 bg-gray-100 dark:bg-gray-900 overflow-hidden">
                         {course.cover_image ? (
                           <img
                             src={course.cover_image}
@@ -362,7 +362,7 @@ const LibraryPage = () => {
                         </span>
                         <button
                           onClick={(e) => { e.stopPropagation(); toggleBookmark(course.doc_id); }}
-                          className="absolute top-3 right-3 p-2 bg-white/90 rounded-full hover:bg-white transition-all"
+                          className="absolute top-3 right-3 p-2 bg-white/90 dark:bg-gray-800/90 rounded-full hover:bg-white dark:hover:bg-gray-700 transition-all border border-gray-100 dark:border-gray-600"
                         >
                           {bookmarkedCourses.includes(course.doc_id) ? (
                             <BookmarkCheck className="w-4 h-4 text-[#99334C]" />
@@ -373,17 +373,17 @@ const LibraryPage = () => {
                       </div>
 
                       <div className="p-6">
-                        <span className="inline-block px-3 py-1 bg-[#99334C]/10 text-[#99334C] text-xs font-bold rounded-full mb-3">
+                        <span className="inline-block px-3 py-1 bg-[#99334C]/10 dark:bg-[#99334C]/20 text-[#99334C] dark:text-[#ff9daf] text-xs font-bold rounded-full mb-3">
                           {course.category || 'Non classé'}
                         </span>
-                        <h3 className="text-xl font-bold text-gray-900 mb-2 line-clamp-2 group-hover:text-[#99334C] transition-colors">
+                        <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2 line-clamp-2 group-hover:text-[#99334C] dark:group-hover:text-[#ff9daf] transition-colors">
                           {course.doc_name}
                         </h3>
-                        <p className="text-gray-600 text-sm mb-4 line-clamp-2">
+                        <p className="text-gray-600 dark:text-gray-400 text-sm mb-4 line-clamp-2">
                           {course.description || 'Aucune description disponible.'}
                         </p>
 
-                        <div className="flex items-center gap-4 text-xs text-gray-500 mb-4">
+                        <div className="flex items-center gap-4 text-xs text-gray-500 dark:text-gray-400 mb-4">
                           <span className="flex items-center gap-1">
                             <FileText className="w-3 h-3" />
                             {course.pages || '?'} pages
@@ -402,14 +402,14 @@ const LibraryPage = () => {
                           </span>
                         </div>
 
-                        <div className="flex items-center justify-between pt-4 border-t border-gray-100">
+                        <div className="flex items-center justify-between pt-4 border-t border-gray-100 dark:border-gray-700">
                           <div className="flex items-center gap-2">
-                            <div className="w-8 h-8 bg-[#99334C]/10 rounded-full flex items-center justify-center">
-                              <User className="w-4 h-4 text-[#99334C]" />
+                            <div className="w-8 h-8 bg-[#99334C]/10 dark:bg-[#99334C]/20 rounded-full flex items-center justify-center">
+                              <User className="w-4 h-4 text-[#99334C] dark:text-[#ff9daf]" />
                             </div>
-                            <span className="text-sm font-medium text-gray-700">{course.author || t('unknownAuthor')}</span>
+                            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{course.author || t('unknownAuthor')}</span>
                           </div>
-                          <div className="flex items-center gap-1 text-sm text-gray-500">
+                          <div className="flex items-center gap-1 text-sm text-gray-500 dark:text-gray-400">
                             <Calendar className="w-4 h-4" />
                             <span>{new Date(course.published_at).toLocaleDateString()}</span>
                           </div>
@@ -422,8 +422,8 @@ const LibraryPage = () => {
                 /* List View */
                 <div className="space-y-4">
                   {filteredCourses.map((course) => (
-                    <div key={course.doc_id} className="bg-white rounded-xl shadow-md hover:shadow-lg transition-all border border-gray-100 p-6 flex flex-col sm:flex-row gap-6">
-                      <div className="w-32 h-32 rounded-xl flex-shrink-0 overflow-hidden border border-gray-100 shadow-sm">
+                    <div key={course.doc_id} className="bg-white dark:bg-gray-800 rounded-xl shadow-md hover:shadow-lg transition-all border border-gray-100 dark:border-gray-700 p-6 flex flex-col sm:flex-row gap-6">
+                      <div className="w-32 h-32 rounded-xl flex-shrink-0 overflow-hidden border border-gray-100 dark:border-gray-600 shadow-sm">
                         {course.cover_image ? (
                           <img
                             src={course.cover_image}
@@ -440,17 +440,17 @@ const LibraryPage = () => {
                         <div className="flex items-start justify-between gap-4">
                           <div>
                             <div className="flex items-center gap-2 mb-2">
-                              <span className="px-2 py-0.5 bg-[#99334C]/10 text-[#99334C] text-xs font-bold rounded-full">
+                              <span className="px-2 py-0.5 bg-[#99334C]/10 dark:bg-[#99334C]/20 text-[#99334C] dark:text-[#ff9daf] text-xs font-bold rounded-full">
                                 {course.category || 'Non classé'}
                               </span>
                               <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${getLevelColor(course.level)}`}>
                                 {course.level || 'N/A'}
                               </span>
                             </div>
-                            <h3 className="text-lg font-bold text-gray-900 mb-1 hover:text-[#99334C] transition-colors">
+                            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1 hover:text-[#99334C] dark:hover:text-[#ff9daf] transition-colors">
                               {course.doc_name}
                             </h3>
-                            <p className="text-gray-600 text-sm line-clamp-2 mb-3">
+                            <p className="text-gray-600 dark:text-gray-400 text-sm line-clamp-2 mb-3">
                               {course.description || 'Aucune description disponible.'}
                             </p>
                           </div>
@@ -465,7 +465,7 @@ const LibraryPage = () => {
                             <button
                               onClick={(e) => { e.stopPropagation(); handleDownloadCourse(course.doc_id); }}
                               disabled={downloadingId === course.doc_id}
-                              className="p-2 border border-gray-200 rounded-lg hover:bg-gray-50 transition-all disabled:opacity-50"
+                              className="p-2 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400 transition-all disabled:opacity-50"
                               title="Télécharger"
                             >
                               {downloadingId === course.doc_id ? (
@@ -477,8 +477,8 @@ const LibraryPage = () => {
                             <button
                               onClick={(e) => handleToggleLike(course.doc_id, e)}
                               className={`p-2 border rounded-lg transition-all ${course.isLiked
-                                ? 'bg-rose-50 border-rose-200 text-rose-500'
-                                : 'border-gray-200 text-gray-400 hover:bg-gray-50'
+                                ? 'bg-rose-50 dark:bg-rose-900/20 border-rose-200 dark:border-rose-800 text-rose-500'
+                                : 'border-gray-200 dark:border-gray-700 text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'
                                 }`}
                               title={course.isLiked ? "Je n'aime plus" : "J'aime"}
                             >
@@ -486,7 +486,7 @@ const LibraryPage = () => {
                             </button>
                           </div>
                         </div>
-                        <div className="flex items-center gap-6 text-sm text-gray-500">
+                        <div className="flex items-center gap-6 text-sm text-gray-500 dark:text-gray-400">
                           <span className="flex items-center gap-1">
                             <User className="w-4 h-4" />
                             {course.author || 'Auteur inconnu'}
@@ -519,11 +519,11 @@ const LibraryPage = () => {
       </section>
 
       {/* Top Creators Section */}
-      <section className="py-12 px-6 bg-gray-50 border-t border-gray-200">
+      <section className="py-12 px-6 bg-gray-50 dark:bg-gray-950 border-t border-gray-200 dark:border-gray-800 transition-colors">
         <div className="max-w-7xl mx-auto">
           <div className="flex items-center justify-between mb-8">
-            <h2 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
-              <Star className="w-8 h-8 text-[#99334C]" />
+            <h2 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
+              <Star className="w-8 h-8 text-[#99334C] dark:text-[#ff9daf]" />
               {t('topCreators')}
             </h2>
             <Link
@@ -533,7 +533,7 @@ const LibraryPage = () => {
               {t('seeAll')} <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
-          <div className="text-sm text-gray-500 mb-6">
+          <div className="text-sm text-gray-500 dark:text-gray-400 mb-6">
             {t('topCreatorsDesc')}
           </div>
 
@@ -590,10 +590,10 @@ const TopCreatorsList = () => {
         <div
           key={creator.id}
           onClick={() => router.push(`/profile/${creator.id}`)}
-          className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-all cursor-pointer flex items-center gap-4 group"
+          className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 hover:shadow-md transition-all cursor-pointer flex items-center gap-4 group"
         >
           <div className="relative">
-            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center text-xl font-bold text-gray-600 group-hover:bg-[#99334C] group-hover:text-white transition-colors">
+            <div className="w-16 h-16 bg-gray-100 dark:bg-gray-900 rounded-full flex items-center justify-center text-xl font-bold text-gray-600 dark:text-gray-400 group-hover:bg-[#99334C] group-hover:text-white transition-colors">
               {creator.name.split(' ').map((n: any) => n[0]).join('')}
             </div>
             <div className="absolute -top-2 -right-2 w-6 h-6 bg-yellow-400 rounded-full flex items-center justify-center text-xs font-bold shadow-sm">
@@ -601,8 +601,8 @@ const TopCreatorsList = () => {
             </div>
           </div>
           <div className="flex-1 min-w-0">
-            <h3 className="font-bold text-gray-900 truncate group-hover:text-[#99334C] transition-colors">{creator.name}</h3>
-            <p className="text-xs text-gray-500 truncate">{creator.role}</p>
+            <h3 className="font-bold text-gray-900 dark:text-white truncate group-hover:text-[#99334C] dark:group-hover:text-[#ff9daf] transition-colors">{creator.name}</h3>
+            <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{creator.role}</p>
             <div className="flex items-center gap-3 mt-2 text-xs font-medium text-gray-400">
               <span className="flex items-center gap-1">
                 <Eye className="w-3 h-3" />

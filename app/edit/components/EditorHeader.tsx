@@ -41,12 +41,12 @@ const EditorHeader: React.FC<EditorHeaderProps> = ({
     onToggleMobileTOC,
 }) => {
     return (
-        <div className="bg-white border-b border-gray-200 flex items-center justify-between px-4 h-16 shrink-0 z-30">
+        <div className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between px-4 h-16 shrink-0 z-30 transition-colors">
             <div className="flex items-center gap-4 min-w-0 flex-1">
                 <TactileButton
                     variant="ghost"
                     onClick={onToggleMobileTOC}
-                    className="lg:hidden p-2 text-gray-600 hover:text-[#99334C]"
+                    className="lg:hidden p-2 text-gray-600 dark:text-gray-400 hover:text-[#99334C] dark:hover:text-[#ff9daf]"
                 >
                     <Menu className="w-5 h-5" />
                 </TactileButton>
@@ -54,14 +54,14 @@ const EditorHeader: React.FC<EditorHeaderProps> = ({
                 <RichTooltip title="Accueil" description="Retourner à la gestion de vos projets." shortcut="Alt+H">
                     <Link
                         href="/edit-home"
-                        className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-gray-600 hover:text-[#99334C]"
+                        className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors text-gray-600 dark:text-gray-400 hover:text-[#99334C] dark:hover:text-[#ff9daf]"
                     >
                         <Home className="w-5 h-5" />
                     </Link>
                 </RichTooltip>
 
                 <div className="flex flex-col min-w-0 max-w-[200px]">
-                    <h1 className="text-base font-bold text-gray-900 border-l pl-4 border-gray-200 truncate">
+                    <h1 className="text-base font-bold text-gray-900 dark:text-white border-l pl-4 border-gray-200 dark:border-gray-700 truncate">
                         {projectData?.pr_name || projectName}
                     </h1>
                     {projectData && projectData.owner_id !== authUser?.user_id && (

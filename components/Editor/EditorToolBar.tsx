@@ -60,12 +60,12 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
   canRedo,
 }) => {
   return (
-    <div className={`bg-white border-b border-gray-200 p-1.5 flex items-center gap-1 transition-all duration-300 overflow-hidden ${disabled ? 'opacity-40 pointer-events-none select-none' : ''
+    <div className={`bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 p-1.5 flex items-center gap-1 transition-all duration-300 overflow-hidden ${disabled ? 'opacity-40 pointer-events-none select-none' : ''
       }`}>
 
       <RichTooltip title="Police" description="Changer la famille de police du texte sélectionné.">
         <select
-          className="px-2 py-1 border border-gray-300 rounded text-sm bg-white text-black outline-none focus:ring-1 focus:ring-[#99334C]"
+          className="px-2 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 outline-none focus:ring-1 focus:ring-[#99334C]"
           value={textFormat.font}
           onChange={onFontChange}
         >
@@ -81,7 +81,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
 
       <RichTooltip title="Taille" description="Ajuster la taille de la police pour mettre en relief votre contenu.">
         <select
-          className="px-2 py-1 border border-gray-300 rounded text-sm w-16 bg-white text-black outline-none focus:ring-1 focus:ring-[#99334C]"
+          className="px-2 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm w-16 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 outline-none focus:ring-1 focus:ring-[#99334C]"
           value={textFormat.fontSize}
           onChange={onFontSizeChange}
         >
@@ -106,7 +106,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
       </RichTooltip>
 
       <RichTooltip title="Barré" description="Barrer le texte pour indiquer une suppression.">
-        <button className="p-2 hover:bg-gray-100 rounded text-gray-700 transition-colors" onClick={() => onFormatChange('strikethrough')}><Strikethrough size={18} /></button>
+        <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded text-gray-700 dark:text-gray-300 transition-colors" onClick={() => onFormatChange('strikethrough')}><Strikethrough size={18} /></button>
       </RichTooltip>
 
       <div className="w-[1.5px] h-6 bg-gray-300 mx-1 flex-shrink-0" />
@@ -137,7 +137,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
         <button className="p-2 hover:bg-gray-100 rounded text-gray-700 transition-colors" onClick={() => onFormatChange('outdent')}><IndentDecrease size={18} /></button>
       </RichTooltip>
 
-      <div className="w-[1.5px] h-6 bg-gray-300 mx-1 flex-shrink-0" />
+      <div className="w-[1.5px] h-6 bg-gray-300 dark:bg-gray-700 mx-1 flex-shrink-0" />
 
       <RichTooltip title="Couleur" description="Changer la couleur du texte sélectionné.">
         <div className="flex items-center gap-1.5 p-1 hover:bg-gray-100 rounded transition-colors group relative cursor-pointer">

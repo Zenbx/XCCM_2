@@ -1026,7 +1026,7 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
       tabIndex={0}
       onFocus={handleTOCFocus}
       onBlur={handleTOCBlur}
-      className={`bg-white border-r border-gray-200 overflow-y-auto flex flex-col h-full select-none transition-all`}
+      className={`bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 overflow-y-auto flex flex-col h-full select-none transition-all`}
       style={{
         width: `${width}px`,
         ...(isTOCFocused && {
@@ -1036,8 +1036,8 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
       aria-label="Table of Contents - Use arrow keys to navigate, Enter to select, F2 to rename, Delete to remove"
     >
       {/* Header */}
-      <div className="p-4 border-b border-gray-100 flex items-center justify-between sticky top-0 z-10 bg-white/95 backdrop-blur-sm">
-        <h2 className="text-gray-800 font-bold text-sm uppercase tracking-wider">{t('title')}</h2>
+      <div className="p-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between sticky top-0 z-10 bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm">
+        <h2 className="text-gray-800 dark:text-gray-200 font-bold text-sm uppercase tracking-wider">{t('title')}</h2>
         <div className="flex items-center gap-2">
           {isSearching ? (
              <button onClick={() => { setIsSearching(false); setSearchQuery(''); }} className="p-1.5 text-gray-400 hover:text-gray-800 hover:bg-gray-100 rounded-md transition-all">
@@ -1076,8 +1076,8 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
 
       {/* Contenu */}
       {isSearching ? (
-        <div className="flex-1 flex flex-col overflow-hidden bg-white">
-          <div className="p-3 border-b border-gray-100 bg-gray-50">
+        <div className="flex-1 flex flex-col overflow-hidden bg-white dark:bg-gray-900">
+          <div className="p-3 border-b border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
               <input 
@@ -1086,7 +1086,7 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
                 placeholder="Chercher dans le cours..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-4 py-2 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-[#99334C] outline-none transition-all placeholder:text-gray-400"
+                className="w-full pl-9 pr-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:ring-2 focus:ring-[#99334C] outline-none transition-all placeholder:text-gray-400 dark:text-gray-100"
               />
             </div>
           </div>
@@ -1208,8 +1208,8 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
             {optimisticStructure.map(part => (
               <div key={part.part_id} className="relative group/part">
                 <div
-                  className={`flex items-center gap-2 py-2 px-2 hover:bg-gray-50 rounded-lg cursor-pointer transition-colors
-                  ${selectedPartId === part.part_id ? 'bg-[#99334C]/10 text-[#99334C] shadow-sm rounded-lg' : 'rounded-lg'}
+                  className={`flex items-center gap-2 py-2 px-2 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg cursor-pointer transition-colors
+                  ${selectedPartId === part.part_id ? 'ring-2 ring-[#99334C] ring-offset-1 bg-[#99334C]/5 text-[#99334C] shadow-sm rounded-lg' : 'rounded-lg'}
                   ${pulsingId === part.part_id ? 'animate-pulse ring-2 ring-[#99334C]' : ''}
                   ${getDropStyle('part', part.part_id)}
                   ${flatItems[focusedIndex]?.id === part.part_id && isTOCFocused ? 'ring-2 ring-[#99334C] ring-offset-1 bg-[#99334C]/5' : ''}`}
@@ -1243,7 +1243,7 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
                   {editingId === `part-${part.part_id}` ? (
                     <input
                       autoFocus
-                      className="text-sm font-semibold flex-1 bg-white border border-[#99334C] rounded px-1 outline-none text-gray-700"
+                      className="text-sm font-semibold flex-1 bg-white dark:bg-gray-800 border border-[#99334C] rounded px-1 outline-none text-gray-700 dark:text-gray-200"
                       value={tempTitle}
                       onChange={(e) => setTempTitle(e.target.value)}
                       onBlur={() => submitRename('part', part.part_id)}
@@ -1252,7 +1252,7 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
                     />
                   ) : (
                     <div
-                      className={`text-sm font-semibold truncate flex-1 ${selectedPartId === part.part_id ? 'text-[#99334C]' : 'text-gray-800'}`}
+                      className={`text-sm font-semibold truncate flex-1 ${selectedPartId === part.part_id ? 'text-[#99334C]' : 'text-gray-800 dark:text-gray-200'}`}
                       onClick={(e) => {
                         e.stopPropagation();
                         onSelectPart?.({ projectName, partTitle: part.part_title, part });
@@ -1295,8 +1295,8 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
                             variants={itemVariants}
                           >
                             <div
-                              className={`flex items-center gap-2 py-1.5 px-2 hover:bg-gray-50 rounded-lg cursor-pointer group transition-all
-                              ${selectedChapterId === chapter.chapter_id ? 'bg-[#99334C]/10 text-[#99334C] shadow-sm rounded-lg' : 'rounded-lg'}
+                              className={`flex items-center gap-2 py-1.5 px-2 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg cursor-pointer group transition-all
+                              ${selectedChapterId === chapter.chapter_id ? 'ring-2 ring-[#DC3545] ring-offset-1 bg-[#DC3545]/5 text-[#DC3545] shadow-sm rounded-lg' : 'rounded-lg'}
                                ${pulsingId === chapter.chapter_id ? 'animate-pulse ring-2 ring-[#99334C]' : ''}
                               ${getDropStyle('chapter', chapter.chapter_id)}
                               ${flatItems[focusedIndex]?.id === chapter.chapter_id && isTOCFocused ? 'ring-2 ring-[#DC3545] ring-offset-1 bg-[#DC3545]/5' : ''}`}
@@ -1330,7 +1330,7 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
                               {editingId === `chapter-${chapter.chapter_id}` ? (
                                 <input
                                   autoFocus
-                                  className="text-sm font-medium flex-1 bg-white border border-[#DC3545] rounded px-1 outline-none text-gray-700"
+                                  className="text-sm font-medium flex-1 bg-white dark:bg-gray-800 border border-[#DC3545] rounded px-1 outline-none text-gray-700 dark:text-gray-200"
                                   value={tempTitle}
                                   onChange={(e) => setTempTitle(e.target.value)}
                                   onBlur={() => submitRename('chapter', chapter.chapter_id)}
@@ -1339,7 +1339,7 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
                                 />
                               ) : (
                                 <span
-                                  className={`text-sm truncate flex-1 font-medium cursor-pointer hover:underline ${selectedChapterId === chapter.chapter_id ? 'text-[#99334C]' : 'text-gray-700'}`}
+                                  className={`text-sm truncate flex-1 font-medium cursor-pointer hover:underline ${selectedChapterId === chapter.chapter_id ? 'text-[#99334C]' : 'text-gray-700 dark:text-gray-300'}`}
                                   onClick={() => {
                                     onSelectChapter?.(projectName, part.part_title, chapter.chapter_title, chapter.chapter_id);
                                     toggleExpand(`chapter-${chapter.chapter_id}`);
@@ -1368,8 +1368,8 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
                                   {chapter.paragraphs.map(paragraph => (
                                     <div key={paragraph.para_id} className="relative group/para">
                                       <div
-                                        className={`flex items-center gap-2 py-1.5 px-2 hover:bg-gray-50 rounded-lg cursor-pointer group transition-all
-                                      ${selectedParagraphId === paragraph.para_id ? 'bg-[#99334C]/10 text-[#99334C] shadow-sm rounded-lg' : 'rounded-lg'}
+                                        className={`flex items-center gap-2 py-1.5 px-2 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg cursor-pointer group transition-all
+                                      ${selectedParagraphId === paragraph.para_id ? 'ring-2 ring-amber-500 ring-offset-1 bg-amber-500/5 text-amber-600 shadow-sm rounded-lg' : 'rounded-lg'}
                                       ${pulsingId === paragraph.para_id ? 'animate-pulse ring-2 ring-[#99334C]' : ''}
                                       ${getDropStyle('paragraph', paragraph.para_id)}
                                       ${flatItems[focusedIndex]?.id === paragraph.para_id && isTOCFocused ? 'ring-2 ring-amber-500 ring-offset-1 bg-amber-500/5' : ''}`}
@@ -1403,7 +1403,7 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
                                         {editingId === `paragraph-${paragraph.para_id}` ? (
                                           <input
                                             autoFocus
-                                            className="text-sm flex-1 bg-white border border-[#D97706] rounded px-1 outline-none text-gray-700"
+                                            className="text-sm flex-1 bg-white dark:bg-gray-800 border border-[#D97706] rounded px-1 outline-none text-gray-700 dark:text-gray-200"
                                             value={tempTitle}
                                             onChange={(e) => setTempTitle(e.target.value)}
                                             onBlur={() => submitRename('paragraph', paragraph.para_id)}
@@ -1412,7 +1412,7 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
                                           />
                                         ) : (
                                           <span
-                                            className={`text-sm truncate flex-1 cursor-pointer hover:underline ${selectedParagraphId === paragraph.para_id ? 'text-[#99334C]' : 'text-gray-600'}`}
+                                            className={`text-sm truncate flex-1 cursor-pointer hover:underline ${selectedParagraphId === paragraph.para_id ? 'text-[#99334C]' : 'text-gray-600 dark:text-gray-400'}`}
                                             onClick={() => {
                                               onSelectParagraph?.(projectName, part.part_title, chapter.chapter_title, paragraph.para_name, paragraph.para_id);
                                               toggleExpand(`paragraph-${paragraph.para_id}`);
@@ -1442,10 +1442,10 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
                                               <div
                                                 key={notion.notion_id}
                                                 className={`flex items-center gap-2 py-1.5 px-2 rounded-lg cursor-pointer w-full text-left transition-all group
-                                            ${selectedNotionId === notion.notion_id ? 'bg-[#99334C]/10 text-[#99334C] shadow-sm rounded-lg' : 'text-gray-500 hover:text-gray-900 hover:bg-gray-50 rounded-lg'} 
+                                            ${selectedNotionId === notion.notion_id ? 'bg-[#28A74515] dark:bg-[#10B98120] text-[#28A745] dark:text-[#10B981] border border-[#28A74540] dark:border-[#10B98140] shadow-sm rounded-lg' : 'text-gray-500 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg'} 
                                             ${pulsingId === notion.notion_id ? 'animate-pulse ring-2 ring-[#99334C]' : ''}
                                             ${getDropStyle('notion', notion.notion_id)}
-                                            ${flatItems[focusedIndex]?.id === notion.notion_id && isTOCFocused ? 'ring-2 ring-[#99334C] ring-offset-1 bg-[#99334C]/5' : ''}`}
+                                            ${flatItems[focusedIndex]?.id === notion.notion_id && isTOCFocused ? 'ring-2 ring-[#28A745] dark:ring-[#10B981] ring-offset-1 bg-[#28A74508] dark:bg-[#10B98108]' : ''}`}
                                                 draggable
                                                 onDragStart={(e) => handleDragStart(e, 'notion', notion, paragraph.para_id)}
                                                 onDragOver={(e) => handleDragOver(e, 'notion', notion.notion_id, paragraph.para_id)}
@@ -1475,7 +1475,7 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
                                                 {editingId === `notion-${notion.notion_id}` ? (
                                                   <input
                                                     autoFocus
-                                                    className="text-sm font-medium flex-1 bg-white border border-[#99334C] rounded px-1 outline-none text-gray-700"
+                                                    className="text-sm font-medium flex-1 bg-white dark:bg-gray-800 border border-[#28A745] rounded px-1 outline-none text-gray-700 dark:text-gray-200"
                                                     value={tempTitle}
                                                     onChange={(e) => setTempTitle(e.target.value)}
                                                     onBlur={() => submitRename('notion', notion.notion_id)}
@@ -1484,7 +1484,7 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({
                                                   />
                                                 ) : (
                                                   <span
-                                                    className={`text-sm truncate flex-1 ${selectedNotionId === notion.notion_id ? 'font-medium' : ''}`}
+                                                    className={`text-sm truncate flex-1 ${selectedNotionId === notion.notion_id ? 'font-medium' : 'dark:text-gray-400 dark:group-hover:text-gray-200'}`}
                                                     onDoubleClick={(e) => startEditing(e, `notion-${notion.notion_id}`, notion.notion_name)}
                                                   >
                                                     {notion.notion_name}

@@ -1230,10 +1230,10 @@ const XCCM2Editor = () => {
                   };
                   handleDelete(type, id, findTitle() || '');
                 }}
-                selectedPartId={currentContext?.part?.part_id || structure.find(p => p.part_title === currentContext?.partTitle)?.part_id}
-                selectedChapterId={currentContext?.chapterId}
-                selectedParagraphId={currentContext?.paraId}
-                selectedNotionId={currentContext?.notion?.notion_id}
+                selectedPartId={currentContext?.type === 'part' ? (currentContext?.part?.part_id || structure.find(p => p.part_title === currentContext?.partTitle)?.part_id) : undefined}
+                selectedChapterId={currentContext?.type === 'chapter' ? currentContext?.chapterId : undefined}
+                selectedParagraphId={currentContext?.type === 'paragraph' ? currentContext?.paraId : undefined}
+                selectedNotionId={currentContext?.type === 'notion' ? currentContext?.notion?.notion_id : undefined}
                 pulsingId={pulsingId}
                 pendingGranule={pendingGranule}
                 isNotionOpen={currentContext?.type === 'notion'}
@@ -1246,7 +1246,7 @@ const XCCM2Editor = () => {
       </AnimatePresence>
 
       {/* 2. Centre : Header + Toolbar + Content Area (Sandwich) */}
-      <div className={`flex-1 flex flex-col min-w-0 h-full relative overflow-hidden bg-white ${isZenMode ? 'fixed inset-0 z-[100]' : ''}`}>
+      <div className={`flex-1 flex flex-col min-w-0 h-full relative overflow-hidden bg-white dark:bg-gray-900 ${isZenMode ? 'fixed inset-0 z-[100]' : ''}`}>
         {!isZenMode && (
           <EditorHeader
             projectName={projectName || ''}

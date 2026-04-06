@@ -452,7 +452,7 @@ const EditHomePage = () => {
   const pendingCount = projects.filter(p => p.invitation_status === 'Pending').length;
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white relative">
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white dark:from-gray-950 dark:to-gray-900 relative">
       {/* Hero Section */}
       <div className="relative bg-gradient-to-r from-[#99334C]/90 to-[#7a283d]/90 text-white overflow-hidden">
         <div className="absolute inset-0 opacity-20">
@@ -488,7 +488,7 @@ const EditHomePage = () => {
         {/* Section Templates (Nouveau Design) */}
         <section className="mb-16">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-3xl font-bold text-gray-900">Créer avec un Template</h2>
+            <h2 className="text-3xl font-bold text-gray-900 dark:text-white">Créer avec un Template</h2>
             <Link
               href="/templates"
               className="group flex items-center gap-2 text-[#99334C] font-semibold hover:text-[#7a283d] transition-colors"
@@ -504,21 +504,21 @@ const EditHomePage = () => {
               return (
                 <div
                   key={template.id}
-                  className="bg-white border border-gray-200 rounded-2xl overflow-hidden hover:shadow-xl transition-all group flex flex-col"
+                  className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl overflow-hidden hover:shadow-xl transition-all group flex flex-col"
                 >
                   {/* Header */}
-                  <div className="bg-gradient-to-r from-[#99334C]/10 to-[#99334C]/5 p-5 border-b border-gray-100">
+                  <div className="bg-gradient-to-r from-[#99334C]/10 to-[#99334C]/5 dark:from-[#99334C]/20 dark:to-[#99334C]/10 p-5 border-b border-gray-100 dark:border-gray-700">
                     <div className="flex items-start justify-between mb-4">
                       <div className="w-12 h-12 bg-[#99334C] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-md">
                         <IconComponent className="w-6 h-6 text-white" />
                       </div>
-                      <div className="flex items-center gap-1 bg-white px-2 py-1 rounded-full shadow-sm">
+                      <div className="flex items-center gap-1 bg-white dark:bg-gray-700 px-2 py-1 rounded-full shadow-sm">
                         <Star className="w-3 h-3 text-amber-500 fill-amber-500" />
-                        <span className="text-xs font-bold text-gray-700">{template.rating}</span>
+                        <span className="text-xs font-bold text-gray-700 dark:text-gray-200">{template.rating}</span>
                       </div>
                     </div>
 
-                    <h3 className="text-lg font-bold text-gray-900 mb-2 line-clamp-1" title={template.name}>{template.name}</h3>
+                    <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2 line-clamp-1" title={template.name}>{template.name}</h3>
                     <div className="flex items-center gap-2">
                       <span className={`px-2 py-0.5 rounded-full text-[10px] uppercase tracking-wide font-bold ${getDifficultyColor(template.difficulty)}`}>
                         {template.difficulty}
@@ -528,12 +528,12 @@ const EditHomePage = () => {
 
                   {/* Body */}
                   <div className="p-5 flex-1 flex flex-col">
-                    <p className="text-gray-600 text-sm mb-4 line-clamp-2 flex-1">{template.description}</p>
+                    <p className="text-gray-600 dark:text-gray-400 text-sm mb-4 line-clamp-2 flex-1">{template.description}</p>
 
                     {/* Stats Compact */}
-                    <div className="flex justify-between items-center mb-4 text-xs text-gray-500 bg-gray-50 p-2 rounded-lg">
+                    <div className="flex justify-between items-center mb-4 text-xs text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-900/50 p-2 rounded-lg">
                       <span className="font-medium">{template.parts} Parties</span>
-                      <span className="w-1 h-1 bg-gray-300 rounded-full"></span>
+                      <span className="w-1 h-1 bg-gray-300 dark:bg-gray-600 rounded-full"></span>
                       <span className="font-medium">{template.chapters} Chapitres</span>
                     </div>
 
@@ -541,7 +541,7 @@ const EditHomePage = () => {
                     <button
                       onClick={() => handleUseTemplate(template.id, template.name)}
                       disabled={creatingTemplateId !== null}
-                      className="w-full bg-white border-2 border-[#99334C] text-[#99334C] hover:bg-[#99334C] hover:text-white py-2.5 rounded-xl font-bold transition-all flex items-center justify-center gap-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed group-hover:shadow-md"
+                      className="w-full bg-white dark:bg-gray-800 border-2 border-[#99334C] text-[#99334C] dark:text-[#ff9daf] hover:bg-[#99334C] hover:text-white dark:hover:text-white py-2.5 rounded-xl font-bold transition-all flex items-center justify-center gap-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed group-hover:shadow-md"
                     >
                       {creatingTemplateId === template.id ? (
                         <Loader2 className="w-4 h-4 animate-spin" />
@@ -559,10 +559,10 @@ const EditHomePage = () => {
 
         {/* Section Tableau */}
         <section>
-          <div className="bg-white rounded-3xl shadow-lg border border-gray-100 overflow-hidden">
-            <div className="p-6 border-b border-gray-200">
+          <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-lg border border-gray-100 dark:border-gray-700 overflow-hidden">
+            <div className="p-6 border-b border-gray-200 dark:border-gray-700">
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <h2 className="text-2xl font-bold text-gray-900">Toutes mes compositions</h2>
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Toutes mes compositions</h2>
 
                 {/* Filtres */}
                 <div className="flex gap-2">
@@ -570,7 +570,7 @@ const EditHomePage = () => {
                     onClick={() => setFilterType('all')}
                     className={`px-4 py-2 rounded-lg font-medium transition-all ${filterType === 'all'
                       ? 'bg-[#99334C] text-white'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                       }`}
                   >
                     Tous
@@ -579,7 +579,7 @@ const EditHomePage = () => {
                     onClick={() => setFilterType('owned')}
                     className={`px-4 py-2 rounded-lg font-medium transition-all ${filterType === 'owned'
                       ? 'bg-[#99334C] text-white'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                       }`}
                   >
                     Mes Projets
@@ -588,7 +588,7 @@ const EditHomePage = () => {
                     onClick={() => setFilterType('accepted')}
                     className={`px-4 py-2 rounded-lg font-medium transition-all ${filterType === 'accepted'
                       ? 'bg-[#99334C] text-white'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                       }`}
                   >
                     Partagés
@@ -598,7 +598,7 @@ const EditHomePage = () => {
                       onClick={() => setFilterType('pending')}
                       className={`px-4 py-2 rounded-lg font-medium transition-all ${filterType === 'pending'
                         ? 'bg-[#99334C] text-white'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                         }`}
                     >
                       En attente
@@ -618,7 +618,7 @@ const EditHomePage = () => {
                     placeholder="Rechercher..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-xl text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#99334C]/20 focus:border-[#99334C]"
+                    className="w-full pl-10 pr-4 py-2.5 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-xl text-gray-700 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#99334C]/20 focus:border-[#99334C]"
                   />
                 </div>
               </div>
@@ -631,18 +631,18 @@ const EditHomePage = () => {
                 </div>
               ) : (
                 <table className="w-full">
-                  <thead className="bg-gray-50 border-b border-gray-200">
+                  <thead className="bg-gray-50 dark:bg-gray-900/50 border-b border-gray-200 dark:border-gray-700">
                     <tr>
-                      <th className="px-6 py-4 text-left text-sm font-bold text-gray-700">Nom du projet</th>
-                      <th className="px-6 py-4 text-left text-sm font-bold text-gray-700">Modification</th>
-                      <th className="px-6 py-4 text-left text-sm font-bold text-gray-700">Création</th>
-                      <th className="px-6 py-4 text-center text-sm font-bold text-gray-700">Actions</th>
+                      <th className="px-6 py-4 text-left text-sm font-bold text-gray-700 dark:text-gray-300">Nom du projet</th>
+                      <th className="px-6 py-4 text-left text-sm font-bold text-gray-700 dark:text-gray-300">Modification</th>
+                      <th className="px-6 py-4 text-left text-sm font-bold text-gray-700 dark:text-gray-300">Création</th>
+                      <th className="px-6 py-4 text-center text-sm font-bold text-gray-700 dark:text-gray-300">Actions</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-100">
+                  <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                     {filteredProjects.length === 0 ? (
                       <tr>
-                        <td colSpan={4} className="px-6 py-12 text-center text-gray-500">
+                        <td colSpan={4} className="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
                           Aucun projet trouvé
                         </td>
                       </tr>
@@ -652,17 +652,17 @@ const EditHomePage = () => {
                           key={project.pr_id}
                           onClick={() => project.invitation_status !== 'Pending' && handleOpenEditor(project.pr_name)}
                           className={clsx(
-                            "hover:bg-gray-50 transition-colors group",
+                            "hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors group",
                             project.invitation_status !== 'Pending' ? "cursor-pointer" : "cursor-default"
                           )}
                         >
                           <td className="px-6 py-4">
                             <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 rounded-lg bg-[#99334C]/10 flex items-center justify-center">
-                                <FileText className="w-5 h-5 text-[#99334C]" />
+                              <div className="w-10 h-10 rounded-lg bg-[#99334C]/10 dark:bg-[#99334C]/20 flex items-center justify-center">
+                                <FileText className="w-5 h-5 text-[#99334C] dark:text-[#ff9daf]" />
                               </div>
                               <div className="flex flex-col">
-                                <span className="font-semibold text-gray-900">{project.pr_name}</span>
+                                <span className="font-semibold text-gray-900 dark:text-white">{project.pr_name}</span>
                                 {project.invitation_status && (
                                   <div className="flex flex-col gap-1">
                                     <span className={clsx(
@@ -768,11 +768,11 @@ const EditHomePage = () => {
 
       {/* --- MODALE CRÉATION --- */}
       {showCreateModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl scale-100 transform transition-all">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full p-6 shadow-2xl scale-100 transform transition-all border border-gray-100 dark:border-gray-700">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-2xl font-bold text-gray-900">Nouveau Projet</h3>
-              <button onClick={() => setShowCreateModal(false)} className="text-gray-400 hover:text-gray-600">
+              <h3 className="text-2xl font-bold text-gray-900 dark:text-white">Nouveau Projet</h3>
+              <button onClick={() => setShowCreateModal(false)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
                 <X className="w-6 h-6" />
               </button>
             </div>
@@ -781,7 +781,7 @@ const EditHomePage = () => {
               value={newProjectName}
               onChange={(e) => setNewProjectName(e.target.value)}
               placeholder="Ex: Ma Super Composition"
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-[#99334C] outline-none"
+              className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-[#99334C] outline-none"
               autoFocus
             />
             <p className="mt-2 text-xs text-gray-500 mb-6">

@@ -77,7 +77,7 @@ const MarketplacePage = () => {
     }, [items, searchTerm, filterType]);
 
     return (
-        <div className="min-h-screen bg-[#FDFCFB] flex flex-col">
+        <div className="min-h-screen bg-[#FDFCFB] dark:bg-gray-950 flex flex-col transition-colors">
             {/* NO Header here - already in RootLayout */}
 
             <main className="flex-1 max-w-7xl mx-auto w-full px-6 py-12">
@@ -96,15 +96,15 @@ const MarketplacePage = () => {
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: 0.1 }}
-                            className="text-5xl lg:text-7xl font-black text-gray-900 leading-[1.1] mb-6"
+                            className="text-5xl lg:text-7xl font-black text-gray-900 dark:text-white leading-[1.1] mb-6"
                         >
-                            Le Marketplace des <span className="text-[#99334C]">Granules</span>
+                            Le Marketplace des <span className="text-[#99334C] dark:text-[#ff9daf]">Granules</span>
                         </motion.h1>
                         <motion.p
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: 0.2 }}
-                            className="text-xl text-gray-600 mb-8"
+                            className="text-xl text-gray-600 dark:text-gray-400 mb-8"
                         >
                             Explorez des milliers de briques pédagogiques (Parties, Chapitres, Notions) prêtes à l'emploi.
                         </motion.p>
@@ -119,7 +119,7 @@ const MarketplacePage = () => {
                             <input
                                 type="text"
                                 placeholder="Rechercher une notion, un chapitre, un auteur..."
-                                className="w-full pl-14 pr-6 py-4 bg-white border-2 border-gray-100 rounded-2xl shadow-lg shadow-gray-200/50 outline-none focus:border-[#99334C] focus:ring-4 focus:ring-[#99334C]/5 transition-all text-lg"
+                                className="w-full pl-14 pr-6 py-4 bg-white dark:bg-gray-800 border-2 border-gray-100 dark:border-gray-700 rounded-2xl shadow-lg shadow-gray-200/50 dark:shadow-none outline-none focus:border-[#99334C] focus:ring-4 focus:ring-[#99334C]/5 transition-all text-lg dark:text-gray-100"
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                             />
@@ -132,18 +132,18 @@ const MarketplacePage = () => {
                         transition={{ type: "spring", damping: 20, delay: 0.2 }}
                         className="hidden lg:flex flex-col gap-4"
                     >
-                        <div className="bg-white p-8 rounded-[2.5rem] shadow-2xl border border-gray-100 flex flex-col items-center justify-center text-center">
-                            <div className="w-20 h-20 rounded-full bg-[#99334C]/10 flex items-center justify-center text-[#99334C] mb-4">
+                        <div className="bg-white dark:bg-gray-800 p-8 rounded-[2.5rem] shadow-2xl border border-gray-100 dark:border-gray-700 flex flex-col items-center justify-center text-center">
+                            <div className="w-20 h-20 rounded-full bg-[#99334C]/10 dark:bg-[#99334C]/20 flex items-center justify-center text-[#99334C] dark:text-[#ff9daf] mb-4">
                                 <Layers size={40} />
                             </div>
-                            <h2 className="text-2xl font-black text-gray-900">{items.length > 0 ? `+${items.length * 15}` : '...'}</h2>
-                            <p className="text-gray-500 font-medium">Granules partagés</p>
+                            <h2 className="text-2xl font-black text-gray-900 dark:text-white">{items.length > 0 ? `+${items.length * 15}` : '...'}</h2>
+                            <p className="text-gray-500 dark:text-gray-400 font-medium">Granules partagés</p>
                         </div>
                     </motion.div>
                 </section>
 
                 {/* Categories & Filter Bar */}
-                <section className="mb-12 flex flex-col md:flex-row items-center justify-between gap-6 border-b border-gray-100 pb-8">
+                <section className="mb-12 flex flex-col md:flex-row items-center justify-between gap-6 border-b border-gray-100 dark:border-gray-800 pb-8">
                     <div className="flex gap-4 overflow-x-auto w-full md:w-auto pb-4 md:pb-0 no-scrollbar">
                         {categories.map((cat) => (
                             <button
@@ -151,7 +151,7 @@ const MarketplacePage = () => {
                                 onClick={() => setFilterType(cat.id)}
                                 className={`px-5 py-2.5 rounded-xl text-sm font-bold whitespace-nowrap transition-all flex items-center gap-2 ${filterType === cat.id
                                     ? 'bg-[#99334C] text-white shadow-lg shadow-[#99334C]/30'
-                                    : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-100'
+                                    : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-100 dark:border-gray-700'
                                     }`}
                             >
                                 {cat.icon}
@@ -161,8 +161,8 @@ const MarketplacePage = () => {
                     </div>
 
                     <div className="flex items-center gap-3">
-                        <span className="text-sm text-gray-500 font-medium">Trier par:</span>
-                        <select className="bg-white border border-gray-100 rounded-xl px-4 py-2 text-sm font-bold outline-none focus:border-[#99334C]">
+                        <span className="text-sm text-gray-500 dark:text-gray-400 font-medium">Trier par:</span>
+                        <select className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl px-4 py-2 text-sm font-bold outline-none focus:border-[#99334C] dark:text-gray-200">
                             <option>Les plus populaires</option>
                             <option>Mieux notés</option>
                             <option>Nouveautés</option>
@@ -178,9 +178,9 @@ const MarketplacePage = () => {
                 ) : error ? (
                     <div className="text-center py-20">
                         <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-                        <h3 className="text-xl font-bold text-gray-900 mb-2">Erreur de chargement</h3>
-                        <p className="text-gray-500">{error}</p>
-                        <button onClick={fetchItems} className="mt-4 text-[#99334C] font-bold hover:underline">Réessayer</button>
+                        <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Erreur de chargement</h3>
+                        <p className="text-gray-500 dark:text-gray-400">{error}</p>
+                        <button onClick={fetchItems} className="mt-4 text-[#99334C] dark:text-[#ff9daf] font-bold hover:underline">Réessayer</button>
                     </div>
                 ) : (
                     <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -188,11 +188,11 @@ const MarketplacePage = () => {
                             <motion.div
                                 key={product.id}
                                 whileHover={{ y: -8 }}
-                                className="bg-white rounded-[2rem] overflow-hidden border border-gray-100 shadow-xl hover:shadow-2xl transition-all group flex flex-col"
+                                className="bg-white dark:bg-gray-800 rounded-[2rem] overflow-hidden border border-gray-100 dark:border-gray-700 shadow-xl hover:shadow-2xl transition-all group flex flex-col"
                             >
                                 <div className="p-8 flex-1">
                                     <div className="flex items-center justify-between mb-6">
-                                        <span className="bg-[#99334C]/10 text-[#99334C] px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest">
+                                        <span className="bg-[#99334C]/10 dark:bg-[#99334C]/20 text-[#99334C] dark:text-[#ff9daf] px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest">
                                             {product.type}
                                         </span>
                                         <div className="flex items-center gap-1 text-yellow-400 font-bold text-sm">
@@ -212,23 +212,23 @@ const MarketplacePage = () => {
                                     </p>
 
                                     <div className="flex items-center gap-3 mb-6">
-                                        <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-400">
+                                        <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-900 flex items-center justify-center text-gray-400">
                                             <Users size={16} />
                                         </div>
-                                        <span className="text-xs text-gray-500 font-bold">{product.seller.firstname} {product.seller.lastname}</span>
+                                        <span className="text-xs text-gray-500 dark:text-gray-400 font-bold">{product.seller.firstname} {product.seller.lastname}</span>
                                     </div>
                                     <div className="flex flex-wrap gap-2 mb-4">
                                         {product.tags.slice(0, 3).map((tag, i) => (
-                                            <span key={i} className="text-[10px] bg-gray-50 text-gray-500 px-2 py-1 rounded-md">{tag}</span>
+                                            <span key={i} className="text-[10px] bg-gray-50 dark:bg-gray-900 text-gray-500 dark:text-gray-400 px-2 py-1 rounded-md">{tag}</span>
                                         ))}
                                     </div>
                                 </div>
 
                                 <div className="p-8 pt-0 mt-auto">
-                                    <div className="flex items-center gap-3 pt-6 border-t border-gray-50">
+                                    <div className="flex items-center gap-3 pt-6 border-t border-gray-50 dark:border-gray-700">
                                         <button
                                             onClick={() => setSelectedGranule(product)}
-                                            className="flex-1 flex items-center justify-center gap-2 bg-gray-50 text-gray-700 px-5 py-3 rounded-xl font-bold text-sm hover:bg-[#99334C]/10 hover:text-[#99334C] transition-all"
+                                            className="flex-1 flex items-center justify-center gap-2 bg-gray-50 dark:bg-gray-900 text-gray-700 dark:text-gray-300 px-5 py-3 rounded-xl font-bold text-sm hover:bg-[#99334C]/10 hover:text-[#99334C] dark:hover:text-[#ff9daf] transition-all"
                                         >
                                             <Eye size={18} /> Voir
                                         </button>
@@ -246,11 +246,11 @@ const MarketplacePage = () => {
 
                         {filteredItems.length === 0 && (
                             <div className="col-span-full py-20 text-center">
-                                <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gray-50 text-gray-300 mb-4">
+                                <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gray-50 dark:bg-gray-800 text-gray-300 dark:text-gray-600 mb-4">
                                     <Search size={40} />
                                 </div>
-                                <h3 className="text-xl font-bold text-gray-900 mb-2">Aucun granule trouvé</h3>
-                                <p className="text-gray-500">Essayez d'autres termes de recherche ou changez de catégorie.</p>
+                                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Aucun granule trouvé</h3>
+                                <p className="text-gray-500 dark:text-gray-400">Essayez d'autres termes de recherche ou changez de catégorie.</p>
                             </div>
                         )}
                     </section>
@@ -272,39 +272,39 @@ const MarketplacePage = () => {
                             initial={{ opacity: 0, scale: 0.9, y: 20 }}
                             animate={{ opacity: 1, scale: 1, y: 0 }}
                             exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                            className="relative bg-white rounded-[2.5rem] shadow-2xl max-w-2xl w-full max-h-[85vh] overflow-hidden flex flex-col"
+                            className="relative bg-white dark:bg-gray-800 rounded-[2.5rem] shadow-2xl max-w-2xl w-full max-h-[85vh] overflow-hidden flex flex-col border border-gray-100 dark:border-gray-700"
                         >
-                            <div className="p-8 border-b border-gray-100 flex items-center justify-between bg-white sticky top-0 z-10">
+                            <div className="p-8 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between bg-white dark:bg-gray-800 sticky top-0 z-10">
                                 <div>
-                                    <span className="bg-[#99334C]/10 text-[#99334C] px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest mb-2 inline-block">
+                                    <span className="bg-[#99334C]/10 dark:bg-[#99334C]/20 text-[#99334C] dark:text-[#ff9daf] px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest mb-2 inline-block">
                                         {selectedGranule.type}
                                     </span>
-                                    <h2 className="text-2xl font-black text-gray-900">{selectedGranule.title}</h2>
+                                    <h2 className="text-2xl font-black text-gray-900 dark:text-white">{selectedGranule.title}</h2>
                                 </div>
                                 <button
                                     onClick={() => setSelectedGranule(null)}
-                                    className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                                    className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
                                 >
                                     <X size={24} className="text-gray-400" />
                                 </button>
                             </div>
 
-                            <div className="p-10 overflow-y-auto flex-1 bg-[#FDFCFB]">
+                            <div className="p-10 overflow-y-auto flex-1 bg-[#FDFCFB] dark:bg-gray-900">
                                 <MarketplaceViewer
                                     content={selectedGranule.content || selectedGranule.description}
                                     type={selectedGranule.type as any}
                                 />
                             </div>
 
-                            <div className="p-8 border-t border-gray-100 bg-white flex items-center justify-between">
+                            <div className="p-8 border-t border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 flex items-center justify-between">
                                 <div className="text-sm">
                                     <span className="text-gray-400">Auteur:</span>
-                                    <span className="ml-1 font-bold text-gray-900">{selectedGranule.seller.firstname} {selectedGranule.seller.lastname}</span>
+                                    <span className="ml-1 font-bold text-gray-900 dark:text-white">{selectedGranule.seller.firstname} {selectedGranule.seller.lastname}</span>
                                 </div>
                                 <div className="flex gap-3">
                                     <button
                                         onClick={() => setSelectedGranule(null)}
-                                        className="px-6 py-3 rounded-xl font-bold text-sm text-gray-500 hover:bg-gray-50 transition-colors"
+                                        className="px-6 py-3 rounded-xl font-bold text-sm text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                                     >
                                         Fermer
                                     </button>
