@@ -18,7 +18,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/context/AuthContext';
 import { socraticService, SocraticAuditResult } from '@/services/socraticService';
-import { useChat } from 'ai/react';
+import { useChat } from '@ai-sdk/react';
 import { authService } from '@/services/authService';
 import toast from 'react-hot-toast';
 

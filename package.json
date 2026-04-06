@@ -10,6 +10,8 @@
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^3.0.66",
+    "@ai-sdk/google": "^3.0.58",
+    "@ai-sdk/react": "^3.0.148",
     "@hocuspocus/provider": "^3.4.3",
     "@tiptap/extension-collaboration": "2.27.2",
     "@tiptap/extension-collaboration-cursor": "2.27.2",
