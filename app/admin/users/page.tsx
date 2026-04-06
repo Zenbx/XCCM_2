@@ -14,7 +14,7 @@ import {
     Mail,
     UserCheck
 } from 'lucide-react';
-import { authService } from '@/services/authService';
+import { adminService } from '@/services/adminService';
 import toast from 'react-hot-toast';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
@@ -40,7 +40,7 @@ export default function UserManagement() {
     const fetchUsers = async () => {
         try {
             setLoading(true);
-            const data = await authService.getAllUsers();
+            const data = await adminService.getAllUsers();
             // Handle both { users: [...] } and direct [...] responses
             const usersList = Array.isArray(data) ? data : ((data as any)?.users || data || []);
             setUsers(usersList);
@@ -55,7 +55,7 @@ export default function UserManagement() {
     const toggleRole = async (userId: string, currentRole: string) => {
         const newRole = currentRole === 'admin' ? 'user' : 'admin';
         try {
-            await authService.updateUserRole(userId, newRole);
+            await adminService.updateUserRole(userId, newRole);
             toast.success("Rôle mis à jour");
             fetchUsers();
             setConfirmModal(null);
@@ -84,14 +84,13 @@ export default function UserManagement() {
         <div className="space-y-8 max-w-7xl mx-auto pb-20">
             {/* Header Section */}
             <header className="flex flex-col md:flex-row md:items-end justify-between gap-8">
-                <div className="space-y-1.5">
-                    <h1 className="text-2xl font-black text-gray-900 tracking-tight flex items-center gap-3">
+                <div className="space-y-1">
+                    <h1 className="text-2xl font-bold text-gray-900 tracking-tight flex items-center gap-3">
                         <Users className="text-[#99334C]" size={26} />
-                        <span className="bg-clip-text text-transparent bg-gradient-to-r from-gray-900 to-gray-600">Comptes Utilisateurs</span>
+                        Gestion des Comptes
                     </h1>
-                    <p className="text-[11px] text-gray-400 font-bold uppercase tracking-widest flex items-center gap-2">
-                        <span className="w-1.5 h-1.5 bg-[#99334C] rounded-full animate-pulse" />
-                        Système de Management d'Accès • {users.length} membres
+                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">
+                        Supervision des Accès • {users.length} Utilisateurs
                     </p>
                 </div>
 
@@ -122,11 +121,11 @@ export default function UserManagement() {
                     <table className="w-full text-left border-collapse text-sm">
                         <thead>
                             <tr className="bg-gray-50/20 border-b border-gray-50">
-                                <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Membre</th>
-                                <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Habilitation</th>
-                                <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Métriques Alpha</th>
-                                <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Adhésion</th>
-                                <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Contrôle</th>
+                                <th className="px-8 py-5 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Utilisateur</th>
+                                <th className="px-8 py-5 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Rôle</th>
+                                <th className="px-8 py-5 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Activité</th>
+                                <th className="px-8 py-5 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Date d'inscription</th>
+                                <th className="px-8 py-5 text-[10px] font-bold text-gray-400 uppercase tracking-widest text-right">Actions</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-50 text-gray-600">
@@ -148,11 +147,11 @@ export default function UserManagement() {
                                         </div>
                                     </td>
                                     <td className="px-8 py-5">
-                                        <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-xl border font-black text-[9px] uppercase tracking-[0.1em] shadow-sm ${user.role === 'admin'
+                                        <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border font-bold text-[9px] uppercase tracking-wider shadow-sm ${user.role === 'admin'
                                             ? 'bg-purple-50 text-purple-600 border-purple-100 shadow-purple-100/50'
                                             : 'bg-blue-50 text-blue-600 border-blue-100 shadow-blue-100/50'
                                             }`}>
-                                            <Shield size={10} className={user.role === 'admin' ? 'animate-pulse' : ''} />
+                                            <Shield size={10} />
                                             {user.role}
                                         </div>
                                     </td>
@@ -224,8 +223,8 @@ export default function UserManagement() {
                 onConfirm={() => confirmModal && toggleRole(confirmModal.userId, confirmModal.currentRole)}
                 title={confirmModal?.currentRole === 'admin' ? "Rétrograder l'administrateur ?" : "Promouvoir administrateur ?"}
                 message={confirmModal?.currentRole === 'admin'
-                    ? "Cet utilisateur perdra l'accès aux fonctions de gestion et au dashboard Admin OS. Êtes-vous certain de vouloir continuer ?"
-                    : "Cet utilisateur aura un accès complet au dashboard Admin OS et pourra gérer les utilisateurs et le contenu. Confirmer l'élévation de privilèges ?"}
+                    ? "Cet utilisateur perdra l'accès aux fonctions de gestion et au dashboard de la console. Êtes-vous certain de vouloir continuer ?"
+                    : "Cet utilisateur aura un accès complet à la console d'administration et pourra gérer les utilisateurs et le contenu. Confirmer l'élévation de privilèges ?"}
                 confirmText={confirmModal?.currentRole === 'admin' ? "Rétrograder" : "Promouvoir"}
                 variant={confirmModal?.currentRole === 'admin' ? 'warning' : 'info'}
             />

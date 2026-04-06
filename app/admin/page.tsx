@@ -66,14 +66,13 @@ const AdminDashboard = () => {
             <header className="flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-gray-100 pb-8">
                 <div className="space-y-2">
                     <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-gradient-to-br from-[#99334C] to-[#7a283d] rounded-xl flex items-center justify-center shadow-lg shadow-[#99334C]/20">
+                        <div className="w-10 h-10 bg-[#99334C] rounded-xl flex items-center justify-center shadow-sm">
                             <Shield className="text-white w-5 h-5" />
                         </div>
-                        <h1 className="text-3xl font-black text-gray-900 tracking-tight">Admin<span className="text-[#99334C]">OS</span> Dashboard</h1>
+                        <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Console de <span className="text-[#99334C]">Gestion Globale</span></h1>
                     </div>
-                    <p className="text-xs text-gray-400 font-bold uppercase tracking-widest flex items-center gap-2">
-                        <span className="w-1.5 h-1.5 bg-[#99334C] rounded-full animate-pulse" />
-                        Centre de Contrôle Stratégique • XCCM v2.0
+                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest flex items-center gap-2">
+                        Pilotage Opérationnel & Supervision • XCCM2
                     </p>
                 </div>
                 <div className="flex items-center gap-3">
@@ -83,8 +82,8 @@ const AdminDashboard = () => {
                     >
                         <Clock size={18} />
                     </button>
-                    <Link href="/admin/analytics" className="px-6 py-3 bg-[#99334C] text-white rounded-2xl font-black text-[11px] uppercase tracking-widest hover:bg-[#7a283d] transition-all shadow-lg shadow-[#99334C]/20 active:scale-95">
-                        Détails Alpha
+                    <Link href="/admin/analytics" className="px-6 py-3 bg-[#99334C] text-white rounded-xl font-bold text-[10px] uppercase tracking-widest hover:bg-[#7a283d] transition-all shadow-sm active:scale-95">
+                        Rapports Détaillés
                     </Link>
                 </div>
             </header>
@@ -108,10 +107,10 @@ const AdminDashboard = () => {
                             <s.icon size={22} style={{ color: s.color }} />
                         </div>
                         <div>
-                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none mb-2">{s.label}</p>
-                            <p className="text-2xl font-black text-gray-900 leading-none">{(s.val || 0).toLocaleString()}</p>
+                            <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest leading-none mb-2">{s.label}</p>
+                            <p className="text-2xl font-bold text-gray-900 leading-none">{(s.val || 0).toLocaleString()}</p>
                             <p className="text-[9px] text-[#99334C] font-bold uppercase tracking-tight mt-3 flex items-center gap-1">
-                                {s.trend === 'up' ? '▲' : '●'} {s.sub}
+                                {s.trend === 'up' ? '↗' : '→'} {s.sub}
                             </p>
                         </div>
                         <div className="absolute -right-4 -bottom-4 opacity-[0.02] group-hover:opacity-[0.06] transition-opacity duration-500">
@@ -127,8 +126,8 @@ const AdminDashboard = () => {
                 <div className="lg:col-span-1 bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden flex flex-col">
                     <div className="px-8 py-6 border-b border-gray-50 flex items-center justify-between bg-gray-50/20">
                         <div className="space-y-1">
-                            <h2 className="text-sm font-black text-gray-900 uppercase tracking-tight">Intelligence Utilisateurs</h2>
-                            <p className="text-[10px] text-gray-400 font-bold uppercase">Flux d'adhésion Alpha</p>
+                            <h2 className="text-xs font-bold text-gray-900 uppercase tracking-tight">Utilisateurs Récents</h2>
+                            <p className="text-[9px] text-gray-400 font-bold uppercase">Nouveaux membres</p>
                         </div>
                         <Link href="/admin/users" className="p-2 bg-white border border-gray-100 rounded-xl hover:bg-gray-50 text-gray-400 transition-all">
                             <ArrowRight size={16} />
@@ -157,10 +156,10 @@ const AdminDashboard = () => {
                     <div className="absolute top-0 right-0 w-64 h-64 bg-[#99334C]/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl opacity-50" />
                     <div className="px-8 py-7 border-b border-white/5 flex items-center justify-between z-10">
                         <div className="space-y-1">
-                            <h2 className="text-sm font-black text-white uppercase tracking-tight flex items-center gap-2">
-                                <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" /> Pulse Créative
+                            <h2 className="text-xs font-bold text-white uppercase tracking-tight flex items-center gap-2">
+                                <span className="w-2 h-2 bg-emerald-500 rounded-full" /> Activité Contenu
                             </h2>
-                            <p className="text-[10px] text-gray-500 font-bold uppercase">Projets en haute activité</p>
+                            <p className="text-[9px] text-gray-500 font-bold uppercase">Derniers projets actifs</p>
                         </div>
                         <Link href="/admin/projects" className="px-4 py-2 bg-white/5 hover:bg-white/10 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all glass-effect border border-white/10">
                             Volume Global

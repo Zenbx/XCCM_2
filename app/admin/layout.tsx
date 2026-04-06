@@ -52,12 +52,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                             animate={{ opacity: 1 }}
                             className="flex items-center gap-3"
                         >
-                            <div className="w-9 h-9 bg-gradient-to-br from-[#99334C] to-[#7a283d] rounded-xl flex items-center justify-center shadow-lg shadow-[#99334C]/20">
-                                <ShieldCheck className="text-white w-5 h-5 shadow-sm" />
+                            <div className="w-9 h-9 bg-[#99334C] rounded-lg flex items-center justify-center shadow-sm">
+                                <ShieldCheck className="text-white w-5 h-5" />
                             </div>
                             <div className="flex flex-col">
-                                <span className="font-black text-lg text-gray-900 leading-none tracking-tight">Admin<span className="text-[#99334C]">OS</span></span>
-                                <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-1">Plateforme</span>
+                                <span className="font-bold text-base text-gray-900 leading-none tracking-tight">Console <span className="text-[#99334C]">XCCM2</span></span>
+                                <span className="text-[9px] text-gray-400 font-bold uppercase tracking-widest mt-1">Administration</span>
                             </div>
                         </motion.div>
                     )}
@@ -110,7 +110,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                         className="flex items-center gap-3.5 px-4 py-3 text-gray-500 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all group"
                     >
                         <LogOut className="w-4.5 h-4.5 group-hover:translate-x-0.5 transition-transform" />
-                        {!isCollapsed && <span className="text-[11px] font-black uppercase tracking-widest">Sortie Alpha</span>}
+                        {!isCollapsed && <span className="text-[11px] font-bold uppercase tracking-widest">Retour Éditeur</span>}
                     </Link>
                 </div>
             </motion.aside>
@@ -123,7 +123,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                         <div className="w-8 h-8 bg-[#99334C] rounded-lg flex items-center justify-center">
                             <ShieldCheck className="text-white w-4 h-4" />
                         </div>
-                        <span className="font-black text-gray-900 tracking-tight">Admin<span className="text-[#99334C]">OS</span></span>
+                        <span className="font-bold text-gray-900 tracking-tight text-sm">Console <span className="text-[#99334C]">XCCM2</span></span>
                     </div>
                     <button
                         onClick={() => setIsMobileMenuOpen(true)}
@@ -167,10 +167,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                         >
                             <div className="h-20 flex items-center justify-between px-6 border-b border-gray-50 bg-gray-50/10">
                                 <div className="flex items-center gap-3">
-                                    <div className="w-8 h-8 bg-gradient-to-br from-[#99334C] to-[#7a283d] rounded-lg flex items-center justify-center">
+                                    <div className="w-8 h-8 bg-[#99334C] rounded-lg flex items-center justify-center">
                                         <ShieldCheck className="text-white w-4 h-4" />
                                     </div>
-                                    <span className="font-black text-lg text-gray-900 tracking-tight">Admin<span className="text-[#99334C]">OS</span></span>
+                                    <span className="font-bold text-base text-gray-900 tracking-tight">Console <span className="text-[#99334C]">XCCM2</span></span>
                                 </div>
                                 <button
                                     onClick={() => setIsMobileMenuOpen(false)}
@@ -205,7 +205,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                                     className="flex items-center gap-3.5 px-4 py-3 text-gray-500 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all"
                                 >
                                     <LogOut className="w-4.5 h-4.5" />
-                                    <span className="text-[11px] font-black uppercase tracking-widest">Sortie Alpha</span>
+                                    <span className="text-[11px] font-bold uppercase tracking-widest">Retour Éditeur</span>
                                 </Link>
                             </div>
                         </motion.aside>

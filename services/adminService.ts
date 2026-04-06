@@ -1,5 +1,5 @@
 // services/adminService.ts
-import { authService } from './authService';
+import { authenticatedFetch } from '@/lib/apiHelper';
 
 const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001').replace(/\/$/, '');
 
@@ -8,12 +8,7 @@ class AdminService {
      * Récupère les statistiques globales de l'admin
      */
     async getStats() {
-        const token = authService.getAuthToken();
-        if (!token) throw new Error('Non authentifié');
-
-        const response = await fetch(`${API_BASE_URL}/api/admin/stats`, {
-            headers: { 'Authorization': `Bearer ${token}` },
-        });
+        const response = await authenticatedFetch(`${API_BASE_URL}/api/admin/stats`);
 
         if (!response.ok) {
             const error = await response.json().catch(() => ({}));
@@ -28,22 +23,14 @@ class AdminService {
      * Récupère tous les projets de la plateforme
      */
     async getAllProjects() {
-        const token = authService.getAuthToken();
-        if (!token) throw new Error('Non authentifié');
-
-        console.log('Fetching projects from:', `${API_BASE_URL}/api/admin/projects`);
-        const response = await fetch(`${API_BASE_URL}/api/admin/projects`, {
-            headers: { 'Authorization': `Bearer ${token}` },
-        });
+        const response = await authenticatedFetch(`${API_BASE_URL}/api/admin/projects`);
 
         if (!response.ok) {
             const error = await response.json().catch(() => ({}));
-            console.error('getAllProjects error:', response.status, error);
             throw new Error(error.message || 'Erreur lors de la récupération des projets');
         }
 
         const data = await response.json();
-        console.log('getAllProjects success:', data);
         return data.data;
     }
 
@@ -51,12 +38,7 @@ class AdminService {
      * Récupère les paramètres système
      */
     async getSettings() {
-        const token = authService.getAuthToken();
-        if (!token) throw new Error('Non authentifié');
-
-        const response = await fetch(`${API_BASE_URL}/api/admin/settings`, {
-            headers: { Authorization: `Bearer ${token}` },
-        });
+        const response = await authenticatedFetch(`${API_BASE_URL}/api/admin/settings`);
 
         if (!response.ok) {
             const error = await response.json().catch(() => ({}));
@@ -71,15 +53,8 @@ class AdminService {
      * Enregistre les paramètres système
      */
     async saveSettings(settings: any) {
-        const token = authService.getAuthToken();
-        if (!token) throw new Error('Non authentifié');
-
-        const response = await fetch(`${API_BASE_URL}/api/admin/settings`, {
+        const response = await authenticatedFetch(`${API_BASE_URL}/api/admin/settings`, {
             method: 'PUT',
-            headers: {
-                Authorization: `Bearer ${token}`,
-                'Content-Type': 'application/json',
-            },
             body: JSON.stringify(settings),
         });
 
@@ -96,10 +71,7 @@ class AdminService {
      * Récupère tous les templates (Admin)
      */
     async getAllTemplates() {
-        const token = authService.getAuthToken();
-        const response = await fetch(`${API_BASE_URL}/api/templates`, {
-            headers: { Authorization: `Bearer ${token}` }
-        });
+        const response = await authenticatedFetch(`${API_BASE_URL}/api/templates`);
         if (!response.ok) throw new Error('Erreur templates');
         const data = await response.json();
         return data.data.templates || [];
@@ -109,13 +81,49 @@ class AdminService {
      * Récupère tous les items de la marketplace (Admin)
      */
     async getMarketplaceItems() {
-        const token = authService.getAuthToken();
-        const response = await fetch(`${API_BASE_URL}/api/marketplace`, {
-            headers: { Authorization: `Bearer ${token}` }
-        });
+        const response = await authenticatedFetch(`${API_BASE_URL}/api/marketplace`);
         if (!response.ok) throw new Error('Erreur marketplace');
         const data = await response.json();
         return data.data || [];
+    }
+
+    /**
+     * Récupère tous les utilisateurs (Admin)
+     */
+    async getAllUsers() {
+        const response = await authenticatedFetch(`${API_BASE_URL}/api/users`);
+        if (!response.ok) {
+            const error = await response.json().catch(() => ({}));
+            throw new Error(error.message || 'Erreur lors de la récupération des utilisateurs');
+        }
+        const data = await response.json();
+        return data.data;
+    }
+
+    /**
+     * Supprime un utilisateur (Admin)
+     */
+    async deleteUser(userId: string) {
+        const response = await authenticatedFetch(`${API_BASE_URL}/api/users/${userId}`, {
+            method: 'DELETE',
+        });
+        if (!response.ok) {
+            const error = await response.json().catch(() => ({}));
+            throw new Error(error.message || 'Erreur lors de la suppression');
+        }
+    }
+
+    /**
+     * Met à jour le rôle d'un utilisateur (Admin)
+     */
+    async updateUserRole(userId: string, role: string) {
+        const response = await authenticatedFetch(`${API_BASE_URL}/api/users/${userId}`, {
+            method: 'PATCH',
+            body: JSON.stringify({ role }),
+        });
+        if (!response.ok) {
+            throw new Error('Erreur lors de la mise à jour du rôle');
+        }
     }
 }
 

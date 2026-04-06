@@ -16,8 +16,10 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { chatbotService } from '@/services/chatbotService';
+import { useAuth } from '@/context/AuthContext';
 import { socraticService, SocraticAuditResult } from '@/services/socraticService';
+import { useChat } from 'ai/react';
+import { authService } from '@/services/authService';
 import toast from 'react-hot-toast';
 
 interface UnifiedAIPanelProps {
@@ -51,17 +53,46 @@ const UnifiedAIPanel: React.FC<UnifiedAIPanelProps> = ({
   editorContent,
   socraticData
 }) => {
+  const { isAdmin } = useAuth();
   const [activeTab, setActiveTab] = useState<'chat' | 'audit'>('chat');
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: 'welcome',
-      role: 'assistant',
-      content: "Bonjour ! Je suis votre coach pédagogique XCCM. Je peux analyser votre contenu, le reformuler ou répondre à vos questions sur la pédagogie. Que puis-je faire pour vous ?"
-    }
-  ]);
-  const [input, setInput] = useState('');
-  const [isTyping, setIsTyping] = useState(false);
   const [showScores, setShowScores] = useState(true);
+
+  // Vercel AI SDK - useChat Integration
+  const { messages, input, handleInputChange, handleSubmit, setMessages, isLoading: isStreaming } = useChat({
+    api: `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/ai/socratic`,
+    headers: {
+      Authorization: `Bearer ${authService.getAuthToken() || ''}`,
+    },
+    body: {
+      context: {
+        notionContent: editorContent,
+        partTitle: currentContext?.partTitle,
+        chapterTitle: currentContext?.chapterTitle,
+        paraName: currentContext?.paraName,
+        notionName: currentContext?.notionName,
+      }
+    },
+    initialMessages: [
+      {
+        id: 'welcome',
+        role: 'assistant',
+        content: isAdmin 
+          ? "Bonjour ! Je suis votre assistant de conception pédagogique. Je peux vous aider à structurer vos cours, clarifier vos notions ou générer des évaluations. Comment puis-je vous assister ?"
+          : "Bonjour ! Je suis votre coach pédagogique XCCM. Je vous accompagne dans votre apprentissage via une approche socratique. Que souhaitez-vous approfondir aujourd'hui ?"
+      }
+    ],
+    onResponse: (response: Response) => {
+      if (!response.ok) {
+        toast.error("Erreur de connexion à l'IA.");
+      }
+    },
+    onError: (error: Error) => {
+      console.error("AI Chat Error:", error);
+      toast.error("Une erreur est survenue lors de la discussion.");
+    }
+  });
+
+  const isTyping = isStreaming;
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -78,62 +109,22 @@ const UnifiedAIPanel: React.FC<UnifiedAIPanelProps> = ({
     await socraticData.analyzeContent(editorContent);
     
     // Add a message in chat about the audit
-    setMessages(prev => [...prev, {
+    setMessages((prev: any[]) => [...prev, {
       id: Date.now().toString(),
       role: 'assistant',
       content: "J'ai terminé l'analyse de votre contenu. Vous pouvez voir les scores et les suggestions dans l'onglet 'Audit'. Souhaitez-vous que je vous explique certains points ?"
     }]);
   };
 
-  const handleSend = async () => {
-    if (!input.trim()) return;
-
-    const userMsg: Message = { id: Date.now().toString(), role: 'user', content: input };
-    setMessages(prev => [...prev, userMsg]);
-    setInput('');
-    setIsTyping(true);
-
-    // Détection de style pour le rephrasing (legacy support logic)
-    const lowerInput = input.toLowerCase();
-    let style = '';
-    if (lowerInput.includes('simple')) style = 'simple';
-    else if (lowerInput.includes('formal')) style = 'formal';
-    else if (lowerInput.includes('summary') || lowerInput.includes('résumé')) style = 'summary';
-    else if (lowerInput.includes('detailed') || lowerInput.includes('détail')) style = 'detailed';
-
-    try {
-      if (style && currentContext?.type === 'notion') {
-        const result = await chatbotService.rephraseNotion(
-          currentContext.projectName,
-          currentContext.partTitle,
-          currentContext.chapterTitle,
-          currentContext.paraName,
-          currentContext.notionName,
-          style,
-          editorContent
-        );
-        
-        setMessages(prev => [...prev, {
-          id: (Date.now() + 1).toString(),
-          role: 'assistant',
-          content: `Voici une version "${style}" de votre contenu :\n\n${result.rephrased_content}`
-        }]);
-      } else {
-        // Simple chat simulation for now (should be a real conversational endpoint)
-        setTimeout(() => {
-          setMessages(prev => [...prev, {
-            id: (Date.now() + 1).toString(),
-            role: 'assistant',
-            content: "Je comprends. En tant qu'assistant XCCM, mon rôle est de vous aider à structurer vos connaissances. Pour l'instant, je me concentre sur la reformulation pédagogique et l'audit. Comment puis-je vous aider plus précisément ?"
-          }]);
-          setIsTyping(false);
-        }, 1000);
-        return;
-      }
-    } catch (error: any) {
-      toast.error("L'IA est occupée ou indisponible.");
-    } finally {
-      setIsTyping(false);
+  const handleSendRequest = (customInput?: string) => {
+    // If customInput is provided, we simulate a form submission with that value
+    if (customInput) {
+      const event = {
+        preventDefault: () => { },
+      } as React.FormEvent;
+      handleSubmit(event, { body: { customInput } });
+    } else {
+      handleSubmit();
     }
   };
 
@@ -198,7 +189,7 @@ const UnifiedAIPanel: React.FC<UnifiedAIPanelProps> = ({
               className="flex flex-col h-full p-4"
             >
               <div className="flex-1 overflow-y-auto space-y-4 pr-2 custom-scrollbar">
-                {messages.map((msg) => (
+                {messages.map((msg: any) => (
                   <div key={msg.id} className={`flex gap-3 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
                     <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
                       msg.role === 'assistant' ? 'bg-[#99334C] text-white' : 'bg-gray-200 text-gray-500'
@@ -229,20 +220,45 @@ const UnifiedAIPanel: React.FC<UnifiedAIPanelProps> = ({
                 <div ref={messagesEndRef} />
               </div>
 
-              {/* Suggestions chips */}
+              {/* Suggestions chips mapping */}
               <div className="flex flex-wrap gap-2 mt-4">
-                <button 
-                  onClick={() => setInput("Peux-tu simplifier ce texte ?")}
-                  className="text-[10px] px-2 py-1 bg-white border border-gray-100 rounded-full hover:border-[#99334C] transition-colors"
-                >
-                  ✨ Simplifier
-                </button>
-                <button 
-                  onClick={() => setInput("Fais un résumé synthétique")}
-                  className="text-[10px] px-2 py-1 bg-white border border-gray-100 rounded-full hover:border-[#99334C] transition-colors"
-                >
-                  📝 Résumer
-                </button>
+                {isAdmin ? (
+                  <>
+                    <button 
+                      onClick={() => handleSendRequest("Peux-tu optimiser la clarté de ce paragraphe ?")}
+                      className="text-[10px] px-2 py-1 bg-white border border-gray-100 rounded-full hover:border-[#99334C] transition-colors"
+                    >
+                      ✨ Optimiser clarté
+                    </button>
+                    <button 
+                      onClick={() => handleSendRequest("Génère 3 questions de quiz pour cette notion")}
+                      className="text-[10px] px-2 py-1 bg-white border border-gray-100 rounded-full hover:border-[#99334C] transition-colors"
+                    >
+                      ❓ Créer Quiz
+                    </button>
+                    <button 
+                      onClick={() => handleSendRequest("Suggère une analogie concrète pour expliquer ce concept")}
+                      className="text-[10px] px-2 py-1 bg-white border border-gray-100 rounded-full hover:border-[#99334C] transition-colors"
+                    >
+                      💡 Analogie
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button 
+                      onClick={() => handleSendRequest("Peux-tu simplifier ce texte ?")}
+                      className="text-[10px] px-2 py-1 bg-white border border-gray-100 rounded-full hover:border-[#99334C] transition-colors"
+                    >
+                      ✨ Simplifier
+                    </button>
+                    <button 
+                      onClick={() => handleSendRequest("Explique-moi ce concept étape par étape")}
+                      className="text-[10px] px-2 py-1 bg-white border border-gray-100 rounded-full hover:border-[#99334C] transition-colors"
+                    >
+                      📝 Expliquer
+                    </button>
+                  </>
+                )}
                 <button 
                   onClick={handleAudit}
                   className="text-[10px] px-2 py-1 bg-white border border-gray-100 rounded-full hover:border-[#99334C] transition-colors"
@@ -252,22 +268,21 @@ const UnifiedAIPanel: React.FC<UnifiedAIPanelProps> = ({
               </div>
 
               {/* Chat Input */}
-              <div className="mt-4 relative">
-                <input
-                  type="text"
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-                  placeholder="Posez une question à l'IA..."
-                  className="w-full pl-4 pr-10 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-[#99334C] outline-none text-sm transition-all shadow-sm"
-                />
-                <button 
-                  onClick={handleSend}
-                  className="absolute right-2 top-2 p-1.5 bg-[#99334C] text-white rounded-lg hover:bg-[#802a3f] transition-colors"
-                >
-                  <Send size={16} />
-                </button>
-              </div>
+                <form onSubmit={handleSubmit} className="mt-4 relative">
+                  <input
+                    type="text"
+                    value={input}
+                    onChange={handleInputChange}
+                    placeholder="Posez une question à l'IA..."
+                    className="w-full pl-4 pr-10 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-[#99334C] outline-none text-sm transition-all shadow-sm"
+                  />
+                  <button 
+                    type="submit"
+                    className="absolute right-2 top-2 p-1.5 bg-[#99334C] text-white rounded-lg hover:bg-[#802a3f] transition-colors"
+                  >
+                    <Send size={16} />
+                  </button>
+                </form>
             </motion.div>
           ) : (
             <motion.div 
