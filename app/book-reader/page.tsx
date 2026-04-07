@@ -17,11 +17,16 @@ import ReaderContent from './components/ReaderContent';
 import CollectionModal from './components/CollectionModal';
 import ReaderSkeleton from './components/ReaderSkeleton';
 import ProgressBar from './components/ProgressBar';
+import StudentAIPanel from './components/StudentAIPanel';
 
 const BookReaderPageContent = () => {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const docId = searchParams.get('docId');
+   const docId = searchParams.get('docId');
+   const classId = searchParams.get('classId');
+   const isClassroom = !!classId;
+ 
+   const [isAIOpen, setIsAIOpen] = React.useState(false);
 
   const {
     data, isLoading, error,
@@ -97,6 +102,33 @@ const BookReaderPageContent = () => {
     setExpandedChapters(prev => ({ ...prev, [chapterId]: !prev[chapterId] }));
   };
 
+  const getActiveContext = () => {
+    if (!data || !activeSection) return { name: '', content: '' };
+    
+    // Search in parts
+    for (const part of data.structure) {
+      if (part.part_id === activeSection) return { name: part.part_title, content: part.part_intro || '' };
+      
+      // Search in chapters
+      for (const chapter of part.chapters) {
+        if (chapter.chapter_id === activeSection) return { name: chapter.chapter_title, content: '' };
+        
+        // Search in paragraphs
+        for (const para of chapter.paragraphs) {
+          if (para.para_id === activeSection) return { name: para.para_name, content: '' };
+          
+          // Search in notions
+          for (const notion of para.notions) {
+            if (notion.notion_id === activeSection) return { name: notion.notion_name, content: notion.notion_content };
+          }
+        }
+      }
+    }
+    return { name: '', content: '' };
+  };
+
+  const activeContext = getActiveContext();
+
   if (isLoading) return <ReaderSkeleton />;
 
   if (error) {
@@ -143,6 +175,9 @@ const BookReaderPageContent = () => {
         onPrint={() => window.print()}
         onDownload={handleDownload}
         isDownloading={isDownloading}
+        isClassroom={isClassroom}
+        isAIOpen={isAIOpen}
+        setIsAIOpen={setIsAIOpen}
       />
 
       {/* Progress Bar */}
@@ -176,7 +211,7 @@ const BookReaderPageContent = () => {
 
         {tocOpen && <div className="fixed inset-0 bg-black/30 z-30 lg:hidden" onClick={() => setTocOpen(false)} />}
 
-        <main className="flex-1 min-w-0" ref={contentRef}>
+        <main className="flex-1 min-w-0 relative overflow-hidden" ref={contentRef}>
           <ReaderContent
             doc={data.document}
             project={data.project}
@@ -191,6 +226,17 @@ const BookReaderPageContent = () => {
             getLatestSubmission={getLatestSubmission}
             getSubmissionCount={getSubmissionCount}
             lockedIds={lockedIds}
+          />
+
+          <StudentAIPanel
+            isOpen={isAIOpen}
+            onClose={() => setIsAIOpen(false)}
+            docId={docId || ''}
+            context={{
+                docName: data.document.doc_name,
+                activeSectionName: activeContext.name,
+                activeSectionContent: activeContext.content
+            }}
           />
         </main>
       </div>

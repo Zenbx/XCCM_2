@@ -1,7 +1,7 @@
 import React from 'react';
 import {
     Menu, X, ArrowLeft, ZoomOut, ZoomIn, BookmarkCheck, Bookmark,
-    Heart, Check, Share2, Printer, Loader2, Download, BarChart2
+    Heart, Check, Share2, Printer, Loader2, Download, BarChart2, Sparkles
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
@@ -25,13 +25,17 @@ interface ReaderHeaderProps {
     onPrint: () => void;
     onDownload: () => void;
     isDownloading: boolean;
+    isClassroom?: boolean;
+    isAIOpen?: boolean;
+    setIsAIOpen?: (b: boolean) => void;
 }
 
 const ReaderHeader: React.FC<ReaderHeaderProps> = ({
     tocOpen, setTocOpen, docName, author, pages, fontSize, setFontSize,
     showProgressBar, setShowProgressBar,
     isBookmarked, setIsBookmarked, userLiked, likesCount, onToggleLike,
-    onShare, copied, onPrint, onDownload, isDownloading
+    onShare, copied, onPrint, onDownload, isDownloading,
+    isClassroom = false, isAIOpen = false, setIsAIOpen
 }) => {
     const router = useRouter();
 
@@ -102,45 +106,49 @@ const ReaderHeader: React.FC<ReaderHeaderProps> = ({
                             {isBookmarked ? <BookmarkCheck className="w-5 h-5" /> : <Bookmark className="w-5 h-5" />}
                         </button>
 
-                        <button
-                            onClick={onToggleLike}
-                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all text-sm font-medium border ${userLiked
-                                ? 'bg-rose-50 text-rose-500 border-rose-200 hover:bg-rose-100'
-                                : 'bg-white text-gray-500 border-gray-200 hover:bg-gray-50 hover:text-gray-700'
-                                }`}
-                            title={userLiked ? "Je n'aime plus" : "J'aime"}
-                        >
-                            <Heart className={`w-4 h-4 ${userLiked ? "fill-current" : ""}`} />
-                            <span>{likesCount}</span>
-                        </button>
+                        {!isClassroom && (
+                            <>
+                                <button
+                                    onClick={onToggleLike}
+                                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all text-sm font-medium border ${userLiked
+                                        ? 'bg-rose-50 text-rose-500 border-rose-200 hover:bg-rose-100'
+                                        : 'bg-white text-gray-500 border-gray-200 hover:bg-gray-50 hover:text-gray-700'
+                                        }`}
+                                    title={userLiked ? "Je n'aime plus" : "J'aime"}
+                                >
+                                    <Heart className={`w-4 h-4 ${userLiked ? "fill-current" : ""}`} />
+                                    <span>{likesCount}</span>
+                                </button>
+
+                                <button
+                                    onClick={onShare}
+                                    className="p-2.5 hover:bg-gray-100 rounded-lg transition-colors text-gray-600"
+                                    title="Partager"
+                                >
+                                    {copied ? <Check className="w-5 h-5 text-green-500" /> : <Share2 className="w-5 h-5" />}
+                                </button>
+
+                                <button
+                                    onClick={onDownload}
+                                    disabled={isDownloading}
+                                    className="px-4 py-2.5 bg-[#99334C] text-white rounded-lg hover:bg-[#7a283d] transition-all flex items-center gap-2 disabled:opacity-50"
+                                >
+                                    {isDownloading ? (
+                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                    ) : (
+                                        <Download className="w-4 h-4" />
+                                    )}
+                                    <span className="hidden sm:inline">Télécharger</span>
+                                </button>
+                            </>
+                        )}
 
                         <button
-                            onClick={onShare}
-                            className="p-2.5 hover:bg-gray-100 rounded-lg transition-colors text-gray-600"
-                            title="Partager"
+                            onClick={() => setIsAIOpen?.(!isAIOpen)}
+                            className={`p-2.5 rounded-lg transition-all ${isAIOpen ? 'bg-[#99334C] text-white shadow-lg scale-110' : 'hover:bg-[#99334C]/5 text-[#99334C]'}`}
+                            title="Assistant Socratique (LIA)"
                         >
-                            {copied ? <Check className="w-5 h-5 text-green-500" /> : <Share2 className="w-5 h-5" />}
-                        </button>
-
-                        <button
-                            onClick={onPrint}
-                            className="hidden sm:block p-2.5 hover:bg-gray-100 rounded-lg transition-colors text-gray-600"
-                            title="Imprimer"
-                        >
-                            <Printer className="w-5 h-5" />
-                        </button>
-
-                        <button
-                            onClick={onDownload}
-                            disabled={isDownloading}
-                            className="px-4 py-2.5 bg-[#99334C] text-white rounded-lg hover:bg-[#7a283d] transition-all flex items-center gap-2 disabled:opacity-50"
-                        >
-                            {isDownloading ? (
-                                <Loader2 className="w-4 h-4 animate-spin" />
-                            ) : (
-                                <Download className="w-4 h-4" />
-                            )}
-                            <span className="hidden sm:inline">Télécharger</span>
+                            <Sparkles className={`w-5 h-5 ${isAIOpen ? 'stroke-[2.5px]' : 'stroke-[1.5px]'}`} />
                         </button>
                     </div>
                 </div>
