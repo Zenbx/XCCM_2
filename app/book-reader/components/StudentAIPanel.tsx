@@ -1,6 +1,8 @@
 "use client";
 import React, { useState, useEffect, useRef } from 'react';
-import { useChat } from 'ai/react';
+import { useChat } from '@ai-sdk/react';
+import { DefaultChatTransport } from 'ai';
+import { authService } from '@/services/authService';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
     X, Send, Sparkles, User, 
@@ -20,29 +22,38 @@ interface StudentAIPanelProps {
 
 const StudentAIPanel: React.FC<StudentAIPanelProps> = ({ isOpen, onClose, docId, context }) => {
     const [isMaximized, setIsMaximized] = useState(false);
+    const [input, setInput] = useState('');
     const scrollRef = useRef<HTMLDivElement>(null);
 
-    const { messages, input, handleInputChange, handleSubmit, isLoading, setMessages } = useChat({
-        api: `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/ai/socratic`,
-        headers: {
-            'x-user-role': 'user', // Identify as student for the Socratic prompt
-        },
-        body: {
-            context: {
-                docId,
-                docName: context.docName,
-                paraName: context.activeSectionName,
-                notionContent: context.activeSectionContent
+    const { messages, sendMessage, setMessages, status } = useChat({
+        transport: new DefaultChatTransport({
+            api: `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/ai/socratic`,
+            headers: {
+                'x-user-role': 'user',
+                Authorization: `Bearer ${authService.getAuthToken() || ''}`,
+            },
+            body: {
+                context: {
+                    docId,
+                    docName: context.docName,
+                    paraName: context.activeSectionName,
+                    notionContent: context.activeSectionContent
+                }
             }
-        },
-        initialMessages: [
+        }),
+        messages: [
             {
                 id: 'welcome',
                 role: 'assistant',
-                content: `Bonjour ! Je suis ton assistant d'apprentissage XCCM2. Comment puis-je t'aider à explorer "**${context.activeSectionName || context.docName}**" aujourd'hui ?`
+                parts: [{
+                    type: 'text',
+                    text: `Bonjour ! Je suis ton assistant d'apprentissage XCCM2. Comment puis-je t'aider à explorer "**${context.activeSectionName || context.docName}**" aujourd'hui ?`
+                }]
             }
         ]
     });
+
+    const isLoading = status === 'streaming';
 
     useEffect(() => {
         if (scrollRef.current) {
@@ -111,7 +122,7 @@ const StudentAIPanel: React.FC<StudentAIPanelProps> = ({ isOpen, onClose, docId,
                                 ? 'bg-[#99334C] text-white rounded-tr-none' 
                                 : 'bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-200 border border-gray-100 dark:border-gray-800 rounded-tl-none'
                             }`}>
-                                {m.content}
+                                {m.content || m.parts?.map((p: any) => p.text).join('\n')}
                             </div>
                         </div>
                     </div>
@@ -134,12 +145,19 @@ const StudentAIPanel: React.FC<StudentAIPanelProps> = ({ isOpen, onClose, docId,
             {/* Input */}
             <div className="p-4 border-t border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-950">
                 <form 
-                    onSubmit={handleSubmit}
+                    onSubmit={async (e) => {
+                        e.preventDefault();
+                        if (!input.trim() || isLoading) return;
+                        const currentInput = input;
+                        setInput('');
+                        // @ts-ignore
+                        await sendMessage({ text: currentInput });
+                    }}
                     className="flex items-center gap-2"
                 >
                     <input
                         value={input}
-                        onChange={handleInputChange}
+                        onChange={(e) => setInput(e.target.value)}
                         placeholder="Posez une question sur le cours..."
                         className="flex-1 bg-gray-100 dark:bg-gray-900 border-none rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-[#99334C] dark:text-white"
                     />
