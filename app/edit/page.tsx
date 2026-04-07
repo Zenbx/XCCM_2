@@ -1381,6 +1381,7 @@ const XCCM2Editor = () => {
             analyzeContent,
             onDismissFeedback: dismissFeedback
           }}
+          editorContent={editorContent}
           onNavigateToGranule={(ctx: any) => {
             // Navigate to the granule corresponding to an exercise
             if (ctx.type === 'part') {

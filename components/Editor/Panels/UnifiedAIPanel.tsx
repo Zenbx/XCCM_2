@@ -106,6 +106,7 @@ const UnifiedAIPanel: React.FC<UnifiedAIPanelProps> = ({
     
     const currentInput = input;
     setInput('');
+    // @ts-ignore
     await sendMessage({ text: currentInput });
   };
 
@@ -139,6 +140,7 @@ const UnifiedAIPanel: React.FC<UnifiedAIPanelProps> = ({
   const handleSendRequest = (customInput?: string) => {
     // If customInput is provided, we send that message directly
     if (customInput) {
+      // @ts-ignore
       sendMessage({ text: customInput });
     } else {
       handleSubmit();
