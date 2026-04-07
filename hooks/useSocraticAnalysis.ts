@@ -77,10 +77,11 @@ export function useSocraticAnalysis(notionId?: string | null) {
 
                     setFeedback(mappedFeedback);
                     setBloomScore({
-                        remember: 0, understand: 0, apply: 0, analyze: 0, evaluate: 0, create: 0, // Mock scores
+                        ...result, // Preserve clarityScore, engagementScore, bloomLevel, suggestions, recommendedBlocks
+                        remember: 0, understand: 0, apply: 0, analyze: 0, evaluate: 0, create: 0,
                         dominant: result.bloomLevel,
-                        recommendation: result.suggestions[0] || ''
-                    });
+                        recommendation: result.suggestions?.[0] || ''
+                    } as any);
                     setLastAnalyzedText(text);
                 }
 
