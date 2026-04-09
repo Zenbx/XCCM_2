@@ -349,7 +349,7 @@ const ClassroomDetailPage = () => {
                                     if (isTeacher) {
                                         router.push(`/edit/${encodeURIComponent(cp.project.pr_name)}`);
                                     } else if (cp.doc_id) {
-                                        router.push(`/book-reader?docId=${cp.doc_id}`);
+                                        router.push(`/classrooms/${classId}/reader/${cp.doc_id}`);
                                     } else {
                                         toast.error("Le professeur n'a pas encore publié le contenu de ce cours.");
                                     }
