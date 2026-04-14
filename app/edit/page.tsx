@@ -30,6 +30,8 @@ import CreationModals from './components/Modals/CreationModals';
 import DeleteModal from './components/Modals/DeleteModal';
 import EditorSkeletonView from './components/EditorSkeletonView';
 import PublishToMarketplaceModal from '@/components/Editor/PublishToMarketplaceModal';
+import { MindMapWorkspace } from '@/components/Editor/MindMapWorkspace';
+import { NotionMentionPicker } from '@/components/Editor/NotionMentionPicker';
 
 // Services & Utils
 import { structureService } from '@/services/structureService';
@@ -111,7 +113,30 @@ const XCCM2Editor = () => {
   const [pendingGranule, setPendingGranule] = useState<{ type: 'part' | 'chapter' | 'paragraph' | 'notion'; content: string } | null>(null);
   const [participantCount, setParticipantCount] = useState(1); // ✅ Added for Smart Sync
   const [isMobileTOCOpen, setIsMobileTOCOpen] = useState(false); // ✅ Responsive state
-  const [saveError, setSaveError] = useState<string | null>(null); // ✅ Fine error handling
+  const [saveError, setSaveError] = useState<string | null>(null);
+
+  // Mind Map state
+  const [isMindMapOpen, setIsMindMapOpen] = useState(false);
+
+  // NotionMentionPicker state (triggered by /refnotion slash command)
+  const [isNotionPickerOpen, setIsNotionPickerOpen] = useState(false);
+
+  // Flat list of all notions for the NotionMentionPicker
+  const allNotions = useMemo(() =>
+    structure.flatMap(part =>
+      part.chapters?.flatMap(chapter =>
+        chapter.paragraphs?.flatMap(para =>
+          para.notions?.map(notion => ({
+            notion_id: notion.notion_id,
+            notion_name: notion.notion_name,
+            para_name: para.para_name,
+            chapter_title: chapter.chapter_title,
+            part_title: part.part_title,
+          })) ?? []
+        ) ?? []
+      ) ?? []
+    ) ?? []
+  , [structure]);
 
   // Marketplace Modal State
   const [showMarketplaceModal, setShowMarketplaceModal] = useState(false);
@@ -1071,6 +1096,48 @@ const XCCM2Editor = () => {
 
   return (
     <div className="h-screen flex bg-white overflow-hidden selection:bg-[#99334C]/10 w-full max-w-[100vw]">
+
+      {/* Mind Map View (full screen overlay) */}
+      {isMindMapOpen && (
+        <MindMapWorkspace
+          projectName={projectData?.pr_name || projectName || ''}
+          projectId={projectData?.pr_id || ''}
+          parts={structure as any[]}
+          onClose={() => setIsMindMapOpen(false)}
+          onSaveContent={async (granuleId, html) => {
+            if (!projectName) return;
+            try {
+              await structureService.updateGranuleById(projectName, granuleId, {
+                // The granule field will be detected server-side via the generic update endpoint
+                // We pass all possible fields — the API only writes the ones that exist on the model
+                notion_content: html,
+                part_intro: html,
+                chapter_intro: html,
+                para_intro: html,
+              });
+              await loadProject(true);
+              toast.success('Contenu sauvegardé depuis la vue Mind Map');
+            } catch (err: any) {
+              toast.error('Erreur de sauvegarde: ' + (err.message || ''));
+            }
+          }}
+        />
+      )}
+
+      {/* Notion cross-reference picker (triggered by /refnotion slash command) */}
+      <NotionMentionPicker
+        isOpen={isNotionPickerOpen}
+        onClose={() => setIsNotionPickerOpen(false)}
+        notions={allNotions}
+        onSelect={(notion) => {
+          if (!tiptapEditor) return;
+          // Insert a clickable inline mention node into TipTap
+          tiptapEditor.chain().focus().insertContent(
+            `<a data-type="notion-mention" data-reference-id="${notion.notion_id}" href="#${notion.notion_id}" class="notion-mention-link">${notion.notion_name}</a>`
+          ).run();
+          setIsNotionPickerOpen(false);
+        }}
+      />
       {/* 1. Sidebar TOC - Desktop (Sticky) & Mobile (Drawer) */}
       <AnimatePresence>
         {!isZenMode && (isMobileTOCOpen || sidebarWidth > 0) && (
@@ -1307,6 +1374,7 @@ const XCCM2Editor = () => {
           onRedo={redo}
           canUndo={canUndo}
           canRedo={canRedo}
+          onToggleMindMap={() => setIsMindMapOpen(true)}
         />
 
         <main className="flex-1 overflow-y-auto bg-gray-50/50 p-4 lg:p-12">
@@ -1342,6 +1410,7 @@ const XCCM2Editor = () => {
               currentContext={currentContext}
               saveError={saveError}
               onRetrySave={() => handleSave(false)}
+              onRefNotion={() => setIsNotionPickerOpen(true)}
             />
           </div>
         </main>

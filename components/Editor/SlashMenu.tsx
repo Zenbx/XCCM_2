@@ -18,7 +18,8 @@ import {
     Sigma,
     HelpCircle,
     Eye,
-    Code
+    Code,
+    Link
 } from 'lucide-react';
 import GlassPanel from '../UI/GlassPanel';
 
@@ -192,6 +193,15 @@ export const SlashMenu: React.FC<SlashMenuProps> = ({
             action: () => { },
             category: 'Pédagogie',
             aliases: ['code', 'js', 'script', 'run']
+        },
+        {
+            id: 'refnotion',
+            label: 'Référencer une Notion',
+            description: 'Lier vers une Notion existante du projet',
+            icon: <Link size={18} />,
+            action: () => { },
+            category: 'Graphe de Connaissances',
+            aliases: ['ref', 'lien', 'xref', 'refnotion', 'link', 'notion', 'renvoi']
         }
     ];
 

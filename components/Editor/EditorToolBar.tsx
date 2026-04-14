@@ -20,7 +20,8 @@ import {
   IndentIncrease,
   IndentDecrease,
   Undo,
-  Redo
+  Redo,
+  GitFork
 } from 'lucide-react';
 import RichTooltip from '@/components/UI/RichTooltip';
 
@@ -38,10 +39,11 @@ interface EditorToolbarProps {
   disabled?: boolean;
   isZenMode?: boolean;
   onToggleZen?: () => void;
-  onUndo?: () => void; // ✅ Added
-  onRedo?: () => void; // ✅ Added
-  canUndo?: boolean; // ✅ Added
-  canRedo?: boolean; // ✅ Added
+  onUndo?: () => void;
+  onRedo?: () => void;
+  canUndo?: boolean;
+  canRedo?: boolean;
+  onToggleMindMap?: () => void;
 }
 
 const EditorToolbar: React.FC<EditorToolbarProps> = ({
@@ -58,6 +60,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
   onRedo,
   canUndo,
   canRedo,
+  onToggleMindMap,
 }) => {
   return (
     <div className={`bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 p-1.5 flex items-center gap-1 transition-all duration-300 overflow-hidden ${disabled ? 'opacity-40 pointer-events-none select-none' : ''
@@ -207,6 +210,18 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
         >
           {isZenMode ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
           {isZenMode ? "Quitter Zen" : "Zen Mode"}
+        </button>
+      </RichTooltip>
+
+      <div className="w-[1.5px] h-6 bg-gray-300 mx-1 flex-shrink-0" />
+
+      <RichTooltip title="Vue Mind Map" description="Visualiser tout le projet sous forme de graphe de noeuds. Double-cliquer pour éditer.">
+        <button
+          onClick={onToggleMindMap}
+          className="px-3 py-1.5 rounded-lg flex items-center gap-2 text-sm border font-bold transition-all shadow-sm bg-white text-[#1e40af] border-[#1e40af]/30 hover:bg-[#1e40af]/5"
+        >
+          <GitFork size={16} />
+          Mind Map
         </button>
       </RichTooltip>
 

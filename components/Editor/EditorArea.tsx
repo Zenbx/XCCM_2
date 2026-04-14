@@ -29,6 +29,7 @@ interface EditorAreaProps {
   onAddChapter?: () => void;
   onAddParagraph?: () => void;
   onAddNotion?: () => void;
+  onRefNotion?: () => void;
   onOpenChat?: () => void;
   onSave?: () => void;
   collaboration?: {
@@ -59,6 +60,7 @@ const EditorArea: React.FC<EditorAreaProps> = ({
   onAddChapter,
   onAddParagraph,
   onAddNotion,
+  onRefNotion,
   onOpenChat,
   onSave,
   onEditorReady,
@@ -206,6 +208,8 @@ const EditorArea: React.FC<EditorAreaProps> = ({
         onAddParagraph();
       } else if (command.id === 'notion' && onAddNotion) {
         onAddNotion();
+      } else if (command.id === 'refnotion' && onRefNotion) {
+        onRefNotion();
       } else if (command.id === 'chat' || command.id === 'ai') {
         onOpenChat?.();
       } else if (command.id === 'save' && onSave) {

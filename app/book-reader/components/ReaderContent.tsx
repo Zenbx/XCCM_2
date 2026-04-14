@@ -1,4 +1,5 @@
-import React from 'react';
+'use client';
+import React, { useCallback } from 'react';
 import { BookOpen, User, Archive, Lock } from 'lucide-react';
 import { Part, Chapter, Paragraph, Notion } from '@/services/documentService';
 import { Exercise, Submission, SubmissionResult } from '@/services/exerciseService';
@@ -60,6 +61,24 @@ const ReaderContent: React.FC<ReaderContentProps> = ({
 }) => {
     const exerciseProps = { getExercisesForGranule, getLatestSubmission, getSubmissionCount, submittingId, onSubmitAnswer };
 
+    // Cross-reference click handler: scrolls to a Notion when a notion-mention link is clicked
+    const handleCrossRefClick = useCallback((e: React.MouseEvent<HTMLElement>) => {
+        const target = e.target as HTMLElement;
+        const mention = target.closest('[data-type="notion-mention"]') as HTMLElement | null;
+        if (!mention) return;
+        const referenceId = mention.getAttribute('data-reference-id');
+        if (!referenceId) return;
+        e.preventDefault();
+        const el = document.getElementById(referenceId);
+        if (el) {
+            el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            // Brief visual highlight
+            el.style.outline = '2px solid #99334C80';
+            el.style.borderRadius = '8px';
+            setTimeout(() => { el.style.outline = ''; el.style.borderRadius = ''; }, 2000);
+        }
+    }, []);
+
     return (
         <div className="max-w-4xl mx-auto py-8 px-4 lg:px-8">
             {/* Title Card */}
@@ -99,6 +118,7 @@ const ReaderContent: React.FC<ReaderContentProps> = ({
             <article
                 className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden"
                 style={{ fontSize: `${fontSize}px` }}
+                onClick={handleCrossRefClick}
             >
                 <div className="p-8 lg:p-12">
                     {structure.length === 0 ? (
