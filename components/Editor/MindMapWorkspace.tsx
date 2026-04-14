@@ -49,12 +49,12 @@ type NodeType = NodeDef['type'];
 // We will use classes for theming instead of hardcoded hex, but colors need to be dynamic for borders/text.
 // Let's use CSS variables or tailwind class names mapped to a style object.
 const NODE_THEME: Record<NodeType, { borderLight: string, borderDark: string, textLight: string, textDark: string, icon: React.ReactNode }> = {
-    project:   { borderLight: '#99334C', borderDark: '#ff8aac', textLight: '#99334C', textDark: '#ff8aac', icon: <GitFork size={14} /> },
-    part:      { borderLight: '#2563eb', borderDark: '#60a5fa', textLight: '#1e40af', textDark: '#93c5fd', icon: <Layout size={14} /> },
-    chapter:   { borderLight: '#059669', borderDark: '#34d399', textLight: '#047857', textDark: '#6ee7b7', icon: <BookOpen size={14} /> },
-    paragraph: { borderLight: '#d97706', borderDark: '#fbbf24', textLight: '#b45309', textDark: '#fcd34d', icon: <AlignLeft size={14} /> },
-    notion:    { borderLight: '#4b5563', borderDark: '#9ca3af', textLight: '#374151', textDark: '#d1d5db', icon: <FileText size={14} /> },
-    exercise:  { borderLight: '#7c3aed', borderDark: '#a78bfa', textLight: '#5b21b6', textDark: '#c4b5fd', icon: <HelpCircle size={14} /> },
+    project:   { borderLight: '#ff8aac', borderDark: '#ff8aac', textLight: '#e11d48', textDark: '#ffb3c6', icon: <GitFork size={14} /> },
+    part:      { borderLight: '#93c5fd', borderDark: '#60a5fa', textLight: '#2563eb', textDark: '#93c5fd', icon: <Layout size={14} /> },
+    chapter:   { borderLight: '#6ee7b7', borderDark: '#34d399', textLight: '#059669', textDark: '#6ee7b7', icon: <BookOpen size={14} /> },
+    paragraph: { borderLight: '#fcd34d', borderDark: '#fbbf24', textLight: '#d97706', textDark: '#fcd34d', icon: <AlignLeft size={14} /> },
+    notion:    { borderLight: '#d1d5db', borderDark: '#9ca3af', textLight: '#4b5563', textDark: '#d1d5db', icon: <FileText size={14} /> },
+    exercise:  { borderLight: '#c4b5fd', borderDark: '#a78bfa', textLight: '#7c3aed', textDark: '#c4b5fd', icon: <HelpCircle size={14} /> },
 };
 
 const NODE_W = 160;
@@ -216,10 +216,10 @@ const MapNode: React.FC<{
             onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); onContextMenu(e, node); }}
             style={{
                 left: screenX, top: screenY, width: sw, height: sh,
-                borderLeft: `6px solid ${theme.borderLight}`, // Provide solid edge identifying it
                 borderTop: `1px solid ${isDropTarget ? '#60a5fa' : 'currentColor'}`,
                 borderRight: `1px solid ${isDropTarget ? '#60a5fa' : 'currentColor'}`,
                 borderBottom: `1px solid ${isDropTarget ? '#60a5fa' : 'currentColor'}`,
+                borderLeft: `1px solid ${isDropTarget ? '#60a5fa' : 'currentColor'}`, // Minimal solid border, actual thickness comes from strip
                 padding: `0 ${10 * transform.scale}px`, gap: 6 * transform.scale,
                 cursor: 'grab', userSelect: 'none',
                 color: 'currentColor', // Relies on dark/light flow class
@@ -227,10 +227,18 @@ const MapNode: React.FC<{
             }}
             title={node.label}
         >
+            {/* Color Strip (Light Mode) */}
+            <div className="absolute inset-y-[-1px] left-[-1px] rounded-l-lg dark:hidden" style={{ width: 6, backgroundColor: theme.borderLight }} />
+            {/* Color Strip (Dark Mode) */}
+            <div className="hidden dark:block absolute inset-y-[-1px] left-[-1px] rounded-l-lg" style={{ width: 6, backgroundColor: theme.borderDark }} />
+
             <div className="dark:hidden opacity-20 absolute inset-0 pointer-events-none rounded-lg border border-gray-200" />
             <div className="hidden dark:block opacity-20 absolute inset-0 pointer-events-none rounded-lg border border-gray-700" />
 
-            <span className="flex-shrink-0 flex text-gray-500 dark:text-gray-400" style={{ transform: `scale(${transform.scale})` }}>
+            <span className="flex-shrink-0 flex dark:hidden" style={{ transform: `scale(${transform.scale})`, color: theme.textLight }}>
+                {theme.icon}
+            </span>
+            <span className="hidden flex-shrink-0 dark:flex" style={{ transform: `scale(${transform.scale})`, color: theme.textDark }}>
                 {theme.icon}
             </span>
             <span className="text-gray-800 dark:text-gray-200 font-semibold truncate flex-1" style={{ fontSize: Math.max(9, 12 * transform.scale) }}>

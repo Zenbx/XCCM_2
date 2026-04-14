@@ -1,6 +1,6 @@
 import React from 'react';
 import Link from 'next/link';
-import { Home, ChevronRight, Eye, Share2, Save, Loader2, Undo2, Redo2, Cloud, CloudOff, Check, Menu } from 'lucide-react';
+import { Home, ChevronRight, Eye, Share2, Save, Loader2, Undo2, Redo2, Cloud, CloudOff, Check, Menu, GitFork } from 'lucide-react';
 import RichTooltip from '@/components/UI/RichTooltip';
 import { TactileButton } from '@/components/UI/TactileButton';
 import { PresenceIndicator, ConnectionStatus } from '@/components/Editor/CollaborativeCursors';
@@ -21,6 +21,8 @@ interface EditorHeaderProps {
     connectionStatus?: 'connecting' | 'connected' | 'disconnected' | 'error';
     onReconnect?: () => void;
     onToggleMobileTOC?: () => void;
+    isMindMapOpen?: boolean;
+    onToggleMindMap?: () => void;
 }
 
 const EditorHeader: React.FC<EditorHeaderProps> = ({
@@ -39,6 +41,8 @@ const EditorHeader: React.FC<EditorHeaderProps> = ({
     connectionStatus,
     onReconnect,
     onToggleMobileTOC,
+    isMindMapOpen,
+    onToggleMindMap,
 }) => {
     return (
         <div className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between px-4 h-16 shrink-0 z-30 transition-colors">
@@ -140,7 +144,6 @@ const EditorHeader: React.FC<EditorHeaderProps> = ({
                         <Share2 className="w-5 h-5" />
                     </TactileButton>
                 </RichTooltip>
-
 
                 <div className="ml-2 pl-4 border-l border-gray-100 dark:border-gray-800 flex items-center gap-3">
                     <PresenceIndicator

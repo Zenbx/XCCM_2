@@ -1114,7 +1114,7 @@ const XCCM2Editor = () => {
       />
       {/* 1. Sidebar TOC - Desktop (Sticky) & Mobile (Drawer) */}
       <AnimatePresence>
-        {!isZenMode && (isMobileTOCOpen || sidebarWidth > 0) && (
+        {!isZenMode && !isMindMapOpen && (isMobileTOCOpen || sidebarWidth > 0) && (
           <>
             {/* Mobile Backdrop */}
             {isMobileTOCOpen && (
@@ -1305,6 +1305,8 @@ const XCCM2Editor = () => {
             connectionStatus={synapseStatus}
             onReconnect={synapseReconnect}
             onToggleMobileTOC={() => setIsMobileTOCOpen(prev => !prev)}
+            isMindMapOpen={isMindMapOpen}
+            onToggleMindMap={() => setIsMindMapOpen(prev => !prev)}
           />
         )}
 

@@ -63,7 +63,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
   onToggleMindMap,
 }) => {
   return (
-    <div className={`bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 p-1.5 flex items-center gap-1 transition-all duration-300 overflow-hidden ${disabled ? 'opacity-40 pointer-events-none select-none' : ''
+    <div className={`bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 p-1.5 flex items-center gap-1 transition-all duration-300 overflow-x-auto scrollbar-thin scrollbar-thumb-gray-200 dark:scrollbar-thumb-gray-700 whitespace-nowrap hide-scrollbar ${disabled ? 'opacity-40 pointer-events-none select-none' : ''
       }`}>
 
       <RichTooltip title="Police" description="Changer la famille de police du texte sélectionné.">
