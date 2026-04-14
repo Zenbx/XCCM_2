@@ -1097,32 +1097,6 @@ const XCCM2Editor = () => {
   return (
     <div className="h-screen flex bg-white overflow-hidden selection:bg-[#99334C]/10 w-full max-w-[100vw]">
 
-      {/* Mind Map View (full screen overlay) */}
-      {isMindMapOpen && (
-        <MindMapWorkspace
-          projectName={projectData?.pr_name || projectName || ''}
-          projectId={projectData?.pr_id || ''}
-          parts={structure as any[]}
-          onClose={() => setIsMindMapOpen(false)}
-          onSaveContent={async (granuleId, html) => {
-            if (!projectName) return;
-            try {
-              await structureService.updateGranuleById(projectName, granuleId, {
-                // The granule field will be detected server-side via the generic update endpoint
-                // We pass all possible fields — the API only writes the ones that exist on the model
-                notion_content: html,
-                part_intro: html,
-                chapter_intro: html,
-                para_intro: html,
-              });
-              await loadProject(true);
-              toast.success('Contenu sauvegardé depuis la vue Mind Map');
-            } catch (err: any) {
-              toast.error('Erreur de sauvegarde: ' + (err.message || ''));
-            }
-          }}
-        />
-      )}
 
       {/* Notion cross-reference picker (triggered by /refnotion slash command) */}
       <NotionMentionPicker
@@ -1334,85 +1308,135 @@ const XCCM2Editor = () => {
           />
         )}
 
-        <EditorToolbar
-          onInsertImage={handleInsertImage}
-          onFormatChange={(cmd) => {
-            if (!tiptapEditor) return;
-            const chain = tiptapEditor.chain().focus();
+        {!isMindMapOpen && (
+          <EditorToolbar
+            onInsertImage={handleInsertImage}
+            onFormatChange={(cmd) => {
+              if (!tiptapEditor) return;
+              const chain = tiptapEditor.chain().focus();
 
-            if (cmd.startsWith('color:')) {
-              chain.setColor(cmd.split(':')[1]).run();
-              return;
-            }
-
-            switch (cmd) {
-              case 'bold': chain.toggleBold().run(); break;
-              case 'italic': chain.toggleItalic().run(); break;
-              case 'underline': chain.toggleUnderline().run(); break;
-              case 'strikethrough': chain.toggleStrike().run(); break;
-              case 'justifyLeft': chain.setTextAlign('left').run(); break;
-              case 'justifyCenter': chain.setTextAlign('center').run(); break;
-              case 'justifyRight': chain.setTextAlign('right').run(); break;
-              case 'justifyFull': chain.setTextAlign('justify').run(); break;
-              case 'indent': chain.indent().run(); break;
-              case 'outdent': chain.outdent().run(); break;
-              case 'insertUnorderedList': chain.toggleBulletList().run(); break;
-              case 'insertOrderedList': chain.toggleOrderedList().run(); break;
-              case 'undo': chain.undo().run(); break;
-              case 'redo': chain.redo().run(); break;
-              default: console.warn('Unknown command:', cmd);
-            }
-          }}
-          onFontChange={(e) => setTextFormat(prev => ({ ...prev, font: e.target.value }))}
-          onFontSizeChange={(e) => setTextFormat(prev => ({ ...prev, fontSize: e.target.value }))}
-          onChatToggle={() => setRightPanel(prev => prev === 'ai' ? null : 'ai')}
-          textFormat={textFormat}
-          disabled={!currentContext}
-          isZenMode={isZenMode}
-          onToggleZen={() => setIsZenMode(prev => !prev)}
-          onUndo={undo}
-          onRedo={redo}
-          canUndo={canUndo}
-          canRedo={canRedo}
-          onToggleMindMap={() => setIsMindMapOpen(true)}
-        />
-
-        <main className="flex-1 overflow-y-auto bg-gray-50/50 p-4 lg:p-12">
-          <div className="max-w-4xl mx-auto min-h-full">
-            <EditorArea
-              key={collaborationData ? collaborationData.documentId : currentContext?.type + "-" + ((currentContext as any)?.[(currentContext?.type || '') + 'Id'] || 'no-id')}
-              content={editorContent}
-              textFormat={textFormat}
-              onChange={(val) => {
-                setEditorContent(val);
-                setHasUnsavedChanges(true);
-              }}
-              onEditorReady={setTiptapEditor}
-              onDrop={handleDropGranule}
-              editorRef={editorRef}
-              placeholder={
-                !currentContext
-                  ? "Sélectionnez ou créez une notion pour commencer..."
-                  : structure.length === 0
-                    ? "Créez votre première partie avec le bouton + dans la barre latérale"
-                    : currentContext.type === 'notion'
-                      ? "Commencez à écrire... Tapez / pour des commandes rapides"
-                      : currentContext.type === 'chapter'
-                        ? "Rédigez l'introduction de ce chapitre..."
-                        : currentContext.type === 'paragraph'
-                          ? "Rédigez l'introduction de ce paragraphe..."
-                          : currentContext.type === 'part'
-                            ? "Rédigez l'introduction de cette partie..."
-                            : "Sélectionnez un élément pour éditer"
+              if (cmd.startsWith('color:')) {
+                chain.setColor(cmd.split(':')[1]).run();
+                return;
               }
-              collaboration={collaborationData}
-              socraticFeedback={mappedSocraticFeedback as any}
-              currentContext={currentContext}
-              saveError={saveError}
-              onRetrySave={() => handleSave(false)}
-              onRefNotion={() => setIsNotionPickerOpen(true)}
+
+              switch (cmd) {
+                case 'bold': chain.toggleBold().run(); break;
+                case 'italic': chain.toggleItalic().run(); break;
+                case 'underline': chain.toggleUnderline().run(); break;
+                case 'strikethrough': chain.toggleStrike().run(); break;
+                case 'justifyLeft': chain.setTextAlign('left').run(); break;
+                case 'justifyCenter': chain.setTextAlign('center').run(); break;
+                case 'justifyRight': chain.setTextAlign('right').run(); break;
+                case 'justifyFull': chain.setTextAlign('justify').run(); break;
+                case 'indent': chain.indent().run(); break;
+                case 'outdent': chain.outdent().run(); break;
+                case 'insertUnorderedList': chain.toggleBulletList().run(); break;
+                case 'insertOrderedList': chain.toggleOrderedList().run(); break;
+                case 'undo': chain.undo().run(); break;
+                case 'redo': chain.redo().run(); break;
+                default: console.warn('Unknown command:', cmd);
+              }
+            }}
+            onFontChange={(e) => setTextFormat(prev => ({ ...prev, font: e.target.value }))}
+            onFontSizeChange={(e) => setTextFormat(prev => ({ ...prev, fontSize: e.target.value }))}
+            onChatToggle={() => setRightPanel(prev => prev === 'ai' ? null : 'ai')}
+            textFormat={textFormat}
+            disabled={!currentContext}
+            isZenMode={isZenMode}
+            onToggleZen={() => setIsZenMode(prev => !prev)}
+            onUndo={undo}
+            onRedo={redo}
+            canUndo={canUndo}
+            canRedo={canRedo}
+            onToggleMindMap={() => setIsMindMapOpen(true)}
+          />
+        )}
+
+        <main className={`flex-1 overflow-y-auto relative flex flex-col ${isMindMapOpen ? 'bg-transparent' : 'bg-gray-50/50 p-4 lg:p-12'}`}>
+          {isMindMapOpen ? (
+            <MindMapWorkspace
+              projectName={projectData?.pr_name || projectName || ''}
+              projectId={projectData?.pr_id || ''}
+              parts={structure as any[]}
+              onClose={() => setIsMindMapOpen(false)}
+              onSaveContent={async (granuleId, html) => {
+                // The actual saving logic for the drawer.
+                // We'll update the structure directly for now since EditorArea handles currentContext saving,
+                // but MindMap operates globally.
+                toast.success("Contenu mis à jour (brouillon). N'oubliez pas d'enregistrer.");
+              }}
+              onUpdateContext={(type: string, id: string) => {
+                 let ctx: any = { type, projectName: projectData?.pr_name || '' };
+                 let found = false;
+                 if (type === 'project') { found = true; }
+                 else {
+                   for (const p of structure) {
+                     if (p.part_id === id) { ctx = { ...ctx, partTitle: p.part_title, part: p }; found = true; break; }
+                     for (const c of (p.chapters || [])) {
+                       if (c.chapter_id === id) { ctx = { ...ctx, partTitle: p.part_title, chapterTitle: c.chapter_title, chapterId: c.chapter_id, chapter: c, part: p }; found = true; break; }
+                       for (const pa of (c.paragraphs || [])) {
+                         if (pa.para_id === id) { ctx = { ...ctx, partTitle: p.part_title, chapterTitle: c.chapter_title, chapterId: c.chapter_id, paraName: pa.para_name, paraId: pa.para_id, paragraph: pa, chapter: c, part: p }; found = true; break; }
+                         for (const n of (pa.notions || [])) {
+                           if (n.notion_id === id) { ctx = { ...ctx, partTitle: p.part_title, chapterTitle: c.chapter_title, paraName: pa.para_name, notionName: n.notion_name, notion: n }; found = true; break; }
+                         }
+                         if (found) break;
+                       }
+                       if (found) break;
+                     }
+                     if (found) break;
+                   }
+                 }
+                 if (found) {
+                   setCurrentContext(ctx);
+                   setEditorContent(''); // Optional resets
+                 }
+              }}
+              onCreatePart={handleCreatePart}
+              onCreateChapter={handleCreateChapter}
+              onCreateParagraph={handleCreateParagraph}
+              onCreateNotion={handleCreateNotion}
+              onRename={(type: string, id: string, name: string) => handleRenameGranule(type, id, name)}
+              onDelete={(type: string, id: string, title: string) => handleDelete(type as any, id, title)}
+              onMove={handleMoveGranule}
             />
-          </div>
+          ) : (
+            <div className="max-w-4xl mx-auto min-h-full w-full">
+              <EditorArea
+                key={collaborationData ? collaborationData.documentId : currentContext?.type + "-" + ((currentContext as any)?.[(currentContext?.type || '') + 'Id'] || 'no-id')}
+                content={editorContent}
+                textFormat={textFormat}
+                onChange={(val) => {
+                  setEditorContent(val);
+                  setHasUnsavedChanges(true);
+                }}
+                onEditorReady={setTiptapEditor}
+                onDrop={handleDropGranule}
+                editorRef={editorRef}
+                placeholder={
+                  !currentContext
+                    ? "Sélectionnez ou créez une notion pour commencer..."
+                    : structure.length === 0
+                      ? "Créez votre première partie avec le bouton + dans la barre latérale"
+                      : currentContext.type === 'notion'
+                        ? "Commencez à écrire... Tapez / pour des commandes rapides"
+                        : currentContext.type === 'chapter'
+                          ? "Rédigez l'introduction de ce chapitre..."
+                          : currentContext.type === 'paragraph'
+                            ? "Rédigez l'introduction de ce paragraphe..."
+                            : currentContext.type === 'part'
+                              ? "Rédigez l'introduction de cette partie..."
+                              : "Sélectionnez un élément pour éditer"
+                }
+                collaboration={collaborationData}
+                socraticFeedback={mappedSocraticFeedback as any}
+                currentContext={currentContext}
+                saveError={saveError}
+                onRetrySave={() => handleSave(false)}
+                onRefNotion={() => setIsNotionPickerOpen(true)}
+              />
+            </div>
+          )}
         </main>
       </div>
 
