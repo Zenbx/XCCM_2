@@ -452,7 +452,7 @@ export const MindMapWorkspace: React.FC<MindMapWorkspaceProps> = ({
                         onDrop={(e, n) => {
                             if (draggedNode && draggedNode.id !== n.id) {
                                 // Reparenting
-                                onMove('unknown', draggedNode.granuleId, n.granuleId);
+                                onMove(draggedNode.type, draggedNode.granuleId, n.granuleId);
                             }
                             setDraggedNode(null); setDropTargetId(null);
                         }}
