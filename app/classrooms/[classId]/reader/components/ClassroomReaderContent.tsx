@@ -1,16 +1,17 @@
 "use client";
-import React, { useCallback } from 'react';
-import { BookOpen, User, Lock } from 'lucide-react';
-import { Part, Chapter, Paragraph, Notion } from '@/services/documentService';
+import React, { useMemo, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ChevronLeft, ChevronRight, BookOpen } from 'lucide-react';
+import { Part } from '@/services/documentService';
 import { Exercise, Submission, SubmissionResult } from '@/services/exerciseService';
-import ExerciseBlock from '@/app/book-reader/components/ExerciseBlock';
+import { useLinearNavigation } from '@/app/book-reader/hooks/useLinearNavigation';
+import ExerciseCarousel from '@/components/Editor/ExerciseCarousel';
 
 interface ClassroomReaderContentProps {
     doc: any;
     project: any;
     structure: Part[];
     fontSize: number;
-    // Exercise integration
     exercises?: Exercise[];
     submissions?: Submission[];
     submittingId?: string | null;
@@ -19,48 +20,28 @@ interface ClassroomReaderContentProps {
     getLatestSubmission?: (exerciseId: string) => Submission | undefined;
     getSubmissionCount?: (exerciseId: string) => number;
     lockedIds?: Set<string>;
+    // Navigation props
+    playlist: any[];
+    currentIndex: number;
+    currentItem: any;
+    isFirst: boolean;
+    isLast: boolean;
+    progress: number;
+    nextStep: () => void;
+    prevStep: () => void;
+    exercisesByNotion: Record<string, any[]>;
 }
-
-const RenderExercises = ({
-    granuleId, granuleType, getExercisesForGranule, getLatestSubmission, getSubmissionCount, submittingId, onSubmitAnswer, isLocked
-}: {
-    granuleId: string;
-    granuleType: string;
-    getExercisesForGranule?: (id: string, type: string) => Exercise[];
-    getLatestSubmission?: (id: string) => Submission | undefined;
-    getSubmissionCount?: (id: string) => number;
-    submittingId?: string | null;
-    onSubmitAnswer?: (exerciseId: string, answers: any) => Promise<SubmissionResult | null>;
-    isLocked?: boolean;
-}) => {
-    if (!getExercisesForGranule || !onSubmitAnswer) return null;
-    const exs = getExercisesForGranule(granuleId, granuleType);
-    if (exs.length === 0) return null;
-
-    return (
-        <div className={`mt-4 mb-8 transition-all duration-500 ${isLocked ? 'blur-sm opacity-50 pointer-events-none select-none' : ''}`}>
-            {exs.map((exercise) => (
-                <ExerciseBlock
-                    key={exercise.id}
-                    exercise={exercise}
-                    submission={getLatestSubmission?.(exercise.id)}
-                    submissionCount={getSubmissionCount?.(exercise.id)}
-                    isSubmitting={submittingId === exercise.id}
-                    onSubmit={onSubmitAnswer}
-                />
-            ))}
-        </div>
-    );
-};
 
 const ClassroomReaderContent: React.FC<ClassroomReaderContentProps> = ({
     doc, project, structure, fontSize,
     exercises, submissions, submittingId, onSubmitAnswer,
-    getExercisesForGranule, getLatestSubmission, getSubmissionCount, lockedIds = new Set()
+    getExercisesForGranule, getLatestSubmission, getSubmissionCount, lockedIds = new Set(),
+    playlist, currentIndex, currentItem, isFirst, isLast, progress, nextStep, prevStep
 }) => {
-    const exerciseProps = { getExercisesForGranule, getLatestSubmission, getSubmissionCount, submittingId, onSubmitAnswer };
-
-    // Cross-reference click handler: scrolls to a Notion when a notion-mention link is clicked
+    // Build the map: notionId → Exercise[] for external logic if needed, 
+    // but here we use the playlist directly.
+    
+    // Cross-reference click handler
     const handleCrossRefClick = useCallback((e: React.MouseEvent<HTMLElement>) => {
         const target = e.target as HTMLElement;
         const mention = target.closest('[data-type="notion-mention"]') as HTMLElement | null;
@@ -68,141 +49,153 @@ const ClassroomReaderContent: React.FC<ClassroomReaderContentProps> = ({
         const referenceId = mention.getAttribute('data-reference-id');
         if (!referenceId) return;
         e.preventDefault();
-        const el = document.getElementById(referenceId);
-        if (el) {
-            el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            // Brief visual highlight to confirm destination
-            el.style.outline = '2px solid #99334C80';
-            el.style.borderRadius = '8px';
-            setTimeout(() => { el.style.outline = ''; el.style.borderRadius = ''; }, 2000);
+        // Find the notion in playlist and navigate to it
+        const targetIdx = playlist.findIndex(
+            item => item.type === 'notion' && item.data.notion_id === referenceId
+        );
+        if (targetIdx >= 0) {
+            // Use the internal goTo (expose if needed) – for now just scroll
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
-    }, []);
+    }, [playlist]);
+
+    if (!currentItem) {
+        return (
+            <div className="flex flex-col items-center justify-center h-64 text-gray-400">
+                <BookOpen className="w-12 h-12 mb-3" />
+                <p>Aucun contenu disponible</p>
+            </div>
+        );
+    }
 
     return (
-        <div className="max-w-4xl mx-auto py-8 px-4 lg:px-8">
-            {/* Title Card */}
-            <div className="bg-white dark:bg-gray-950 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-800 p-8 lg:p-12 mb-8">
-                <div className="text-center">
-                    <div className="w-16 h-16 bg-[#99334C]/10 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                        <BookOpen className="w-8 h-8 text-[#99334C]" />
-                    </div>
-                    <h1 className="text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white mb-4">
-                        {doc.doc_name}
-                    </h1>
-                    {project.description && (
-                        <p className="text-lg text-gray-600 dark:text-gray-400 mb-6 max-w-2xl mx-auto">
-                            {project.description}
-                        </p>
-                    )}
-                    <div className="flex items-center justify-center gap-6 text-sm text-gray-500 dark:text-gray-400 flex-wrap">
-                        <span className="flex items-center gap-2">
-                            <User className="w-4 h-4" />
-                            {project.author}
-                        </span>
-                        {project.category && (
-                            <span className="px-3 py-1 bg-[#99334C]/10 text-[#99334C] rounded-full font-medium">
-                                {project.category}
-                            </span>
-                        )}
-                        {project.level && (
-                            <span className="px-3 py-1 bg-gray-100 dark:bg-gray-900 text-gray-600 dark:text-gray-400 rounded-full">
-                                {project.level}
-                            </span>
-                        )}
-                    </div>
-                </div>
+        <div className="flex flex-col min-h-[calc(100vh-73px)]">
+            {/* ═══ Progress Bar ═══ */}
+            <div className="h-1 bg-gray-100 dark:bg-gray-800 sticky top-0 z-10">
+                <motion.div
+                    className="h-full bg-gradient-to-r from-[#99334C] to-[#c45b72]"
+                    animate={{ width: `${progress}%` }}
+                    transition={{ duration: 0.4 }}
+                />
             </div>
 
-            {/* Article Body */}
-            <article
-                className="bg-white dark:bg-gray-950 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-800 overflow-hidden"
-                style={{ fontSize: `${fontSize}px` }}
-                onClick={handleCrossRefClick}
-            >
-                <div className="p-8 lg:p-12">
-                    {structure.length === 0 ? (
-                        <div className="text-center py-12 text-gray-500 dark:text-gray-400">
-                            <BookOpen className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                            <p>Ce document ne contient pas encore de contenu.</p>
-                        </div>
-                    ) : (
-                        structure.map((part: Part, partIndex) => (
-                            <section key={part.part_id} id={part.part_id} className="mb-16 scroll-mt-24">
-                                <div className="mb-8 pb-6 border-b-2 border-[#99334C]/20">
-                                    <span className="inline-block px-4 py-1.5 bg-[#99334C] text-white text-sm font-bold rounded-full mb-4">
-                                        Partie {partIndex + 1}
-                                    </span>
-                                    <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white">
-                                        {part.part_title}
-                                    </h2>
-                                    {/* NO ARCHIVE/COLLECT BUTTON HERE */}
-                                </div>
+            {/* ═══ Main Content Area ═══ */}
+            <div className="flex-1 max-w-3xl mx-auto w-full px-6 py-8">
 
-                                {part.part_intro && (
-                                    <div
-                                        className="mb-10 text-lg text-gray-600 dark:text-gray-400 leading-relaxed italic border-l-4 border-[#99334C]/30 pl-6 prose prose-lg dark:prose-invert max-w-none"
-                                        dangerouslySetInnerHTML={{ __html: part.part_intro }}
-                                    />
-                                )}
-
-                                <RenderExercises granuleId={part.part_id} granuleType="part" {...exerciseProps} isLocked={lockedIds.has(part.part_id)} />
-
-                                {part.chapters.map((chapter: Chapter) => (
-                                    <div key={chapter.chapter_id} id={chapter.chapter_id} className="mb-12 scroll-mt-24">
-                                        <h3 className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-3">
-                                            <span className="text-[#99334C]/40 font-normal">#</span>
-                                            {chapter.chapter_title}
-                                        </h3>
-
-                                        <RenderExercises granuleId={chapter.chapter_id} granuleType="chapter" {...exerciseProps} isLocked={lockedIds.has(chapter.chapter_id)} />
-
-                                        {chapter.paragraphs.map((para: Paragraph) => (
-                                            <div key={para.para_id} id={para.para_id} className="mb-10 scroll-mt-24">
-                                                <h4 className="text-xl lg:text-2xl font-bold text-gray-800 dark:text-gray-200 mb-4">
-                                                    {para.para_name}
-                                                </h4>
-
-                                                {para.notions.map((notion: Notion) => (
-                                                    <div key={notion.notion_id} id={notion.notion_id} className="mb-8">
-                                                        {notion.notion_name && (
-                                                            <h5 className="text-sm uppercase tracking-wide text-gray-500 dark:text-gray-400 font-bold mb-3 border-b border-gray-100 dark:border-gray-800 pb-2">
-                                                                {notion.notion_name}
-                                                            </h5>
-                                                        )}
-                                                        <div className="relative group/notion">
-                                                            {lockedIds.has(notion.notion_id) && (
-                                                                <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-gray-50/60 dark:bg-gray-900/60 backdrop-blur-md rounded-xl border-2 border-dashed border-gray-200 dark:border-gray-700 p-6 text-center transition-all">
-                                                                    <div className="w-12 h-12 bg-white dark:bg-gray-800 rounded-full shadow-sm flex items-center justify-center mb-3">
-                                                                        <Lock className="w-6 h-6 text-gray-400" />
-                                                                    </div>
-                                                                    <h6 className="font-bold text-gray-900 dark:text-white mb-1">Section verrouillée</h6>
-                                                                    <p className="text-xs text-gray-500 dark:text-gray-400 max-w-[200px]">
-                                                                        Complétez les exercices précédents pour débloquer ce contenu.
-                                                                    </p>
-                                                                </div>
-                                                            )}
-                                                            <div
-                                                                className={`prose prose-lg dark:prose-invert max-w-none text-gray-700 dark:text-gray-300 leading-relaxed transition-all duration-500
-                                                                    ${lockedIds.has(notion.notion_id) ? 'blur-sm select-none opacity-40 pointer-events-none' : ''}
-                                                                `}
-                                                                dangerouslySetInnerHTML={{ __html: notion.notion_content }}
-                                                            />
-                                                        </div>
-
-                                                        <RenderExercises granuleId={notion.notion_id} granuleType="notion" {...exerciseProps} isLocked={lockedIds.has(notion.notion_id)} />
-                                                    </div>
-                                                ))}
-
-                                                <RenderExercises granuleId={para.para_id} granuleType="paragraph" {...exerciseProps} isLocked={lockedIds.has(para.para_id)} />
-                                            </div>
-                                        ))}
-                                    </div>
-                                ))}
-                            </section>
-                        ))
+                {/* Breadcrumb: Part > Chapter > Paragraph */}
+                <div className="flex items-center gap-1.5 text-xs text-gray-400 dark:text-gray-500 mb-5 flex-wrap">
+                    <span className="font-semibold text-[#99334C]">{currentItem.context.partTitle}</span>
+                    {currentItem.context.chapterTitle && (
+                        <>
+                            <ChevronRight className="w-3 h-3 shrink-0" />
+                            <span>{currentItem.context.chapterTitle}</span>
+                        </>
+                    )}
+                    {currentItem.context.paraTitle && (
+                        <>
+                            <ChevronRight className="w-3 h-3 shrink-0" />
+                            <span>{currentItem.context.paraTitle}</span>
+                        </>
                     )}
                 </div>
-            </article>
+
+                {/* ═══ Step Content ═══ */}
+                <AnimatePresence mode="wait">
+                    <motion.div
+                        key={currentIndex}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -20 }}
+                        transition={{ duration: 0.25, ease: 'easeOut' }}
+                    >
+                        {/* NOTION READING STEP */}
+                        {currentItem.type === 'notion' && (
+                            <div>
+                                <h1
+                                    className="font-bold text-gray-900 dark:text-white mb-6"
+                                    style={{ fontSize: `${Math.round(fontSize * 1.45)}px` }}
+                                >
+                                    {currentItem.data.notion_name}
+                                </h1>
+                                <div
+                                    className="prose prose-gray dark:prose-invert max-w-none"
+                                    style={{ fontSize: `${fontSize}px`, lineHeight: 1.75 }}
+                                    onClick={handleCrossRefClick as any}
+                                    dangerouslySetInnerHTML={{ __html: currentItem.data.notion_content }}
+                                />
+                            </div>
+                        )}
+
+                        {/* EXERCISE CAROUSEL STEP */}
+                        {currentItem.type === 'exercises' && (
+                            <div>
+                                <div className="flex items-center gap-3 mb-6">
+                                    <div className="w-10 h-10 bg-[#99334C]/10 rounded-xl flex items-center justify-center">
+                                        <BookOpen className="w-5 h-5 text-[#99334C]" />
+                                    </div>
+                                    <div>
+                                        <p className="text-xs font-bold uppercase tracking-widest text-[#99334C]">Exercices</p>
+                                        <h2
+                                            className="font-bold text-gray-900 dark:text-white"
+                                            style={{ fontSize: `${Math.round(fontSize * 1.2)}px` }}
+                                        >
+                                            {currentItem.notionName}
+                                        </h2>
+                                    </div>
+                                </div>
+
+                                {getExercisesForGranule && getLatestSubmission && getSubmissionCount && onSubmitAnswer && (
+                                    <ExerciseCarousel
+                                        exercises={exercisesByNotion[currentItem.notionId] || []}
+                                        getLatestSubmission={getLatestSubmission}
+                                        getSubmissionCount={getSubmissionCount}
+                                        onSubmitAnswer={onSubmitAnswer}
+                                        submittingId={submittingId ?? null}
+                                        lockedIds={lockedIds}
+                                    />
+                                )}
+                            </div>
+                        )}
+                    </motion.div>
+                </AnimatePresence>
+            </div>
+
+            {/* ═══ Fixed Bottom Navigation Bar ═══ */}
+            <div className="sticky bottom-0 bg-white/90 dark:bg-gray-900/90 backdrop-blur-md border-t border-gray-200 dark:border-gray-800 px-6 py-3 z-20">
+                <div className="max-w-3xl mx-auto flex items-center justify-between gap-4">
+                    {/* Prev */}
+                    <button
+                        onClick={prevStep}
+                        disabled={isFirst}
+                        className="flex items-center gap-2 px-5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm font-semibold text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                    >
+                        <ChevronLeft className="w-4 h-4" />
+                        Précédent
+                    </button>
+
+                    {/* Step indicator */}
+                    <div className="flex flex-col items-center">
+                        <span className="text-xs text-gray-400">
+                            {currentIndex + 1} / {playlist.length}
+                        </span>
+                        {currentItem.type === 'exercises' && (
+                            <span className="text-[10px] text-[#99334C] font-bold uppercase tracking-wider mt-0.5">
+                                Exercices
+                            </span>
+                        )}
+                    </div>
+
+                    {/* Next */}
+                    <button
+                        onClick={nextStep}
+                        disabled={isLast}
+                        className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#99334C] text-white text-sm font-semibold hover:bg-[#7a283d] disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-md"
+                    >
+                        {isLast ? 'Terminé ✓' : 'Suivant'}
+                        {!isLast && <ChevronRight className="w-4 h-4" />}
+                    </button>
+                </div>
+            </div>
         </div>
     );
 };

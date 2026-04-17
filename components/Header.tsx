@@ -12,6 +12,7 @@ import { LogOut, Settings, User as UserIcon, Menu, X, BarChart2, ShieldCheck, Gr
 import LanguageToggle from '@/components/LanguageToggle';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { useTranslations } from 'next-intl';
+import NotificationBell from '@/components/Classroom/NotificationBell';
 
 const COLORS = {
   primary: "#99334C",
@@ -223,6 +224,7 @@ export default function Header() {
             </>
           )}
           <div className="h-6 w-px bg-gray-200 dark:bg-gray-700 mx-1"></div>
+          {isAuthenticated && user && <NotificationBell />}
           <ThemeToggle />
           <LanguageToggle />
         </div>
