@@ -98,5 +98,6 @@ export function useLinearNavigation(
     nextStep,
     prevStep,
     goTo,
+    goToId,
   };
 }
