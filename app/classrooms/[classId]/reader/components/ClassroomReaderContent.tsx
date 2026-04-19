@@ -36,7 +36,8 @@ const ClassroomReaderContent: React.FC<ClassroomReaderContentProps> = ({
     doc, project, structure, fontSize,
     exercises, submissions, submittingId, onSubmitAnswer,
     getExercisesForGranule, getLatestSubmission, getSubmissionCount, lockedIds = new Set(),
-    playlist, currentIndex, currentItem, isFirst, isLast, progress, nextStep, prevStep
+    playlist, currentIndex, currentItem, isFirst, isLast, progress, nextStep, prevStep,
+    exercisesByNotion
 }) => {
     // Build the map: notionId → Exercise[] for external logic if needed, 
     // but here we use the playlist directly.
