@@ -184,7 +184,7 @@ const AssignmentsTab: React.FC<AssignmentsTabProps> = ({
       ) : (
         assignments.map((assignment) => {
           const isExpanded = expandedId === assignment.id;
-          const mySubmission = assignment.submissions[0];
+          const mySubmission = assignment.submissions?.[0];
           const due = formatDue(assignment.due_date);
           const late = isPastDue(assignment.due_date);
 
@@ -217,7 +217,7 @@ const AssignmentsTab: React.FC<AssignmentsTabProps> = ({
                         </span>
                       )}
                       {isTeacher && (
-                        <span className="text-xs text-gray-400">{assignment._count.submissions} rendu(s)</span>
+                        <span className="text-xs text-gray-400">{(assignment._count?.submissions || 0)} rendu(s)</span>
                       )}
                     </div>
                   </div>
@@ -308,8 +308,8 @@ const AssignmentsTab: React.FC<AssignmentsTabProps> = ({
                       {/* Teacher view: list of submissions */}
                       {isTeacher && (
                         <div className="space-y-3">
-                          <p className="text-sm font-bold text-gray-700 dark:text-gray-300">{assignment._count.submissions} rendu(s)</p>
-                          {assignment.submissions.length === 0 ? (
+                          <p className="text-sm font-bold text-gray-700 dark:text-gray-300">{(assignment._count?.submissions || 0)} rendu(s)</p>
+                          {(!assignment.submissions || assignment.submissions.length === 0) ? (
                             <p className="text-sm text-gray-400 italic">Aucun rendu pour l'instant.</p>
                           ) : (
                             assignment.submissions.map((sub: any) => (

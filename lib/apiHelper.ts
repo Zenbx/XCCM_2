@@ -31,10 +31,18 @@ export function getAuthHeaders(): HeadersInit {
  * Wrapper fetch avec gestion automatique de l'authentification
  */
 export async function authenticatedFetch(url: string, options: RequestInit = {}): Promise<Response> {
-  const headers = {
-    ...getAuthHeaders(),
+  const authHeaders = getAuthHeaders();
+  
+  // If the body is FormData, we MUST NOT set Content-Type: application/json
+  // The browser will automatically set Content-Type: multipart/form-data with the boundary
+  const headers: any = {
+    ...authHeaders,
     ...options.headers,
   };
+
+  if (options.body instanceof FormData) {
+    delete headers['Content-Type'];
+  }
 
   const response = await fetch(url, {
     ...options,
