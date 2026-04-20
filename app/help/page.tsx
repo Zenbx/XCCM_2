@@ -145,21 +145,21 @@ const HelpCenter = () => {
     documentation: {
       intro: {
         title: 'Introduction à XCCM 2',
-        content: `XCCM 2 est une plateforme numérique dédiée à la création, la structuration et la publication de cours en ligne. Conçue comme un système auteur, elle permet aux enseignants, formateurs et créateurs de contenus pédagogiques de produire des cours clairs, modulaires et facilement accessibles aux apprenants.
+        content: `XCCM 2 est une plateforme LMS (Learning Management System) de nouvelle génération dédiée à la création, la structuration et la diffusion de contenus pédagogiques. Elle combine un éditeur de cours puissant avec un écosystème complet de gestion de classes et d'apprentissage assisté par l'IA.
 
-Développé dans le cadre d'un projet d'Interaction Homme-Machine (IHM), XCCM 2 place l'utilisateur au centre de la conception, en mettant l'accent sur l'ergonomie, la simplicité d'usage et la qualité de l'expérience utilisateur.`
+Conçu comme un système auteur et un espace d'apprentissage, XCCM 2 permet aux enseignants de transformer leurs ressources en véritables parcours pédagogiques interactifs, tout en offrant aux étudiants un environnement d'apprentissage moderne et sans distractions.`
       },
       fonctionnalites: {
-        title: 'Fonctionnalités principales',
-        content: `XCCM 2 propose un ensemble de fonctionnalités essentielles pour la conception de cours en ligne :
+        title: 'Fonctionnalités LMS',
+        content: `XCCM 2 propose des outils avancés pour la gestion pédagogique :
 
-• Création et édition de cours pédagogiques
-• Organisation hiérarchique des contenus (cours, parties, chapitres, paragraphes)
-• Gestion d'une bibliothèque de cours
-• Publication des contenus sur une plateforme accessible aux apprenants
-• Navigation fluide et structurée entre les différents contenus
-• Import automatique de documents avec division en granules
-• Collaboration en temps réel avec d'autres auteurs`
+• Gestion de Classes : Créez des espaces virtuels et invitez vos élèves via un code unique.
+• Flux de la Classe : Partagez des annonces et discutez avec vos élèves en temps réel.
+• Gestion des Devoirs : Créez des évaluations (Texte ou Fichier) et suivez les rendus.
+• IA Socratique : Un assistant pédagogique intégré qui guide les élèves sans donner les réponses.
+• Lecteur Linéaire : Une navigation pas-à-pas pour une concentration maximale sur le contenu.
+• Édition Granulaire : Organisez vos cours en "granules" réutilisables.
+• Import Intelligent : Divisez automatiquement vos documents (PDF, DOCX) en structure hiérarchique.`
       },
       interface: {
         title: 'Interface utilisateur',
@@ -200,16 +200,14 @@ Barre d'outils minimaliste : Pour maximiser l'espace, les boutons Secondaires (P
 • /capt : Zone de Capture`
       },
       organisation: {
-        title: 'Organisation des cours',
-        content: `Un cours dans XCCM 2 suit une structure hiérarchique claire :
+        title: 'Projets vs Classes',
+        content: `Il est important de distinguer deux espaces clés dans XCCM 2 :
 
-Cours : Le niveau le plus élevé, contient toutes vos ressources pédagogiques
-├── Parties : Grandes divisions thématiques de votre cours
-│   ├── Chapitres : Sous-divisions logiques d'une partie
-│   │   ├── Paragraphes : Sections de contenu au sein d'un chapitre
-│   │   │   └── Notions : Concepts spécifiques ou points clés
+Les Projets (Bibliothèque) : C'est votre espace de création. Vous y concevez vos cours, les organisez et les éditez. Un projet peut être privé ou public.
 
-Cette organisation modulaire facilite la navigation et la réutilisation des contenus.`
+Les Classes (LMS) : C'est votre espace de diffusion. Vous créez une classe, y inscrivez des élèves, et y "publiez" des versions figées (snapshots) de vos projets.
+
+Cette séparation permet d'éditer vos cours en toute tranquillité pendant que vos élèves continuent d'étudier sur la version publiée stable.`
       },
       publication: {
         title: 'Publication et partage',
@@ -239,18 +237,18 @@ Q: Comment supprimer mon compte ?
 R: Contactez le support technique via le formulaire de contact. Notez que cette action est irréversible.`
       },
       creation: {
-        title: 'Création de contenu',
-        content: `Q: Combien de cours puis-je créer ?
-R: Il n'y a pas de limite au nombre de cours que vous pouvez créer avec XCCM 2.
+        title: 'LMS et Devoirs',
+        content: `Q: Comment mes élèves rejoignent-ils ma classe ?
+R: Partagez-leur le "Code de la classe" (ex: AZ123). Ils pourront le saisir dans leur section Classe > Rejoindre.
 
-Q: Puis-je importer mes anciens cours ?
-R: Oui, utilisez la fonction d'import dans le panneau latéral droit. XCCM 2 supporte les formats PDF, DOCX, et TXT.
+Q: Quels types de devoirs puis-je créer ?
+R: Vous pouvez créer des devoirs de type "Texte" (réponse directe) ou "Fichier" (upload de PDF, images, etc.).
 
-Q: Comment ajouter des images et vidéos ?
-R: Utilisez le bouton "Import" dans le panneau latéral, puis glissez-déposez vos fichiers multimédias.
+Q: Puis-je modifier un cours déjà publié dans une classe ?
+R: Oui, mais vous devrez cliquer sur "Synchroniser" dans la classe pour que les élèves voient les modifications.
 
-Q: Mes modifications sont-elles sauvegardées automatiquement ?
-R: Oui, si vous activez la sauvegarde automatique dans les paramètres. Sinon, pensez à sauvegarder régulièrement.`
+Q: Comment fonctionne l'IA Socratique ?
+R: Elle analyse le contenu de la notion actuelle et aide l'élève à réfléchir par lui-même en posant des questions guidantes.`
       },
       problemes: {
         title: 'Problèmes courants',
@@ -283,86 +281,55 @@ R: Utilisez le bouton "Signaler" sous le cours concerné ou contactez directemen
     },
     guide: {
       'premier-cours': {
-        title: 'Créer votre premier cours',
-        content: `Bienvenue dans XCCM 2 ! Suivez ces étapes pour créer votre premier cours :
+        title: 'Gérer votre première classe',
+        content: `Une fois vos cours prêts, lancez votre espace d'enseignement :
 
-Étape 1 : Accéder à l'éditeur
-Cliquez sur "Éditer" dans le menu principal ou sur le bouton "+ Nouveau cours" dans votre bibliothèque.
+Étape 1 : Créer la Classe
+Allez dans la section "Classes" et cliquez sur "Nouvelle Classe". Donnez-lui un nom (ex: Mathématiques 3ème A).
 
-Étape 2 : Définir la structure
-Commencez par créer au moins une partie dans la table des matières. Cliquez sur le bouton "+" à côté de "Table des matières".
+Étape 2 : Inscrire les Élèves
+Copiez le code d'invitation et transmettez-le à vos élèves. Vous verrez la liste des membres s'actualiser en temps réel.
 
-Étape 3 : Ajouter du contenu
-Sélectionnez une section dans la table des matières et commencez à écrire dans la zone d'édition centrale.
+Étape 3 : Assigner des Cours
+Utilisez le bouton "Ajouter un cours" pour lier un projet de votre bibliothèque à la classe.
 
-Étape 4 : Formater votre texte
-Utilisez la barre d'outils pour mettre en forme votre contenu (gras, italique, listes, etc.).
-
-Étape 5 : Enregistrer et prévisualiser
-Cliquez sur "Aperçu" pour voir le rendu final, puis sur "Publier" quand vous êtes satisfait.`
+Étape 4 : Publier / Synchroniser
+N'oubliez pas de synchroniser le cours pour que les élèves puissent l'ouvrir avec le Lecteur Linéaire.`
       },
       structuration: {
-        title: 'Structurer vos contenus',
-        content: `Une bonne structuration facilite l'apprentissage et la navigation :
+        title: 'Devoirs et Évaluations',
+        content: `Évaluez les progrès de vos élèves avec le système de devoirs :
 
-Principes de structuration :
+1. Création : Dans l'onglet "Devoirs" de votre classe, définissez un titre, une date limite et le type de rendu.
 
-1. Hiérarchie claire : Utilisez parties > chapitres > paragraphes > notions
-2. Titres descriptifs : Choisissez des titres explicites pour chaque section
-3. Granularité : Divisez les concepts complexes en notions plus simples
-4. Progression logique : Organisez vos contenus du général au particulier
-5. Cohérence : Maintenez le même niveau de détail dans chaque section
+2. Suivi : Vous voyez en un coup d'œil combien d'élèves ont rendu leur travail.
 
-Astuce : Utilisez la fonction d'import pour convertir automatiquement vos documents en structure hiérarchique.`
+3. Correction : Cliquez sur un rendu pour voir la réponse de l'élève ou télécharger son fichier (PDF, image).
+
+Astuce : Utilisez les annonces pour rappeler les dates limites importantes à vos élèves.`
       },
       'bonnes-pratiques': {
-        title: 'Bonnes pratiques pédagogiques',
-        content: `Pour créer des cours efficaces sur XCCM 2 :
+        title: 'IA et Pédagogie Socratique',
+        content: `XCCM 2 intègre une intelligence artificielle basée sur la méthode socratique pour soutenir l'apprentissage :
 
-Clarté et concision
-• Utilisez des phrases courtes et un vocabulaire adapté à votre public
-• Évitez le jargon technique inutile
-• Définissez les termes importants dès leur première apparition
+Le concept : Contrairement aux IA classiques, notre assistant ne donne pas directement la réponse. Il pose des questions pour amener l'élève à trouver la solution par lui-même.
 
-Engagement des apprenants
-• Posez des questions tout au long du cours
-• Proposez des exemples concrets et des cas pratiques
-• Utilisez des visuels pour illustrer vos propos
-
-Accessibilité
-• Structurez bien vos contenus avec des titres clairs
-• Ajoutez des descriptions alternatives aux images
-• Utilisez un contraste suffisant pour la lisibilité
-
-Évaluation
-• Incluez des quiz ou des exercices pratiques
-• Donnez des feedbacks constructifs
-• Permettez la révision des concepts clés`
+Comment l'utiliser :
+• Dans le lecteur, l'élève peut cliquer sur le bouton "Aide IA" pour discuter de la notion actuelle.
+• L'IA connaît le contexte du cours et les objectifs pédagogiques.
+• Elle est idéale pour débloquer un élève sur un exercice difficile sans compromettre son effort cognitif.`
       },
       multimedia: {
-        title: 'Ajouter du multimédia',
-        content: `Enrichissez vos cours avec des éléments multimédias :
+        title: 'Lecteur Linéaire',
+        content: `Le Lecteur Linéaire est l'interface principale pour vos élèves :
 
-Images
-1. Cliquez sur l'icône "Cloud" dans le panneau latéral droit
-2. Glissez-déposez vos images ou parcourez vos fichiers
-3. Formats acceptés : JPG, PNG, GIF, SVG
+Navigation par étapes : Le cours est découpé en étapes logiques. L'élève progresse page par page, évitant ainsi la surcharge d'informations.
 
-Vidéos
-• Hébergez vos vidéos sur YouTube ou Vimeo
-• Copiez le lien de partage
-• Collez-le dans votre contenu (conversion automatique)
+Focalisation : L'interface est épurée pour favoriser la concentration.
 
-Documents
-• PDF, DOCX, XLSX supportés
-• Taille maximale : 50 MB par fichier
-• Les documents seront automatiquement convertis en granules
+Intégration d'exercices : Les exercices apparaissent directement après les notions théoriques correspondantes, permettant une application immédiate des connaissances.
 
-Bonnes pratiques
-✓ Optimisez vos images (max 1 MB recommandé)
-✓ Ajoutez des légendes explicatives
-✓ Testez la lecture sur différents appareils
-✓ Respectez les droits d'auteur`
+Table des matières : Toujours accessible pour naviguer rapidement ou voir sa progression globale.`
       },
       collaboration: {
         title: 'Travailler en équipe',

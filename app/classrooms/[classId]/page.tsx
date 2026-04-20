@@ -288,7 +288,7 @@ const ClassroomDetailPage = () => {
                     <div className="flex flex-wrap gap-4 mt-6">
                         <div className="flex items-center gap-2 bg-white/15 backdrop-blur-sm rounded-xl px-4 py-2">
                             <Users className="w-4 h-4" />
-                            <span className="text-sm font-semibold">{classroom.enrollments?.length || 0} élève{(classroom.enrollments?.length || 0) !== 1 ? 's' : ''}</span>
+                            <span className="text-sm font-semibold">{(classroom._count?.enrollments || 0)} élève{(classroom._count?.enrollments || 0) !== 1 ? 's' : ''}</span>
                         </div>
                         <div className="flex items-center gap-2 bg-white/15 backdrop-blur-sm rounded-xl px-4 py-2">
                             <BookOpen className="w-4 h-4" />
