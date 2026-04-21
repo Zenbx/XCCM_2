@@ -1,7 +1,5 @@
 "use client";
-import React, { useState, useEffect, useRef } from 'react';
-import { useChat } from '@ai-sdk/react';
-import { DefaultChatTransport } from 'ai';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { authService } from '@/services/authService';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -24,42 +22,91 @@ const StudentAIPanel: React.FC<StudentAIPanelProps> = ({ isOpen, onClose, docId,
     const [isMaximized, setIsMaximized] = useState(false);
     const [input, setInput] = useState('');
     const scrollRef = useRef<HTMLDivElement>(null);
+    const abortControllerRef = useRef<AbortController | null>(null);
 
-    const { messages, sendMessage, setMessages, status } = useChat({
-        transport: new DefaultChatTransport({
-            api: `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/ai/socratic`,
-            headers: {
-                'x-user-role': 'user',
-                Authorization: `Bearer ${authService.getAuthToken() || ''}`,
-            },
-            body: {
-                context: {
-                    docId,
-                    docName: context.docName,
-                    paraName: context.activeSectionName,
-                    notionContent: context.activeSectionContent
-                }
-            }
-        }),
-        messages: [
-            {
-                id: 'welcome',
-                role: 'assistant',
-                parts: [{
-                    type: 'text',
-                    text: `Bonjour ! Je suis ton assistant d'apprentissage XCCM2. Comment puis-je t'aider à explorer "**${context.activeSectionName || context.docName}**" aujourd'hui ?`
-                }]
-            }
-        ]
-    });
-
-    const isLoading = status === 'streaming';
+    const [messages, setMessages] = useState<any[]>([
+        {
+            id: 'welcome',
+            role: 'assistant',
+            content: `Bonjour ! Je suis ton assistant d'apprentissage XCCM2. Comment puis-je t'aider à explorer "**${context.activeSectionName || context.docName}**" aujourd'hui ?`
+        }
+    ]);
+    const [isLoading, setIsLoading] = useState(false);
 
     useEffect(() => {
         if (scrollRef.current) {
             scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
         }
-    }, [messages]);
+    }, [messages, isLoading]);
+
+    const sendChatMessage = useCallback(async (userText: string) => {
+        if (!userText.trim() || isLoading) return;
+
+        const userMsg = { id: `u-${Date.now()}`, role: 'user', content: userText.trim() };
+        const assistantMsg = { id: `a-${Date.now()}`, role: 'assistant', content: '' };
+
+        setMessages(prev => [...prev, userMsg, assistantMsg]);
+        setIsLoading(true);
+
+        try {
+            abortControllerRef.current = new AbortController();
+
+            const chatHistory = messages.filter(m => m.id !== 'welcome').map(m => ({
+                role: m.role,
+                content: m.content
+            }));
+            chatHistory.push({ role: 'user', content: userText.trim() });
+
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/ai/socratic`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-user-role': 'user',
+                    'Authorization': `Bearer ${authService.getAuthToken() || ''}`,
+                },
+                body: JSON.stringify({
+                    messages: chatHistory,
+                    context: {
+                        docId,
+                        docName: context.docName,
+                        paraName: context.activeSectionName,
+                        notionContent: context.activeSectionContent
+                    }
+                }),
+                signal: abortControllerRef.current.signal,
+            });
+
+            if (!response.ok) throw new Error('Erreur de réponse serveur');
+
+            if (response.body) {
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let fullText = '';
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+
+                    const chunk = decoder.decode(value, { stream: true });
+                    // toTextStreamResponse might send raw text chunks, but some Vercel AI SDK versions might prefix them.
+                    fullText += chunk;
+
+                    setMessages(prev => prev.map(m =>
+                        m.id === assistantMsg.id ? { ...m, content: fullText } : m
+                    ));
+                }
+            }
+        } catch (error: any) {
+            if (error.name === 'AbortError') return;
+            console.error('Socratic UI Error:', error);
+            setMessages(prev => prev.map(m =>
+                m.id === assistantMsg.id ? { ...m, content: '❌ Erreur de réseau ou requête interrompue.' } : m
+            ));
+        } finally {
+            setIsLoading(false);
+            abortControllerRef.current = null;
+        }
+    }, [messages, isLoading, context, docId]);
 
     if (!isOpen) return null;
 
@@ -150,8 +197,7 @@ const StudentAIPanel: React.FC<StudentAIPanelProps> = ({ isOpen, onClose, docId,
                         if (!input.trim() || isLoading) return;
                         const currentInput = input;
                         setInput('');
-                        // @ts-ignore
-                        await sendMessage({ text: currentInput });
+                        await sendChatMessage(currentInput);
                     }}
                     className="flex items-center gap-2"
                 >
