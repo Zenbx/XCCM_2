@@ -99,6 +99,18 @@ const ExerciseBlock: React.FC<ExerciseBlockProps> = ({
             {/* Content */}
             {isExpanded && (
                 <div className="px-5 pb-5 border-t border-gray-200/50">
+                    {/* Exercise Image */}
+                    {params.image_url && (
+                        <div className="mt-4 rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
+                            <img 
+                                src={params.image_url} 
+                                alt={exercise.title} 
+                                className="w-full max-h-80 object-contain" 
+                                loading="lazy"
+                            />
+                        </div>
+                    )}
+
                     {/* Last result feedback */}
                     {(lastResult || submission) && (
                         <div className={`mt-4 p-3 rounded-xl text-sm ${

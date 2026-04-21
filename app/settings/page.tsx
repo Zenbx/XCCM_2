@@ -1,7 +1,10 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
+import { useTheme } from '@/context/ThemeContext';
+import { useLanguage } from '@/context/LanguageContext';
+import { Language } from '@/services/locales';
 import {
   Settings as SettingsIcon,
   Bell,
@@ -24,9 +27,35 @@ import { getAuthHeaders } from '@/lib/apiHelper';
 
 const SettingsPage = () => {
   const { user, logout } = useAuth();
+  const { theme, setTheme } = useTheme();
+  const { language, setLanguage } = useLanguage();
   const router = useRouter();
 
   const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001').replace(/\/$/, '');
+
+  // Chargement des paramètres initiaux
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/user/settings`, {
+          headers: getAuthHeaders(),
+        });
+        if (response.ok) {
+          const data = await response.json();
+          if (data.data?.settings) {
+            setSettings(prev => ({
+              ...prev,
+              ...data.data.settings
+            }));
+          }
+        }
+      } catch (err) {
+        console.error("Erreur chargement settings:", err);
+      }
+    };
+
+    fetchSettings();
+  }, [API_BASE_URL]);
 
   // États pour les paramètres
   const [settings, setSettings] = useState({
@@ -85,7 +114,15 @@ const SettingsPage = () => {
     setSuccess('');
 
     try {
-      // TODO: Appel API pour sauvegarder les paramètres
+      // ✅ Mise à jour immédiate des contextes UI
+      if (settings.theme !== theme) {
+        setTheme(settings.theme as "light" | "dark" | "system");
+      }
+      if (settings.language !== language) {
+        setLanguage(settings.language as Language);
+      }
+
+      // ✅ Appel API pour sauvegarder les paramètres
       const response = await fetch(`${API_BASE_URL}/api/user/settings`, {
         method: 'PUT',
         headers: getAuthHeaders(),
@@ -121,7 +158,6 @@ const SettingsPage = () => {
     setSuccess('');
 
     try {
-      // TODO: Appel API pour changer le mot de passe
       const response = await fetch(`${API_BASE_URL}/api/user/password`, {
         method: 'PUT',
         headers: getAuthHeaders(),
@@ -147,7 +183,6 @@ const SettingsPage = () => {
 
   const handleDeleteAccount = async () => {
     try {
-      // TODO: Appel API pour supprimer le compte
       const response = await fetch(`${API_BASE_URL}/api/user/account`, {
         method: 'DELETE',
         headers: getAuthHeaders(),

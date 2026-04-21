@@ -1,16 +1,19 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
     Plus, Trash2, Check, X, Loader2, Edit3,
     CircleDot, CheckSquare, Type, Brain, Code2, PuzzleIcon,
     AlertCircle, Sparkles, Target, ExternalLink, MapPin,
-    ChevronUp, ChevronDown
+    ChevronUp, ChevronDown, ImagePlus
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { exerciseService, Exercise, ExerciseType, QCMOption } from '@/services/exerciseService';
 import { TactileButton } from '@/components/UI/TactileButton';
+import { authService } from '@/services/authService';
 import toast from 'react-hot-toast';
+
+const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001').replace(/\/$/, '');
 
 // ─────────────────────────────────────────
 // EXERCISE TYPE CONFIG
@@ -266,6 +269,11 @@ const ExercisePanel = ({ currentContext, structure, project, onNavigateToGranule
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isReordering, setIsReordering] = useState(false);
     
+    // Image upload state
+    const [imageUrl, setImageUrl] = useState('');
+    const [isUploading, setIsUploading] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    
     // Edit mode state
     const [editingExerciseId, setEditingExerciseId] = useState<string | null>(null);
 
@@ -410,14 +418,58 @@ const ExercisePanel = ({ currentContext, structure, project, onNavigateToGranule
         setOptions([{ id: 'opt_1', text: '', isCorrect: false }, { id: 'opt_2', text: '', isCorrect: false }]);
         setExpectedAnswer(''); setEvaluationPrompt(''); setStarterCode(''); setLanguage('python');
         setFillText(''); setIsBlocking(false); setMaxAttempts(3); setShowCreator(false);
+        setImageUrl('');
+    };
+
+    // ═══════ IMAGE UPLOAD ═══════
+    const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+        if (!allowedTypes.includes(file.type)) {
+            toast.error('Format non supporté. Utilisez JPEG, PNG ou WEBP.');
+            return;
+        }
+        if (file.size > 10 * 1024 * 1024) {
+            toast.error('L\'image dépasse 10 Mo.');
+            return;
+        }
+
+        setIsUploading(true);
+        try {
+            const formData = new FormData();
+            formData.append('file', file);
+
+            const response = await fetch(`${API_BASE_URL}/api/upload?type=exercise`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${authService.getAuthToken() || ''}`,
+                },
+                body: formData,
+            });
+
+            if (!response.ok) throw new Error('Échec de l\'upload');
+            const data = await response.json();
+            setImageUrl(data.data.url);
+            toast.success('Image ajoutée !');
+        } catch (err: any) {
+            toast.error(err.message || 'Erreur upload');
+        } finally {
+            setIsUploading(false);
+            if (fileInputRef.current) fileInputRef.current.value = '';
+        }
     };
 
     const buildParameters = (): any => {
+        const base: any = {};
+        if (imageUrl) base.image_url = imageUrl;
+
         switch (selectedType) {
-            case 'QCU': case 'QCM': return { question, options, shuffle: false };
-            case 'QRO': return { question, expectedAnswer, caseSensitive: false };
-            case 'QROA': return { question, evaluationPrompt, maxScore: 10 };
-            case 'CODE': return { question, language, starterCode, testCases: [] };
+            case 'QCU': case 'QCM': return { ...base, question, options, shuffle: false };
+            case 'QRO': return { ...base, question, expectedAnswer, caseSensitive: false };
+            case 'QROA': return { ...base, question, evaluationPrompt, maxScore: 10 };
+            case 'CODE': return { ...base, question, language, starterCode, testCases: [] };
             case 'FILL_BLANKS':
                 const blankRegex = /\{\{(\w+)\}\}/g;
                 const blanks: Array<{ id: string; answer: string }> = [];
@@ -425,8 +477,8 @@ const ExercisePanel = ({ currentContext, structure, project, onNavigateToGranule
                 while ((match = blankRegex.exec(fillText)) !== null) {
                     blanks.push({ id: `blank_${blanks.length + 1}`, answer: match[1] });
                 }
-                return { text: fillText, blanks };
-            default: return {};
+                return { ...base, text: fillText, blanks };
+            default: return base;
         }
     };
 
@@ -490,6 +542,7 @@ const ExercisePanel = ({ currentContext, structure, project, onNavigateToGranule
         if (params.starterCode) setStarterCode(params.starterCode);
         if (params.language) setLanguage(params.language);
         if (params.text) setFillText(params.text);
+        if (params.image_url) setImageUrl(params.image_url);
         
         // Restore settings
         const settings = exercise.settings || {};
@@ -613,6 +666,38 @@ const ExercisePanel = ({ currentContext, structure, project, onNavigateToGranule
                                     {selectedType === 'QROA' && <QROAFormBuilder question={question} setQuestion={setQuestion} evaluationPrompt={evaluationPrompt} setEvaluationPrompt={setEvaluationPrompt} />}
                                     {selectedType === 'CODE' && <CodeFormBuilder question={question} setQuestion={setQuestion} starterCode={starterCode} setStarterCode={setStarterCode} language={language} setLanguage={setLanguage} />}
                                     {selectedType === 'FILL_BLANKS' && <FillBlanksFormBuilder text={fillText} setText={setFillText} />}
+
+                                    {/* Image Upload */}
+                                    <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-800">
+                                        <label className="block text-xs font-semibold text-gray-500 uppercase mb-1.5">Image illustrative (optionnel)</label>
+                                        <input
+                                            ref={fileInputRef}
+                                            type="file"
+                                            accept="image/jpeg,image/png,image/webp"
+                                            onChange={handleImageUpload}
+                                            className="hidden"
+                                        />
+                                        {imageUrl ? (
+                                            <div className="relative group">
+                                                <img src={imageUrl} alt="Aperçu" className="w-full max-h-40 object-contain rounded-xl border border-gray-200 dark:border-gray-700" />
+                                                <button
+                                                    onClick={() => setImageUrl('')}
+                                                    className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                                                >
+                                                    <X className="w-3 h-3" />
+                                                </button>
+                                            </div>
+                                        ) : (
+                                            <button
+                                                onClick={() => fileInputRef.current?.click()}
+                                                disabled={isUploading}
+                                                className="w-full py-3 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl text-gray-400 hover:border-[#99334C] hover:text-[#99334C] transition-all flex items-center justify-center gap-2 text-xs font-medium"
+                                            >
+                                                {isUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ImagePlus className="w-4 h-4" />}
+                                                {isUploading ? 'Upload...' : 'Ajouter une image'}
+                                            </button>
+                                        )}
+                                    </div>
 
                                     {/* Settings */}
                                     <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-800 space-y-3">
