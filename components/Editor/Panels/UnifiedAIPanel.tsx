@@ -220,7 +220,7 @@ const UnifiedAIPanel: React.FC<UnifiedAIPanelProps> = ({
                         ? 'bg-[#99334C] text-white rounded-tr-none' 
                         : 'bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm rounded-tl-none'
                     }`}>
-                      {msg.parts?.map((part: any, i: number) => (
+                      {msg.content || msg.parts?.map((part: any, i: number) => (
                         part.type === 'text' ? <React.Fragment key={i}>{part.text}</React.Fragment> : null
                       ))}
                     </div>
