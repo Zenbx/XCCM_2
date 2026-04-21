@@ -1477,6 +1477,11 @@ const XCCM2Editor = () => {
             onDismissFeedback: dismissFeedback
           }}
           editorContent={editorContent}
+          onStructureChanged={() => loadProject(true)}
+          onContentChanged={(content: string) => {
+            setEditorContent(content);
+            setHasUnsavedChanges(true);
+          }}
           onNavigateToGranule={(ctx: any) => {
             // Navigate to the granule corresponding to an exercise
             if (ctx.type === 'part') {

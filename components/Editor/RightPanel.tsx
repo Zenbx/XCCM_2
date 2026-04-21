@@ -1,6 +1,6 @@
 "use client";
 
-import React from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Cloud,
@@ -14,7 +14,9 @@ import {
   ChevronRight,
   BookOpen,
   ClipboardList,
-  Sparkles
+  Sparkles,
+  Maximize2,
+  Minimize2
 } from 'lucide-react';
 import RichTooltip from '@/components/UI/RichTooltip';
 
@@ -45,8 +47,12 @@ const RightPanel = ({
   onDragStart = () => { },
   socraticData,
   onNavigateToGranule,
-  editorContent
+  editorContent,
+  onStructureChanged,
+  onContentChanged,
 }: any) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+
   const panels = [
     { id: 'import', icon: Cloud, title: 'Importer Fichier', description: 'Gérez vos ressources et importez des modules de connaissance.' },
     { id: 'marketplace', icon: ShoppingBag, title: 'Marketplace', description: 'Découvrez et achetez de nouveaux contenus pédagogiques.' },
@@ -58,6 +64,9 @@ const RightPanel = ({
     { id: 'exercises', icon: ClipboardList, title: 'Exercices', description: 'Créez et gérez les exercices attachés au granule sélectionné.' },
     { id: 'tutorial', icon: BookOpen, title: 'Tutoriel', description: 'Apprenez à utiliser les commandes slash et les raccourcis de l\'éditeur.' }
   ];
+
+  // Panel width depends on expand state and current panel type
+  const panelWidth = isExpanded ? 700 : 400;
 
   return (
     <motion.div
@@ -79,7 +88,7 @@ const RightPanel = ({
               description={panel.description}
             >
               <button
-                onClick={() => onToggle(panel.id)}
+                onClick={() => { onToggle(panel.id); if (!isActive) setIsExpanded(false); }}
                 className={`p-2 rounded-xl transition-all duration-200 group relative ${isActive
                   ? 'bg-[#99334C] text-white shadow-lg scale-110'
                   : 'text-gray-500 hover:text-[#99334C] hover:bg-[#99334C]/5'
@@ -100,13 +109,13 @@ const RightPanel = ({
         {activePanel && (
           <motion.div
             initial={{ x: 400, opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
+            animate={{ x: 0, opacity: 1, width: panelWidth }}
             exit={{ x: 400, opacity: 0 }}
             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className="absolute right-14 top-0 bottom-0 w-[400px] border-l border-gray-100 bg-white dark:bg-gray-950 flex flex-col h-full shadow-2xl z-50 overflow-hidden"
+            className="absolute right-14 top-0 bottom-0 border-l border-gray-100 bg-white dark:bg-gray-950 flex flex-col h-full shadow-2xl z-50 overflow-hidden"
           >
             {/* Header du panneau */}
-            <div className="p-4 border-b border-gray-100 flex items-center justify-between bg-white/80 backdrop-blur-md sticky top-0 z-10">
+            <div className="p-4 border-b border-gray-100 flex items-center justify-between bg-white/80 dark:bg-gray-950/80 backdrop-blur-md sticky top-0 z-10">
               <div className="flex items-center gap-3">
                 {(() => {
                   const p = panels.find(p => p.id === activePanel);
@@ -116,17 +125,29 @@ const RightPanel = ({
                       <div className="p-2 bg-[#99334C]/10 rounded-lg">
                         <Icon size={18} className="text-[#99334C]" />
                       </div>
-                      <h3 className="font-bold text-gray-900">{p?.title}</h3>
+                      <h3 className="font-bold text-gray-900 dark:text-white">{p?.title}</h3>
                     </>
                   );
                 })()}
               </div>
-              <button
-                onClick={() => onToggle(activePanel)}
-                className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-400 transition-colors"
-              >
-                <ChevronRight size={20} />
-              </button>
+              <div className="flex items-center gap-1">
+                {/* Expand/Collapse button (only for AI panel) */}
+                {activePanel === 'ai' && (
+                  <button
+                    onClick={() => setIsExpanded(!isExpanded)}
+                    className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg text-gray-400 transition-colors"
+                    title={isExpanded ? 'Réduire' : 'Agrandir'}
+                  >
+                    {isExpanded ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
+                  </button>
+                )}
+                <button
+                  onClick={() => onToggle(activePanel)}
+                  className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg text-gray-400 transition-colors"
+                >
+                  <ChevronRight size={20} />
+                </button>
+              </div>
             </div>
 
             {/* Contenu dynamique */}
@@ -151,6 +172,9 @@ const RightPanel = ({
                   currentContext={currentContext}
                   editorContent={editorContent}
                   socraticData={socraticData}
+                  onStructureChanged={onStructureChanged}
+                  onContentChanged={onContentChanged}
+                  project={project}
                 />
               )}
             </div>

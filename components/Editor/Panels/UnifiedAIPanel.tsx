@@ -1,15 +1,15 @@
 "use client";
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { 
-  Bot, 
-  Send, 
-  Sparkles, 
-  MessageSquare, 
-  Brain, 
-  RefreshCw, 
-  BarChart3, 
-  ChevronDown, 
+import {
+  Bot,
+  Send,
+  Sparkles,
+  MessageSquare,
+  Brain,
+  RefreshCw,
+  BarChart3,
+  ChevronDown,
   ChevronUp,
   Lightbulb,
   CheckCircle2,
@@ -17,7 +17,11 @@ import {
   Wand2,
   Loader2,
   CheckCircle,
-  X
+  X,
+  Copy,
+  Check,
+  StopCircle,
+  Square
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/context/AuthContext';
@@ -67,8 +71,8 @@ interface AIAction {
   error?: string;
 }
 
-const UnifiedAIPanel: React.FC<UnifiedAIPanelProps> = ({ 
-  currentContext, 
+const UnifiedAIPanel: React.FC<UnifiedAIPanelProps> = ({
+  currentContext,
   editorContent,
   socraticData,
   onStructureChanged,
@@ -85,17 +89,39 @@ const UnifiedAIPanel: React.FC<UnifiedAIPanelProps> = ({
   const [messages, setMessages] = useState<ChatMessage[]>([{
     id: 'welcome',
     role: 'assistant',
-    content: isAdmin 
+    content: isAdmin
       ? "Bonjour ! Je suis votre assistant IA. Je peux vous aider à structurer vos cours, écrire du contenu, générer des exercices ou répondre à vos questions. Essayez : *\"Crée une structure de cours sur...\"*"
       : "Bonjour ! Je suis votre coach pédagogique XCCM. Je vous accompagne dans votre apprentissage via une approche socratique. Que souhaitez-vous approfondir aujourd'hui ?"
   }]);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isStreaming]);
+
+  // ═══════ STOP GENERATION ═══════
+  const handleStop = useCallback(() => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+      setIsStreaming(false);
+      toast.success('Génération arrêtée');
+    }
+  }, []);
+
+  // ═══════ COPY MESSAGE ═══════
+  const handleCopy = useCallback(async (messageId: string, content: string) => {
+    try {
+      await navigator.clipboard.writeText(content);
+      setCopiedId(messageId);
+      setTimeout(() => setCopiedId(null), 2000);
+    } catch {
+      toast.error('Impossible de copier');
+    }
+  }, []);
 
   // ═══════ MANUAL STREAMING CHAT ═══════
   const sendChatMessage = useCallback(async (userText: string) => {
@@ -118,7 +144,7 @@ const UnifiedAIPanel: React.FC<UnifiedAIPanelProps> = ({
 
     // Determine which endpoint to use
     const isEditorMode = isAdmin && currentContext?.projectName;
-    const endpoint = isEditorMode 
+    const endpoint = isEditorMode
       ? `${API_BASE_URL}/api/ai/editor`
       : `${API_BASE_URL}/api/ai/socratic`;
 
@@ -165,9 +191,9 @@ const UnifiedAIPanel: React.FC<UnifiedAIPanelProps> = ({
         const data = await response.json();
         const aiContent = data.text || data.message || '';
         const actions: AIAction[] = data.actions || [];
-        
-        setMessages(prev => prev.map(m => 
-          m.id === assistantMessage.id 
+
+        setMessages(prev => prev.map(m =>
+          m.id === assistantMessage.id
             ? { ...m, content: aiContent, actions: actions.length > 0 ? actions : undefined }
             : m
         ));
@@ -185,7 +211,7 @@ const UnifiedAIPanel: React.FC<UnifiedAIPanelProps> = ({
           const chunk = decoder.decode(value, { stream: true });
           fullText += chunk;
 
-          setMessages(prev => prev.map(m => 
+          setMessages(prev => prev.map(m =>
             m.id === assistantMessage.id ? { ...m, content: fullText } : m
           ));
         }
@@ -193,8 +219,8 @@ const UnifiedAIPanel: React.FC<UnifiedAIPanelProps> = ({
     } catch (error: any) {
       if (error.name === 'AbortError') return;
       console.error('Chat error:', error);
-      setMessages(prev => prev.map(m => 
-        m.id === assistantMessage.id 
+      setMessages(prev => prev.map(m =>
+        m.id === assistantMessage.id
           ? { ...m, content: `❌ Erreur : ${error.message}. Vérifiez que le serveur est bien démarré.` }
           : m
       ));
@@ -231,7 +257,7 @@ const UnifiedAIPanel: React.FC<UnifiedAIPanelProps> = ({
                 part_number: pi + 1,
                 part_intro: part.intro || '',
               });
-              
+
               if (part.chapters) {
                 for (let ci = 0; ci < part.chapters.length; ci++) {
                   const ch = part.chapters[ci];
@@ -300,6 +326,8 @@ const UnifiedAIPanel: React.FC<UnifiedAIPanelProps> = ({
 
         case 'create_exercise': {
           const ex = action.data;
+          // Attach project context
+          if (project?.pr_id) ex.project_id = project.pr_id;
           await exerciseService.createExercise(ex);
           toast.success(`Exercice créé : ${ex.title}`);
           break;
@@ -347,11 +375,11 @@ const UnifiedAIPanel: React.FC<UnifiedAIPanelProps> = ({
     }
     setActiveTab('audit');
     await socraticData.analyzeContent(editorContent);
-    
+
     setMessages(prev => [...prev, {
       id: `audit-${Date.now()}`,
       role: 'assistant',
-      content: "J'ai terminé l'analyse de votre contenu. Vous pouvez voir les scores et les suggestions dans l'onglet 'Audit'. Souhaitez-vous que je vous explique certains points ?"  
+      content: "J'ai terminé l'analyse de votre contenu. Vous pouvez voir les scores et les suggestions dans l'onglet 'Audit'. Souhaitez-vous que je vous explique certains points ?"
     }]);
   };
 
@@ -409,7 +437,7 @@ const UnifiedAIPanel: React.FC<UnifiedAIPanelProps> = ({
         <span className="text-sm font-bold text-gray-900 dark:text-gray-100">{score}%</span>
       </div>
       <div className="w-full bg-gray-100 dark:bg-gray-700 h-1.5 rounded-full overflow-hidden">
-        <motion.div 
+        <motion.div
           className={`h-full ${color.replace('/10', '')}`}
           initial={{ width: 0 }}
           animate={{ width: `${score}%` }}
@@ -437,22 +465,20 @@ const UnifiedAIPanel: React.FC<UnifiedAIPanelProps> = ({
       <div className="flex p-1 bg-gray-200/50 dark:bg-gray-800/50 rounded-xl mx-4 mt-2">
         <button
           onClick={() => setActiveTab('chat')}
-          className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-medium transition-all ${
-            activeTab === 'chat' 
-              ? 'bg-white dark:bg-gray-700 text-[#99334C] shadow-sm' 
+          className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'chat'
+              ? 'bg-white dark:bg-gray-700 text-[#99334C] shadow-sm'
               : 'text-gray-500 hover:text-gray-700'
-          }`}
+            }`}
         >
           <MessageSquare size={16} />
           Chat {isAdmin && '+ IA'}
         </button>
         <button
           onClick={() => setActiveTab('audit')}
-          className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-medium transition-all ${
-            activeTab === 'audit' 
-              ? 'bg-white dark:bg-gray-700 text-[#99334C] shadow-sm' 
+          className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'audit'
+              ? 'bg-white dark:bg-gray-700 text-[#99334C] shadow-sm'
               : 'text-gray-500 hover:text-gray-700'
-          }`}
+            }`}
         >
           <Brain size={16} />
           Audit
@@ -462,7 +488,7 @@ const UnifiedAIPanel: React.FC<UnifiedAIPanelProps> = ({
       <div className="flex-1 min-h-0 relative">
         <AnimatePresence mode="wait">
           {activeTab === 'chat' ? (
-            <motion.div 
+            <motion.div
               key="chat"
               initial={{ opacity: 0, x: -10 }}
               animate={{ opacity: 1, x: 0 }}
@@ -472,18 +498,26 @@ const UnifiedAIPanel: React.FC<UnifiedAIPanelProps> = ({
               <div className="flex-1 overflow-y-auto space-y-4 pr-2 custom-scrollbar">
                 {messages.map((msg) => (
                   <div key={msg.id} className={`flex gap-3 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
-                      msg.role === 'assistant' ? 'bg-[#99334C] text-white' : 'bg-gray-200 text-gray-500'
-                    }`}>
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${msg.role === 'assistant' ? 'bg-[#99334C] text-white' : 'bg-gray-200 text-gray-500'
+                      }`}>
                       {msg.role === 'assistant' ? <Bot size={16} /> : <Sparkles size={16} />}
                     </div>
                     <div className="max-w-[85%] space-y-2">
-                      <div className={`p-3 rounded-2xl text-sm leading-relaxed ${
-                        msg.role === 'user' 
-                          ? 'bg-[#99334C] text-white rounded-tr-none' 
+                      <div className={`p-3 rounded-2xl text-sm leading-relaxed relative group ${msg.role === 'user'
+                          ? 'bg-[#99334C] text-white rounded-tr-none'
                           : 'bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm rounded-tl-none text-gray-800 dark:text-gray-200'
-                      }`}>
+                        }`}>
                         {renderContent(msg.content)}
+                        {/* Copy button */}
+                        {msg.role === 'assistant' && msg.content && msg.id !== 'welcome' && (
+                          <button
+                            onClick={() => handleCopy(msg.id, msg.content)}
+                            className="absolute top-1.5 right-1.5 p-1 rounded-md bg-gray-100/80 dark:bg-gray-700/80 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 opacity-0 group-hover:opacity-100 transition-all"
+                            title="Copier"
+                          >
+                            {copiedId === msg.id ? <Check size={12} className="text-green-500" /> : <Copy size={12} />}
+                          </button>
+                        )}
                       </div>
                       {/* AI Action Buttons */}
                       {msg.actions && msg.actions.length > 0 && (
@@ -515,25 +549,25 @@ const UnifiedAIPanel: React.FC<UnifiedAIPanelProps> = ({
               <div className="flex flex-wrap gap-2 mt-4">
                 {isAdmin ? (
                   <>
-                    <button 
+                    <button
                       onClick={() => handleSendRequest("Crée une structure de cours complète sur le sujet de la notion actuelle")}
                       className="text-[10px] px-2 py-1 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-full hover:border-[#99334C] transition-colors"
                     >
                       🏗️ Créer structure
                     </button>
-                    <button 
+                    <button
                       onClick={() => handleSendRequest("Génère un QCM de 4 questions sur cette notion")}
                       className="text-[10px] px-2 py-1 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-full hover:border-[#99334C] transition-colors"
                     >
                       ❓ Créer QCM
                     </button>
-                    <button 
+                    <button
                       onClick={() => handleSendRequest("Écris le contenu pédagogique pour cette notion")}
                       className="text-[10px] px-2 py-1 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-full hover:border-[#99334C] transition-colors"
                     >
                       ✍️ Écrire contenu
                     </button>
-                    <button 
+                    <button
                       onClick={() => handleSendRequest("Peux-tu optimiser la clarté de ce paragraphe ?")}
                       className="text-[10px] px-2 py-1 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-full hover:border-[#99334C] transition-colors"
                     >
@@ -542,13 +576,13 @@ const UnifiedAIPanel: React.FC<UnifiedAIPanelProps> = ({
                   </>
                 ) : (
                   <>
-                    <button 
+                    <button
                       onClick={() => handleSendRequest("Peux-tu simplifier ce texte ?")}
                       className="text-[10px] px-2 py-1 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-full hover:border-[#99334C] transition-colors"
                     >
                       ✨ Simplifier
                     </button>
-                    <button 
+                    <button
                       onClick={() => handleSendRequest("Explique-moi ce concept étape par étape")}
                       className="text-[10px] px-2 py-1 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-full hover:border-[#99334C] transition-colors"
                     >
@@ -556,7 +590,7 @@ const UnifiedAIPanel: React.FC<UnifiedAIPanelProps> = ({
                     </button>
                   </>
                 )}
-                <button 
+                <button
                   onClick={handleAudit}
                   className="text-[10px] px-2 py-1 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-full hover:border-[#99334C] transition-colors"
                 >
@@ -571,20 +605,33 @@ const UnifiedAIPanel: React.FC<UnifiedAIPanelProps> = ({
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   placeholder={isAdmin ? "Demandez à l'IA de créer, écrire, générer..." : "Posez une question à l'IA..."}
-                  className="w-full pl-4 pr-10 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-[#99334C] outline-none text-sm transition-all shadow-sm"
+                  className="w-full pl-4 pr-20 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-[#99334C] outline-none text-sm transition-all shadow-sm"
                   disabled={isStreaming}
                 />
-                <button 
-                  type="submit"
-                  disabled={isStreaming || !input.trim()}
-                  className="absolute right-2 top-2 p-1.5 bg-[#99334C] text-white rounded-lg hover:bg-[#802a3f] transition-colors disabled:opacity-50"
-                >
-                  {isStreaming ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
-                </button>
+                <div className="absolute right-2 top-2 flex items-center gap-1">
+                  {isStreaming ? (
+                    <button
+                      type="button"
+                      onClick={handleStop}
+                      className="p-1.5 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+                      title="Arrêter la génération"
+                    >
+                      <Square size={14} />
+                    </button>
+                  ) : (
+                    <button
+                      type="submit"
+                      disabled={!input.trim()}
+                      className="p-1.5 bg-[#99334C] text-white rounded-lg hover:bg-[#802a3f] transition-colors disabled:opacity-50"
+                    >
+                      <Send size={16} />
+                    </button>
+                  )}
+                </div>
               </form>
             </motion.div>
           ) : (
-            <motion.div 
+            <motion.div
               key="audit"
               initial={{ opacity: 0, x: 10 }}
               animate={{ opacity: 1, x: 0 }}
@@ -596,7 +643,7 @@ const UnifiedAIPanel: React.FC<UnifiedAIPanelProps> = ({
                   <BarChart3 size={16} className="text-[#99334C]" />
                   Scores Pédagogiques
                 </h4>
-                <button 
+                <button
                   onClick={() => setShowScores(!showScores)}
                   className="text-gray-400 hover:text-gray-600"
                 >
@@ -606,17 +653,17 @@ const UnifiedAIPanel: React.FC<UnifiedAIPanelProps> = ({
 
               {showScores && (
                 <div className="grid grid-cols-1 gap-3 mb-6">
-                  <ScoreCard 
-                    label="Clarté" 
-                    score={socraticData.bloomScore?.clarityScore || 0} 
-                    icon={Sparkles} 
-                    color="bg-blue-500" 
+                  <ScoreCard
+                    label="Clarté"
+                    score={socraticData.bloomScore?.clarityScore || 0}
+                    icon={Sparkles}
+                    color="bg-blue-500"
                   />
-                  <ScoreCard 
-                    label="Engagement" 
-                    score={socraticData.bloomScore?.engagementScore || 0} 
-                    icon={Lightbulb} 
-                    color="bg-amber-500" 
+                  <ScoreCard
+                    label="Engagement"
+                    score={socraticData.bloomScore?.engagementScore || 0}
+                    icon={Lightbulb}
+                    color="bg-amber-500"
                   />
                   <div className="bg-white dark:bg-gray-800 p-3 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm flex items-center justify-between">
                     <span className="text-xs font-medium text-gray-500">Bloom :</span>
@@ -629,14 +676,14 @@ const UnifiedAIPanel: React.FC<UnifiedAIPanelProps> = ({
                 <Lightbulb size={16} className="text-[#99334C]" />
                 Suggestions de l&apos;IA
               </h4>
-              
+
               <div className="space-y-3">
                 {socraticData.bloomScore?.suggestions?.map((s: string, idx: number) => (
                   <div key={idx} className="p-3 bg-white dark:bg-gray-800 rounded-xl border-l-4 border-amber-400 shadow-sm text-xs italic text-gray-600 leading-relaxed">
                     &quot;{s}&quot;
                   </div>
                 ))}
-                
+
                 {(!socraticData.bloomScore?.suggestions || socraticData.bloomScore.suggestions.length === 0) && (
                   <div className="text-center py-8 opacity-40">
                     <RefreshCw size={32} className="mx-auto mb-2 animate-spin-slow" />
@@ -659,7 +706,7 @@ const UnifiedAIPanel: React.FC<UnifiedAIPanelProps> = ({
                 </div>
               </div>
 
-              <button 
+              <button
                 onClick={handleAudit}
                 disabled={socraticData.isAnalyzing}
                 className="mt-8 w-full py-3 bg-[#99334C] text-white rounded-xl font-bold text-sm shadow-lg shadow-[#99334C]/20 hover:bg-[#802a3f] active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
@@ -679,7 +726,7 @@ const UnifiedAIPanel: React.FC<UnifiedAIPanelProps> = ({
             <AlertCircle size={12} />
             {socraticData.feedback.length} zones d&apos;amélioration détectées
           </span>
-          <button 
+          <button
             onClick={() => setActiveTab('audit')}
             className="text-[10px] font-bold text-[#99334C] underline"
           >
