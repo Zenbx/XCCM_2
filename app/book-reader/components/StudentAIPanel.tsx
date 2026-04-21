@@ -2,6 +2,8 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { authService } from '@/services/authService';
 import { motion, AnimatePresence } from 'framer-motion';
+
+const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001').replace(/\/$/, '');
 import { 
     X, Send, Sparkles, User, 
     Bot, Loader2, Maximize2, Minimize2 
@@ -57,11 +59,10 @@ const StudentAIPanel: React.FC<StudentAIPanelProps> = ({ isOpen, onClose, docId,
             }));
             chatHistory.push({ role: 'user', content: userText.trim() });
 
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/ai/socratic`, {
+            const response = await fetch(`${API_BASE_URL}/api/ai/socratic`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'x-user-role': 'user',
                     'Authorization': `Bearer ${authService.getAuthToken() || ''}`,
                 },
                 body: JSON.stringify({
@@ -76,7 +77,10 @@ const StudentAIPanel: React.FC<StudentAIPanelProps> = ({ isOpen, onClose, docId,
                 signal: abortControllerRef.current.signal,
             });
 
-            if (!response.ok) throw new Error('Erreur de réponse serveur');
+            if (!response.ok) {
+                const errText = await response.text();
+                throw new Error(`Erreur serveur (${response.status}): ${errText}`);
+            }
 
             if (response.body) {
                 const reader = response.body.getReader();
@@ -100,7 +104,7 @@ const StudentAIPanel: React.FC<StudentAIPanelProps> = ({ isOpen, onClose, docId,
             if (error.name === 'AbortError') return;
             console.error('Socratic UI Error:', error);
             setMessages(prev => prev.map(m =>
-                m.id === assistantMsg.id ? { ...m, content: '❌ Erreur de réseau ou requête interrompue.' } : m
+                m.id === assistantMsg.id ? { ...m, content: `❌ Erreur : ${error.message}` } : m
             ));
         } finally {
             setIsLoading(false);
