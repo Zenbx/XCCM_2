@@ -1,0 +1,15 @@
+{
+  "name": "@xccm/editor-sdk",
+  "version": "1.0.0",
+  "description": "SDK officiel pour intégrer l'éditeur XCCM2 dans des applications React externes (Moodle Client, etc.)",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "peerDependencies": {
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0",
+    "@types/react": "^18.0.0"
+  }
+}

@@ -49,7 +49,7 @@ export default async function RootLayout({
   const locale = cookieStore.get('NEXT_LOCALE')?.value || 'fr';
 
   return (
-    <html lang={locale}>
+    <html lang={locale} suppressHydrationWarning>
       <body
         className={`${poppins.variable} ${geistSans.variable} ${geistMono.variable} antialiased`}
         style={{ position: 'relative' }}

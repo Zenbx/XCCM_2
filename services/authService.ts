@@ -143,6 +143,11 @@ class AuthService {
     return null;
   }
 
+  setAuthToken(token: string): void {
+    setCookie('auth_token', token);
+    this.setStoredToken(token);
+  }
+
   private setStoredToken(token: string): void {
     if (typeof window !== 'undefined') {
       localStorage.setItem(TOKEN_STORAGE_KEY, token);

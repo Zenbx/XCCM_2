@@ -79,7 +79,7 @@ const EDITOR_ONBOARDING_STEPS: OnboardingStep[] = [
   },
 ];
 
-const XCCM2Editor = () => {
+const XCCM2Editor = ({ isEmbedded = false }: { isEmbedded?: boolean }) => {
   const searchParams = useSearchParams();
   const router = useRouter();
   const projectName = searchParams.get('projectName');
@@ -937,6 +937,16 @@ const XCCM2Editor = () => {
       setHasUnsavedChanges(false);
       setSaveError(null);
       if (!isAuto) toast.success('Sauvegardé !');
+
+      if (isEmbedded) {
+        window.parent?.postMessage({
+          type: 'XCCM_CONTENT_SAVED',
+          payload: {
+            context: currentContext,
+            content: editorContent
+          }
+        }, '*');
+      }
     } catch (err: any) {
       console.error("[Save] Error:", err);
       setSaveError(err.message || "Erreur de sauvegarde. Vérifiez votre connexion.");
@@ -1114,7 +1124,7 @@ const XCCM2Editor = () => {
       />
       {/* 1. Sidebar TOC - Desktop (Sticky) & Mobile (Drawer) */}
       <AnimatePresence>
-        {!isZenMode && !isMindMapOpen && (isMobileTOCOpen || sidebarWidth > 0) && (
+        {!isZenMode && !isEmbedded && !isMindMapOpen && (isMobileTOCOpen || sidebarWidth > 0) && (
           <>
             {/* Mobile Backdrop */}
             {isMobileTOCOpen && (
@@ -1285,10 +1295,11 @@ const XCCM2Editor = () => {
           </>
         )}
       </AnimatePresence>
+    
 
       {/* 2. Centre : Header + Toolbar + Content Area (Sandwich) */}
       <div className={`flex-1 flex flex-col min-w-0 h-full relative overflow-hidden bg-white dark:bg-gray-900 ${isZenMode ? 'fixed inset-0 z-[100]' : ''}`}>
-        {!isZenMode && (
+        {!isZenMode && !isEmbedded && (
           <EditorHeader
             projectName={projectName || ''}
             projectData={projectData}
@@ -1443,7 +1454,7 @@ const XCCM2Editor = () => {
       </div>
 
       {/* 3. RightPanel - Pleine Hauteur (Droite) */}
-      {!isZenMode && (
+      {!isZenMode && !isEmbedded && (
         <RightPanel
           activePanel={rightPanel}
           onToggle={(id: string) => {
@@ -1583,7 +1594,10 @@ const XCCM2Editor = () => {
 export default function EditPage() {
   return (
     <Suspense fallback={<EditorSkeletonView />}>
-      <XCCM2Editor />
+      <XCCM2Editor isEmbedded={false} />
     </Suspense>
   );
 }
+
+// Export the core editor for the embedded route
+export { XCCM2Editor };

@@ -113,7 +113,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Protection de route raffinée
   useEffect(() => {
-    const publicRoutes = ['/', '/login', '/register', '/library', '/help', '/about', '/book-reader', '/auth'];
+    const publicRoutes = ['/', '/login', '/register', '/library', '/help', '/about', '/book-reader', '/auth', '/embed', '/sandbox'];
     const isPublicRoute = publicRoutes.some(route => pathname === route || pathname.startsWith(route + '/'));
 
     if (isLoading) return; // Ne rien faire pendant le chargement initial
