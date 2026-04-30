@@ -267,7 +267,7 @@ const TiptapEditor: React.FC<TiptapEditorProps> = (props) => {
         // Note: editor.isEmpty peut être true même avec un paragraphe vide.
 
         // On vérifie la taille du state Yjs
-        const fragment = yDoc.getXmlFragment('default'); // Nom par défaut de l'extension Tiptap
+        const fragment = yDoc.getXmlFragment('prosemirror'); // Must match Hocuspocus TiptapTransformer fragment name
         const docSize = fragment?.length || 0;
 
         if (docSize === 0) {

@@ -85,7 +85,7 @@ const XCCM2Editor = ({ isEmbedded = false }: { isEmbedded?: boolean }) => {
   const projectName = searchParams.get('projectName');
   const t = useTranslations('editor');
   const tc = useTranslations('common');
-  const { user: authUser } = useAuth();
+  const { user: authUser, getAuthToken } = useAuth();
 
   // Core State Hook
   const {
@@ -804,6 +804,7 @@ const XCCM2Editor = ({ isEmbedded = false }: { isEmbedded?: boolean }) => {
     userId: authUser?.user_id || 'anonymous',
     userName: `${authUser?.firstname || 'L’Auteur'} ${authUser?.lastname || ''}`.trim(),
     serverUrl: process.env.NEXT_PUBLIC_HOCUSPOCUS_URL || 'ws://localhost:1234',
+    token: getAuthToken() || undefined,
     enabled: true // ✅ Always active to ensure seeding and stability
   });
 
@@ -831,10 +832,11 @@ const XCCM2Editor = ({ isEmbedded = false }: { isEmbedded?: boolean }) => {
 
     // ✅ CRDT FIX: If Hocuspocus is managing this Notion via CRDT, skip HTTP save
     // Hocuspocus onStoreDocument handles persistence automatically
-    const isCrdtManaged = currentContext.type === 'notion' && synapseDocId && provider && synapseStatus === 'connected';
+    // IMPORTANT: Only skip if provider is truly synced (authenticated + data exchanged)
+    const isCrdtManaged = currentContext.type === 'notion' && synapseDocId && provider && synapseStatus === 'connected' && provider.isSynced;
 
     if (isCrdtManaged) {
-      console.log(`[Save] Skipping HTTP save for Notion (CRDT managed by Hocuspocus)`);
+      console.log(`[Save] Skipping HTTP save for Notion (CRDT managed by Hocuspocus, synced=true)`);
       // Still update the local structure state for UI consistency
       if (currentContext.notionName) {
         setStructure(prev => prev.map(part => {
