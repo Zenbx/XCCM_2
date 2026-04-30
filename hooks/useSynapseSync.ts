@@ -239,7 +239,7 @@ export function useSynapseSync(options: SynapseSyncOptions): SynapseSyncResult {
             yDocRef.current = null;
             providerRef.current = null;
         };
-    }, [documentId, userId, userName, userColor, serverUrl, token]);
+    }, [documentId, userId, userName, userColor, serverUrl, token, enabled]);
 
     // Mettre à jour la position du curseur
     const updateCursor = useCallback((anchor: number, head: number) => {

@@ -805,7 +805,7 @@ const XCCM2Editor = ({ isEmbedded = false }: { isEmbedded?: boolean }) => {
     userName: `${authUser?.firstname || 'L’Auteur'} ${authUser?.lastname || ''}`.trim(),
     serverUrl: process.env.NEXT_PUBLIC_HOCUSPOCUS_URL || 'ws://localhost:1234',
     token: getAuthToken() || undefined,
-    enabled: true // ✅ Always active to ensure seeding and stability
+    enabled: !!(getAuthToken() && authUser) // Only connect when we have a valid JWT + authenticated user
   });
 
   const collaborationData = useMemo(() => {
