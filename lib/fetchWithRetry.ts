@@ -117,9 +117,13 @@ export async function fetchWithRetry(
                 timeout,
             });
 
-            // Si erreur HTTP 5xx, on peut retry
+            // Si erreur HTTP 5xx ou 429, on peut retry
             if (!response.ok && isRetriableError({ status: response.status })) {
-                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                const err = Object.assign(
+                    new Error(`HTTP ${response.status}: ${response.statusText}`),
+                    { status: response.status }
+                );
+                throw err;
             }
 
             // Succès
