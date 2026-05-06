@@ -892,13 +892,6 @@ const EditHomePage = () => {
         </div>
       )}
 
-      {/* ═══════ ONBOARDING ═══════ */}
-      <OnboardingModal
-        flowId="edit-home"
-        title="Bienvenue sur XCCM2 !"
-        subtitle="Découvrez votre espace de création en quelques étapes."
-        steps={EDIT_HOME_ONBOARDING_STEPS}
-      />
     </div>
   );
 };
