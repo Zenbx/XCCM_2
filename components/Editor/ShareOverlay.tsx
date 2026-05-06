@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
+import { useFocusTrap } from '@/hooks/useFocusTrap';
 import { Loader2, AlertCircle, X, Link2, Copy, Check, Users, Mail, Share2, Trash2 } from 'lucide-react';
 import { invitationService } from '@/services/invitationService';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -13,6 +14,7 @@ interface ShareOverlayProps {
 }
 
 const ShareOverlay: React.FC<ShareOverlayProps> = ({ isOpen, onClose, projectName }) => {
+    const trapRef = useFocusTrap(isOpen);
     const [shareLink, setShareLink] = useState('');
     const [copied, setCopied] = useState(false);
     const [inviteEmail, setInviteEmail] = useState('');
@@ -118,11 +120,18 @@ const ShareOverlay: React.FC<ShareOverlayProps> = ({ isOpen, onClose, projectNam
                     />
 
                     {/* Modal Content */}
+                    <div
+                        ref={trapRef}
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby="share-overlay-title"
+                        className="relative max-w-2xl w-full"
+                    >
                     <GlassPanel
                         initial={{ opacity: 0, scale: 0.95, y: 20 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                        className="relative max-w-2xl w-full shadow-2xl overflow-hidden rounded-3xl flex flex-col"
+                        className="w-full shadow-2xl overflow-hidden rounded-3xl flex flex-col"
                         intensity="high"
                         blur="lg"
                     >
@@ -133,7 +142,7 @@ const ShareOverlay: React.FC<ShareOverlayProps> = ({ isOpen, onClose, projectNam
                                     <Share2 className="w-6 h-6 text-white" />
                                 </div>
                                 <div>
-                                    <h3 className="text-xl font-bold text-gray-900 dark:text-white">Partager le projet</h3>
+                                    <h3 id="share-overlay-title" className="text-xl font-bold text-gray-900 dark:text-white">Partager le projet</h3>
                                     <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">{projectName}</p>
                                 </div>
                             </div>
@@ -349,6 +358,7 @@ const ShareOverlay: React.FC<ShareOverlayProps> = ({ isOpen, onClose, projectNam
                             </div>
                         )}
                     </GlassPanel>
+                    </div>
                 </div>
             )}
         </AnimatePresence>

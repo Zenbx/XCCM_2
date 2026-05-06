@@ -37,47 +37,8 @@ import { NotionMentionPicker } from '@/components/Editor/NotionMentionPicker';
 import { structureService } from '@/services/structureService';
 import { commentService } from '@/services/commentService';
 import '../../styles/view-transitions.css';
-import OnboardingModal, { OnboardingStep } from '@/components/Onboarding/OnboardingModal';
-import { BookOpen, LayoutGrid, FileEdit, PanelRight, ClipboardList, Wand2 } from 'lucide-react';
-
-const EDITOR_ONBOARDING_STEPS: OnboardingStep[] = [
-  {
-    icon: <FileEdit className="w-6 h-6" />,
-    title: "Votre Éditeur de Contenu",
-    description: "Bienvenue dans l'éditeur XCCM2 ! C'est ici que vous créez et structurez vos cours. Votre projet est organisé en Parties > Chapitres > Paragraphes > Notions.",
-    accentColor: '#99334C',
-  },
-  {
-    icon: <LayoutGrid className="w-6 h-6" />,
-    title: "Barre d'Outils",
-    description: "La barre d'outils en haut vous permet de créer des parties, chapitres, paragraphes et notions. Vous y trouverez aussi les options de formatage, sauvegarde et publication.",
-    accentColor: '#8b5cf6',
-  },
-  {
-    icon: <BookOpen className="w-6 h-6" />,
-    title: "Table des Matières",
-    description: "Le panneau de gauche affiche la structure de votre cours. Cliquez sur un élément pour y naviguer, faites un clic droit pour accéder aux options (renommer, supprimer, déplacer).",
-    accentColor: '#22c55e',
-  },
-  {
-    icon: <FileEdit className="w-6 h-6" />,
-    title: "Zone d'Édition",
-    description: "La zone centrale est votre espace d'écriture. Écrivez le contenu de chaque notion avec un éditeur riche : gras, italique, listes, code, images, et plus encore.",
-    accentColor: '#3b82f6',
-  },
-  {
-    icon: <PanelRight className="w-6 h-6" />,
-    title: "Panneaux Latéraux",
-    description: "Le panneau droit donne accès à des outils avancés : commentaires, historique des modifications, propriétés du document, et le panneau d'exercices.",
-    accentColor: '#f59e0b',
-  },
-  {
-    icon: <ClipboardList className="w-6 h-6" />,
-    title: "Exercices & IA",
-    description: "🎯 Créez des exercices (QCU, QCM, code, texte à trous...) directement depuis le panneau Exercices. 🤖 L'assistant IA vous aide à améliorer votre contenu.",
-    accentColor: '#ec4899',
-  },
-];
+import { useOnboarding } from '@/context/OnboardingContext';
+import { editorTour } from '@/data/tours/editor.tour';
 
 const XCCM2Editor = ({ isEmbedded = false }: { isEmbedded?: boolean }) => {
   const searchParams = useSearchParams();
@@ -86,6 +47,11 @@ const XCCM2Editor = ({ isEmbedded = false }: { isEmbedded?: boolean }) => {
   const t = useTranslations('editor');
   const tc = useTranslations('common');
   const { user: authUser, getAuthToken } = useAuth();
+  const { autoStartTour } = useOnboarding();
+
+  useEffect(() => {
+    autoStartTour(editorTour);
+  }, []);
 
   // Core State Hook
   const {
@@ -1140,6 +1106,7 @@ const XCCM2Editor = ({ isEmbedded = false }: { isEmbedded?: boolean }) => {
             )}
 
             <motion.aside
+              id="toc-panel"
               initial={isMobileTOCOpen ? { x: -320 } : false}
               animate={{ x: 0 }}
               exit={{ x: -320 }}
@@ -1368,7 +1335,7 @@ const XCCM2Editor = ({ isEmbedded = false }: { isEmbedded?: boolean }) => {
           />
         )}
 
-        <main className={`flex-1 overflow-y-auto relative flex flex-col ${isMindMapOpen ? 'bg-transparent' : 'bg-gray-50/50 p-4 lg:p-12'}`}>
+        <main id="editor-area" className={`flex-1 overflow-y-auto relative flex flex-col ${isMindMapOpen ? 'bg-transparent' : 'bg-gray-50/50 p-4 lg:p-12'}`}>
           {isMindMapOpen ? (
             <MindMapWorkspace
               projectName={projectData?.pr_name || projectName || ''}
@@ -1580,13 +1547,7 @@ const XCCM2Editor = ({ isEmbedded = false }: { isEmbedded?: boolean }) => {
         `}</style>
       )}
 
-      {/* ═══════ ONBOARDING ═══════ */}
-      <OnboardingModal
-        flowId="editor"
-        title="L'Éditeur XCCM2"
-        subtitle="Découvrez les outils pour créer des cours professionnels."
-        steps={EDITOR_ONBOARDING_STEPS}
-      />
+      {/* SpotlightTour is rendered globally via providers.tsx */}
 
 
     </div>

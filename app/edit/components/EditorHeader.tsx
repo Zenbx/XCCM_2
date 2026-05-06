@@ -4,6 +4,7 @@ import { Home, ChevronRight, Eye, Share2, Save, Loader2, Undo2, Redo2, Cloud, Cl
 import RichTooltip from '@/components/UI/RichTooltip';
 import { TactileButton } from '@/components/UI/TactileButton';
 import { PresenceIndicator, ConnectionStatus } from '@/components/Editor/CollaborativeCursors';
+import { DiscoveryTooltip } from '@/components/Onboarding/DiscoveryTooltip';
 
 interface EditorHeaderProps {
     projectData: any;
@@ -135,15 +136,18 @@ const EditorHeader: React.FC<EditorHeaderProps> = ({
                     </TactileButton>
                 </RichTooltip>
 
-                <RichTooltip title="Partager" description="Inviter des collaborateurs ou publier sur la marketplace.">
-                    <TactileButton
-                        variant="ghost"
-                        onClick={onShare}
-                        className="p-2 text-gray-500 hover:text-[#99334C] hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-all"
-                    >
-                        <Share2 className="w-5 h-5" />
-                    </TactileButton>
-                </RichTooltip>
+                <DiscoveryTooltip featureId="collaboration-share" title="Collaboration temps réel" description="Invitez des coauteurs pour éditer simultanément. Chaque collaborateur a un curseur coloré visible en direct." placement="bottom">
+                    <RichTooltip title="Partager" description="Inviter des collaborateurs ou publier sur la marketplace.">
+                        <TactileButton
+                            id="share-button"
+                            variant="ghost"
+                            onClick={onShare}
+                            className="p-2 text-gray-500 hover:text-[#99334C] hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-all"
+                        >
+                            <Share2 className="w-5 h-5" />
+                        </TactileButton>
+                    </RichTooltip>
+                </DiscoveryTooltip>
 
                 <div className="ml-2 pl-4 border-l border-gray-100 dark:border-gray-800 flex items-center gap-3">
                     <PresenceIndicator

@@ -3,6 +3,7 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AlertCircle, X, Loader2 } from 'lucide-react';
+import { useFocusTrap } from '@/hooks/useFocusTrap';
 
 interface ConfirmationModalProps {
     isOpen: boolean;
@@ -27,6 +28,7 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
     isLoading = false,
     variant = 'danger'
 }) => {
+    const trapRef = useFocusTrap(isOpen);
 
     const getVariantStyles = () => {
         switch (variant) {
@@ -64,10 +66,15 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
                         exit={{ opacity: 0 }}
                         onClick={onClose}
                         className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+                        aria-hidden="true"
                     />
 
                     {/* Modal */}
                     <motion.div
+                        ref={trapRef}
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby="confirm-modal-title"
                         initial={{ scale: 0.9, opacity: 0, y: 20 }}
                         animate={{ scale: 1, opacity: 1, y: 0 }}
                         exit={{ scale: 0.9, opacity: 0, y: 20 }}
@@ -75,19 +82,20 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
                     >
                         {/* Header */}
                         <div className="flex items-center justify-between p-4 border-b border-gray-100">
-                            <h3 className="text-lg font-bold text-gray-900">{title}</h3>
+                            <h3 id="confirm-modal-title" className="text-lg font-bold text-gray-900">{title}</h3>
                             <button
                                 onClick={onClose}
+                                aria-label="Fermer"
                                 className="p-1 hover:bg-gray-100 rounded-full transition-colors"
                             >
-                                <X className="w-5 h-5 text-gray-400" />
+                                <X className="w-5 h-5 text-gray-400" aria-hidden="true" />
                             </button>
                         </div>
 
                         {/* Body */}
                         <div className="p-6">
                             <div className="flex items-start gap-4">
-                                <div className={`p-3 rounded-full ${styles.bg}`}>
+                                <div className={`p-3 rounded-full ${styles.bg}`} aria-hidden="true">
                                     {styles.icon}
                                 </div>
                                 <div className="flex-1 text-gray-600 leading-relaxed">
@@ -111,7 +119,7 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
                                 className={`flex-1 px-4 py-2.5 text-sm font-semibold rounded-xl transition-all shadow-md flex items-center justify-center gap-2 ${styles.button} disabled:opacity-50`}
                             >
                                 {isLoading ? (
-                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                    <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
                                 ) : (
                                     confirmText
                                 )}

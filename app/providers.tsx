@@ -3,9 +3,12 @@
 import { AuthProvider } from '@/context/AuthContext';
 import { LanguageProvider } from '@/context/LanguageContext';
 import { ThemeProvider } from '@/context/ThemeContext';
+import { OnboardingProvider } from '@/context/OnboardingContext';
 import { Toaster } from 'react-hot-toast';
 import { ReactNode } from 'react';
 import CommandPalette from '@/components/CommandPalette/CommandPalette';
+import SpotlightTour from '@/components/Onboarding/SpotlightTour';
+import { ToastAnnouncer } from '@/components/UI/ToastAnnouncer';
 import { useGlobalKeyboardShortcuts } from '@/hooks/useGlobalKeyboardShortcuts';
 
 const Providers = ({ children }: { children: ReactNode }) => {
@@ -15,8 +18,10 @@ const Providers = ({ children }: { children: ReactNode }) => {
     <ThemeProvider>
       <AuthProvider>
         <LanguageProvider>
-          {children}
-          <Toaster
+          <OnboardingProvider>
+            {children}
+            <SpotlightTour />
+            <Toaster
             position="top-right"
             containerStyle={{
               zIndex: 99999,
@@ -56,7 +61,9 @@ const Providers = ({ children }: { children: ReactNode }) => {
               className: 'dark:!bg-gray-900/80 dark:!text-white dark:!border-gray-700/50 dark:!shadow-none',
             }}
           />
-          <CommandPalette />
+            <CommandPalette />
+            <ToastAnnouncer />
+          </OnboardingProvider>
         </LanguageProvider>
       </AuthProvider>
     </ThemeProvider>

@@ -19,6 +19,7 @@ import {
   Minimize2
 } from 'lucide-react';
 import RichTooltip from '@/components/UI/RichTooltip';
+import { DiscoveryTooltip } from '@/components/Onboarding/DiscoveryTooltip';
 
 // Sous-composants pour chaque panneau
 import ImportPanel from './Panels/ImportPanel';
@@ -55,14 +56,14 @@ const RightPanel = ({
 
   const panels = [
     { id: 'import', icon: Cloud, title: 'Importer Fichier', description: 'Gérez vos ressources et importez des modules de connaissance.' },
-    { id: 'marketplace', icon: ShoppingBag, title: 'Marketplace', description: 'Découvrez et achetez de nouveaux contenus pédagogiques.' },
+    { id: 'marketplace', icon: ShoppingBag, title: 'Marketplace', description: 'Découvrez et achetez de nouveaux contenus pédagogiques.', discovery: { featureId: 'editor-marketplace', title: 'Marketplace intégré', description: 'Importez des granules pédagogiques directement depuis la bibliothèque communautaire.' } },
     { id: 'vault', icon: Lock, title: 'Coffre-fort', description: 'Accédez à votre bibliothèque personnelle d\'éléments sauvegardés.' },
-    { id: 'ai', icon: Sparkles, title: 'XCCM AI', description: 'Votre coach pédagogique intelligent. Audit socratique et accompagnement.' },
+    { id: 'ai', icon: Sparkles, title: 'XCCM AI', description: 'Votre coach pédagogique intelligent. Audit socratique et accompagnement.', discovery: { featureId: 'editor-ai', title: 'Assistant IA socratique', description: 'Obtenez un feedback pédagogique intelligent et générez du contenu en un clic.' } },
     { id: 'comments', icon: MessageSquare, title: 'Commentaires', description: 'Collaborez et discutez des modifications avec votre équipe.' },
     { id: 'info', icon: Info, title: 'Informations', description: 'Détails techniques et métadonnées du projet actuel.' },
     { id: 'settings', icon: Settings, title: 'Paramètres', description: 'Configurez les options d\'export et de publication du projet.' },
-    { id: 'exercises', icon: ClipboardList, title: 'Exercices', description: 'Créez et gérez les exercices attachés au granule sélectionné.' },
-    { id: 'tutorial', icon: BookOpen, title: 'Tutoriel', description: 'Apprenez à utiliser les commandes slash et les raccourcis de l\'éditeur.' }
+    { id: 'exercises', icon: ClipboardList, title: 'Exercices', description: 'Créez et gérez les exercices attachés au granule sélectionné.', discovery: { featureId: 'editor-exercises', title: 'Exercices interactifs', description: 'Créez des QCM, questions ouvertes et exercices de code liés à vos notions.' } },
+    { id: 'tutorial', icon: BookOpen, title: 'Tutoriel', description: 'Apprenez à utiliser les commandes slash et les raccourcis de l\'éditeur.', discovery: { featureId: 'editor-tutorial', title: 'Commandes slash', description: 'Tapez "/" dans l\'éditeur pour insérer des blocs, formules LaTeX, tableaux et plus.' } },
   ];
 
   // Panel width depends on expand state and current panel type
@@ -76,18 +77,19 @@ const RightPanel = ({
       transition={{ duration: 0.3 }}
     >
       {/* Barre d'icônes - toujours visible et fixe */}
-      <div className="w-14 bg-white dark:bg-gray-900 border-l border-gray-200 dark:border-gray-800 flex flex-col items-center py-4 gap-4 z-40 shadow-sm transition-colors duration-300">
+      <div id="right-panel-tabs" className="w-14 bg-white dark:bg-gray-900 border-l border-gray-200 dark:border-gray-800 flex flex-col items-center py-4 gap-4 z-40 shadow-sm transition-colors duration-300">
         {panels.map((panel) => {
           const Icon = panel.icon;
           const isActive = activePanel === panel.id;
 
-          return (
+          const btn = (
             <RichTooltip
               key={panel.id}
               title={panel.title}
               description={panel.description}
             >
               <button
+                id={panel.id === 'ai' ? 'ai-panel-tab' : panel.id === 'exercises' ? 'exercise-panel-tab' : undefined}
                 onClick={() => { onToggle(panel.id); if (!isActive) setIsExpanded(false); }}
                 className={`p-2 rounded-xl transition-all duration-200 group relative ${isActive
                   ? 'bg-[#99334C] text-white shadow-lg scale-110'
@@ -100,6 +102,20 @@ const RightPanel = ({
                 )}
               </button>
             </RichTooltip>
+          );
+
+          return panel.discovery ? (
+            <DiscoveryTooltip
+              key={panel.id}
+              featureId={panel.discovery.featureId}
+              title={panel.discovery.title}
+              description={panel.discovery.description}
+              placement="left"
+            >
+              {btn}
+            </DiscoveryTooltip>
+          ) : (
+            <React.Fragment key={panel.id}>{btn}</React.Fragment>
           );
         })}
       </div>

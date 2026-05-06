@@ -12,34 +12,8 @@ import { TactileButton } from '@/components/UI/TactileButton';
 import GlassPanel from '@/components/UI/GlassPanel';
 import { Skeleton } from '@/components/UI/Skeleton';
 import toast from 'react-hot-toast';
-import OnboardingModal, { OnboardingStep } from '@/components/Onboarding/OnboardingModal';
-
-const CLASSROOM_ONBOARDING_STEPS: OnboardingStep[] = [
-  {
-    icon: <GraduationCap className="w-6 h-6" />,
-    title: "Espace Classes",
-    description: "Bienvenue dans votre espace Classes ! Ici, vous gérez vos classes en tant que professeur et retrouvez celles que vous suivez en tant qu'étudiant.",
-    accentColor: '#99334C',
-  },
-  {
-    icon: <Plus className="w-6 h-6" />,
-    title: "Créer une Classe",
-    description: "En tant que professeur, créez une classe en un clic. Un code d'invitation unique sera généré automatiquement pour vos étudiants.",
-    accentColor: '#22c55e',
-  },
-  {
-    icon: <KeyRound className="w-6 h-6" />,
-    title: "Rejoindre avec un Code",
-    description: "En tant qu'étudiant, entrez le code fourni par votre professeur pour rejoindre sa classe et accéder aux cours et exercices associés.",
-    accentColor: '#3b82f6',
-  },
-  {
-    icon: <Users className="w-6 h-6" />,
-    title: "Suivi & Analytics",
-    description: "En tant que professeur, accédez au dashboard d'analytics depuis chaque classe pour suivre la progression de vos étudiants en temps réel.",
-    accentColor: '#f59e0b',
-  },
-];
+import { useOnboarding } from '@/context/OnboardingContext';
+import { classroomTour } from '@/data/tours/classroom.tour';
 
 // ─────────────────────────────────────────────────────────
 // CREATE CLASSROOM MODAL
@@ -256,7 +230,7 @@ const JoinClassroomModal = ({
 // ─────────────────────────────────────────────────────────
 // CLASSROOM CARD (TEACHER VIEW)
 // ─────────────────────────────────────────────────────────
-const TeacherClassCard = ({ classroom }: { classroom: Classroom }) => {
+const TeacherClassCard = ({ classroom, joinCodeId }: { classroom: Classroom; joinCodeId?: string }) => {
     const router = useRouter();
     const [copied, setCopied] = useState(false);
 
@@ -316,6 +290,7 @@ const TeacherClassCard = ({ classroom }: { classroom: Classroom }) => {
 
                     {/* Join code badge */}
                     <button
+                        id={joinCodeId}
                         onClick={handleCopyCode}
                         className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 dark:bg-gray-800 rounded-lg text-xs font-mono font-bold text-gray-600 dark:text-gray-300 hover:bg-[#99334C]/10 hover:text-[#99334C] transition-all"
                         title="Copier le code"
@@ -401,6 +376,7 @@ const ClassroomsPage = () => {
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [showJoinModal, setShowJoinModal] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
+    const { autoStartTour } = useOnboarding();
 
     const fetchClassrooms = useCallback(async () => {
         try {
@@ -419,6 +395,10 @@ const ClassroomsPage = () => {
     useEffect(() => {
         fetchClassrooms();
     }, [fetchClassrooms]);
+
+    useEffect(() => {
+        autoStartTour(classroomTour);
+    }, [autoStartTour]);
 
     const handleClassCreated = (c: Classroom) => {
         setTeaching(prev => [c, ...prev]);
@@ -467,6 +447,7 @@ const ClassroomsPage = () => {
                         className="flex flex-wrap items-center justify-center gap-4"
                     >
                         <TactileButton
+                            id="create-classroom-btn"
                             variant="secondary"
                             size="lg"
                             leftIcon={<Plus className="w-5 h-5" />}
@@ -594,8 +575,8 @@ const ClassroomsPage = () => {
                                         </span>
                                     </div>
                                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                                        {filteredTeaching.map((c) => (
-                                            <TeacherClassCard key={c.id} classroom={c} />
+                                        {filteredTeaching.map((c, idx) => (
+                                            <TeacherClassCard key={c.id} classroom={c} joinCodeId={idx === 0 ? 'join-code-display' : undefined} />
                                         ))}
                                     </div>
                                 </div>
@@ -637,13 +618,6 @@ const ClassroomsPage = () => {
                 onJoined={fetchClassrooms}
             />
 
-            {/* ═══════ ONBOARDING ═══════ */}
-            <OnboardingModal
-                flowId="classrooms"
-                title="Vos Classes"
-                subtitle="Enseignez ou apprenez, tout se passe ici !"
-                steps={CLASSROOM_ONBOARDING_STEPS}
-            />
         </div>
     );
 };

@@ -311,12 +311,14 @@ const RegisterContent = () => {
                     onChange={(e) => updateField('lastname', e.target.value)}
                     onKeyPress={handleKeyPress}
                     disabled={isLoading}
+                    aria-invalid={!!errors.lastname}
+                    aria-describedby={errors.lastname ? 'lastname-error' : undefined}
                     className={`w-full pl-10 pr-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-[#99334C]/20 transition-all text-gray-900 placeholder:text-gray-400 disabled:bg-gray-100 disabled:cursor-not-allowed ${errors.lastname ? 'border-red-500' : 'border-gray-300 focus:border-[#99334C]'
                       }`}
                     placeholder="Votre nom"
                   />
                 </div>
-                {errors.lastname && <p className="text-red-500 text-sm mt-1">{errors.lastname}</p>}
+                {errors.lastname && <p id="lastname-error" role="alert" className="text-red-500 text-sm mt-1">{errors.lastname}</p>}
               </div>
 
               <div>
@@ -332,12 +334,14 @@ const RegisterContent = () => {
                     onChange={(e) => updateField('firstname', e.target.value)}
                     onKeyPress={handleKeyPress}
                     disabled={isLoading}
+                    aria-invalid={!!errors.firstname}
+                    aria-describedby={errors.firstname ? 'firstname-error' : undefined}
                     className={`w-full pl-10 pr-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-[#99334C]/20 transition-all text-gray-900 placeholder:text-gray-400 disabled:bg-gray-100 disabled:cursor-not-allowed ${errors.firstname ? 'border-red-500' : 'border-gray-300 focus:border-[#99334C]'
                       }`}
                     placeholder="Votre prénom"
                   />
                 </div>
-                {errors.firstname && <p className="text-red-500 text-sm mt-1">{errors.firstname}</p>}
+                {errors.firstname && <p id="firstname-error" role="alert" className="text-red-500 text-sm mt-1">{errors.firstname}</p>}
               </div>
 
               <div>
@@ -353,12 +357,14 @@ const RegisterContent = () => {
                     onChange={(e) => updateField('email', e.target.value)}
                     onKeyPress={handleKeyPress}
                     disabled={isLoading}
+                    aria-invalid={!!errors.email}
+                    aria-describedby={errors.email ? 'register-email-error' : undefined}
                     className={`w-full pl-10 pr-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-[#99334C]/20 transition-all text-gray-900 placeholder:text-gray-400 disabled:bg-gray-100 disabled:cursor-not-allowed ${errors.email ? 'border-red-500' : 'border-gray-300 focus:border-[#99334C]'
                       }`}
                     placeholder="exemple@email.com"
                   />
                 </div>
-                {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
+                {errors.email && <p id="register-email-error" role="alert" className="text-red-500 text-sm mt-1">{errors.email}</p>}
               </div>
 
               <div>
@@ -464,6 +470,8 @@ const RegisterContent = () => {
                     onChange={(e) => updateField('password', e.target.value)}
                     onKeyPress={handleKeyPress}
                     disabled={isLoading}
+                    aria-invalid={!!errors.password}
+                    aria-describedby={errors.password ? 'reg-password-error' : 'password-hint'}
                     className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-[#99334C]/20 transition-all text-gray-900 placeholder:text-gray-400 pr-12 disabled:bg-gray-100 disabled:cursor-not-allowed ${errors.password ? 'border-red-500' : 'border-gray-300 focus:border-[#99334C]'
                       }`}
                     placeholder="Min. 8 car. (Maj, Min, Chiffre)"
@@ -472,12 +480,13 @@ const RegisterContent = () => {
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
                     disabled={isLoading}
+                    aria-label={showPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
                     className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors disabled:cursor-not-allowed"
                   >
-                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    {showPassword ? <EyeOff className="w-5 h-5" aria-hidden="true" /> : <Eye className="w-5 h-5" aria-hidden="true" />}
                   </button>
                 </div>
-                {errors.password && <p className="text-red-500 text-sm mt-1">{errors.password}</p>}
+                {errors.password && <p id="reg-password-error" role="alert" className="text-red-500 text-sm mt-1">{errors.password}</p>}
               </div>
 
               <div>
@@ -492,6 +501,8 @@ const RegisterContent = () => {
                     onChange={(e) => updateField('password_confirmation', e.target.value)}
                     onKeyPress={handleKeyPress}
                     disabled={isLoading}
+                    aria-invalid={!!errors.password_confirmation}
+                    aria-describedby={errors.password_confirmation ? 'confirm-password-error' : undefined}
                     className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-[#99334C]/20 transition-all text-gray-900 placeholder:text-gray-400 pr-12 disabled:bg-gray-100 disabled:cursor-not-allowed ${errors.password_confirmation ? 'border-red-500' : 'border-gray-300 focus:border-[#99334C]'
                       }`}
                     placeholder="Confirmez votre mot de passe"
@@ -500,15 +511,16 @@ const RegisterContent = () => {
                     type="button"
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                     disabled={isLoading}
+                    aria-label={showConfirmPassword ? 'Masquer la confirmation' : 'Afficher la confirmation'}
                     className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors disabled:cursor-not-allowed"
                   >
-                    {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    {showConfirmPassword ? <EyeOff className="w-5 h-5" aria-hidden="true" /> : <Eye className="w-5 h-5" aria-hidden="true" />}
                   </button>
                 </div>
-                {errors.confirmPassword && <p className="text-red-500 text-sm mt-1">{errors.confirmPassword}</p>}
+                {errors.password_confirmation && <p id="confirm-password-error" role="alert" className="text-red-500 text-sm mt-1">{errors.password_confirmation}</p>}
               </div>
 
-              <div className="space-y-2">
+              <div id="password-hint" className="space-y-2">
                 <p className="text-sm font-medium text-gray-700">Votre mot de passe doit contenir :</p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2">
                   <div className={`flex items-center gap-2 text-sm ${formData.password.length >= 8 ? 'text-green-600' : 'text-gray-400'}`}>

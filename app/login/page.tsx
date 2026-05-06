@@ -175,7 +175,7 @@ const LoginPage = () => {
             <p className="text-gray-600 dark:text-gray-400">{t('loginSubtitle')}</p>
           </div>
 
-          <div className="space-y-6">
+          <form noValidate onSubmit={(e) => { e.preventDefault(); handleSubmit(); }} className="space-y-6">
             <div>
               <label htmlFor="email" className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                 {t('email')}
@@ -190,10 +190,12 @@ const LoginPage = () => {
                 }}
                 onKeyPress={handleKeyPress}
                 disabled={isLoading}
+                aria-invalid={!!errors.email}
+                aria-describedby={errors.email ? 'email-error' : undefined}
                 className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-[#99334C]/20 focus:border-[#99334C] transition-all bg-white dark:bg-gray-900 text-gray-900 dark:text-white placeholder:text-gray-400 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:cursor-not-allowed ${errors.email ? 'border-red-500' : 'border-gray-300 dark:border-gray-700'}`}
                 placeholder="exemple@email.com"
               />
-              {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
+              {errors.email && <p id="email-error" role="alert" className="text-red-500 text-sm mt-1">{errors.email}</p>}
             </div>
 
             <div>
@@ -211,6 +213,8 @@ const LoginPage = () => {
                   }}
                   onKeyPress={handleKeyPress}
                   disabled={isLoading}
+                  aria-invalid={!!errors.password}
+                  aria-describedby={errors.password ? 'password-error' : undefined}
                   className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-[#99334C]/20 focus:border-[#99334C] transition-all bg-white dark:bg-gray-900 text-gray-900 dark:text-white placeholder:text-gray-400 pr-12 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:cursor-not-allowed ${errors.password ? 'border-red-500' : 'border-gray-300 dark:border-gray-700'}`}
                   placeholder="••••••••"
                 />
@@ -218,12 +222,13 @@ const LoginPage = () => {
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   disabled={isLoading}
+                  aria-label={showPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
                   className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors disabled:cursor-not-allowed"
                 >
-                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  {showPassword ? <EyeOff className="w-5 h-5" aria-hidden="true" /> : <Eye className="w-5 h-5" aria-hidden="true" />}
                 </button>
               </div>
-              {errors.password && <p className="text-red-500 text-sm mt-1">{errors.password}</p>}
+              {errors.password && <p id="password-error" role="alert" className="text-red-500 text-sm mt-1">{errors.password}</p>}
             </div>
 
             <div className="flex items-center">
@@ -241,7 +246,7 @@ const LoginPage = () => {
             </div>
 
             <button
-              onClick={handleSubmit}
+              type="submit"
               disabled={isLoading}
               className="w-full bg-[#99334C] text-white py-3 rounded-xl font-semibold hover:bg-[#7a283d] transition-all shadow-lg hover:shadow-xl hover:shadow-[#99334C]/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
@@ -312,7 +317,7 @@ const LoginPage = () => {
                 </a>
               </p>
             </div>
-          </div>
+          </form>
 
           <p className="lg:hidden mt-8 text-xs text-center text-gray-500 dark:text-gray-400">
             {t('clickingAccept')} <a href="#" className="underline">{t('privacyPolicy')}</a> {t('and')} <a href="#" className="underline">{t('termsOfUse')}</a>.

@@ -49,8 +49,10 @@ export async function middleware(request: NextRequest) {
       // Validation du secret JWT
       if (!process.env.JWT_SECRET) {
         console.error('❌ JWT_SECRET non défini dans les variables d\'environnement');
-        // Rediriger vers login si le secret n'est pas configuré
-        return NextResponse.redirect(new URL('/login', request.url));
+        // Supprimer le cookie corrompu + rediriger pour éviter la boucle infinie
+        const response = NextResponse.redirect(new URL('/login', request.url));
+        response.cookies.delete('auth_token');
+        return response;
       }
 
       const secret = new TextEncoder().encode(process.env.JWT_SECRET);

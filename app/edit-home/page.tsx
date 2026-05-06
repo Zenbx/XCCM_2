@@ -39,40 +39,8 @@ import { invitationService } from '@/services/invitationService';
 import { useAuth } from '@/context/AuthContext';
 import toast from 'react-hot-toast';
 import { TEMPLATE_DATA, GENERIC_TEMPLATE } from '@/app/templates/TemplateData';
-import OnboardingModal, { OnboardingStep } from '@/components/Onboarding/OnboardingModal';
-
-const EDIT_HOME_ONBOARDING_STEPS: OnboardingStep[] = [
-  {
-    icon: <BookTemplate className="w-6 h-6" />,
-    title: "Votre Espace Créatif",
-    description: "Bienvenue dans votre espace de création ! Ici, vous retrouvez tous vos projets de cours et compositions. C'est votre point de départ pour créer du contenu pédagogique.",
-    accentColor: '#99334C',
-  },
-  {
-    icon: <Star className="w-6 h-6" />,
-    title: "Templates Prêts à l'Emploi",
-    description: "Gagnez du temps avec nos modèles prédéfinis ! Choisissez un template adapté (cours universitaire, tutoriel, formation pro...) et commencez avec une structure déjà en place.",
-    accentColor: '#8b5cf6',
-  },
-  {
-    icon: <Plus className="w-6 h-6" />,
-    title: "Créer une Composition",
-    description: "Cliquez sur « Créer une Nouvelle Composition » pour démarrer un projet vide. Donnez-lui un nom et vous serez redirigé vers l'éditeur pour structurer votre contenu.",
-    accentColor: '#22c55e',
-  },
-  {
-    icon: <Filter className="w-6 h-6" />,
-    title: "Filtrez vos Projets",
-    description: "Utilisez les filtres (Tous, Mes Projets, Partagés, En attente) pour naviguer rapidement. La barre de recherche vous aide à trouver n'importe quel projet.",
-    accentColor: '#3b82f6',
-  },
-  {
-    icon: <Edit3 className="w-6 h-6" />,
-    title: "Actions Rapides",
-    description: "Sur chaque projet, vous pouvez : ✏️ Renommer, 📥 Exporter en PDF, ou 🗑️ Supprimer. Cliquez sur un projet pour ouvrir l'éditeur directement.",
-    accentColor: '#f59e0b',
-  },
-];
+import { useOnboarding } from '@/context/OnboardingContext';
+import { editHomeTour } from '@/data/tours/edit-home.tour';
 
 const EditHomePage = () => {
   // --- États Globaux ---
@@ -106,6 +74,11 @@ const EditHomePage = () => {
 
   const router = useRouter();
   const { user } = useAuth();
+  const { autoStartTour } = useOnboarding();
+
+  useEffect(() => {
+    autoStartTour(editHomeTour);
+  }, []);
 
   // Templates (Top 4)
   const templates = [
@@ -472,6 +445,7 @@ const EditHomePage = () => {
 
           <div className="flex flex-wrap gap-4">
             <button
+              id="create-project-btn"
               onClick={() => setShowCreateModal(true)}
               className="bg-white text-[#99334C] px-8 py-4 rounded-xl font-bold shadow-lg hover:shadow-xl transition-all flex items-center gap-3 hover:scale-105"
             >
@@ -486,7 +460,7 @@ const EditHomePage = () => {
       <div className="max-w-7xl mx-auto px-6 py-12">
 
         {/* Section Templates (Nouveau Design) */}
-        <section className="mb-16">
+        <section id="templates-section" className="mb-16">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-3xl font-bold text-gray-900 dark:text-white">Créer avec un Template</h2>
             <Link
@@ -565,7 +539,7 @@ const EditHomePage = () => {
                 <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Toutes mes compositions</h2>
 
                 {/* Filtres */}
-                <div className="flex gap-2">
+                <div id="filter-tabs" className="flex gap-2" role="tablist" aria-label="Filtrer les projets">
                   <button
                     onClick={() => setFilterType('all')}
                     className={`px-4 py-2 rounded-lg font-medium transition-all ${filterType === 'all'
@@ -624,7 +598,7 @@ const EditHomePage = () => {
               </div>
             </div>
 
-            <div className="overflow-x-auto">
+            <div id="projects-table" className="overflow-x-auto">
               {isLoading ? (
                 <div className="flex items-center justify-center py-16">
                   <Loader2 className="w-8 h-8 text-[#99334C] animate-spin" />

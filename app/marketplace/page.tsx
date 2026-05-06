@@ -7,6 +7,8 @@ import { marketplaceService, MarketplaceItem } from '@/services/marketplaceServi
 import { vaultService } from '@/services/vaultService';
 import toast from 'react-hot-toast';
 import { MarketplaceViewer } from '@/components/Marketplace/MarketplaceViewer';
+import { useOnboarding } from '@/context/OnboardingContext';
+import { marketplaceTour } from '@/data/tours/marketplace.tour';
 
 const MarketplacePage = () => {
     const [searchTerm, setSearchTerm] = useState('');
@@ -16,6 +18,7 @@ const MarketplacePage = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [downloadingId, setDownloadingId] = useState<string | null>(null);
+    const { autoStartTour } = useOnboarding();
 
     const categories = [
         { id: 'all', label: 'Tous les granules', icon: <Layers size={16} /> },
@@ -28,6 +31,10 @@ const MarketplacePage = () => {
     useEffect(() => {
         fetchItems();
     }, []);
+
+    useEffect(() => {
+        autoStartTour(marketplaceTour);
+    }, [autoStartTour]);
 
     const fetchItems = async () => {
         try {
@@ -117,6 +124,7 @@ const MarketplacePage = () => {
                         >
                             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-6 h-6 transition-colors group-focus-within:text-[#99334C]" />
                             <input
+                                id="marketplace-search"
                                 type="text"
                                 placeholder="Rechercher une notion, un chapitre, un auteur..."
                                 className="w-full pl-14 pr-6 py-4 bg-white dark:bg-gray-800 border-2 border-gray-100 dark:border-gray-700 rounded-2xl shadow-lg shadow-gray-200/50 dark:shadow-none outline-none focus:border-[#99334C] focus:ring-4 focus:ring-[#99334C]/5 transition-all text-lg dark:text-gray-100"
@@ -143,7 +151,7 @@ const MarketplacePage = () => {
                 </section>
 
                 {/* Categories & Filter Bar */}
-                <section className="mb-12 flex flex-col md:flex-row items-center justify-between gap-6 border-b border-gray-100 dark:border-gray-800 pb-8">
+                <section id="marketplace-filters" className="mb-12 flex flex-col md:flex-row items-center justify-between gap-6 border-b border-gray-100 dark:border-gray-800 pb-8">
                     <div className="flex gap-4 overflow-x-auto w-full md:w-auto pb-4 md:pb-0 no-scrollbar">
                         {categories.map((cat) => (
                             <button
@@ -233,6 +241,7 @@ const MarketplacePage = () => {
                                             <Eye size={18} /> Voir
                                         </button>
                                         <button
+                                            id="marketplace-import-btn"
                                             onClick={() => handleDownload(product)}
                                             disabled={downloadingId === product.id}
                                             className="flex items-center justify-center gap-2 bg-[#99334C] text-white px-5 py-3 rounded-xl font-bold text-sm hover:opacity-90 transition-all shadow-lg shadow-[#99334C]/20 disabled:opacity-50"

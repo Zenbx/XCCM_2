@@ -63,7 +63,7 @@ export default function Header() {
 
   return (
     <header className="w-full bg-white dark:bg-gray-900 shadow-md border-b border-gray-100 dark:border-gray-800 fixed top-0 left-0 right-0" style={{ zIndex: 2 }}>
-      <nav className="mx-auto flex max-w-[1400px] items-center justify-between px-4 py-2 min-h-[60px] lg:min-h-[70px]">
+      <nav aria-label="Navigation principale" className="mx-auto flex max-w-[1400px] items-center justify-between px-4 py-2 min-h-[60px] lg:min-h-[70px]">
 
         {/* --- LOGO --- */}
         <div className="flex-shrink-0">
@@ -102,7 +102,7 @@ export default function Header() {
                     <span className={clsx("relative z-10 flex items-center gap-2 transition-colors",
                       isActive ? "text-[#99334C] dark:text-[#ff9daf]" : "text-gray-600 dark:text-gray-300 group-hover:text-[#99334C] dark:group-hover:text-[#ff9daf]"
                     )}>
-                      {link.icon}
+                      <span aria-hidden="true">{link.icon}</span>
                       <span className="hidden xl:inline">{link.label}</span>
                       <span className="xl:hidden">{link.label.length > 10 ? link.label.substring(0, 8) + '...' : link.label}</span>
                     </span>
@@ -122,6 +122,9 @@ export default function Header() {
               <button
                 onClick={() => setShowUserMenu(!showUserMenu)}
                 onBlur={handleMenuBlur}
+                aria-label="Menu utilisateur"
+                aria-expanded={showUserMenu}
+                aria-haspopup="menu"
                 className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-all"
               >
                 <div className="w-8 h-8 rounded-full bg-[#99334C] text-white flex items-center justify-center font-semibold overflow-hidden shadow-sm">
@@ -161,7 +164,7 @@ export default function Header() {
                         className="flex items-center gap-3 px-4 py-2 text-[#99334C] hover:bg-[#99334C]/5 transition-all font-bold"
                         onClick={() => setShowUserMenu(false)}
                       >
-                        <ShieldCheck className="w-4 h-4" />
+                        <ShieldCheck className="w-4 h-4" aria-hidden="true" />
                         <span className="text-sm">{tAuth('admin')}</span>
                       </Link>
                     )}
@@ -170,7 +173,7 @@ export default function Header() {
                       className="flex items-center gap-3 px-4 py-2 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all font-medium"
                       onClick={() => setShowUserMenu(false)}
                     >
-                      <UserIcon className="w-4 h-4" />
+                      <UserIcon className="w-4 h-4" aria-hidden="true" />
                       <span className="text-sm">{tAuth('account')}</span>
                     </Link>
                     <Link
@@ -178,7 +181,7 @@ export default function Header() {
                       className="flex items-center gap-3 px-4 py-2 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all"
                       onClick={() => setShowUserMenu(false)}
                     >
-                      <Settings className="w-4 h-4" />
+                      <Settings className="w-4 h-4" aria-hidden="true" />
                       <span className="text-sm">{tAuth('settings')}</span>
                     </Link>
                     <Link
@@ -186,7 +189,7 @@ export default function Header() {
                       className="flex items-center gap-3 px-4 py-2 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all"
                       onClick={() => setShowUserMenu(false)}
                     >
-                      <BarChart2 className="w-4 h-4" />
+                      <BarChart2 className="w-4 h-4" aria-hidden="true" />
                       <span className="text-sm">{tAuth('analytics')}</span>
                     </Link>
                   </div>
@@ -195,7 +198,7 @@ export default function Header() {
                       onClick={handleLogout}
                       className="flex items-center gap-3 px-4 py-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/10 transition-all w-full"
                     >
-                      <LogOut className="w-4 h-4" />
+                      <LogOut className="w-4 h-4" aria-hidden="true" />
                       <span className="text-sm">{tAuth('logout')}</span>
                     </button>
                   </div>
@@ -233,8 +236,11 @@ export default function Header() {
         <button
           className="lg:hidden p-2 text-gray-600 hover:text-gray-900 focus:outline-none"
           onClick={() => setIsMobileMenuOpen(true)}
+          aria-label="Ouvrir le menu"
+          aria-expanded={isMobileMenuOpen}
+          aria-controls="mobile-menu"
         >
-          <Menu size={24} />
+          <Menu size={24} aria-hidden="true" />
         </button>
       </nav>
 
@@ -250,10 +256,15 @@ export default function Header() {
               onClick={() => setIsMobileMenuOpen(false)}
               className="fixed inset-0 bg-black/20 backdrop-blur-sm lg:hidden"
               style={{ zIndex: 1000000 }}
+              aria-hidden="true"
             />
 
             {/* Panneau Latéral */}
             <motion.div
+              id="mobile-menu"
+              role="dialog"
+              aria-modal="true"
+              aria-label="Menu de navigation"
               initial={{ x: "100%" }}
               animate={{ x: 0 }}
               exit={{ x: "100%" }}
@@ -263,8 +274,8 @@ export default function Header() {
             >
               <div className="p-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
                 <span className="font-bold text-lg" style={{ color: COLORS.primary }}>Menu</span>
-                <button onClick={() => setIsMobileMenuOpen(false)} className="p-2 text-gray-500 hover:text-red-500 dark:text-gray-400 dark:hover:text-red-400">
-                  <X size={24} />
+                <button onClick={() => setIsMobileMenuOpen(false)} aria-label="Fermer le menu" className="p-2 text-gray-500 hover:text-red-500 dark:text-gray-400 dark:hover:text-red-400">
+                  <X size={24} aria-hidden="true" />
                 </button>
               </div>
 
@@ -287,7 +298,7 @@ export default function Header() {
                       )}
                       style={{ color: isActive ? COLORS.primary : undefined }}
                     >
-                      <span className={clsx("text-lg", !isActive && "text-gray-600 dark:text-gray-300")}>{link.icon}</span>
+                      <span className={clsx("text-lg", !isActive && "text-gray-600 dark:text-gray-300")} aria-hidden="true">{link.icon}</span>
                       <span className={clsx(!isActive && "text-gray-600 dark:text-gray-300")}>{link.label}</span>
                     </Link>
                   );
@@ -319,20 +330,20 @@ export default function Header() {
                     <div className="space-y-1">
                       {isAdmin && (
                         <Link href="/admin" className="flex items-center gap-3 px-4 py-2 text-[#99334C] dark:text-[#ff9daf] bg-[#99334C]/5 dark:bg-[#ff9daf]/10 hover:bg-[#99334C]/10 dark:hover:bg-[#ff9daf]/20 rounded-lg text-sm font-bold">
-                          <ShieldCheck size={16} /> {tAuth('admin')}
+                          <ShieldCheck size={16} aria-hidden="true" /> {tAuth('admin')}
                         </Link>
                       )}
                       <Link href="/account" className="flex items-center gap-3 px-4 py-2 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg text-sm transition-colors">
-                        <UserIcon size={16} /> {tAuth('account')}
+                        <UserIcon size={16} aria-hidden="true" /> {tAuth('account')}
                       </Link>
                       <Link href="/settings" className="flex items-center gap-3 px-4 py-2 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg text-sm transition-colors">
-                        <Settings size={16} /> {tAuth('settings')}
+                        <Settings size={16} aria-hidden="true" /> {tAuth('settings')}
                       </Link>
                       <Link href="/analytics" className="flex items-center gap-3 px-4 py-2 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg text-sm transition-colors">
-                        <BarChart2 size={16} /> {tAuth('analytics')}
+                        <BarChart2 size={16} aria-hidden="true" /> {tAuth('analytics')}
                       </Link>
                       <button onClick={handleLogout} className="w-full flex items-center gap-3 px-4 py-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg text-sm transition-colors">
-                        <LogOut size={16} /> {tAuth('logout')}
+                        <LogOut size={16} aria-hidden="true" /> {tAuth('logout')}
                       </button>
                     </div>
                   </div>
