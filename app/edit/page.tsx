@@ -770,8 +770,8 @@ const XCCM2Editor = ({ isEmbedded = false }: { isEmbedded?: boolean }) => {
     userId: authUser?.user_id || 'anonymous',
     userName: `${authUser?.firstname || 'L’Auteur'} ${authUser?.lastname || ''}`.trim(),
     serverUrl: process.env.NEXT_PUBLIC_HOCUSPOCUS_URL || 'ws://localhost:1234',
-    token: getAuthToken() || undefined,
-    enabled: !!(getAuthToken() && authUser) // Only connect when we have a valid JWT + authenticated user
+    token: getAuthToken,
+    enabled: !!authUser && !!synapseDocId
   });
 
   const collaborationData = useMemo(() => {
@@ -785,6 +785,28 @@ const XCCM2Editor = ({ isEmbedded = false }: { isEmbedded?: boolean }) => {
       yDoc
     };
   }, [synapseDocId, provider, yDoc, authUser]);
+
+  // Scroll editor to a collaborator's cursor position
+  const handleUserClick = useCallback((user: any) => {
+    if (!tiptapEditor || !user.cursor) return;
+    const { anchor } = user.cursor;
+    const docSize = tiptapEditor.state.doc.content.size;
+    if (anchor < 0 || anchor > docSize) return;
+    try {
+      const coords = tiptapEditor.view.coordsAtPos(anchor);
+      const editorDom = tiptapEditor.view.dom as HTMLElement;
+      const scrollParent = editorDom.closest('[data-scroll]') || editorDom.parentElement;
+      if (scrollParent) {
+        const parentRect = scrollParent.getBoundingClientRect();
+        scrollParent.scrollTo({
+          top: scrollParent.scrollTop + (coords.top - parentRect.top) - 120,
+          behavior: 'smooth',
+        });
+      }
+    } catch (e) {
+      console.warn('[Synapse] scroll to cursor failed', e);
+    }
+  }, [tiptapEditor]);
 
   // Action: Save
   const handleSave = async (isAuto = false) => {
@@ -1287,6 +1309,7 @@ const XCCM2Editor = ({ isEmbedded = false }: { isEmbedded?: boolean }) => {
             onToggleMobileTOC={() => setIsMobileTOCOpen(prev => !prev)}
             isMindMapOpen={isMindMapOpen}
             onToggleMindMap={() => setIsMindMapOpen(prev => !prev)}
+            onUserClick={handleUserClick}
           />
         )}
 

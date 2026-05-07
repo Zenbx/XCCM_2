@@ -153,12 +153,14 @@ interface PresenceIndicatorProps {
     users: UserPresence[];
     localClientId: number | null;
     maxVisible?: number;
+    onUserClick?: (user: UserPresence) => void;
 }
 
 export const PresenceIndicator: React.FC<PresenceIndicatorProps> = ({
     users,
     localClientId,
     maxVisible = 5,
+    onUserClick,
 }) => {
     // Filtrer pour obtenir les autres sessions (même si c'est le même utilisateur mais onglet différent)
     const otherUsers = users.filter(user => user.clientId !== localClientId);
@@ -192,9 +194,12 @@ export const PresenceIndicator: React.FC<PresenceIndicatorProps> = ({
                             className="relative group"
                         >
                             <div
-                                className="w-8 h-8 rounded-full border-2 border-white flex items-center justify-center text-white text-xs font-bold shadow-sm cursor-pointer transition-transform hover:scale-110 hover:z-10"
+                                className={`w-8 h-8 rounded-full border-2 border-white flex items-center justify-center text-white text-xs font-bold shadow-sm transition-transform hover:scale-110 hover:z-10 ${onUserClick && user.cursor ? 'cursor-pointer' : 'cursor-default'}`}
                                 style={{ backgroundColor: user.color }}
                                 title={user.name}
+                                onClick={() => onUserClick?.(user)}
+                                role={onUserClick && user.cursor ? 'button' : undefined}
+                                aria-label={onUserClick && user.cursor ? `Localiser ${user.name}` : undefined}
                             >
                                 {user.name.charAt(0).toUpperCase()}
                             </div>
@@ -202,6 +207,9 @@ export const PresenceIndicator: React.FC<PresenceIndicatorProps> = ({
                             {/* Tooltip au survol */}
                             <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
                                 {user.name}
+                                {onUserClick && user.cursor && (
+                                    <span className="block text-gray-400">Cliquer pour localiser</span>
+                                )}
                                 <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900" />
                             </div>
                         </motion.div>

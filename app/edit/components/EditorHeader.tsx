@@ -5,6 +5,7 @@ import RichTooltip from '@/components/UI/RichTooltip';
 import { TactileButton } from '@/components/UI/TactileButton';
 import { PresenceIndicator, ConnectionStatus } from '@/components/Editor/CollaborativeCursors';
 import { DiscoveryTooltip } from '@/components/Onboarding/DiscoveryTooltip';
+import type { UserPresence } from '@/hooks/useSynapseSync';
 
 interface EditorHeaderProps {
     projectData: any;
@@ -24,6 +25,7 @@ interface EditorHeaderProps {
     onToggleMobileTOC?: () => void;
     isMindMapOpen?: boolean;
     onToggleMindMap?: () => void;
+    onUserClick?: (user: UserPresence) => void;
 }
 
 const EditorHeader: React.FC<EditorHeaderProps> = ({
@@ -44,6 +46,7 @@ const EditorHeader: React.FC<EditorHeaderProps> = ({
     onToggleMobileTOC,
     isMindMapOpen,
     onToggleMindMap,
+    onUserClick,
 }) => {
     return (
         <div className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between px-4 h-16 shrink-0 z-30 transition-colors">
@@ -153,6 +156,7 @@ const EditorHeader: React.FC<EditorHeaderProps> = ({
                     <PresenceIndicator
                         users={connectedUsers}
                         localClientId={localClientId}
+                        onUserClick={onUserClick}
                     />
                     {connectionStatus && (
                         <ConnectionStatus

@@ -27,12 +27,13 @@ export interface SynapseSyncOptions {
     userName: string;
     userColor?: string;
     serverUrl?: string;
-    token?: string;
+    /** Accept a getter function so the token is resolved at connection time, not at render time */
+    token?: string | null | (() => string | null);
     onConnect?: () => void;
     onDisconnect?: () => void;
     onSynced?: () => void;
     onAwarenessChange?: (users: UserPresence[]) => void;
-    enabled?: boolean; // ✅ Added
+    enabled?: boolean;
 }
 
 export interface SynapseSyncResult {
@@ -120,6 +121,10 @@ export function useSynapseSync(options: SynapseSyncOptions): SynapseSyncResult {
     // Memoize the user color so it doesn't change on Every render if not provided
     const userColor = useMemo(() => providedColor || getRandomColor(), [providedColor]);
 
+    // Keep the token getter ref fresh without adding it to effect deps
+    const tokenRef = useRef(token);
+    tokenRef.current = token;
+
     // Use Refs to avoid re-render loops but keep state for connection status
     const yDocRef = useRef<Y.Doc | null>(null);
     const providerRef = useRef<HocuspocusProvider | null>(null);
@@ -142,6 +147,16 @@ export function useSynapseSync(options: SynapseSyncOptions): SynapseSyncResult {
     useEffect(() => {
         if (!enabled || !documentId || !userId) return;
 
+        // Resolve token at connection time (supports getter function for late-bound tokens)
+        const resolvedToken = typeof tokenRef.current === 'function'
+            ? tokenRef.current()
+            : tokenRef.current;
+
+        if (!resolvedToken) {
+            console.warn('[Synapse] No token available, skipping connection');
+            return;
+        }
+
         // Créer le document Y.js
         const yDoc = new Y.Doc();
         yDocRef.current = yDoc;
@@ -150,7 +165,7 @@ export function useSynapseSync(options: SynapseSyncOptions): SynapseSyncResult {
             url: serverUrl,
             name: documentId,
             document: yDoc,
-            token: token || undefined,
+            token: resolvedToken,
             onConnect: () => {
                 console.log(`[Synapse] Connected to ${documentId}`);
                 setIsConnected(true);
@@ -239,7 +254,7 @@ export function useSynapseSync(options: SynapseSyncOptions): SynapseSyncResult {
             yDocRef.current = null;
             providerRef.current = null;
         };
-    }, [documentId, userId, userName, userColor, serverUrl, token, enabled]);
+    }, [documentId, userId, userName, userColor, serverUrl, enabled]);
 
     // Mettre à jour la position du curseur
     const updateCursor = useCallback((anchor: number, head: number) => {
