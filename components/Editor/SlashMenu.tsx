@@ -19,7 +19,8 @@ import {
     HelpCircle,
     Eye,
     Code,
-    Link
+    Link,
+    GitFork
 } from 'lucide-react';
 import GlassPanel from '../UI/GlassPanel';
 
@@ -202,7 +203,16 @@ export const SlashMenu: React.FC<SlashMenuProps> = ({
             action: () => { },
             category: 'Graphe de Connaissances',
             aliases: ['ref', 'lien', 'xref', 'refnotion', 'link', 'notion', 'renvoi']
-        }
+        },
+        {
+            id: 'diagram',
+            label: 'Diagramme',
+            description: 'Flowchart, séquence, Gantt… (Mermaid)',
+            icon: <GitFork size={18} />,
+            action: () => { },
+            category: 'Pédagogie',
+            aliases: ['diagram', 'mermaid', 'flow', 'graph', 'chart', 'diagramme', 'sequence', 'gantt']
+        },
     ];
 
     const filteredCommands = commands.filter(cmd =>

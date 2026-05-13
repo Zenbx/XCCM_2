@@ -1,4 +1,6 @@
 import { Node, mergeAttributes } from '@tiptap/core';
+import { ReactNodeViewRenderer } from '@tiptap/react';
+import { CaptureZoneBlockView } from './Views/CaptureZoneBlockView';
 
 export const CaptureZoneBlock = Node.create({
     name: 'capturezoneblock',
@@ -39,6 +41,10 @@ export const CaptureZoneBlock = Node.create({
                 ['p', { class: 'capture-instruction' }, 'Collez votre image ici (Ctrl+V) ou glissez-la'],
             ],
         ];
+    },
+
+    addNodeView() {
+        return ReactNodeViewRenderer(CaptureZoneBlockView);
     },
 
     addCommands() {

@@ -226,6 +226,8 @@ const EditorArea: React.FC<EditorAreaProps> = ({
         (tiptapInstance as any).chain().focus().setDiscoveryHint().run();
       } else if (command.id === 'code') {
         (tiptapInstance as any).chain().focus().setCoderunnerBlock().run();
+      } else if (command.id === 'diagram') {
+        (tiptapInstance as any).chain().focus().setDiagramBlock().run();
       } else if (command.id === 'h1') {
         tiptapInstance.chain().focus().toggleHeading({ level: 1 }).run();
       } else if (command.id === 'h2') {

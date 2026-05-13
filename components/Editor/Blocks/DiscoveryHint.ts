@@ -1,4 +1,6 @@
 import { Node, mergeAttributes } from '@tiptap/core';
+import { ReactNodeViewRenderer } from '@tiptap/react';
+import { DiscoveryHintView } from './Views/DiscoveryHintView';
 
 export const DiscoveryHint = Node.create({
     name: 'discoveryhint',
@@ -52,6 +54,10 @@ export const DiscoveryHint = Node.create({
             ],
             ['div', { class: 'discovery-hint-content' }, 0],
         ];
+    },
+
+    addNodeView() {
+        return ReactNodeViewRenderer(DiscoveryHintView);
     },
 
     addCommands() {

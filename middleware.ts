@@ -28,6 +28,25 @@ export async function middleware(request: NextRequest) {
 
   console.log(`🔍 Middleware - Path: ${pathname}, Token: ${!!token}`);
 
+  // Embed mode: token passed as URL param → set as JS-readable cookie before page renders.
+  // httpOnly MUST be false: authService.getAuthToken() reads document.cookie (JS-land).
+  // sameSite=none is required for cross-origin iframes (Moodle, Canvas, etc.).
+  if (pathname.startsWith('/embed')) {
+    const urlToken = request.nextUrl.searchParams.get('token');
+    if (urlToken && !token) {
+      const response = NextResponse.next();
+      response.cookies.set('auth_token', urlToken, {
+        httpOnly: false,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'none',
+        path: '/',
+        maxAge: 60 * 60 * 8, // 8h session
+      });
+      return response;
+    }
+    return NextResponse.next();
+  }
+
   const isProtectedRoute = protectedRoutes.some(route => pathname.startsWith(route));
   const isAdminRoute = adminRoutes.some(route => pathname.startsWith(route));
   const isAuthRoute = authRoutes.some(route => pathname.startsWith(route));

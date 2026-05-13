@@ -1,6 +1,6 @@
 "use client";
 
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Bot,
   Bold,
@@ -21,10 +21,13 @@ import {
   IndentDecrease,
   Undo,
   Redo,
-  GitFork
+  GitFork,
+  Timer
 } from 'lucide-react';
+import { AnimatePresence } from 'framer-motion';
 import RichTooltip from '@/components/UI/RichTooltip';
 import { DiscoveryTooltip } from '@/components/Onboarding/DiscoveryTooltip';
+import { PomodoroTimer } from './PomodoroTimer';
 
 interface EditorToolbarProps {
   onFormatChange: (format: string) => void;
@@ -63,6 +66,8 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
   canRedo,
   onToggleMindMap,
 }) => {
+  const [showPomodoro, setShowPomodoro] = useState(false);
+
   return (
     <div id="editor-toolbar" className={`bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 p-1.5 flex items-center gap-1 transition-all duration-300 overflow-x-auto scrollbar-thin scrollbar-thumb-gray-200 dark:scrollbar-thumb-gray-700 whitespace-nowrap hide-scrollbar ${disabled ? 'opacity-40 pointer-events-none select-none' : ''
       }`}>
@@ -248,6 +253,24 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
 
         </>
       )}
+
+      <div className="w-[1.5px] h-6 bg-gray-300 mx-1 flex-shrink-0" />
+
+      {/* Pomodoro Timer */}
+      <div className="relative">
+        <RichTooltip title="Pomodoro" description="Timer 25/5 min pour gérer vos sessions de travail.">
+          <button
+            aria-label="Ouvrir le timer Pomodoro"
+            onClick={() => setShowPomodoro(v => !v)}
+            className={`p-2 rounded-lg transition-all ${showPomodoro ? 'bg-[#99334C] text-white' : 'text-gray-500 hover:bg-gray-100 hover:text-[#99334C]'}`}
+          >
+            <Timer size={18} aria-hidden="true" />
+          </button>
+        </RichTooltip>
+        <AnimatePresence>
+          {showPomodoro && <PomodoroTimer onClose={() => setShowPomodoro(false)} />}
+        </AnimatePresence>
+      </div>
     </div>
   );
 };

@@ -17,6 +17,7 @@ import { MathBlock } from './Blocks/MathBlock';
 import { QuizBlock } from './Blocks/QuizBlockExtension';
 import { DiscoveryHint } from './Blocks/DiscoveryHint';
 import { CodeRunnerBlock } from './Blocks/CodeRunnerBlockExtension';
+import { DiagramBlock } from './Blocks/DiagramBlock';
 import Collaboration from '@tiptap/extension-collaboration';
 import CollaborationCursor from '@tiptap/extension-collaboration-cursor';
 import { SocraticExtension, SocraticHighlight } from '@/extensions/SocraticExtension';
@@ -64,6 +65,7 @@ declare module '@tiptap/core' {
     setDiscoveryHint: () => ReturnType;
     toggleDiscoveryHint: () => ReturnType;
     setCoderunnerBlock: () => ReturnType;
+    setDiagramBlock: () => ReturnType;
   }
 }
 
@@ -199,6 +201,7 @@ const TiptapEditor: React.FC<TiptapEditorProps> = (props) => {
       QuizBlock,
       DiscoveryHint,
       CodeRunnerBlock,
+      DiagramBlock,
       SocraticExtension.configure({
         highlights: socraticFeedback,
         onHighlightClick: (id, event) => {

@@ -2,9 +2,10 @@ import { NodeViewWrapper, NodeViewProps } from '@tiptap/react';
 import React, { useState, useEffect, useRef } from 'react';
 import * as katex from 'katex';
 import 'katex/dist/katex.min.css';
+import { Trash2 } from 'lucide-react';
 
 export const MathBlockView: React.FC<NodeViewProps> = (props) => {
-    const { node, updateAttributes, selected } = props;
+    const { node, updateAttributes, selected, deleteNode } = props;
     const { tex, inline } = node.attrs;
     const [isEditing, setIsEditing] = useState(false);
     const [localTex, setLocalTex] = useState(tex);
@@ -61,6 +62,15 @@ export const MathBlockView: React.FC<NodeViewProps> = (props) => {
                 className={`relative group transition-all rounded-lg overflow-hidden ${!inline ? 'bg-slate-50/50 border border-transparent hover:border-slate-200 p-4' : ''
                     }`}
             >
+                {!inline && (
+                    <button
+                        onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); deleteNode(); }}
+                        className="absolute top-2 left-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded bg-white/90 text-gray-400 hover:text-red-500 hover:bg-red-50 shadow-sm"
+                        title="Supprimer le bloc"
+                    >
+                        <Trash2 size={13} />
+                    </button>
+                )}
                 {isEditing ? (
                     <div className={`${inline ? 'inline-flex' : 'flex'} flex-col gap-2 w-full`}>
                         <input

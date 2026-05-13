@@ -1,9 +1,9 @@
 import { NodeViewWrapper, NodeViewProps } from '@tiptap/react';
 import React, { useState } from 'react';
-import { Play, RotateCcw, Code, ChevronRight } from 'lucide-react';
+import { Play, RotateCcw, Code, ChevronRight, Trash2 } from 'lucide-react';
 
 export const CodeRunnerBlockView: React.FC<NodeViewProps> = (props) => {
-    const { node, updateAttributes } = props;
+    const { node, updateAttributes, deleteNode } = props;
     const { code, language, output } = node.attrs;
     const [isRunning, setIsRunning] = useState(false);
 
@@ -45,6 +45,13 @@ export const CodeRunnerBlockView: React.FC<NodeViewProps> = (props) => {
                         </select>
                     </div>
                     <div className="flex items-center gap-2">
+                        <button
+                            onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); deleteNode(); }}
+                            className="p-1 text-gray-500 hover:text-red-400 transition-colors"
+                            title="Supprimer le bloc"
+                        >
+                            <Trash2 size={13} />
+                        </button>
                         <button
                             onClick={handleReset}
                             className="p-1 text-gray-400 hover:text-white transition-colors"

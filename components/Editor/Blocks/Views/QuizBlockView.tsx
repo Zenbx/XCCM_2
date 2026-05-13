@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Plus, Trash2, CheckCircle2, Circle } from 'lucide-react';
 
 export const QuizBlockView: React.FC<NodeViewProps> = (props) => {
-    const { node, updateAttributes } = props;
+    const { node, updateAttributes, deleteNode } = props;
     const { question, options, correctIndex } = node.attrs;
     const [isEditing, setIsEditing] = useState(false);
 
@@ -35,12 +35,21 @@ export const QuizBlockView: React.FC<NodeViewProps> = (props) => {
                         <span className="bg-[#99334C] text-white text-[10px] font-bold px-2 py-0.5 rounded uppercase">Quiz</span>
                         <span className="text-gray-400 text-xs font-medium italic">Auto-évaluation</span>
                     </div>
-                    <button
-                        onClick={() => setIsEditing(!isEditing)}
-                        className="text-xs font-semibold text-[#99334C] hover:underline"
-                    >
-                        {isEditing ? 'Terminer' : 'Modifier le Quiz'}
-                    </button>
+                    <div className="flex items-center gap-3">
+                        <button
+                            onClick={() => setIsEditing(!isEditing)}
+                            className="text-xs font-semibold text-[#99334C] hover:underline"
+                        >
+                            {isEditing ? 'Terminer' : 'Modifier le Quiz'}
+                        </button>
+                        <button
+                            onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); deleteNode(); }}
+                            className="p-1 rounded text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors"
+                            title="Supprimer le quiz"
+                        >
+                            <Trash2 size={14} />
+                        </button>
+                    </div>
                 </div>
 
                 {isEditing ? (
