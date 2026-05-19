@@ -30,21 +30,22 @@ const LoginPage = () => {
     setMounted(true);
     const error = searchParams.get('error');
     if (error) {
-      if (error === 'SessionMissing') toast.error(tc('error'));
-      else if (error === 'UserNotFound') toast.error(tc('error'));
+      if (error === 'SessionMissing') toast.error(t('sessionExpired'));
+      else if (error === 'UserNotFound') toast.error(t('userNotFound'));
       else if (error === 'google' || error === 'microsoft' || error === 'OAuthCallback') {
-        toast.error(`${tc('error')} ${error}.`);
+        const provider = error === 'OAuthCallback' ? 'SSO' : error.charAt(0).toUpperCase() + error.slice(1);
+        toast.error(t('oauthFailed', { provider }));
       }
-      else toast.error(tc('error'));
+      else toast.error(t('unknownError'));
     }
   }, [searchParams]);
 
   const validate = () => {
     const newErrors: { email?: string; password?: string } = {};
-    if (!email) newErrors.email = tc('error');
-    else if (!/\S+@\S+\.\S+/.test(email)) newErrors.email = tc('error');
+    if (!email) newErrors.email = t('emailRequired');
+    else if (!/\S+@\S+\.\S+/.test(email)) newErrors.email = t('emailInvalid');
 
-    if (!password) newErrors.password = tc('error');
+    if (!password) newErrors.password = t('passwordRequired');
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -57,7 +58,7 @@ const LoginPage = () => {
 
     try {
       await login(email, password);
-      toast.success(tc('success'));
+      toast.success(t('loginSuccess'));
 
       if (redirectTo) {
         router.push(redirectTo);
@@ -65,7 +66,7 @@ const LoginPage = () => {
         router.push('/edit-home');
       }
     } catch (err: any) {
-      toast.error(err.message || tc('error'));
+      toast.error(err.message || t('loginFailed'));
     } finally {
       setIsLoading(false);
     }

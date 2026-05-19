@@ -61,7 +61,16 @@
         "clickingAccept": "En continuant, vous acceptez nos",
         "privacyPolicy": "Politique de confidentialité",
         "termsOfUse": "Conditions d'utilisation",
-        "and": "et"
+        "and": "et",
+        "emailRequired": "Veuillez saisir votre adresse e-mail",
+        "emailInvalid": "Format d'e-mail invalide (ex : nom@domaine.com)",
+        "passwordRequired": "Veuillez saisir votre mot de passe",
+        "loginSuccess": "Connexion réussie ! Bienvenue.",
+        "loginFailed": "E-mail ou mot de passe incorrect",
+        "sessionExpired": "Votre session a expiré, veuillez vous reconnecter",
+        "userNotFound": "Aucun compte n'est associé à cette adresse e-mail",
+        "oauthFailed": "Échec de la connexion via {provider}, veuillez réessayer",
+        "unknownError": "Une erreur inattendue est survenue, veuillez réessayer"
     },
     "footer": {
         "title": "XCCM 2",
