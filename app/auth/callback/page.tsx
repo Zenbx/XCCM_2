@@ -25,26 +25,25 @@ const AuthCallbackContent = () => {
             hasFetched.current = true;
 
             try {
-                console.log("[Callback] Starting fetchToken process...");
-                // 1. Check for Token from Bridge (Query Param)
+                // 1. Token from Bridge (URL param) — main Google/Microsoft OAuth path
                 const bridgeToken = searchParams.get('token');
-                console.log("[Callback] Token from URL:", bridgeToken ? "Present" : "Missing");
 
                 if (bridgeToken) {
+                    // Persist the token — this is all that's needed for auth to work
                     setCookie('auth_token', bridgeToken);
                     localStorage.setItem(TOKEN_STORAGE_KEY, bridgeToken);
-                    console.log("[Callback] Token saved. Refreshing user...");
 
-                    // IMPORTANT: Refresh Auth Context to update Header UI immediately
-                    await refreshUser();
-                    console.log("[Callback] User refreshed. Redirecting to home...");
+                    // Fire context refresh in the background — do NOT await it.
+                    // If /api/auth/me is slow or fails here, AuthContext will retry
+                    // on the destination page using the token we just saved.
+                    refreshUser().catch(() => {});
 
                     toast.success(isRegister ? 'Inscription réussie ! Bienvenue !' : 'Connexion réussie !');
                     router.push('/edit-home');
                     return;
                 }
 
-                // 2. Fallback: Old Flow (Fetch from API)
+                // 2. Fallback: session-token endpoint (legacy flow)
                 const apiBase = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001').trim();
                 const response = await fetch(`${apiBase}/api/auth/session-token`, {
                     method: 'GET',
@@ -56,24 +55,26 @@ const AuthCallbackContent = () => {
                 }
 
                 const result = await response.json();
-                console.log("Session token result:", result);
 
-                if (result.success && result.data.token) {
+                if (result.success && result.data?.token) {
                     setCookie('auth_token', result.data.token);
                     localStorage.setItem(TOKEN_STORAGE_KEY, result.data.token);
-                    localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(result.data.user));
+                    if (result.data.user) {
+                        localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(result.data.user));
+                    }
 
-                    // IMPORTANT: Refresh Auth Context
-                    await refreshUser();
+                    // Same pattern: non-blocking refresh, redirect immediately
+                    refreshUser().catch(() => {});
 
                     toast.success(isRegister ? 'Inscription réussie ! Bienvenue !' : 'Connexion réussie !');
                     router.push('/edit-home');
                 } else {
-                    console.error("Token result unexpected:", result);
                     throw new Error(result.message || "Token manquant dans la réponse du serveur");
                 }
             } catch (err: any) {
-                console.error("Erreur callback SSO détaillée:", err);
+                // Only real errors reach here now (missing token, network failure
+                // before token is saved, or session-token endpoint failure).
+                console.error("[Callback] SSO error:", err);
                 setError(err.message || "Une erreur est survenue lors de la connexion SSO. Vérifiez que votre compte est bien créé.");
                 toast.error("Échec de la connexion SSO");
                 setTimeout(() => { router.push('/login'); }, 3000);
