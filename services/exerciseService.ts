@@ -120,7 +120,8 @@ class ExerciseService {
         const response = await authenticatedFetch(url);
         const data = await response.json();
         if (!response.ok) throw new Error(data.message || 'Erreur lors de la récupération des exercices');
-        return data.data.exercises;
+        const raw = data.data?.exercises ?? data.data ?? [];
+        return Array.isArray(raw) ? raw : [];
     }
 
     /**
@@ -131,7 +132,8 @@ class ExerciseService {
         const response = await authenticatedFetch(url);
         const data = await response.json();
         if (!response.ok) throw new Error(data.message || 'Erreur');
-        return data.data.exercises;
+        const raw = data.data?.exercises ?? data.data ?? [];
+        return Array.isArray(raw) ? raw : [];
     }
 
     /**
@@ -210,7 +212,8 @@ class ExerciseService {
         const response = await authenticatedFetch(url);
         const data = await response.json();
         if (!response.ok) throw new Error(data.message || 'Erreur');
-        return data.data.submissions;
+        const raw = data.data?.submissions ?? data.data ?? [];
+        return Array.isArray(raw) ? raw : [];
     }
 
     /**

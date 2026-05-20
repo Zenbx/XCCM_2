@@ -16,7 +16,14 @@ class AdminService {
         }
 
         const data = await response.json();
-        return data.data;
+        // Normalize: guarantee { global: {}, recentUsers: [], recentProjects: [] }
+        const d = data.data ?? {};
+        return {
+            global: d.global ?? {},
+            recentUsers: Array.isArray(d.recentUsers) ? d.recentUsers : [],
+            recentProjects: Array.isArray(d.recentProjects) ? d.recentProjects : [],
+            ...d,
+        };
     }
 
     /**
@@ -31,7 +38,8 @@ class AdminService {
         }
 
         const data = await response.json();
-        return data.data;
+        const raw = data.data?.projects ?? data.data ?? [];
+        return Array.isArray(raw) ? raw : [];
     }
 
     /**
@@ -64,7 +72,8 @@ class AdminService {
         }
 
         const data = await response.json();
-        return data.data;
+        const raw = data.data?.users ?? data.data ?? [];
+        return Array.isArray(raw) ? raw : [];
     }
 
     /**

@@ -66,7 +66,11 @@ class ClassroomService {
         });
         const data = await response.json();
         if (!response.ok) throw new Error(data.message || 'Erreur lors de la récupération des classes');
-        return data.data;
+        const d = data.data ?? {};
+        return {
+            teaching: Array.isArray(d.teaching) ? d.teaching : [],
+            enrolled: Array.isArray(d.enrolled) ? d.enrolled : [],
+        };
     }
 
     /**

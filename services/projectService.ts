@@ -68,8 +68,9 @@ class ProjectService {
         throw new Error(errorData.message || 'Erreur lors de la récupération des documents publiés');
       }
 
-      const result: ApiResponse<{ documents: Project[] }> = await response.json(); // Changement ici
-      return result.data.documents; // Changement ici
+      const result = await response.json();
+      const raw = result.data?.documents ?? result.data ?? [];
+      return Array.isArray(raw) ? raw : [];
     } catch (error) {
       console.error('Erreur getPublishedProjects:', error);
       throw error;
@@ -123,8 +124,9 @@ class ProjectService {
         throw new Error(errorData.message || 'Erreur lors de la récupération des projets');
       }
 
-      const result: ApiResponse<{ projects: Project[]; count: number }> = await response.json();
-      return result.data.projects;
+      const result = await response.json();
+      const raw = result.data?.projects ?? result.data ?? [];
+      return Array.isArray(raw) ? raw : [];
     } catch (error) {
       console.error('Erreur getAllProjects:', error);
       throw error;

@@ -1,9 +1,9 @@
 import React from 'react';
 import Link from 'next/link';
-import { Home, ChevronRight, Eye, Share2, Save, Loader2, Undo2, Redo2, Cloud, CloudOff, Check, Menu, GitFork } from 'lucide-react';
+import { Home, ChevronRight, Eye, Share2, Save, Menu } from 'lucide-react';
 import RichTooltip from '@/components/UI/RichTooltip';
 import { TactileButton } from '@/components/UI/TactileButton';
-import { PresenceIndicator, ConnectionStatus } from '@/components/Editor/CollaborativeCursors';
+import { PresenceIndicator } from '@/components/Editor/CollaborativeCursors';
 import { DiscoveryTooltip } from '@/components/Onboarding/DiscoveryTooltip';
 import type { UserPresence } from '@/hooks/useSynapseSync';
 
@@ -107,25 +107,6 @@ const EditorHeader: React.FC<EditorHeaderProps> = ({
                     </div>
                 )}
 
-                {/* Save & Sync Status Pill - Always visible, small on mobile */}
-                <div className="ml-auto lg:ml-4 flex items-center gap-2 px-2 py-1 bg-gray-50 dark:bg-gray-900/50 rounded-full border border-gray-100 dark:border-gray-800 shrink-0 transition-all duration-500">
-                    {isSaving ? (
-                        <>
-                            <Loader2 className="w-3.5 h-3.5 text-[#99334C] animate-spin" />
-                            <span className="text-[10px] font-medium text-gray-500 animate-pulse">Enregistrement...</span>
-                        </>
-                    ) : hasUnsavedChanges ? (
-                        <>
-                            <div className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
-                            <span className="text-[10px] font-medium text-amber-600">Modifications non enregistrées</span>
-                        </>
-                    ) : (
-                        <>
-                            <Cloud className="w-3.5 h-3.5 text-green-500" />
-                            <span className="text-[10px] font-medium text-green-600">Modifications enregistrées</span>
-                        </>
-                    )}
-                </div>
             </div>
 
             <div className="flex items-center gap-2 ml-4 shrink-0">
@@ -158,12 +139,6 @@ const EditorHeader: React.FC<EditorHeaderProps> = ({
                         localClientId={localClientId}
                         onUserClick={onUserClick}
                     />
-                    {connectionStatus && (
-                        <ConnectionStatus
-                            status={connectionStatus}
-                            onReconnect={onReconnect}
-                        />
-                    )}
                 </div>
 
                 <RichTooltip title="Enregistrer" description="Sauvegarder manuellement vos modifications." shortcut="Ctrl+S">

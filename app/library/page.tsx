@@ -43,7 +43,8 @@ const LibraryPage = () => {
       try {
         const { documents, hasMore: moreAvailable } = await documentService.getPublishedDocuments(page, 20);
 
-        setCourses(prev => page === 1 ? documents : [...prev, ...documents]);
+        const safeDocs = Array.isArray(documents) ? documents : [];
+        setCourses(prev => page === 1 ? safeDocs : [...prev, ...safeDocs]);
         setHasMore(moreAvailable);
       } catch (err: any) {
         setError(err.message || "Erreur lors de la recuperation des documents.");
@@ -557,7 +558,7 @@ const TopCreatorsList = () => {
         const response = await fetch(`${API_BASE_URL}/api/creators/top`);
         const data = await response.json();
         if (data.success) {
-          setCreators(data.data);
+          setCreators(Array.isArray(data.data) ? data.data : []);
         }
       } catch (error) {
         console.error("Error loading creators", error);

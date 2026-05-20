@@ -60,7 +60,8 @@ class StructureService {
     }
 
     const data = await response.json();
-    return data.data.structure;
+    const raw = data.data?.structure ?? data.data ?? [];
+    return Array.isArray(raw) ? raw : [];
   }
 
   // ============= PARTS =============
@@ -96,7 +97,8 @@ class StructureService {
     }
 
     const result = await response.json();
-    return result.data.parts;
+    const parts = result.data?.parts ?? result.data ?? [];
+    return Array.isArray(parts) ? parts : [];
   }
 
   async updatePart(
@@ -155,7 +157,8 @@ class StructureService {
     }
 
     const result = await response.json();
-    return result.data.chapters;
+    const chapters = result.data?.chapters ?? result.data ?? [];
+    return Array.isArray(chapters) ? chapters : [];
   }
 
   async updateChapter(
@@ -220,7 +223,8 @@ class StructureService {
     }
 
     const result = await response.json();
-    return result.data.paragraphs;
+    const paragraphs = result.data?.paragraphs ?? result.data ?? [];
+    return Array.isArray(paragraphs) ? paragraphs : [];
   }
 
   async updateParagraph(
@@ -292,7 +296,8 @@ class StructureService {
     }
 
     const result = await response.json();
-    return result.data.notions;
+    const notions = result.data?.notions ?? result.data ?? [];
+    return Array.isArray(notions) ? notions : [];
   }
 
   async updateNotion(

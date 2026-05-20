@@ -55,7 +55,8 @@ class VaultService {
             }
 
             const result = await response.json();
-            return result.data;
+            const raw = result.data?.items ?? result.data ?? [];
+            return Array.isArray(raw) ? raw : [];
         } catch (error) {
             console.error('getVaultItems error:', error);
             throw error;

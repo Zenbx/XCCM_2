@@ -84,9 +84,11 @@ class DocumentService {
       }
 
       const result = await response.json();
+      // API may return { data: { documents: [...], hasMore } } or { data: [...] }
+      const raw = result.data?.documents ?? (Array.isArray(result.data) ? result.data : null) ?? [];
       return {
-        documents: result.data.documents || [],
-        hasMore: result.data.hasMore
+        documents: Array.isArray(raw) ? raw : [],
+        hasMore: result.data?.hasMore ?? false,
       };
     } catch (error) {
       console.error('getPublishedDocuments error:', error);
