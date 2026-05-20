@@ -272,6 +272,7 @@ const LoginPage = () => {
 
             <div className="grid grid-cols-2 gap-4">
               <button
+                type="button"
                 onClick={handleGoogleLogin}
                 disabled={isLoading}
                 className="flex items-center justify-center gap-3 px-4 py-3 border border-gray-300 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-900 transition-all font-medium text-gray-700 dark:text-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -286,6 +287,7 @@ const LoginPage = () => {
               </button>
 
               <button
+                type="button"
                 onClick={handleMicrosoftLogin}
                 disabled={isLoading}
                 className="flex items-center justify-center gap-3 px-4 py-3 border border-gray-300 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-900 transition-all font-medium text-gray-700 dark:text-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
