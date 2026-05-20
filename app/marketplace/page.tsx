@@ -40,7 +40,7 @@ const MarketplacePage = () => {
         try {
             setIsLoading(true);
             const data = await marketplaceService.getItems();
-            setItems(data);
+            setItems(Array.isArray(data) ? data : []);
         } catch (err: any) {
             setError(err.message || 'Erreur de chargement');
             toast.error('Impossible de charger le marketplace');
@@ -75,7 +75,7 @@ const MarketplacePage = () => {
     };
 
     const filteredItems = useMemo(() => {
-        return items.filter(p => {
+        return (Array.isArray(items) ? items : []).filter(p => {
             const matchesSearch = p.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 (p.description || '').toLowerCase().includes(searchTerm.toLowerCase());
             const matchesType = filterType === 'all' || p.type === filterType;

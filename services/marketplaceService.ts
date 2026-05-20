@@ -50,7 +50,9 @@ export const marketplaceService = {
             }
 
             const result = await response.json();
-            return result.data || [];
+            // API may return { data: [...] } or a bare array; guard against non-array shapes
+            const raw = Array.isArray(result) ? result : (result.data ?? result.items ?? []);
+            return Array.isArray(raw) ? raw : [];
         } catch (error: any) {
             console.error('Error in getItems:', error);
             throw error;
