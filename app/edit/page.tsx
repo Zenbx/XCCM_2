@@ -929,13 +929,16 @@ const XCCM2Editor = ({ isEmbedded = false }: { isEmbedded?: boolean }) => {
       if (!isAuto) toast.success('Sauvegardé !');
 
       if (isEmbedded) {
-        window.parent?.postMessage({
-          type: 'XCCM_CONTENT_SAVED',
-          payload: {
-            context: currentContext,
-            content: editorContent
-          }
-        }, '*');
+        // Use document.referrer origin when available; fall back to '*' only in dev.
+        const targetOrigin =
+          document.referrer ? new URL(document.referrer).origin : '*';
+        window.parent?.postMessage(
+          {
+            type: 'XCCM_CONTENT_SAVED',
+            payload: { context: currentContext, content: editorContent },
+          },
+          targetOrigin,
+        );
       }
     } catch (err: any) {
       console.error("[Save] Error:", err);

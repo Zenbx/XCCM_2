@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
-import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { ErrorBoundary } from "@/components/UI/ErrorBoundary";
 
 const ThrowError = ({ shouldThrow }: { shouldThrow: boolean }) => {
     if (shouldThrow) throw new Error("Test crash");
@@ -28,8 +28,8 @@ describe("ErrorBoundary", () => {
                 <ThrowError shouldThrow={true} />
             </ErrorBoundary>
         );
-        expect(screen.getByRole("alert")).toBeInTheDocument();
-        expect(screen.getByText(/erreur/i)).toBeInTheDocument();
+        expect(screen.getByText(/quelque chose s'est mal passé/i)).toBeInTheDocument();
+        expect(screen.getAllByText(/réessayer/i).length).toBeGreaterThan(0);
     });
 
     it("affiche un fallback personnalisé si fourni", () => {
@@ -41,15 +41,24 @@ describe("ErrorBoundary", () => {
         expect(screen.getByText("Fallback custom")).toBeInTheDocument();
     });
 
+    it("affiche le mode inline quand inline=true", () => {
+        render(
+            <ErrorBoundary inline>
+                <ThrowError shouldThrow={true} />
+            </ErrorBoundary>
+        );
+        expect(screen.getByText(/une erreur est survenue/i)).toBeInTheDocument();
+    });
+
     it("permet de réessayer via le bouton Réessayer", () => {
         render(
             <ErrorBoundary>
                 <ThrowError shouldThrow={true} />
             </ErrorBoundary>
         );
-        fireEvent.click(screen.getByText("Réessayer"));
-        // Après reset, le composant tente de re-render
-        // (ThrowError crasherait encore, mais on vérifie que le reset a eu lieu)
-        expect(screen.getByRole("alert")).toBeInTheDocument();
+        // Le premier bouton Réessayer est celui du fallback complet
+        fireEvent.click(screen.getAllByText(/réessayer/i)[0]);
+        // Après reset, le composant re-render — ThrowError écrase encore (état fixe)
+        expect(screen.getByText(/quelque chose s'est mal passé/i)).toBeInTheDocument();
     });
 });

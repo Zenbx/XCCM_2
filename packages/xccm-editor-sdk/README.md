@@ -1,59 +1,124 @@
 # @xccm/editor-sdk
 
-Il s'agit du kit de développement officiel pour intégrer l'Éditeur Avancé XCCM2 (Composition de Contenu) à l'intérieur d'applications tierces (comme Moodle Client) construites en React.
+SDK officiel pour intégrer l'éditeur de contenu XCCM2 dans n'importe quelle application React — Moodle, Canvas, LMS tiers ou portail interne.
 
-## Fonctionnement
+## Comment ça fonctionne
 
-Ce composant React encapsule l'éditeur XCCM2 via une Iframe sécurisée.
-- L'éditeur tourne sur l'infrastructure XCCM2 (sauvegardes, IA, websockets temps-réel pris en charge nativement).
-- Les panneaux latéraux et la barre d'outils complexe sont masqués automatiquement grâce au "Mode Embed", concentrant l'utilisateur sur la composition pure.
-- L'application parente est notifiée des sauvegardes via des événements Javascript (`window.postMessage`).
+L'éditeur XCCM2 tourne sur votre infrastructure (ou la nôtre en SaaS). Le SDK l'encapsule dans une `<iframe>` sécurisée et expose une API React simple via `postMessage`. L'application parente n'embarque que ce composant léger — toute la logique de sauvegarde, collaboration temps réel et IA pédagogique reste côté XCCM2.
 
-## Installation (Pour les développeurs Moodle Client)
+```
+Application parente (Moodle, etc.)
+        │
+        │  <XccmEditor onSave={...} />
+        │
+        ▼
+┌─────────────────────────────────────┐
+│  iframe → /embed/editor             │
+│  ┌─────────────────────────────┐    │
+│  │  Éditeur XCCM2 complet      │    │
+│  │  (Tiptap + IA + Collab)     │    │
+│  └─────────────────────────────┘    │
+└─────────────────────────────────────┘
+        │
+        │  postMessage XCCM_CONTENT_SAVED
+        ▼
+  onSave({ content, context })
+```
+
+## Installation
 
 ```bash
 npm install @xccm/editor-sdk
 # ou
 yarn add @xccm/editor-sdk
+# ou
+pnpm add @xccm/editor-sdk
 ```
 
-*(Note : ce package est actuellement distribué en code source, vous pouvez le compiler ou l'importer directement dans un environnement NextJS/CreateReactApp/Vite/Webpack.)*
+**Prérequis :** React ≥ 18
 
-## Usage de l'activité "Composition de Contenu"
+## Usage
 
 ```tsx
-import React, { useState } from 'react';
 import { XccmEditor } from '@xccm/editor-sdk';
 
-export function ContentCompositionActivity() {
-  const [saveStatus, setSaveStatus] = useState("Non sauvegardé");
-
+export function ContentActivity() {
   return (
-    <div className="activity-container">
-      <h2>Activité Moodle : Composition de Texte</h2>
-      <p>Statut : {saveStatus}</p>
-
-      {/* Ligne ci-dessous : Composant Moodle qui charge notre éditeur */}
-      <XccmEditor 
-        baseUrl="http://localhost:3000" // ou l'URL de prod XCCM2
-        projectName="MoodleCourse-101"   // L'ID du projet/cours lié
-        token="votre_token_JWT_d_authentification"
-        height="600px"
-        onSave={({ context, content }) => {
-          console.log("XCCM2 a enregistré les données:", context, "Contenu:", content);
-          setSaveStatus(`Dernière sauvegarde à ${new Date().toLocaleTimeString()}`);
-          
-          // Moodle Client peut enregistrer ce statut ou valider l'activité de l'étudiant
-          // Ex: markActivityCompleted(activityId)
-        }}
-      />
-    </div>
-  )
+    <XccmEditor
+      baseUrl="https://xccm2.mon-ecole.com"
+      projectName="cours-chimie-terminale"
+      token={currentUser.xccmToken}
+      height="650px"
+      onReady={() => console.log('Éditeur prêt')}
+      onSave={({ content, context }) => {
+        // Appelé à chaque sauvegarde (manuelle ou auto-save)
+        console.log('Contenu HTML :', content);
+        console.log('Granule actif :', context);
+        markActivityProgress(currentUser.id, content);
+      }}
+      onError={({ code, message }) => {
+        console.error(`XCCM2 [${code}] :`, message);
+      }}
+    />
+  );
 }
 ```
 
-## Structure de Retour (`onSave`)
+## Props
 
-Lorsque l'utilisateur sauvegarde (ou que l'Auto-Save se déclenche), la fonction receive un objet avec :
-- `content`: Le code HTML généré
-- `context`: Les métadonnées XCCM2 indiquant à quel paragraphe/notion cela correspond.
+| Prop | Type | Requis | Description |
+|---|---|---|---|
+| `baseUrl` | `string` | ✅ | URL de base de votre instance XCCM2 |
+| `projectName` | `string` | ✅ | Nom du projet XCCM2 à charger |
+| `token` | `string` | ✅ | JWT d'authentification de l'utilisateur |
+| `onSave` | `(payload: XccmSavePayload) => void` | — | Déclenché à chaque sauvegarde |
+| `onReady` | `() => void` | — | Déclenché quand l'éditeur est initialisé |
+| `onError` | `(error: { code: string; message: string }) => void` | — | Déclenché en cas d'erreur critique |
+| `width` | `string \| number` | — | Largeur du conteneur (défaut : `'100%'`) |
+| `height` | `string \| number` | — | Hauteur du conteneur (défaut : `'800px'`) |
+| `loadingText` | `string` | — | Texte affiché pendant le chargement |
+
+## Structure du payload `onSave`
+
+```ts
+interface XccmSavePayload {
+  content: string;       // HTML du granule actif
+  context: {
+    type: 'notion' | 'part' | string;
+    partTitle?: string;
+    chapterTitle?: string;
+    paraName?: string;
+    notionName?: string;
+  } | null;
+}
+```
+
+## Événements postMessage
+
+Le SDK utilise le protocole suivant entre l'iframe et l'application parente :
+
+| Type | Direction | Description |
+|---|---|---|
+| `XCCM_EDITOR_READY` | iframe → parent | Éditeur initialisé |
+| `XCCM_CONTENT_SAVED` | iframe → parent | Sauvegarde effectuée |
+| `XCCM_ERROR` | iframe → parent | Erreur critique |
+| `XCCM_LOAD_CONTENT` | parent → iframe | (Futur) Chargement de contenu externe |
+
+## Sécurité
+
+- Les messages `postMessage` sont filtrés par origine (`event.origin === new URL(baseUrl).origin`).
+- Le token JWT est transmis uniquement via l'URL de l'iframe (paramètre `token`), jamais stocké par le SDK.
+- L'iframe utilise l'attribut `sandbox="allow-scripts allow-same-origin allow-forms allow-popups"`.
+
+## Build local (contributeurs)
+
+```bash
+cd packages/xccm-editor-sdk
+npm install
+npm run build
+# → génère dist/index.js, dist/index.esm.js, dist/index.d.ts
+```
+
+## Licence
+
+MIT — © 2026 Équipe XCCM2

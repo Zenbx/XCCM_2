@@ -1,15 +1,44 @@
 {
   "name": "@xccm/editor-sdk",
   "version": "1.0.0",
-  "description": "SDK officiel pour intégrer l'éditeur XCCM2 dans des applications React externes (Moodle Client, etc.)",
+  "description": "SDK officiel pour intégrer l'éditeur XCCM2 dans des applications React externes (Moodle, Canvas, LMS tiers)",
+  "author": "Équipe XCCM2",
+  "license": "MIT",
+  "keywords": ["xccm", "editor", "sdk", "lms", "moodle", "react", "iframe", "embed"],
   "main": "dist/index.js",
+  "module": "dist/index.esm.js",
   "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.esm.js",
+      "require": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "CHANGELOG.md"
+  ],
+  "scripts": {
+    "build": "tsc --project tsconfig.json",
+    "build:watch": "tsc --project tsconfig.json --watch",
+    "prepublishOnly": "npm run build"
+  },
   "peerDependencies": {
-    "react": "^18.0.0",
-    "react-dom": "^18.0.0"
+    "react": ">=18.0.0",
+    "react-dom": ">=18.0.0"
   },
   "devDependencies": {
     "typescript": "^5.0.0",
-    "@types/react": "^18.0.0"
+    "@types/react": "^18.0.0",
+    "@types/react-dom": "^18.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/xccm2/editor-sdk"
   }
 }

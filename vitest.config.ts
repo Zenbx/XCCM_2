@@ -12,7 +12,7 @@ export default defineConfig({
         coverage: {
             provider: "v8",
             reporter: ["text", "lcov"],
-            include: ["app/**", "components/**", "context/**", "lib/**", "hooks/**"],
+            include: ["app/**", "components/**", "context/**", "lib/**", "hooks/**", "services/**"],
             exclude: ["**/*.config.*", "src/test/**"],
         },
     },

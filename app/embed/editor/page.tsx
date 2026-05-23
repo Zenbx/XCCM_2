@@ -32,7 +32,8 @@ export default function EmbeddedEditorPage() {
         }
       }
       setReady(true);
-      window.parent?.postMessage({ type: 'XCCM_EDITOR_READY' }, '*');
+      const targetOrigin = document.referrer ? new URL(document.referrer).origin : '*';
+      window.parent?.postMessage({ type: 'XCCM_EDITOR_READY' }, targetOrigin);
     };
 
     init();

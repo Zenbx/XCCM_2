@@ -66,13 +66,18 @@ export default function PluginSandboxTestPage() {
               
               {/* Le SDK XccmEditor (L'Iframe) */}
               <XccmEditor
-                baseUrl="http://localhost:3000" // En prod, l'URL de XCCM2
-                projectName="Démo"                // Remplace par le nom d'un de tes projets
-                token={typeof window !== 'undefined' ? (localStorage.getItem('xccm2_auth_token') || 'demo-token') : 'demo-token'}
+                baseUrl={process.env.NEXT_PUBLIC_XCCM_BASE_URL || window.location.origin}
+                projectName="Démo"
+                token={typeof window !== 'undefined' ? (localStorage.getItem('xccm2_auth_token') || '') : ''}
                 height="650px"
+                loadingText="Chargement de l'éditeur XCCM2…"
+                onReady={() => console.log('[Moodle Client] Éditeur XCCM2 prêt')}
                 onSave={(data) => {
-                  console.log("🔥 [Moodle Client] Reçu du Plugin XCCM2:", data);
+                  console.log('[Moodle Client] Sauvegarde reçue :', data);
                   setSaveLog(prev => [{ time: new Date().toLocaleTimeString(), content: data.content }, ...prev]);
+                }}
+                onError={({ code, message }) => {
+                  console.error(`[Moodle Client] Erreur XCCM2 [${code}] :`, message);
                 }}
               />
 
