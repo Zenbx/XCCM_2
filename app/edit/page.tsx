@@ -40,7 +40,7 @@ import '../../styles/view-transitions.css';
 import { useOnboarding } from '@/context/OnboardingContext';
 import { editorTour } from '@/data/tours/editor.tour';
 
-const XCCM2Editor = ({ isEmbedded = false }: { isEmbedded?: boolean }) => {
+const XCCM2Editor = ({ isEmbedded = false, guestMode = false }: { isEmbedded?: boolean; guestMode?: boolean }) => {
   const searchParams = useSearchParams();
   const router = useRouter();
   const projectName = searchParams.get('projectName');
@@ -69,7 +69,7 @@ const XCCM2Editor = ({ isEmbedded = false }: { isEmbedded?: boolean }) => {
     loadProject,
     fetchComments, // ✅ Needed for real-time
     handleUpdateProjectSettings
-  } = useEditorState(projectName);
+  } = useEditorState(projectName, guestMode);
 
   // History Hook
   const { addAction, undo, redo, canUndo, canRedo } = useEditorHistory(50); // ✅ Track structural changes
@@ -980,7 +980,7 @@ const XCCM2Editor = ({ isEmbedded = false }: { isEmbedded?: boolean }) => {
   });
 
   // Lifecycle
-  useEffect(() => { loadProject(); }, [projectName]);
+  useEffect(() => { if (!guestMode) loadProject(); }, [projectName, guestMode]);
 
   // Content External Sync - FIXÉ pour ne pas écraser le contenu de l'utilisateur
   useEffect(() => {
@@ -1084,7 +1084,7 @@ const XCCM2Editor = ({ isEmbedded = false }: { isEmbedded?: boolean }) => {
 
   if (isLoading && !projectData) return <EditorSkeletonView />;
 
-  if (error && !projectData) {
+  if (error && !projectData && !guestMode) {
     return (
       <div className="h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center max-w-md p-8 bg-white rounded-2xl shadow-xl">
@@ -1098,8 +1098,15 @@ const XCCM2Editor = ({ isEmbedded = false }: { isEmbedded?: boolean }) => {
   }
 
   return (
-    <div className="h-screen flex bg-white overflow-hidden selection:bg-[#99334C]/10 w-full max-w-[100vw]">
-
+    <div className="h-screen flex flex-col bg-white overflow-hidden selection:bg-[#99334C]/10 w-full max-w-[100vw]">
+      {guestMode && (
+        <div className="flex items-center justify-center gap-2 bg-amber-50 border-b border-amber-200 text-amber-800 text-xs font-medium py-1.5 px-4 shrink-0">
+          <span>Mode Démo</span>
+          <span className="text-amber-500">·</span>
+          <span>Les modifications ne sont pas sauvegardées. Connectez-vous pour activer la persistance.</span>
+        </div>
+      )}
+      <div className="flex-1 flex overflow-hidden">
 
       {/* Notion cross-reference picker (triggered by /refnotion slash command) */}
       <NotionMentionPicker
@@ -1575,7 +1582,7 @@ const XCCM2Editor = ({ isEmbedded = false }: { isEmbedded?: boolean }) => {
 
       {/* SpotlightTour is rendered globally via providers.tsx */}
 
-
+      </div>
     </div>
   );
 };

@@ -10,26 +10,24 @@ import { useAuth } from '@/context/AuthContext';
 export default function EmbeddedEditorPage() {
   const searchParams = useSearchParams();
   const { refreshUser } = useAuth();
-  // Don't mount the editor until the token is injected AND AuthContext has
-  // re-fetched the user. Without this gate, XCCM2Editor sees authUser=null
-  // because AuthContext initialised before the URL token was available.
   const [ready, setReady] = useState(false);
+  const [guestMode, setGuestMode] = useState(false);
 
   useEffect(() => {
     const token = searchParams.get('token');
 
     const init = async () => {
       if (token) {
-        // 1. Write to cookie + localStorage so getAuthToken() finds it
         authService.setAuthToken(token);
-        // 2. Force AuthContext to re-fetch /api/auth/me with the new token.
-        //    Only mount the editor once we know the user is authenticated.
         try {
           await refreshUser();
         } catch {
-          // refreshUser failed (bad token) — still set ready so the editor
-          // can show its own unauthenticated state rather than hanging.
+          // Bad token — fall through to guest mode
+          setGuestMode(true);
         }
+      } else {
+        // No token provided: render editor in guest/demo mode without auth
+        setGuestMode(true);
       }
       setReady(true);
       const targetOrigin = document.referrer ? new URL(document.referrer).origin : '*';
@@ -51,7 +49,7 @@ export default function EmbeddedEditorPage() {
     <div className="w-full h-screen bg-white m-0 p-0 overflow-hidden">
       {ready ? (
         <Suspense fallback={<EditorSkeletonView />}>
-          <XCCM2Editor isEmbedded={true} />
+          <XCCM2Editor isEmbedded={true} guestMode={guestMode} />
         </Suspense>
       ) : (
         <EditorSkeletonView />

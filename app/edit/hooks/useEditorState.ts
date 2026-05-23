@@ -5,15 +5,19 @@ import { structureService, Part, Notion } from '@/services/structureService';
 import { useTranslations } from 'next-intl';
 import toast from 'react-hot-toast';
 
-export const useEditorState = (projectName: string | null) => {
+export const useEditorState = (projectName: string | null, guestMode = false) => {
     const t = useTranslations('editor');
 
     const [projectData, setProjectData] = useState<any | null>(null);
     const [comments, setComments] = useState<any[]>([]);
     const [isFetchingComments, setIsFetchingComments] = useState(false);
     const [structure, setStructure] = useState<Part[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
+    const [isLoading, setIsLoading] = useState(!guestMode);
     const [isSaving, setIsSaving] = useState(false);
+
+    useEffect(() => {
+        if (guestMode) setIsLoading(false);
+    }, [guestMode]);
     const [isImporting, setIsImporting] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
