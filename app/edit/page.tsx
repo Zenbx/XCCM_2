@@ -3,7 +3,7 @@
 import React, { useState, useRef, useEffect, Suspense, useMemo, useCallback } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import {
-  Loader2, AlertCircle, Bot, X
+  Loader2, AlertCircle, Bot, X, History
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
@@ -32,10 +32,12 @@ import EditorSkeletonView from './components/EditorSkeletonView';
 import PublishToMarketplaceModal from '@/components/Editor/PublishToMarketplaceModal';
 import { MindMapWorkspace } from '@/components/Editor/MindMapWorkspace';
 import { NotionMentionPicker } from '@/components/Editor/NotionMentionPicker';
+import { NotionHistoryPanel } from '@/components/Editor/NotionHistoryPanel';
 
 // Services & Utils
 import { structureService } from '@/services/structureService';
 import { commentService } from '@/services/commentService';
+import { granuleRevisionService, BlameMap } from '@/services/granuleRevisionService';
 import '../../styles/view-transitions.css';
 import { useOnboarding } from '@/context/OnboardingContext';
 import { editorTour } from '@/data/tours/editor.tour';
@@ -83,6 +85,10 @@ const XCCM2Editor = ({ isEmbedded = false, guestMode = false }: { isEmbedded?: b
 
   // Mind Map state
   const [isMindMapOpen, setIsMindMapOpen] = useState(false);
+
+  // Blame & History state
+  const [blameMap, setBlameMap] = useState<BlameMap>({});
+  const [showHistoryPanel, setShowHistoryPanel] = useState(false);
 
   // NotionMentionPicker state (triggered by /refnotion slash command)
   const [isNotionPickerOpen, setIsNotionPickerOpen] = useState(false);
@@ -927,6 +933,10 @@ const XCCM2Editor = ({ isEmbedded = false, guestMode = false }: { isEmbedded?: b
       setHasUnsavedChanges(false);
       setSaveError(null);
       if (!isAuto) toast.success('Sauvegardé !');
+      // Rafraîchir le blame après chaque sauvegarde
+      if (projectName && !guestMode) {
+        granuleRevisionService.getBlame(projectName).then(setBlameMap).catch(() => {});
+      }
 
       if (isEmbedded) {
         // Use document.referrer origin when available; fall back to '*' only in dev.
@@ -981,6 +991,12 @@ const XCCM2Editor = ({ isEmbedded = false, guestMode = false }: { isEmbedded?: b
 
   // Lifecycle
   useEffect(() => { if (!guestMode) loadProject(); }, [projectName, guestMode]);
+
+  // Charger le blame quand le projet est chargé (collaboratif uniquement)
+  useEffect(() => {
+    if (!projectName || guestMode) return;
+    granuleRevisionService.getBlame(projectName).then(setBlameMap).catch(() => {});
+  }, [projectName, guestMode]);
 
   // Content External Sync - FIXÉ pour ne pas écraser le contenu de l'utilisateur
   useEffect(() => {
@@ -1417,6 +1433,43 @@ const XCCM2Editor = ({ isEmbedded = false, guestMode = false }: { isEmbedded?: b
             />
           ) : (
             <div className="max-w-4xl mx-auto min-h-full w-full">
+              {/* Blame badge — dernier éditeur de cette notion */}
+              {currentContext?.type === 'notion' && currentContext.notion?.notion_id && blameMap[currentContext.notion.notion_id] && (
+                <div className="flex items-center justify-between px-1 pb-2 pt-1">
+                  <div className="flex items-center gap-1.5 text-[11px] text-gray-400">
+                    {blameMap[currentContext.notion.notion_id].author.profile_picture ? (
+                      <img
+                        src={blameMap[currentContext.notion.notion_id].author.profile_picture!}
+                        alt=""
+                        className="w-4 h-4 rounded-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-4 h-4 rounded-full bg-[#99334C] flex items-center justify-center text-white text-[8px] font-bold">
+                        {blameMap[currentContext.notion.notion_id].author.firstname[0]}
+                        {blameMap[currentContext.notion.notion_id].author.lastname[0]}
+                      </div>
+                    )}
+                    <span>
+                      Modifié par{' '}
+                      <span className="text-gray-300 font-medium">
+                        {blameMap[currentContext.notion.notion_id].author.firstname}{' '}
+                        {blameMap[currentContext.notion.notion_id].author.lastname}
+                      </span>
+                      {' · '}
+                      {new Date(blameMap[currentContext.notion.notion_id].modified_at).toLocaleString('fr-FR', {
+                        day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit'
+                      })}
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => setShowHistoryPanel(true)}
+                    className="flex items-center gap-1 text-[11px] text-gray-400 hover:text-[#99334C] transition-colors"
+                  >
+                    <History className="w-3 h-3" />
+                    Historique
+                  </button>
+                </div>
+              )}
               <EditorArea
                 key={collaborationData ? collaborationData.documentId : currentContext?.type + "-" + ((currentContext as any)?.[(currentContext?.type || '') + 'Id'] || 'no-id')}
                 content={editorContent}
@@ -1567,6 +1620,20 @@ const XCCM2Editor = ({ isEmbedded = false, guestMode = false }: { isEmbedded?: b
       {/* Modals & Overlays */}
       <CreationModals {...{ showPartModal, setShowPartModal, showChapterModal, setShowChapterModal, showParagraphModal, setShowParagraphModal, showNotionModal, setShowNotionModal, modalContext, partFormData, setPartFormData, chapterFormData, setChapterFormData, paragraphFormData, setParagraphFormData, notionFormData, setNotionFormData, isCreatingPart, isCreatingChapter, isCreatingParagraph, isCreatingNotion, handleCreatePart, handleCreateChapter, handleCreateParagraph, handleCreateNotion, confirmCreatePart, confirmCreateChapter, confirmCreateParagraph, confirmCreateNotion }} />
       <DeleteModal config={deleteModalConfig} onClose={() => setDeleteModalConfig(prev => ({ ...prev, isOpen: false }))} onConfirm={() => confirmDelete(structure)} />
+      {showHistoryPanel && currentContext?.type === 'notion' && currentContext.notion && projectName && (
+        <NotionHistoryPanel
+          projectName={projectName}
+          notionId={currentContext.notion.notion_id}
+          notionName={currentContext.notion.notion_name}
+          onClose={() => setShowHistoryPanel(false)}
+          onRestore={(content) => {
+            setEditorContent(content);
+            setHasUnsavedChanges(true);
+            setShowHistoryPanel(false);
+            toast.success('Contenu restauré — pensez à sauvegarder');
+          }}
+        />
+      )}
       {showShareOverlay && <ShareOverlay projectName={projectName || ''} isOpen={showShareOverlay} onClose={() => setShowShareOverlay(false)} />}
       <PublishToMarketplaceModal
         isOpen={showMarketplaceModal}
