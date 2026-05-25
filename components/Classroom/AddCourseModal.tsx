@@ -47,7 +47,9 @@ const AddCourseModal: React.FC<AddCourseModalProps> = ({
     try {
       setIsAdding(project.pr_id);
       await classroomService.assignProject(classId, project.pr_id);
-      toast.success(`"${project.pr_name}" ajouté à la classe`);
+      // Auto-sync so students can access the course immediately
+      await classroomService.syncProject(classId, project.pr_id);
+      toast.success(`"${project.pr_name}" ajouté et synchronisé`);
       onCourseAdded();
       onClose();
     } catch (err: any) {

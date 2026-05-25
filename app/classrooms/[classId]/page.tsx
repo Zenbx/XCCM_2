@@ -1,10 +1,10 @@
 "use client";
 import React, { useState, useEffect, useCallback } from 'react';
 import {
-    GraduationCap, Users, BookOpen, Copy, Check, ArrowLeft,
-    Settings, Trash2, UserPlus, ChevronRight, Loader2,
-    AlertCircle, School, Link2, Edit3, X, Plus, BarChart3,
-    Megaphone, FileText, RefreshCw
+    Users, BookOpen, Copy, Check, ArrowLeft,
+    Trash2, Loader2,
+    AlertCircle, School, X, Plus, BarChart3,
+    Megaphone, FileText, RefreshCw, Eye
 } from 'lucide-react';
 import { useRouter, useParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -109,12 +109,6 @@ const ClassroomDetailPage = () => {
         setTimeout(() => setCopied(false), 2000);
     };
 
-    const handleCopyLink = () => {
-        if (!classroom) return;
-        const url = `${window.location.origin}/classrooms/join?code=${classroom.join_code}`;
-        navigator.clipboard.writeText(url);
-        toast.success("Lien d'invitation copié !");
-    };
 
     const handleDelete = async () => {
         if (!classroom) return;
@@ -413,6 +407,20 @@ const ClassroomDetailPage = () => {
                                                     {isTeacher && (
                                                         <div className="absolute top-4 right-4 flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-all">
                                                             <button
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    if (cp.doc_id) {
+                                                                        router.push(`/classrooms/${classId}/reader/${cp.doc_id}`);
+                                                                    } else {
+                                                                        toast.error("Synchronisez d'abord le cours pour pouvoir le prévisualiser.");
+                                                                    }
+                                                                }}
+                                                                className="p-1.5 bg-purple-50 text-purple-600 rounded-lg hover:bg-purple-600 hover:text-white transition-all"
+                                                                title="Aperçu étudiant"
+                                                            >
+                                                                <Eye className="w-3.5 h-3.5" />
+                                                            </button>
+                                                            <button
                                                                 onClick={(e) => { e.stopPropagation(); handleSync(cp.project.pr_id); }}
                                                                 className="p-1.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-600 hover:text-white transition-all"
                                                                 title="Synchroniser"
@@ -436,12 +444,6 @@ const ClassroomDetailPage = () => {
                                                         </div>
                                                     )}
 
-                                                    {isTeacher && !cp.doc_id && (
-                                                        <span className="absolute bottom-4 right-4 px-2 py-0.5 bg-amber-50 text-amber-600 text-[10px] font-bold rounded-full border border-amber-100">
-                                                            Non publié
-                                                        </span>
-                                                    )}
-
                                                     <h3 className="font-bold text-gray-900 dark:text-white mb-1 group-hover:text-[#99334C] transition-colors">
                                                         {cp.project.pr_name}
                                                     </h3>
@@ -452,6 +454,25 @@ const ClassroomDetailPage = () => {
                                                         {cp.project.category && <span className="px-2 py-0.5 bg-gray-100 dark:bg-gray-800 rounded-full">{cp.project.category}</span>}
                                                         {cp.project.level && <span className="px-2 py-0.5 bg-gray-100 dark:bg-gray-800 rounded-full">{cp.project.level}</span>}
                                                     </div>
+
+                                                    {isTeacher && (
+                                                        <div className="mt-4 pt-3 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between">
+                                                            <span className={`text-[10px] font-semibold ${cp.doc_id ? 'text-green-500' : 'text-amber-500'}`}>
+                                                                {cp.doc_id ? '✓ Synchronisé' : 'Non synchronisé'}
+                                                            </span>
+                                                            <button
+                                                                onClick={(e) => { e.stopPropagation(); handleSync(cp.project.pr_id); }}
+                                                                disabled={isSyncing === cp.project.pr_id}
+                                                                className="flex items-center gap-1.5 px-2.5 py-1 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-600 hover:text-white text-xs font-medium transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                                                            >
+                                                                {isSyncing === cp.project.pr_id
+                                                                    ? <Loader2 className="w-3 h-3 animate-spin" />
+                                                                    : <RefreshCw className="w-3 h-3" />
+                                                                }
+                                                                Synchroniser
+                                                            </button>
+                                                        </div>
+                                                    )}
                                                 </motion.div>
                                             ))}
                                         </div>
