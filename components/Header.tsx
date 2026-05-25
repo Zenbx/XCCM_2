@@ -7,7 +7,7 @@ import clsx from "clsx";
 import { FaHome, FaInfoCircle, FaEdit, FaBook, FaQuestionCircle, FaGlobe, FaUsers, FaStore } from "react-icons/fa";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/context/AuthContext";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { LogOut, Settings, User as UserIcon, Menu, X, BarChart2, ShieldCheck, GraduationCap } from "lucide-react";
 import LanguageToggle from '@/components/LanguageToggle';
 import { ThemeToggle } from '@/components/ThemeToggle';
@@ -38,6 +38,7 @@ export default function Header() {
 
   // État pour le menu dropdown desktop
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const userMenuRef = useRef<HTMLDivElement>(null);
   // État pour le menu mobile (burger)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -54,9 +55,17 @@ export default function Header() {
     router.push('/');
   };
 
-  const handleMenuBlur = () => {
-    setTimeout(() => setShowUserMenu(false), 200);
-  };
+  // Fermer le menu en cliquant en dehors (évite la course onBlur/click)
+  useEffect(() => {
+    if (!showUserMenu) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
+        setShowUserMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showUserMenu]);
 
   // Hide header on specific routes that manage their own layout/header
   if (pathname?.includes('/book-reader') || pathname?.includes('/admin') || (pathname?.startsWith('/edit') && !pathname?.startsWith('/edit-home'))) return null;
@@ -118,10 +127,9 @@ export default function Header() {
           {isLoading ? (
             <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 animate-pulse" />
           ) : isAuthenticated && user ? (
-            <div className="relative">
+            <div className="relative" ref={userMenuRef}>
               <button
                 onClick={() => setShowUserMenu(!showUserMenu)}
-                onBlur={handleMenuBlur}
                 aria-label="Menu utilisateur"
                 aria-expanded={showUserMenu}
                 aria-haspopup="menu"
