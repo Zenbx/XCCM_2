@@ -1,7 +1,6 @@
 import { useState, useCallback, useRef } from 'react';
-import debounce from 'lodash/debounce'; // Load optimized version
-import toast from 'react-hot-toast';
-import { socraticService } from '@/services/socraticService';
+import debounce from 'lodash/debounce';
+import { socraticService, AuditContext } from '@/services/socraticService';
 
 export interface PedagogicalFeedback {
     id: string;
@@ -24,6 +23,14 @@ export interface BloomScore {
     create: number;
     dominant: string;
     recommendation: string;
+    // Audit fields
+    clarityScore?: number;
+    engagementScore?: number;
+    bloomLevel?: string;
+    suggestions?: string[];
+    recommendedBlocks?: string[];
+    improvedContent?: string;
+    suggestedGranules?: import('@/services/socraticService').SuggestedGranule[];
 }
 
 export function useSocraticAnalysis(notionId?: string | null) {
@@ -35,18 +42,15 @@ export function useSocraticAnalysis(notionId?: string | null) {
     const abortControllerRef = useRef<AbortController | null>(null);
 
     const analyzeContent = useCallback(
-        async (text: string, force = false) => {
-            // Avoid analyzing empty or too short text
+        async (text: string, context?: AuditContext, force = false) => {
             if (!text || text.length < 50) {
                 setFeedback([]);
                 setBloomScore(null);
                 return;
             }
 
-            // Avoid re-analyzing same text unless forced
             if (!force && text === lastAnalyzedText) return;
 
-            // Cancel previous request if any
             if (abortControllerRef.current) {
                 abortControllerRef.current.abort();
             }
@@ -54,20 +58,15 @@ export function useSocraticAnalysis(notionId?: string | null) {
 
             setIsAnalyzing(true);
 
-            let analysisResult;
             try {
-                // Use the centralized service that points to the correct backend Port (3001)
-                const result = await socraticService.auditContent(text);
+                const result = await socraticService.auditContent(text, context);
 
-                // Map the new service result format to the hook's expected format
                 if (result) {
-                    // Create a dummy feedback for now if service returns different structure
-                    // Ideally we should align types, but for now let's make it work without 404
                     const mappedFeedback: PedagogicalFeedback[] = result.suggestions.map((s, i) => ({
                         id: `sug-${i}-${Date.now()}`,
                         sentenceStart: 0,
                         sentenceEnd: 0,
-                        text: text.substring(0, 10) + '...', // Dummy range
+                        text: text.substring(0, 10) + '...',
                         highlightColor: 'yellow',
                         severity: 'info',
                         category: 'Socratic',
@@ -77,14 +76,20 @@ export function useSocraticAnalysis(notionId?: string | null) {
 
                     setFeedback(mappedFeedback);
                     setBloomScore({
-                        ...result, // Preserve clarityScore, engagementScore, bloomLevel, suggestions, recommendedBlocks
                         remember: 0, understand: 0, apply: 0, analyze: 0, evaluate: 0, create: 0,
                         dominant: result.bloomLevel,
-                        recommendation: result.suggestions?.[0] || ''
-                    } as any);
+                        recommendation: result.suggestions?.[0] || '',
+                        // Extended audit fields
+                        clarityScore: result.clarityScore,
+                        engagementScore: result.engagementScore,
+                        bloomLevel: result.bloomLevel,
+                        suggestions: result.suggestions,
+                        recommendedBlocks: result.recommendedBlocks,
+                        improvedContent: result.improvedContent,
+                        suggestedGranules: result.suggestedGranules,
+                    });
                     setLastAnalyzedText(text);
                 }
-
             } catch (error: any) {
                 if (error.name !== 'AbortError') {
                     console.error("Analysis error:", error);
@@ -96,11 +101,10 @@ export function useSocraticAnalysis(notionId?: string | null) {
         [notionId, lastAnalyzedText]
     );
 
-    // Debounced version for auto-analysis while typing
     const analyzeDebounced = useCallback(
         debounce((text: string) => {
             analyzeContent(text);
-        }, 2500), // 2.5s delay after typing stops
+        }, 2500),
         [analyzeContent]
     );
 
@@ -108,8 +112,8 @@ export function useSocraticAnalysis(notionId?: string | null) {
         feedback,
         bloomScore,
         isAnalyzing,
-        analyzeContent,        // Direct call
-        analyzeDebounced,      // Auto call
-        setFeedback            // Allow manual updates (e.g. removing fixed items)
+        analyzeContent,
+        analyzeDebounced,
+        setFeedback
     };
 }

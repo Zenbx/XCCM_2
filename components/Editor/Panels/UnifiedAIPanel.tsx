@@ -48,7 +48,7 @@ interface UnifiedAIPanelProps {
     feedback: any[];
     bloomScore: any;
     isAnalyzing: boolean;
-    analyzeContent: (content: string) => Promise<void>;
+    analyzeContent: (content: string, context?: any) => Promise<void>;
     onDismissFeedback: (id: string) => void;
   };
   onStructureChanged?: () => void; // Callback pour rafraîchir la structure après action IA
@@ -374,12 +374,19 @@ const UnifiedAIPanel: React.FC<UnifiedAIPanelProps> = ({
       return;
     }
     setActiveTab('audit');
-    await socraticData.analyzeContent(editorContent);
+    const context = currentContext ? {
+      projectName: currentContext.projectName,
+      partTitle: currentContext.partTitle,
+      chapterTitle: currentContext.chapterTitle,
+      paraName: currentContext.paraName,
+      notionName: currentContext.notionName,
+    } : undefined;
+    await socraticData.analyzeContent(editorContent, context);
 
     setMessages(prev => [...prev, {
       id: `audit-${Date.now()}`,
       role: 'assistant',
-      content: "J'ai terminé l'analyse de votre contenu. Vous pouvez voir les scores et les suggestions dans l'onglet 'Audit'. Souhaitez-vous que je vous explique certains points ?"
+      content: "J'ai terminé l'analyse. Consultez l'onglet **Audit** pour voir les scores, la version améliorée et les granules suggérés."
     }]);
   };
 
@@ -706,10 +713,80 @@ const UnifiedAIPanel: React.FC<UnifiedAIPanelProps> = ({
                 </div>
               </div>
 
+              {/* ── Version améliorée ── */}
+              {socraticData.bloomScore?.improvedContent && (
+                <div className="mt-6">
+                  <h4 className="text-sm font-bold flex items-center gap-2 mb-3">
+                    <Wand2 size={16} className="text-[#99334C]" />
+                    Version améliorée
+                  </h4>
+                  <div
+                    className="text-xs text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3 max-h-48 overflow-y-auto prose prose-xs dark:prose-invert shadow-sm"
+                    dangerouslySetInnerHTML={{ __html: socraticData.bloomScore.improvedContent }}
+                  />
+                  {onContentChanged && (
+                    <button
+                      onClick={() => onContentChanged(socraticData.bloomScore.improvedContent)}
+                      className="mt-2 w-full py-2 bg-[#99334C]/10 hover:bg-[#99334C] text-[#99334C] hover:text-white rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-2"
+                    >
+                      <CheckCircle2 size={14} />
+                      Appliquer cette version
+                    </button>
+                  )}
+                </div>
+              )}
+
+              {/* ── Granules suggérés ── */}
+              {socraticData.bloomScore?.suggestedGranules?.length > 0 && (
+                <div className="mt-6">
+                  <h4 className="text-sm font-bold flex items-center gap-2 mb-3">
+                    <Sparkles size={16} className="text-[#99334C]" />
+                    Granules suggérés
+                  </h4>
+                  <div className="space-y-2">
+                    {socraticData.bloomScore.suggestedGranules.map((g: any, idx: number) => {
+                      const typeLabels: Record<string, string> = {
+                        part: 'Partie', chapter: 'Chapitre', paragraph: 'Paragraphe', notion: 'Notion'
+                      };
+                      const typeColors: Record<string, string> = {
+                        part: 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300',
+                        chapter: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300',
+                        paragraph: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300',
+                        notion: 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300',
+                      };
+                      return (
+                        <div key={idx} className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl p-3 shadow-sm">
+                          <div className="flex items-start justify-between gap-2 mb-1">
+                            <div className="flex items-center gap-2 min-w-0">
+                              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ${typeColors[g.type] || typeColors.notion}`}>
+                                {typeLabels[g.type] || g.type}
+                              </span>
+                              <p className="text-xs font-semibold text-gray-800 dark:text-gray-200 truncate">{g.title}</p>
+                            </div>
+                          </div>
+                          <p className="text-[11px] text-gray-500 dark:text-gray-400 mb-1 leading-relaxed">{g.description}</p>
+                          <p className="text-[10px] text-gray-400 dark:text-gray-500 italic mb-2">{g.rationale}</p>
+                          <button
+                            onClick={() => {
+                              setActiveTab('chat');
+                              sendChatMessage(`Crée ${typeLabels[g.type]?.toLowerCase() || 'une notion'} intitulé(e) "${g.title}" : ${g.description}`);
+                            }}
+                            className="w-full py-1.5 bg-[#99334C]/8 hover:bg-[#99334C] text-[#99334C] hover:text-white border border-[#99334C]/20 hover:border-[#99334C] rounded-lg text-[10px] font-bold transition-all flex items-center justify-center gap-1.5"
+                          >
+                            <Wand2 size={11} />
+                            Créer via l'IA
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
               <button
                 onClick={handleAudit}
                 disabled={socraticData.isAnalyzing}
-                className="mt-8 w-full py-3 bg-[#99334C] text-white rounded-xl font-bold text-sm shadow-lg shadow-[#99334C]/20 hover:bg-[#802a3f] active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                className="mt-6 w-full py-3 bg-[#99334C] text-white rounded-xl font-bold text-sm shadow-lg shadow-[#99334C]/20 hover:bg-[#802a3f] active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
               >
                 {socraticData.isAnalyzing ? <RefreshCw size={18} className="animate-spin" /> : <RefreshCw size={18} />}
                 Relancer l&apos;Analyse
@@ -719,16 +796,22 @@ const UnifiedAIPanel: React.FC<UnifiedAIPanelProps> = ({
         </AnimatePresence>
       </div>
 
-      {/* Highlights indicator */}
+      {/* Highlights indicator — shrink-0 pour ne jamais être écrasé par le flex-1 */}
       {socraticData.feedback.length > 0 && (
-        <div className="px-4 py-2 bg-[#99334C]/5 border-t border-[#99334C]/10 flex items-center justify-between">
+        <div className="shrink-0 px-4 py-2 bg-[#99334C]/5 border-t border-[#99334C]/10 flex items-center justify-between">
           <span className="text-[10px] font-medium text-[#99334C] flex items-center gap-1">
             <AlertCircle size={12} />
             {socraticData.feedback.length} zones d&apos;amélioration détectées
           </span>
           <button
-            onClick={() => setActiveTab('audit')}
-            className="text-[10px] font-bold text-[#99334C] underline"
+            onClick={() => {
+              setActiveTab('audit');
+              // Lancer l'audit si pas encore fait
+              if (!socraticData.bloomScore && editorContent) {
+                handleAudit();
+              }
+            }}
+            className="text-[10px] font-bold text-[#99334C] underline hover:text-[#802a3f] transition-colors"
           >
             Voir
           </button>
