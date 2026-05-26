@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useMemo } from 'react';
 import debounce from 'lodash/debounce';
 import { socraticService, AuditContext } from '@/services/socraticService';
 
@@ -37,9 +37,10 @@ export function useSocraticAnalysis(notionId?: string | null) {
     const [feedback, setFeedback] = useState<PedagogicalFeedback[]>([]);
     const [bloomScore, setBloomScore] = useState<BloomScore | null>(null);
     const [isAnalyzing, setIsAnalyzing] = useState(false);
-    const [lastAnalyzedText, setLastAnalyzedText] = useState<string>('');
 
     const abortControllerRef = useRef<AbortController | null>(null);
+    // Ref instead of state so tracking last-analyzed text doesn't recreate the callback
+    const lastAnalyzedTextRef = useRef<string>('');
 
     const analyzeContent = useCallback(
         async (text: string, context?: AuditContext, force = false) => {
@@ -49,7 +50,7 @@ export function useSocraticAnalysis(notionId?: string | null) {
                 return;
             }
 
-            if (!force && text === lastAnalyzedText) return;
+            if (!force && text === lastAnalyzedTextRef.current) return;
 
             if (abortControllerRef.current) {
                 abortControllerRef.current.abort();
@@ -88,7 +89,7 @@ export function useSocraticAnalysis(notionId?: string | null) {
                         improvedContent: result.improvedContent,
                         suggestedGranules: result.suggestedGranules,
                     });
-                    setLastAnalyzedText(text);
+                    lastAnalyzedTextRef.current = text;
                 }
             } catch (error: any) {
                 if (error.name !== 'AbortError') {
@@ -98,14 +99,17 @@ export function useSocraticAnalysis(notionId?: string | null) {
                 setIsAnalyzing(false);
             }
         },
-        [notionId, lastAnalyzedText]
+        [notionId]
     );
 
-    const analyzeDebounced = useCallback(
-        debounce((text: string) => {
-            analyzeContent(text);
-        }, 2500),
-        [analyzeContent]
+    // useMemo so the debounce timer instance is only recreated when notionId changes.
+    // analyzeContent is stable (only depends on notionId), so the ref capture is safe.
+    const analyzeContentRef = useRef(analyzeContent);
+    analyzeContentRef.current = analyzeContent;
+
+    const analyzeDebounced = useMemo(
+        () => debounce((text: string) => analyzeContentRef.current(text), 2500),
+        [notionId] // recreate only when switching notions
     );
 
     return {

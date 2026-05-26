@@ -774,23 +774,29 @@ const XCCM2Editor = ({ isEmbedded = false, guestMode = false }: { isEmbedded?: b
   } = useSynapseSync({
     documentId: synapseDocId,
     userId: authUser?.user_id || 'anonymous',
-    userName: `${authUser?.firstname || 'L’Auteur'} ${authUser?.lastname || ''}`.trim(),
+    userName: `${authUser?.firstname || "L'Auteur"} ${authUser?.lastname || ''}`.trim(),
     serverUrl: process.env.NEXT_PUBLIC_HOCUSPOCUS_URL || 'ws://localhost:1234',
     token: getAuthToken,
     enabled: !!authUser && !!synapseDocId
   });
+
+  // Compute username as a stable primitive so the memo below only reacts to
+  // actual collaboration-relevant changes (doc ID, provider, yDoc), not to the
+  // authUser object being replaced by the background checkAuth re-fetch.
+  const collaborationUsername = [authUser?.firstname, authUser?.lastname].filter(Boolean).join(" ") || "Auteur";
 
   const collaborationData = useMemo(() => {
     if (!synapseDocId || !provider || !yDoc) return undefined;
     return {
       provider,
       documentId: synapseDocId,
-      username: `${authUser?.firstname || 'L’Auteur'} ${authUser?.lastname || ''}`.trim(),
-      userColor: '#99334C', // Default color
+      username: collaborationUsername,
+      userColor: '#99334C',
       colors: ['#99334C', '#2563EB', '#10B981', '#F59E0B'],
       yDoc
     };
-  }, [synapseDocId, provider, yDoc, authUser]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [synapseDocId, provider, yDoc]);
 
   // Scroll editor to a collaborator's cursor position
   const handleUserClick = useCallback((user: any) => {

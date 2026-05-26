@@ -256,34 +256,10 @@ const TiptapEditor: React.FC<TiptapEditorProps> = (props) => {
     }
   }, [content, editor]);
 
-  // Seeding: Injecter le contenu initial dans Yjs s'il est vide
-  useEffect(() => {
-    if (editor && hasValidCollaboration && content) {
-      const yDoc = collaboration?.yDoc || collaboration?.provider?.document;
-      if (yDoc) {
-        // Vérifier si le doc Yjs est vide (xmlFragment 'default' ou configuré dans l'extension)
-        // L'extension Collaboration utilise par défaut le fragment nommé 'default' ou 'prosemirror' selon config.
-        // Ici on suppose 'default' car on n'a pas spécifié de fragmentName dans l'extension custom.
-        // Mais Tiptap StarterKit + Collab utilise souvent un XmlFragment.
-
-        // La méthode la plus fiable en Tiptap : vérifier si l'éditeur est vide ALORS QUE on a du contenu initial
-        // Note: editor.isEmpty peut être true même avec un paragraphe vide.
-
-        // On vérifie la taille du state Yjs
-        const fragment = yDoc.getXmlFragment('prosemirror'); // Must match Hocuspocus TiptapTransformer fragment name
-        const docSize = fragment?.length || 0;
-
-        if (docSize === 0) {
-          console.log('[TiptapEditor] Seeding Yjs document from DB content');
-          try {
-            editor.commands.setContent(content);
-          } catch (e) {
-            console.error('[TiptapEditor] Seeding failed:', e);
-          }
-        }
-      }
-    }
-  }, [editor, hasValidCollaboration, content]);
+  // Note: client-side Yjs seeding removed.
+  // The Synapse server handles seeding via onLoadDocument (TiptapTransformer.toYdoc from DB).
+  // Client-side seeding races with the Hocuspocus sync and creates duplicate Yjs operations,
+  // causing CRDT conflicts and content divergence between collaborators.
 
   // Gérer le mode lecture seule
   useEffect(() => {
