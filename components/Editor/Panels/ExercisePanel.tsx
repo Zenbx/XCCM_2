@@ -243,9 +243,10 @@ interface ExercisePanelProps {
         notionName?: string;
     }) => void;
     project?: any;
+    exerciseRefreshKey?: number;
 }
 
-const ExercisePanel = ({ currentContext, structure, project, onNavigateToGranule }: ExercisePanelProps) => {
+const ExercisePanel = ({ currentContext, structure, project, onNavigateToGranule, exerciseRefreshKey }: ExercisePanelProps) => {
     const [exercises, setExercises] = useState<Exercise[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [showCreator, setShowCreator] = useState(false);
@@ -410,7 +411,7 @@ const ExercisePanel = ({ currentContext, structure, project, onNavigateToGranule
         }
     }, [resolveGranuleIds, selectedLevel]);
 
-    useEffect(() => { fetchExercises(); }, [fetchExercises]);
+    useEffect(() => { fetchExercises(); }, [fetchExercises, exerciseRefreshKey]);
 
     const resetForm = () => {
         setEditingExerciseId(null);

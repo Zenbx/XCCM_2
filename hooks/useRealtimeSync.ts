@@ -78,7 +78,10 @@ export function useRealtimeSync({ projectName, onStructureChange, onPresenceChan
                 const channel = ably.channels.get(`project:${projectName}`);
                 channelRef.current = channel;
 
-                // 4. Écouter tous les événements
+                // 4. Écouter tous les événements du canal
+                channel.subscribe((message: any) => {
+                    callbackRef.current(message.name, message.data);
+                });
                 console.log(`✅ Subscribed to channel: project:${projectName}`);
 
                 // 5. Gérer la présence (pour savoir si on est plusieurs)

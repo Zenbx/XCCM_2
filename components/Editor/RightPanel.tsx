@@ -181,7 +181,7 @@ const RightPanel = ({
               )}
               {activePanel === 'info' && <InfoPanel project={project} structure={structure} />}
               {activePanel === 'settings' && <SettingsPanel project={project} onUpdateProject={onUpdateProject} />}
-              {activePanel === 'exercises' && <ExercisePanel currentContext={currentContext} structure={structure} project={project} onNavigateToGranule={onNavigateToGranule} />}
+              {activePanel === 'exercises' && <ExercisePanel currentContext={currentContext} structure={structure} project={project} onNavigateToGranule={onNavigateToGranule} exerciseRefreshKey={exerciseRefreshKey} />}
               {activePanel === 'tutorial' && <TutorialPanel />}
               {activePanel === 'ai' && (
                 <UnifiedAIPanel

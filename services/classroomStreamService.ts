@@ -33,6 +33,8 @@ export interface Assignment {
   description?: string;
   due_date?: string;
   type: 'TEXT' | 'FILE';
+  attachment_url?: string;
+  attachment_name?: string;
   created_at: string;
   _count: { submissions: number };
   submissions: AssignmentSubmission[];
@@ -110,7 +112,7 @@ class ClassroomStreamService {
 
   async createAssignment(
     classId: string,
-    payload: { title: string; description?: string; due_date?: string; type: 'TEXT' | 'FILE' }
+    payload: { title: string; description?: string; due_date?: string; type: 'TEXT' | 'FILE'; attachment_url?: string; attachment_name?: string }
   ): Promise<Assignment> {
     const res = await authenticatedFetch(`${API_BASE}/api/classrooms/${classId}/assignments`, {
       method: 'POST',

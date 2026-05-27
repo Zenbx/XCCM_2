@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Plus, FileText, Upload, Clock, CheckCircle, Loader2,
-  ChevronDown, ChevronUp, Star, X, File as FileIcon, Send
+  ChevronDown, ChevronUp, Star, X, File as FileIcon, Send, Download, Paperclip
 } from 'lucide-react';
 import { classroomStreamService, Assignment, AssignmentSubmission } from '@/services/classroomStreamService';
 import { TactileButton } from '@/components/UI/TactileButton';
@@ -22,6 +22,7 @@ const AssignmentsTab: React.FC<AssignmentsTabProps> = ({
 }) => {
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [form, setForm] = useState({ title: '', description: '', due_date: '', type: 'TEXT' as 'TEXT' | 'FILE' });
+  const [attachmentFile, setAttachmentFile] = useState<File | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState<string | null>(null);
@@ -34,14 +35,28 @@ const AssignmentsTab: React.FC<AssignmentsTabProps> = ({
     if (!form.title.trim()) return toast.error('Le titre est requis');
     try {
       setIsCreating(true);
+      let attachment_url: string | undefined;
+      let attachment_name: string | undefined;
+
+      if (attachmentFile) {
+        toast.loading('Upload du fichier joint...', { id: 'attach-upload' });
+        const { url } = await classroomStreamService.uploadFile(attachmentFile);
+        toast.dismiss('attach-upload');
+        attachment_url = url;
+        attachment_name = attachmentFile.name;
+      }
+
       const assignment = await classroomStreamService.createAssignment(classId, {
         title: form.title.trim(),
         description: form.description.trim() || undefined,
         due_date: form.due_date || undefined,
         type: form.type,
+        attachment_url,
+        attachment_name,
       });
       onAssignmentCreated(assignment);
       setForm({ title: '', description: '', due_date: '', type: 'TEXT' });
+      setAttachmentFile(null);
       setShowCreateForm(false);
       toast.success('Devoir créé !');
     } catch (err: any) {
@@ -163,8 +178,33 @@ const AssignmentsTab: React.FC<AssignmentsTabProps> = ({
                       </select>
                     </div>
                   </div>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Fichier joint (optionnel)</label>
+                    <label className="flex items-center gap-3 cursor-pointer bg-gray-50 dark:bg-gray-800 border border-dashed border-gray-300 dark:border-gray-600 rounded-xl px-4 py-3 hover:border-[#99334C] transition-colors">
+                      <input
+                        type="file"
+                        className="hidden"
+                        onChange={(e) => setAttachmentFile(e.target.files?.[0] || null)}
+                      />
+                      <Paperclip className="w-4 h-4 text-gray-400 shrink-0" />
+                      {attachmentFile ? (
+                        <div className="flex items-center gap-2 flex-1 min-w-0">
+                          <span className="text-sm text-gray-700 dark:text-gray-300 truncate">{attachmentFile.name}</span>
+                          <button
+                            type="button"
+                            onClick={(e) => { e.preventDefault(); setAttachmentFile(null); }}
+                            className="ml-auto shrink-0 text-gray-400 hover:text-red-500 transition-colors"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ) : (
+                        <span className="text-sm text-gray-400">Joindre un fichier à ce devoir...</span>
+                      )}
+                    </label>
+                  </div>
                   <div className="flex justify-end gap-3">
-                    <TactileButton variant="secondary" onClick={() => setShowCreateForm(false)}>Annuler</TactileButton>
+                    <TactileButton variant="secondary" onClick={() => { setShowCreateForm(false); setAttachmentFile(null); }}>Annuler</TactileButton>
                     <TactileButton variant="primary" onClick={handleCreate} isLoading={isCreating}>Créer le devoir</TactileButton>
                   </div>
                 </div>
@@ -238,6 +278,24 @@ const AssignmentsTab: React.FC<AssignmentsTabProps> = ({
                       {/* Student view */}
                       {!isTeacher && (
                         <>
+                          {assignment.attachment_url && (
+                            <a
+                              href={assignment.attachment_url}
+                              target="_blank"
+                              rel="noreferrer"
+                              download={assignment.attachment_name || true}
+                              className="flex items-center gap-2.5 px-4 py-3 mb-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors group"
+                            >
+                              <Download className="w-4 h-4 text-blue-600 group-hover:scale-110 transition-transform" />
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-semibold text-blue-700 dark:text-blue-400">Fichier joint par le professeur</p>
+                                {assignment.attachment_name && (
+                                  <p className="text-xs text-blue-500 truncate">{assignment.attachment_name}</p>
+                                )}
+                              </div>
+                              <span className="text-xs font-bold text-blue-600 bg-blue-100 dark:bg-blue-900/40 px-2 py-0.5 rounded-full">Télécharger</span>
+                            </a>
+                          )}
                           {mySubmission ? (
                             <div className="bg-green-50 dark:bg-green-900/20 rounded-xl p-4 border border-green-100 dark:border-green-800">
                               <div className="flex items-center gap-2 mb-2">
@@ -308,6 +366,17 @@ const AssignmentsTab: React.FC<AssignmentsTabProps> = ({
                       {/* Teacher view: list of submissions */}
                       {isTeacher && (
                         <div className="space-y-3">
+                          {assignment.attachment_url && (
+                            <a
+                              href={assignment.attachment_url}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="flex items-center gap-2 px-3 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-sm text-gray-600 dark:text-gray-400"
+                            >
+                              <Paperclip className="w-3.5 h-3.5 shrink-0" />
+                              <span className="truncate">{assignment.attachment_name || 'Fichier joint'}</span>
+                            </a>
+                          )}
                           <p className="text-sm font-bold text-gray-700 dark:text-gray-300">{(assignment._count?.submissions || 0)} rendu(s)</p>
                           {(!assignment.submissions || assignment.submissions.length === 0) ? (
                             <p className="text-sm text-gray-400 italic">Aucun rendu pour l'instant.</p>

@@ -514,6 +514,7 @@ const XCCM2Editor = ({ isEmbedded = false, guestMode = false }: { isEmbedded?: b
 
   // States remaining in component
   const [rightPanel, setRightPanel] = useState<string | null>(null);
+  const [exerciseRefreshKey, setExerciseRefreshKey] = useState(0);
   const [showShareOverlay, setShowShareOverlay] = useState(false);
   const [sidebarWidth, setSidebarWidth] = useState(320);
   const [isResizing, setIsResizing] = useState(false);
@@ -980,10 +981,12 @@ const XCCM2Editor = ({ isEmbedded = false, guestMode = false }: { isEmbedded?: b
     console.log(`[Realtime] Received event: ${event}`);
     if (event === 'NOTION_UPDATED' || event === 'STRUCTURE_CHANGED') {
       console.log('[Realtime] Reloading structure...');
-      loadProject(true); // Silencieux structure update
+      loadProject(true);
+    } else if (event === 'EXERCISE_CHANGED') {
+      setExerciseRefreshKey(k => k + 1);
     } else if (event === 'COMMENT_ADDED') {
       console.log('[Realtime] Fetching comments...');
-      fetchComments(); // ✅ Direct comment refresh
+      fetchComments();
       toast.success('💬 Nouveau commentaire', { icon: '💬' });
     }
   }, [loadProject, fetchComments]);
@@ -1518,6 +1521,7 @@ const XCCM2Editor = ({ isEmbedded = false, guestMode = false }: { isEmbedded?: b
       {!isZenMode && !isEmbedded && (
         <RightPanel
           activePanel={rightPanel}
+          exerciseRefreshKey={exerciseRefreshKey}
           onToggle={(id: string) => {
             setRightPanel(prev => prev === id ? null : id);
           }}
