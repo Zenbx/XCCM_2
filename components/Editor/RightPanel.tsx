@@ -51,6 +51,7 @@ const RightPanel = ({
   editorContent,
   onStructureChanged,
   onContentChanged,
+  exerciseRefreshKey,
 }: any) => {
   const [isExpanded, setIsExpanded] = useState(false);
 
