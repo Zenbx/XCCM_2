@@ -282,8 +282,7 @@ const AssignmentsTab: React.FC<AssignmentsTabProps> = ({
                             <a
                               href={assignment.attachment_url}
                               target="_blank"
-                              rel="noreferrer"
-                              download={assignment.attachment_name || true}
+                              rel="noreferrer noopener"
                               className="flex items-center gap-2.5 px-4 py-3 mb-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors group"
                             >
                               <Download className="w-4 h-4 text-blue-600 group-hover:scale-110 transition-transform" />
