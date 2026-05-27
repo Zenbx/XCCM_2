@@ -5,20 +5,13 @@ import * as Y from 'yjs';
 import { HocuspocusProvider } from '@hocuspocus/provider';
 import { Awareness } from 'y-protocols/awareness';
 
-// Types pour la présence utilisateur
 export interface UserPresence {
     id: string;
     clientId: number;
     name: string;
     color: string;
-    cursor?: {
-        anchor: number;
-        head: number;
-    };
-    selection?: {
-        from: number;
-        to: number;
-    };
+    cursor?: { anchor: number; head: number };
+    selection?: { from: number; to: number };
 }
 
 export interface SynapseSyncOptions {
@@ -27,7 +20,6 @@ export interface SynapseSyncOptions {
     userName: string;
     userColor?: string;
     serverUrl?: string;
-    /** Accept a getter function so the token is resolved at connection time, not at render time */
     token?: string | null | (() => string | null);
     onConnect?: () => void;
     onDisconnect?: () => void;
@@ -37,69 +29,32 @@ export interface SynapseSyncOptions {
 }
 
 export interface SynapseSyncResult {
-    // Y.js document
     yDoc: Y.Doc | null;
     provider: HocuspocusProvider | null;
     awareness: Awareness | null;
-
-    // Connection state
     isConnected: boolean;
     isSynced: boolean;
     connectionStatus: 'connecting' | 'connected' | 'disconnected' | 'error';
-
-    // Présence
     connectedUsers: UserPresence[];
     localUser: UserPresence | null;
     localClientId: number | null;
-
-    // Actions
     updateCursor: (anchor: number, head: number) => void;
     updateSelection: (from: number, to: number) => void;
     disconnect: () => void;
     reconnect: () => void;
-
-    // Helpers pour TipTap
     getYXmlFragment: (name?: string) => Y.XmlFragment | null;
-
-    // Explicit document ID for tracking
     documentId: string;
 }
 
-// Couleurs prédéfinies pour les utilisateurs
 const USER_COLORS = [
-    '#FF6B6B', // Rouge corail
-    '#4ECDC4', // Turquoise
-    '#45B7D1', // Bleu ciel
-    '#96CEB4', // Vert menthe
-    '#FFEAA7', // Jaune pastel
-    '#DDA0DD', // Plum
-    '#98D8C8', // Vert eau
-    '#F7DC6F', // Jaune vif
-    '#BB8FCE', // Violet pastel
-    '#85C1E9', // Bleu pastel
+    '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7',
+    '#DDA0DD', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E9',
 ];
 
 function getRandomColor(): string {
     return USER_COLORS[Math.floor(Math.random() * USER_COLORS.length)];
 }
 
-/**
- * useSynapseSync - Hook pour la synchronisation temps réel avec Y.js/Hocuspocus
- *
- * Ce hook gère:
- * - La connexion WebSocket vers le serveur Hocuspocus
- * - La synchronisation CRDT avec Y.js
- * - La gestion de la présence (curseurs, sélections)
- * - L'intégration avec TipTap via y-prosemirror
- *
- * @example
- * const { yDoc, provider, connectedUsers, isConnected } = useSynapseSync({
- *   documentId: 'notion-123',
- *   userId: 'user-abc',
- *   userName: 'Jean Dupont',
- *   onAwarenessChange: (users) => console.log('Users:', users),
- * });
- */
 export function useSynapseSync(options: SynapseSyncOptions): SynapseSyncResult {
     const {
         documentId,
@@ -112,42 +67,44 @@ export function useSynapseSync(options: SynapseSyncOptions): SynapseSyncResult {
         onDisconnect,
         onSynced,
         onAwarenessChange,
-        enabled = true, // ✅ Added
+        enabled = true,
     } = options;
 
-    // Default values that remain stable
     const serverUrl = providedServerUrl || process.env.NEXT_PUBLIC_HOCUSPOCUS_URL || 'ws://localhost:1234';
-
-    // Memoize the user color so it doesn't change on Every render if not provided
     const userColor = useMemo(() => providedColor || getRandomColor(), [providedColor]);
 
-    // Keep the token getter ref fresh without adding it to effect deps
+    // Keep token getter fresh without adding it to effect deps
     const tokenRef = useRef(token);
     tokenRef.current = token;
 
-    // Use Refs to avoid re-render loops but keep state for connection status
-    const yDocRef = useRef<Y.Doc | null>(null);
+    // ── yDoc created synchronously via useMemo ────────────────────────────────
+    // Keyed on documentId so it recreates when the user navigates to another granule.
+    // This avoids the double-init pattern where the editor mounts once without
+    // collaboration (yDoc null) then re-mounts with collaboration (yDoc ready).
+    const yDoc = useMemo<Y.Doc | null>(() => {
+        if (!enabled || !documentId || !userId) return null;
+        return new Y.Doc();
+    }, [documentId, enabled, userId]);
+
+    // Destroy the yDoc when documentId changes (cleanup for the old one)
+    useEffect(() => {
+        return () => { yDoc?.destroy(); };
+    }, [yDoc]);
+
     const providerRef = useRef<HocuspocusProvider | null>(null);
 
-    // State
+    // provider exposed as React state so parent re-renders when it becomes available
+    const [provider, setProvider] = useState<HocuspocusProvider | null>(null);
     const [isConnected, setIsConnected] = useState(false);
     const [isSynced, setIsSynced] = useState(false);
     const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'disconnected' | 'error'>('disconnected');
     const [connectedUsers, setConnectedUsers] = useState<UserPresence[]>([]);
     const [localClientId, setLocalClientId] = useState<number | null>(null);
 
-    // Utilisateur local (sans clientId initial car il n'est pas encore connu)
-    const localUserBase = {
-        id: userId,
-        name: userName,
-        color: userColor,
-    };
-
-    // Initialisation de la connexion
+    // ── WebSocket connection ──────────────────────────────────────────────────
     useEffect(() => {
-        if (!enabled || !documentId || !userId) return;
+        if (!enabled || !documentId || !userId || !yDoc) return;
 
-        // Resolve token at connection time (supports getter function for late-bound tokens)
         const resolvedToken = typeof tokenRef.current === 'function'
             ? tokenRef.current()
             : tokenRef.current;
@@ -157,11 +114,9 @@ export function useSynapseSync(options: SynapseSyncOptions): SynapseSyncResult {
             return;
         }
 
-        // Créer le document Y.js
-        const yDoc = new Y.Doc();
-        yDocRef.current = yDoc;
+        setConnectionStatus('connecting');
 
-        const provider = new HocuspocusProvider({
+        const hp = new HocuspocusProvider({
             url: serverUrl,
             name: documentId,
             document: yDoc,
@@ -179,13 +134,13 @@ export function useSynapseSync(options: SynapseSyncOptions): SynapseSyncResult {
                 onDisconnect?.();
             },
             onSynced: ({ state }) => {
-                console.log(`[Synapse] Synced: ${state}`);
                 setIsSynced(state);
-                if (state) onSynced?.();
+                if (state) {
+                    console.log(`[Synapse] Synced: ${documentId}`);
+                    onSynced?.();
+                }
             },
             onStatus: ({ status }) => {
-                console.log(`[Synapse] Status: ${status}`);
-                // Use functional update to avoid dependency issues
                 setConnectionStatus(prev => {
                     if (status === 'connecting') return 'connecting';
                     if (status === 'connected') return 'connected';
@@ -195,39 +150,24 @@ export function useSynapseSync(options: SynapseSyncOptions): SynapseSyncResult {
             },
         });
 
-        providerRef.current = provider;
+        providerRef.current = hp;
+        setProvider(hp);
 
-        // Stocker le clientId local
-        if (provider.awareness) {
-            setLocalClientId(provider.awareness.clientID);
+        if (hp.awareness) {
+            setLocalClientId(hp.awareness.clientID);
+            hp.awareness.setLocalStateField('user', { id: userId, name: userName, color: userColor });
         }
 
-        // Configurer l'awareness (présence)
-        const awareness = provider.awareness;
-        if (!awareness) {
-            console.error('[Synapse] Awareness not available');
-            return;
-        }
+        const awareness = hp.awareness;
+        if (!awareness) return;
 
-        // Définir l'état local de l'utilisateur
-        if (awareness) {
-            awareness.setLocalStateField('user', {
-                id: userId,
-                name: userName,
-                color: userColor,
-            });
-        }
-
-        // Écouter les changements d'awareness
         const handleAwarenessChange = () => {
-            const states = awareness.getStates();
             const users: UserPresence[] = [];
-
-            states.forEach((state, clientId) => {
+            awareness.getStates().forEach((state, clientId) => {
                 if (state.user) {
                     users.push({
                         id: state.user.id || 'anonymous',
-                        clientId: clientId,
+                        clientId,
                         name: state.user.name || 'Anonyme',
                         color: state.user.color || getRandomColor(),
                         cursor: state.cursor,
@@ -235,72 +175,48 @@ export function useSynapseSync(options: SynapseSyncOptions): SynapseSyncResult {
                     });
                 }
             });
-
             setConnectedUsers(users);
             onAwarenessChange?.(users);
         };
 
         awareness.on('change', handleAwarenessChange);
 
-        // État initial
-        setConnectionStatus('connecting');
-
-        // Cleanup
         return () => {
             console.log(`[Synapse] Cleaning up connection for ${documentId}`);
             awareness.off('change', handleAwarenessChange);
-            provider.disconnect();
-            yDoc.destroy();
-            yDocRef.current = null;
+            hp.disconnect();
             providerRef.current = null;
+            setProvider(null);
+            setIsConnected(false);
+            setIsSynced(false);
+            setConnectionStatus('disconnected');
         };
-    }, [documentId, userId, userName, userColor, serverUrl, enabled]);
+    }, [documentId, userId, userName, userColor, serverUrl, enabled, yDoc]);
 
-    // Mettre à jour la position du curseur
     const updateCursor = useCallback((anchor: number, head: number) => {
-        const awareness = providerRef.current?.awareness;
-        if (awareness) {
-            awareness.setLocalStateField('cursor', { anchor, head });
-        }
+        providerRef.current?.awareness?.setLocalStateField('cursor', { anchor, head });
     }, []);
 
-    // Mettre à jour la sélection
     const updateSelection = useCallback((from: number, to: number) => {
-        const awareness = providerRef.current?.awareness;
-        if (awareness) {
-            awareness.setLocalStateField('selection', { from, to });
-        }
+        providerRef.current?.awareness?.setLocalStateField('selection', { from, to });
     }, []);
 
-    // Déconnecter
-    const disconnect = useCallback(() => {
-        providerRef.current?.disconnect();
-    }, []);
+    const disconnect = useCallback(() => { providerRef.current?.disconnect(); }, []);
+    const reconnect  = useCallback(() => { providerRef.current?.connect(); }, []);
 
-    // Reconnecter
-    const reconnect = useCallback(() => {
-        providerRef.current?.connect();
-    }, []);
-
-    // Obtenir le fragment XML pour TipTap
     const getYXmlFragment = useCallback((name: string = 'prosemirror') => {
-        return yDocRef.current?.getXmlFragment(name) || null;
-    }, []);
+        return yDoc?.getXmlFragment(name) || null;
+    }, [yDoc]);
 
     return {
-        yDoc: yDocRef.current,
-        provider: providerRef.current,
-        awareness: providerRef.current?.awareness || null,
+        yDoc,
+        provider,
+        awareness: provider?.awareness || null,
         isConnected,
         isSynced,
         connectionStatus,
         connectedUsers,
-        localUser: {
-            id: localUserBase.id,
-            name: localUserBase.name,
-            color: localUserBase.color,
-            clientId: localClientId || 0
-        },
+        localUser: { id: userId, name: userName, color: userColor, clientId: localClientId || 0 },
         localClientId,
         updateCursor,
         updateSelection,

@@ -162,6 +162,9 @@ const TiptapEditor: React.FC<TiptapEditorProps> = (props) => {
 
   // Déterminer de manière sécurisée si on a un document valide
   const effectiveDoc = yDoc || collaboration?.yDoc || collaboration?.provider?.document;
+  // hasYDoc: yDoc exists → mount Collaboration extension immediately (no double-init)
+  // hasValidCollaboration: provider also connected → add CollaborationCursor
+  const hasYDoc = !!effectiveDoc;
   const hasValidCollaboration = !!(collaboration && collaboration.provider && effectiveDoc);
 
   if (collaboration) {
@@ -175,7 +178,7 @@ const TiptapEditor: React.FC<TiptapEditorProps> = (props) => {
     immediatelyRender: false,
     extensions: [
       StarterKit.configure({
-        history: hasValidCollaboration ? false : {} as any, // ✅ Use false to disable, or empty config to enable
+        history: hasYDoc ? false : {} as any,
       }),
       Underline,
       TextStyle,
@@ -209,13 +212,13 @@ const TiptapEditor: React.FC<TiptapEditorProps> = (props) => {
         },
       }),
       IndentationExtension,
+      // Add Collaboration as soon as yDoc exists (even before WebSocket connects)
+      // so the editor initializes only ONCE instead of twice (without collab → with collab)
+      ...(hasYDoc ? [
+        Collaboration.configure({ document: effectiveDoc }),
+      ] : []),
+      // CollaborationCursor requires a live provider connection
       ...(hasValidCollaboration ? [
-        (() => {
-          console.log(`[TiptapEditor] Configuring collaboration with doc:`, effectiveDoc);
-          return Collaboration.configure({
-            document: effectiveDoc,
-          });
-        })(),
         CollaborationCursor.configure({
           provider: collaboration!.provider,
           user: {
@@ -225,7 +228,7 @@ const TiptapEditor: React.FC<TiptapEditorProps> = (props) => {
         }),
       ] : []),
     ],
-    content: content || (collaboration ? undefined : content), // ✅ Use content as initial even if collaboration
+    content: hasYDoc ? undefined : (content || ''),
     editable: !readOnly,
     onCreate: ({ editor }) => {
       onReady?.(editor);
@@ -241,7 +244,11 @@ const TiptapEditor: React.FC<TiptapEditorProps> = (props) => {
         class: `focus:outline-none min-h-[800px] ${className}`,
       },
     },
-  }, [hasValidCollaboration, effectiveDoc]); // ✅ Re-init editor when collab status changes
+  // Re-init when:
+  // - hasYDoc: Collaboration extension must be included from the start (yDoc ready)
+  // - hasValidCollaboration: CollaborationCursor needs a live provider
+  // - effectiveDoc identity: document switched (different granule)
+  }, [hasYDoc, hasValidCollaboration, effectiveDoc]);
 
   // Mettre à jour le contenu si prop change de l'extérieur (seulement si pas de collaboration)
   useEffect(() => {

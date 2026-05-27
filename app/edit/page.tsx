@@ -786,10 +786,13 @@ const XCCM2Editor = ({ isEmbedded = false, guestMode = false }: { isEmbedded?: b
   // authUser object being replaced by the background checkAuth re-fetch.
   const collaborationUsername = [authUser?.firstname, authUser?.lastname].filter(Boolean).join(" ") || "Auteur";
 
+  // yDoc is now available synchronously (useMemo in useSynapseSync).
+  // Return collaborationData as soon as yDoc exists — provider may still be null
+  // (connecting). TiptapEditor handles provider=null by showing content without cursors.
   const collaborationData = useMemo(() => {
-    if (!synapseDocId || !provider || !yDoc) return undefined;
+    if (!synapseDocId || !yDoc) return undefined;
     return {
-      provider,
+      provider,          // null while connecting, set once WebSocket is up
       documentId: synapseDocId,
       username: collaborationUsername,
       userColor: '#99334C',
