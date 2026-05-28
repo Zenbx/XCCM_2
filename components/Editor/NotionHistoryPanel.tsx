@@ -110,14 +110,17 @@ export function NotionHistoryPanel({
     const [isLoading, setIsLoading] = useState(true);
     const [selected, setSelected] = useState<GranuleRevision | null>(null);
 
+    const [loadError, setLoadError] = useState<string | null>(null);
+
     const load = useCallback(async () => {
         setIsLoading(true);
+        setLoadError(null);
         try {
             const data = await granuleRevisionService.getRevisions(projectName, notionId);
             setRevisions(data);
             if (data.length > 0) setSelected(data[0]);
-        } catch {
-            // silence — empty state shown
+        } catch (err: any) {
+            setLoadError(err?.message || "Impossible de charger l'historique");
         } finally {
             setIsLoading(false);
         }
@@ -149,6 +152,12 @@ export function NotionHistoryPanel({
                 {isLoading ? (
                     <div className="flex-1 flex items-center justify-center text-gray-500 dark:text-gray-400 text-sm">
                         Chargement…
+                    </div>
+                ) : loadError ? (
+                    <div className="flex-1 flex flex-col items-center justify-center text-red-500 text-sm gap-2 p-6">
+                        <p className="font-medium">Erreur de chargement</p>
+                        <p className="text-xs text-center">{loadError}</p>
+                        <button onClick={load} className="mt-2 text-xs underline text-[#99334C]">Réessayer</button>
                     </div>
                 ) : revisions.length === 0 ? (
                     <div className="flex-1 flex flex-col items-center justify-center text-gray-500 dark:text-gray-400 text-sm gap-2">
