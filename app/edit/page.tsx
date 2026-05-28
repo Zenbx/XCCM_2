@@ -990,16 +990,18 @@ const XCCM2Editor = ({ isEmbedded = false, guestMode = false }: { isEmbedded?: b
     } else if (event === 'COMMENT_ADDED') {
       const incoming = data?.comment;
       if (incoming) {
-        // Payload contient le commentaire complet → ajout direct, sans HTTP round-trip
         setComments(prev =>
           prev.some(c => c.comment_id === incoming.comment_id)
-            ? prev          // déjà présent (sender ou race Ably/HTTP côté receiver)
+            ? prev
             : [incoming, ...prev]
         );
         toast.success('💬 Nouveau commentaire', { icon: '💬' });
       }
-      // Si payload manquant : on ne re-fetche pas pour éviter les injections de doublons.
-      // Le panel se rechargera à la prochaine ouverture via l'useEffect dédié.
+    } else if (event === 'COMMENT_DELETED') {
+      const { commentId } = data ?? {};
+      if (commentId) {
+        setComments(prev => prev.filter(c => c.comment_id !== commentId));
+      }
     }
   }, [loadProject, setComments]);
 
@@ -1555,8 +1557,16 @@ const XCCM2Editor = ({ isEmbedded = false, guestMode = false }: { isEmbedded?: b
             );
           }}
           onDeleteComment={async (id: string) => {
-            await commentService.deleteComment(projectName!, id);
+            // Suppression optimiste immédiate côté supprimeur
             setComments(prev => prev.filter(c => c.comment_id !== id));
+            try {
+              await commentService.deleteComment(projectName!, id);
+              // Ably broadcast COMMENT_DELETED → les autres voient la suppression en temps réel
+            } catch (err) {
+              // Rollback si l'API échoue
+              fetchComments();
+              throw err;
+            }
           }}
           project={projectData}
           structure={structure}
