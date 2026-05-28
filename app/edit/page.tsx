@@ -990,19 +990,18 @@ const XCCM2Editor = ({ isEmbedded = false, guestMode = false }: { isEmbedded?: b
     } else if (event === 'COMMENT_ADDED') {
       const incoming = data?.comment;
       if (incoming) {
-        // Use the comment already in the Ably payload — no HTTP round-trip needed
+        // Payload contient le commentaire complet → ajout direct, sans HTTP round-trip
         setComments(prev =>
           prev.some(c => c.comment_id === incoming.comment_id)
-            ? prev                           // sender already added it optimistically
+            ? prev          // déjà présent (sender ou race Ably/HTTP côté receiver)
             : [incoming, ...prev]
         );
-      } else {
-        // Fallback: payload missing, re-fetch from API
-        fetchComments();
+        toast.success('💬 Nouveau commentaire', { icon: '💬' });
       }
-      toast.success('💬 Nouveau commentaire', { icon: '💬' });
+      // Si payload manquant : on ne re-fetche pas pour éviter les injections de doublons.
+      // Le panel se rechargera à la prochaine ouverture via l'useEffect dédié.
     }
-  }, [loadProject, fetchComments, setComments]);
+  }, [loadProject, setComments]);
 
   useRealtimeSync({
     projectName: projectData?.pr_name || projectName || '',
@@ -1547,7 +1546,13 @@ const XCCM2Editor = ({ isEmbedded = false, guestMode = false }: { isEmbedded?: b
           comments={comments}
           onAddComment={async (c: any) => {
             const newC = await commentService.addComment(projectName!, c);
-            setComments(prev => [newC, ...prev]);
+            // Dedup: Ably peut livrer le message AVANT que cette réponse HTTP arrive,
+            // auquel cas le commentaire est déjà dans le state — on ne l'ajoute pas deux fois.
+            setComments(prev =>
+              prev.some(existing => existing.comment_id === newC.comment_id)
+                ? prev
+                : [newC, ...prev]
+            );
           }}
           onDeleteComment={async (id: string) => {
             await commentService.deleteComment(projectName!, id);
