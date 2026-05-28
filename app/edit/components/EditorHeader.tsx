@@ -3,9 +3,10 @@ import Link from 'next/link';
 import { Home, ChevronRight, Eye, Share2, Save, Menu } from 'lucide-react';
 import RichTooltip from '@/components/UI/RichTooltip';
 import { TactileButton } from '@/components/UI/TactileButton';
-import { PresenceIndicator } from '@/components/Editor/CollaborativeCursors';
+import { ProjectPresenceIndicator } from '@/components/Editor/CollaborativeCursors';
 import { DiscoveryTooltip } from '@/components/Onboarding/DiscoveryTooltip';
 import type { UserPresence } from '@/hooks/useSynapseSync';
+import type { ProjectMember } from '@/hooks/useRealtimeSync';
 
 interface EditorHeaderProps {
     projectData: any;
@@ -16,7 +17,7 @@ interface EditorHeaderProps {
     onShare: () => void;
     onPreview: () => void;
     isSaving: boolean;
-    connectedUsers: any[];
+    connectedUsers: UserPresence[];
     localClientId: number | null;
     authUser: any;
     projectName: string;
@@ -26,6 +27,9 @@ interface EditorHeaderProps {
     isMindMapOpen?: boolean;
     onToggleMindMap?: () => void;
     onUserClick?: (user: UserPresence) => void;
+    // Project-level presence (Ably)
+    projectMembers?: ProjectMember[];
+    onProjectMemberClick?: (member: ProjectMember) => void;
 }
 
 const EditorHeader: React.FC<EditorHeaderProps> = ({
@@ -47,7 +51,15 @@ const EditorHeader: React.FC<EditorHeaderProps> = ({
     isMindMapOpen,
     onToggleMindMap,
     onUserClick,
+    projectMembers = [],
+    onProjectMemberClick,
 }) => {
+    const currentGranuleId = currentContext?.type === 'notion'
+        ? `notion-${currentContext?.notion?.notion_id || ''}`
+        : currentContext?.type === 'part'
+            ? `part-${currentContext?.part?.part_id || ''}`
+            : '';
+
     return (
         <div className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between px-4 h-16 shrink-0 z-30 transition-colors">
             <div className="flex items-center gap-4 min-w-0 flex-1">
@@ -68,7 +80,7 @@ const EditorHeader: React.FC<EditorHeaderProps> = ({
                     </Link>
                 </RichTooltip>
 
-                <div className="flex flex-col min-w-0 max-w-[200px]">
+                <div className="flex flex-col min-w-0 max-w-50">
                     <h1 className="text-base font-bold text-gray-900 dark:text-white border-l pl-4 border-gray-200 dark:border-gray-700 truncate">
                         {projectData?.pr_name || projectName}
                     </h1>
@@ -106,7 +118,6 @@ const EditorHeader: React.FC<EditorHeaderProps> = ({
                         )}
                     </div>
                 )}
-
             </div>
 
             <div className="flex items-center gap-2 ml-4 shrink-0">
@@ -134,10 +145,12 @@ const EditorHeader: React.FC<EditorHeaderProps> = ({
                 </DiscoveryTooltip>
 
                 <div className="ml-2 pl-4 border-l border-gray-100 dark:border-gray-800 flex items-center gap-3">
-                    <PresenceIndicator
-                        users={connectedUsers}
-                        localClientId={localClientId}
-                        onUserClick={onUserClick}
+                    <ProjectPresenceIndicator
+                        projectMembers={projectMembers}
+                        connectedUsers={connectedUsers}
+                        currentUserId={authUser?.user_id || ''}
+                        currentGranuleId={currentGranuleId}
+                        onMemberClick={onProjectMemberClick}
                     />
                 </div>
 

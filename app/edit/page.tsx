@@ -12,6 +12,7 @@ import toast from 'react-hot-toast';
 import { useAuth } from '@/context/AuthContext';
 import { useTranslations } from 'next-intl';
 import { useRealtimeSync } from '@/hooks/useRealtimeSync';
+import type { ProjectMember } from '@/hooks/useRealtimeSync';
 import { useSynapseSync } from '@/hooks/useSynapseSync';
 import { useEditorCommands } from '@/hooks/useEditorCommands';
 import { useSocraticAnalysis } from '@/hooks/useSocraticAnalysis';
@@ -765,6 +766,16 @@ const XCCM2Editor = ({ isEmbedded = false, guestMode = false }: { isEmbedded?: b
     return '';
   }, [currentContext]);
 
+  const collaborationUsername = [authUser?.firstname, authUser?.lastname].filter(Boolean).join(" ") || "Auteur";
+
+  // Deterministic user color based on userId — consistent across sessions
+  const userColor = useMemo(() => {
+    if (!authUser?.user_id) return '#99334C';
+    const PALETTE = ['#99334C', '#2563EB', '#10B981', '#F59E0B', '#7C3AED', '#DB2777', '#0891B2'];
+    const hash = authUser.user_id.split('').reduce((a: number, c: string) => a + c.charCodeAt(0), 0);
+    return PALETTE[hash % PALETTE.length];
+  }, [authUser?.user_id]);
+
   const {
     connectedUsers,
     localClientId,
@@ -775,16 +786,33 @@ const XCCM2Editor = ({ isEmbedded = false, guestMode = false }: { isEmbedded?: b
   } = useSynapseSync({
     documentId: synapseDocId,
     userId: authUser?.user_id || 'anonymous',
-    userName: `${authUser?.firstname || "L'Auteur"} ${authUser?.lastname || ''}`.trim(),
+    userName: collaborationUsername,
+    userColor,
     serverUrl: process.env.NEXT_PUBLIC_HOCUSPOCUS_URL || 'ws://localhost:1234',
     token: getAuthToken,
     enabled: !!authUser && !!synapseDocId
   });
 
-  // Compute username as a stable primitive so the memo below only reacts to
-  // actual collaboration-relevant changes (doc ID, provider, yDoc), not to the
-  // authUser object being replaced by the background checkAuth re-fetch.
-  const collaborationUsername = [authUser?.firstname, authUser?.lastname].filter(Boolean).join(" ") || "Auteur";
+  // Ably presence data — updates on every granule navigation
+  const presenceGranuleName = useMemo(() => {
+    if (!currentContext) return '';
+    if (currentContext.type === 'notion') return currentContext.notionName || '';
+    if (currentContext.type === 'part') return `${currentContext.partTitle} (Intro)`;
+    if (currentContext.type === 'chapter') return currentContext.chapterTitle || '';
+    if (currentContext.type === 'paragraph') return currentContext.paraName || '';
+    return '';
+  }, [currentContext]);
+
+  const presenceData = useMemo(() => {
+    if (!authUser?.user_id) return undefined;
+    return {
+      userId: authUser.user_id,
+      userName: collaborationUsername,
+      userColor,
+      granuleId: synapseDocId || '',
+      granuleName: presenceGranuleName,
+    };
+  }, [authUser?.user_id, collaborationUsername, userColor, synapseDocId, presenceGranuleName]);
 
   // yDoc is now available synchronously (useMemo in useSynapseSync).
   // Return collaborationData as soon as yDoc exists — provider may still be null
@@ -795,7 +823,7 @@ const XCCM2Editor = ({ isEmbedded = false, guestMode = false }: { isEmbedded?: b
       provider,          // null while connecting, set once WebSocket is up
       documentId: synapseDocId,
       username: collaborationUsername,
-      userColor: '#99334C',
+      userColor,
       colors: ['#99334C', '#2563EB', '#10B981', '#F59E0B'],
       yDoc
     };
@@ -824,6 +852,59 @@ const XCCM2Editor = ({ isEmbedded = false, guestMode = false }: { isEmbedded?: b
     }
   }, [tiptapEditor]);
 
+  // Navigate editor to any granule by its synapseDocId ("notion-xxx" or "part-xxx")
+  const navigateToGranule = useCallback((granuleId: string) => {
+    if (!granuleId) return;
+    if (granuleId.startsWith('notion-')) {
+      const notionId = granuleId.replace('notion-', '');
+      for (const part of structure) {
+        for (const chapter of part.chapters ?? []) {
+          for (const para of chapter.paragraphs ?? []) {
+            const notion = para.notions?.find((n: any) => n.notion_id === notionId);
+            if (notion) {
+              contextVersionRef.current++;
+              setCurrentContext({
+                type: 'notion',
+                projectName: projectData?.pr_name || '',
+                partTitle: part.part_title,
+                chapterTitle: chapter.chapter_title,
+                chapterId: chapter.chapter_id,
+                paraName: para.para_name,
+                paraId: para.para_id,
+                notionName: notion.notion_name,
+                notion,
+                part,
+                chapter,
+                paragraph: para,
+              });
+              setEditorContent(notion.notion_content || '');
+              setHasUnsavedChanges(false);
+              return;
+            }
+          }
+        }
+      }
+    } else if (granuleId.startsWith('part-')) {
+      const partId = granuleId.replace('part-', '');
+      const part = structure.find((p: any) => p.part_id === partId);
+      if (part) {
+        contextVersionRef.current++;
+        setCurrentContext({ type: 'part', projectName: projectData?.pr_name || '', partTitle: part.part_title, part });
+        setEditorContent(part.part_intro || '');
+        setHasUnsavedChanges(false);
+      }
+    }
+  }, [structure, projectData, setCurrentContext, setEditorContent, setHasUnsavedChanges]);
+
+  // Click on a presence avatar: scroll to cursor if same granule, else navigate
+  const handleProjectMemberClick = useCallback((member: ProjectMember) => {
+    if (member.granuleId === synapseDocId) {
+      const hocuUser = connectedUsers.find((u: any) => u.id === member.userId);
+      if (hocuUser?.cursor) { handleUserClick(hocuUser); return; }
+    }
+    if (member.granuleId) navigateToGranule(member.granuleId);
+  }, [synapseDocId, connectedUsers, handleUserClick, navigateToGranule]);
+
   // Action: Save
   const handleSave = async (isAuto = false) => {
     if (!currentContext || !projectName) return;
@@ -833,50 +914,6 @@ const XCCM2Editor = ({ isEmbedded = false, guestMode = false }: { isEmbedded?: b
     }
 
     setSaveError(null); // Clear previous errors
-
-    // ✅ CRDT FIX: If Hocuspocus is managing this Notion via CRDT, skip HTTP save
-    // Hocuspocus onStoreDocument handles persistence automatically
-    // IMPORTANT: Only skip if provider is truly synced (authenticated + data exchanged)
-    const isCrdtManaged = currentContext.type === 'notion' && synapseDocId && provider && synapseStatus === 'connected' && provider.isSynced;
-
-    if (isCrdtManaged) {
-      console.log(`[Save] Skipping HTTP save for Notion (CRDT managed by Hocuspocus, synced=true)`);
-      // Still update the local structure state for UI consistency
-      if (currentContext.notionName) {
-        setStructure(prev => prev.map(part => {
-          if (part.part_title === currentContext.partTitle) {
-            return {
-              ...part,
-              chapters: part.chapters?.map(chapter => {
-                if (chapter.chapter_title === currentContext.chapterTitle) {
-                  return {
-                    ...chapter,
-                    paragraphs: chapter.paragraphs?.map(para => {
-                      if (para.para_name === currentContext.paraName) {
-                        return {
-                          ...para,
-                          notions: para.notions?.map(notion =>
-                            notion.notion_name === currentContext.notionName
-                              ? { ...notion, notion_content: editorContent }
-                              : notion
-                          )
-                        };
-                      }
-                      return para;
-                    })
-                  };
-                }
-                return chapter;
-              })
-            };
-          }
-          return part;
-        }));
-      }
-      setHasUnsavedChanges(false);
-      if (!isAuto) toast.success('☁️ Syncé en temps réel');
-      return;
-    }
 
     // ✅ Capture context version to detect stale saves
     const saveVersion = contextVersionRef.current;
@@ -1005,11 +1042,12 @@ const XCCM2Editor = ({ isEmbedded = false, guestMode = false }: { isEmbedded?: b
     }
   }, [loadProject, setComments]);
 
-  useRealtimeSync({
+  const { projectMembers } = useRealtimeSync({
     projectName: projectData?.pr_name || projectName || '',
     enabled: !!(projectData?.pr_name || projectName),
     onStructureChange: handleStructureChange,
-    onPresenceChange: (count) => setParticipantCount(count) // ✅ Track participants
+    onPresenceChange: (count) => setParticipantCount(count),
+    presenceData,
   });
 
   // Lifecycle
@@ -1365,6 +1403,8 @@ const XCCM2Editor = ({ isEmbedded = false, guestMode = false }: { isEmbedded?: b
             isMindMapOpen={isMindMapOpen}
             onToggleMindMap={() => setIsMindMapOpen(prev => !prev)}
             onUserClick={handleUserClick}
+            projectMembers={projectMembers}
+            onProjectMemberClick={handleProjectMemberClick}
           />
         )}
 

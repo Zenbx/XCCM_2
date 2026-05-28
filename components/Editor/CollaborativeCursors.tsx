@@ -3,6 +3,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { UserPresence } from '@/hooks/useSynapseSync';
+import { ProjectMember } from '@/hooks/useRealtimeSync';
 import { Editor } from '@tiptap/react';
 
 interface CollaborativeCursorsProps {
@@ -316,6 +317,119 @@ export const ConnectionStatus: React.FC<ConnectionStatusProps> = ({
                     Reconnecter
                 </button>
             )}
+        </div>
+    );
+};
+
+/**
+ * ProjectPresenceIndicator – Shows ALL users online on the project (Ably presence).
+ * Clicking an avatar navigates to their granule (if different) or scrolls to their
+ * cursor (if on the same granule).
+ */
+interface ProjectPresenceIndicatorProps {
+    projectMembers: ProjectMember[];
+    connectedUsers: UserPresence[];  // same-granule users from Hocuspocus awareness
+    currentUserId: string;
+    currentGranuleId: string;
+    maxVisible?: number;
+    onMemberClick?: (member: ProjectMember) => void;
+}
+
+export const ProjectPresenceIndicator: React.FC<ProjectPresenceIndicatorProps> = ({
+    projectMembers,
+    connectedUsers,
+    currentUserId,
+    currentGranuleId,
+    maxVisible = 5,
+    onMemberClick,
+}) => {
+    // Exclude self
+    const others = projectMembers.filter(m => m.userId !== currentUserId);
+    const visible = others.slice(0, maxVisible);
+    const extra = others.length - maxVisible;
+
+    if (others.length === 0) {
+        return (
+            <div className="flex items-center gap-2 text-sm text-gray-400">
+                <div className="w-2 h-2 rounded-full bg-gray-300" />
+                <span>Seul sur le projet</span>
+            </div>
+        );
+    }
+
+    return (
+        <div className="flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+
+            <div className="flex -space-x-2">
+                <AnimatePresence mode="popLayout">
+                    {visible.map((member, index) => {
+                        const onSameGranule = member.granuleId === currentGranuleId && !!currentGranuleId;
+                        const hocuUser = connectedUsers.find(u => u.id === member.userId);
+                        const hasCursor = onSameGranule && !!hocuUser?.cursor;
+                        const isClickable = !!(onMemberClick && member.granuleId);
+
+                        const tooltipAction = onSameGranule
+                            ? hasCursor ? 'Cliquer pour localiser' : 'Même granule'
+                            : member.granuleName
+                                ? `Aller vers : ${member.granuleName}`
+                                : 'Cliquer pour naviguer';
+
+                        return (
+                            <motion.div
+                                key={`${member.userId}-${member.clientId}`}
+                                initial={{ opacity: 0, scale: 0.5, x: -10 }}
+                                animate={{ opacity: 1, scale: 1, x: 0 }}
+                                exit={{ opacity: 0, scale: 0.5, x: -10 }}
+                                transition={{ delay: index * 0.05 }}
+                                className="relative group"
+                            >
+                                <div
+                                    className={`w-8 h-8 rounded-full border-2 flex items-center justify-center text-white text-xs font-bold shadow-sm transition-transform hover:scale-110 hover:z-10 ${isClickable ? 'cursor-pointer' : 'cursor-default'}`}
+                                    style={{
+                                        backgroundColor: member.userColor,
+                                        borderColor: onSameGranule ? '#22c55e' : 'white',
+                                    }}
+                                    title={member.userName}
+                                    onClick={() => isClickable && onMemberClick?.(member)}
+                                    role={isClickable ? 'button' : undefined}
+                                    aria-label={isClickable ? tooltipAction : undefined}
+                                >
+                                    {member.userName.charAt(0).toUpperCase()}
+                                </div>
+
+                                {/* Tooltip */}
+                                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1.5 bg-gray-900 text-white text-xs rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 min-w-max">
+                                    <p className="font-semibold">{member.userName}</p>
+                                    {member.granuleName && (
+                                        <p className="text-gray-400 text-[10px]">
+                                            {onSameGranule ? '📍 Ce granule' : `📄 ${member.granuleName}`}
+                                        </p>
+                                    )}
+                                    {isClickable && (
+                                        <p className="text-[#ff9daf] text-[10px] mt-0.5">{tooltipAction}</p>
+                                    )}
+                                    <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900" />
+                                </div>
+                            </motion.div>
+                        );
+                    })}
+                </AnimatePresence>
+
+                {extra > 0 && (
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.5 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        className="w-8 h-8 rounded-full bg-gray-200 border-2 border-white flex items-center justify-center text-gray-600 text-xs font-bold"
+                    >
+                        +{extra}
+                    </motion.div>
+                )}
+            </div>
+
+            <span className="text-sm text-gray-500 ml-1">
+                {others.length === 1 ? '1 en ligne' : `${others.length} en ligne`}
+            </span>
         </div>
     );
 };
