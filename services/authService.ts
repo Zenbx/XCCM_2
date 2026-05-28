@@ -57,7 +57,8 @@ class AuthService {
     const data: LoginResponse = await response.json();
 
     if (!response.ok || !data.success) {
-      throw new Error(data.message || "Erreur lors de l'inscription");
+      const detail = (data as any).error ? ` (${(data as any).error})` : '';
+      throw new Error((data.message || "Erreur lors de l'inscription") + detail);
     }
 
     setCookie('auth_token', data.data.token);
