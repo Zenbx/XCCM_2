@@ -1,5 +1,7 @@
 // services/commentService.ts
 
+import { authenticatedFetch } from '@/lib/apiHelper';
+
 const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001').trim();
 
 export interface Comment {
@@ -16,73 +18,47 @@ export interface Comment {
 }
 
 class CommentService {
-    private getAuthToken(): string | null {
-        if (typeof window === 'undefined') return null;
-        const value = `; ${document.cookie}`;
-        const parts = value.split(`; auth_token=`);
-        if (parts.length === 2) return parts.pop()?.split(';').shift() || null;
-        return null;
-    }
-
     async getComments(projectName: string): Promise<Comment[]> {
-        try {
-            const token = this.getAuthToken();
-            if (!token) throw new Error('Non authentifié');
+        const response = await authenticatedFetch(
+            `${API_BASE_URL}/api/projects/${encodeURIComponent(projectName)}/comments`
+        );
 
-            const response = await fetch(`${API_BASE_URL}/api/projects/${encodeURIComponent(projectName)}/comments`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-
-            if (!response.ok) throw new Error('Erreur recup commentaires');
-
-            const result = await response.json();
-            return result.data.comments;
-        } catch (error) {
-            console.error('getComments error:', error);
-            throw error;
+        if (!response.ok) {
+            const text = await response.text().catch(() => '');
+            throw new Error(`Erreur récupération commentaires (${response.status})${text ? ': ' + text : ''}`);
         }
+
+        const result = await response.json();
+        return result.data?.comments ?? [];
     }
 
     async addComment(projectName: string, content: string): Promise<Comment> {
-        try {
-            const token = this.getAuthToken();
-            if (!token) throw new Error('Non authentifié');
-
-            const response = await fetch(`${API_BASE_URL}/api/projects/${encodeURIComponent(projectName)}/comments`, {
+        const response = await authenticatedFetch(
+            `${API_BASE_URL}/api/projects/${encodeURIComponent(projectName)}/comments`,
+            {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({ content })
-            });
+                body: JSON.stringify({ content }),
+            }
+        );
 
-            if (!response.ok) throw new Error('Erreur ajout commentaire');
-
-            const result = await response.json();
-            return result.data.comment;
-        } catch (error) {
-            console.error('addComment error:', error);
-            throw error;
+        if (!response.ok) {
+            const text = await response.text().catch(() => '');
+            throw new Error(`Erreur ajout commentaire (${response.status})${text ? ': ' + text : ''}`);
         }
+
+        const result = await response.json();
+        return result.data.comment;
     }
 
     async deleteComment(projectName: string, commentId: string): Promise<void> {
-        try {
-            const token = this.getAuthToken();
-            if (!token) throw new Error('Non authentifié');
+        const response = await authenticatedFetch(
+            `${API_BASE_URL}/api/projects/${encodeURIComponent(projectName)}/comments/${commentId}`,
+            { method: 'DELETE' }
+        );
 
-            const response = await fetch(`${API_BASE_URL}/api/projects/${encodeURIComponent(projectName)}/comments/${commentId}`, {
-                method: 'DELETE',
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            });
-
-            if (!response.ok) throw new Error('Erreur suppression commentaire');
-        } catch (error) {
-            console.error('deleteComment error:', error);
-            throw error;
+        if (!response.ok) {
+            const text = await response.text().catch(() => '');
+            throw new Error(`Erreur suppression commentaire (${response.status})${text ? ': ' + text : ''}`);
         }
     }
 }

@@ -55,8 +55,9 @@ export const useEditorState = (projectName: string | null, guestMode = false) =>
             setIsFetchingComments(true);
             const data = await commentService.getComments(projectName);
             setComments(data);
-        } catch (err) {
-            console.error("Erreur fetch comments:", err);
+        } catch (err: any) {
+            console.error('[fetchComments]', err?.message ?? err);
+            // Ne pas vider les commentaires déjà affichés si le re-fetch échoue
         } finally {
             setIsFetchingComments(false);
         }

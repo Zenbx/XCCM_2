@@ -980,7 +980,7 @@ const XCCM2Editor = ({ isEmbedded = false, guestMode = false }: { isEmbedded?: b
   });
 
   // Real-time Structure sync
-  const handleStructureChange = useCallback((event: string) => {
+  const handleStructureChange = useCallback((event: string, data?: any) => {
     console.log(`[Realtime] Received event: ${event}`);
     if (event === 'NOTION_UPDATED' || event === 'STRUCTURE_CHANGED') {
       console.log('[Realtime] Reloading structure...');
@@ -988,11 +988,21 @@ const XCCM2Editor = ({ isEmbedded = false, guestMode = false }: { isEmbedded?: b
     } else if (event === 'EXERCISE_CHANGED') {
       setExerciseRefreshKey(k => k + 1);
     } else if (event === 'COMMENT_ADDED') {
-      console.log('[Realtime] Fetching comments...');
-      fetchComments();
+      const incoming = data?.comment;
+      if (incoming) {
+        // Use the comment already in the Ably payload — no HTTP round-trip needed
+        setComments(prev =>
+          prev.some(c => c.comment_id === incoming.comment_id)
+            ? prev                           // sender already added it optimistically
+            : [incoming, ...prev]
+        );
+      } else {
+        // Fallback: payload missing, re-fetch from API
+        fetchComments();
+      }
       toast.success('💬 Nouveau commentaire', { icon: '💬' });
     }
-  }, [loadProject, fetchComments]);
+  }, [loadProject, fetchComments, setComments]);
 
   useRealtimeSync({
     projectName: projectData?.pr_name || projectName || '',
@@ -1054,6 +1064,12 @@ const XCCM2Editor = ({ isEmbedded = false, guestMode = false }: { isEmbedded?: b
     }
   }, [structure]);
 
+
+  // Recharge les commentaires à chaque ouverture du panel — couvre les cas où le
+  // chargement initial a échoué silencieusement (token expiré, invitation manquante…)
+  useEffect(() => {
+    if (rightPanel === 'comments') fetchComments();
+  }, [rightPanel, fetchComments]);
 
   // Socratic Debounce
   useEffect(() => {
