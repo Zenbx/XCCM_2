@@ -63,7 +63,6 @@ const StudentAIPanel: React.FC<StudentAIPanelProps> = ({ isOpen, onClose, docId,
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'x-user-role': 'user',
                     'Authorization': `Bearer ${authService.getAuthToken() || ''}`,
                 },
                 body: JSON.stringify({
