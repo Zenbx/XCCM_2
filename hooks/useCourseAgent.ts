@@ -66,6 +66,12 @@ export function useCourseAgent(options: UseCourseAgentOptions) {
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({ error: 'Erreur serveur' }));
+      if (response.status === 504) {
+        throw new Error(
+          errorData.error
+            || 'Délai dépassé (504). La génération Mistral est trop longue — essayez une structure plus petite.'
+        );
+      }
       throw new Error(errorData.error || `Erreur ${response.status}`);
     }
 
