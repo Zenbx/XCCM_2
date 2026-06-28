@@ -47,10 +47,10 @@ export function lookupDbHtmlForContext(
   context: {
     type?: string;
     partTitle?: string;
-    part?: { part_id?: string; part_intro?: string | null };
-    chapter?: { chapter_id?: string; chapter_intro?: string | null };
-    paragraph?: { para_id?: string; para_intro?: string | null };
-    notion?: { notion_id?: string; notion_content?: string };
+    part?: { part_id?: string; part_intro?: string | null } | null;
+    chapter?: { chapter_id?: string; chapter_intro?: string | null } | null;
+    paragraph?: { para_id?: string; para_intro?: string | null } | null;
+    notion?: { notion_id?: string; notion_content?: string | null } | null;
   } | null
 ): string | null {
   if (!context) return null;
