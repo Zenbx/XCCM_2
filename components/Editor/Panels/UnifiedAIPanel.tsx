@@ -205,8 +205,10 @@ const UnifiedAIPanel: React.FC<UnifiedAIPanelProps> = ({
         if (result.aborted) return;
 
         const execSummary = result.execution
-          ? `\n\n✅ **Agent terminé** — ${result.execution.succeeded} action(s) réussie(s)${result.execution.failed ? `, ${result.execution.failed} échec(s)` : ''}.`
-          : '';
+          ? `\n\n${result.execution.failed ? '⚠️' : '✅'} **Agent terminé** — ${result.execution.succeeded} action(s) réussie(s)${result.execution.failed ? `, ${result.execution.failed} échec(s)` : ''}.${result.execution.summaries?.length ? `\n${result.execution.summaries.map(s => `• ${s}`).join('\n')}` : ''}`
+          : (result.actions.length === 0
+            ? '\n\n⚠️ Plan généré mais aucune action exécutable. Réessayez avec « Construis le cours complet ».'
+            : '');
 
         setMessages(prev => prev.map(m =>
           m.id === assistantMessage.id
@@ -214,7 +216,10 @@ const UnifiedAIPanel: React.FC<UnifiedAIPanelProps> = ({
                 ...m,
                 content: (result.text || result.plan || 'Plan exécuté.') + execSummary,
                 plan: result.plan,
-                actions: result.actions.map(a => ({ ...a, status: 'done' as const })),
+                actions: result.actions.map((a, i) => ({
+                  ...a,
+                  status: result.execution && i < result.execution.succeeded ? 'done' as const : result.execution?.failed ? 'error' as const : 'done' as const,
+                })),
                 isActionExecuted: true,
               }
             : m
@@ -222,6 +227,8 @@ const UnifiedAIPanel: React.FC<UnifiedAIPanelProps> = ({
 
         if (result.execution?.succeeded) {
           toast.success(`Cours construit : ${result.execution.succeeded} action(s)`);
+        } else if (result.execution?.failed) {
+          toast.error(result.execution.summaries?.find(s => s.includes('Erreur') || s.includes('Impossible')) || 'Échec de construction du cours');
         }
         return;
       }

@@ -33,24 +33,25 @@ function assertNotAborted(signal?: AbortSignal) {
 }
 
 /** Normalise le payload create_structure (titres AI → format bulk API) */
-function normalizeStructurePayload(data: Record<string, unknown>) {
-  const parts = (data.parts as Array<Record<string, unknown>>) || [];
+function normalizeStructurePayload(data: Record<string, unknown> | undefined | null) {
+  const raw = data && typeof data === 'object' ? data : {};
+  const parts = (raw.parts as Array<Record<string, unknown>>) || [];
   return parts.map((part) => ({
-    title: String(part.title || part.part_title || ''),
+    title: String(part.title || part.part_title || '').trim(),
     intro: String(part.intro || part.part_intro || ''),
     chapters: ((part.chapters as Array<Record<string, unknown>>) || []).map((ch) => ({
-      title: String(ch.title || ch.chapter_title || ''),
+      title: String(ch.title || ch.chapter_title || '').trim(),
       intro: String(ch.intro || ch.chapter_intro || ''),
       paragraphs: ((ch.paragraphs as Array<Record<string, unknown>>) || []).map((para) => ({
-        title: String(para.title || para.para_name || ''),
+        title: String(para.title || para.para_name || '').trim(),
         intro: String(para.intro || para.para_intro || ''),
         notions: ((para.notions as Array<Record<string, unknown>>) || []).map((n) => ({
-          title: String(n.title || n.notion_name || ''),
+          title: String(n.title || n.notion_name || '').trim(),
           content: String(n.content || n.notion_content || '<p>Contenu à compléter.</p>'),
         })),
       })),
     })),
-  }));
+  })).filter((p) => p.title.length >= 3);
 }
 
 export async function executeAIAction(
@@ -65,14 +66,25 @@ export async function executeAIAction(
   switch (action.type) {
     case 'create_structure': {
       onProgress?.({ phase: 'structure', message: 'Création de la structure du cours…' });
-      const parts = normalizeStructurePayload(action.data);
+      const parts = normalizeStructurePayload(action.data as Record<string, unknown>);
+
+      if (parts.length === 0) {
+        throw new Error(
+          'Structure vide reçue de l\'IA. Réessayez ou précisez le sujet du cours.'
+        );
+      }
 
       try {
         const stats = await structureService.bulkCreateStructure(projectName, parts);
+        const total = stats.parts + stats.chapters + stats.paragraphs + stats.notions;
+        if (total === 0 && stats.skipped > 0) {
+          return { summary: `Structure déjà existante (${stats.skipped} élément(s) ignorés)` };
+        }
         return {
           summary: `Structure créée : ${stats.parts} partie(s), ${stats.chapters} chapitre(s), ${stats.paragraphs} paragraphe(s), ${stats.notions} notion(s)`,
         };
-      } catch {
+      } catch (bulkError) {
+        console.warn('[Agent] Bulk import failed, fallback séquentiel:', bulkError);
         // Fallback séquentiel si bulk indisponible
         let createdCount = 0;
         for (let pi = 0; pi < parts.length; pi++) {
@@ -150,6 +162,13 @@ export async function executeAIAction(
               }
             }
           }
+        }
+        if (createdCount === 0) {
+          throw new Error(
+            bulkError instanceof Error
+              ? bulkError.message
+              : 'Impossible de créer la structure du cours'
+          );
         }
         return { summary: `Structure créée (fallback) : ${createdCount} partie(s)` };
       }

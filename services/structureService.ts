@@ -530,7 +530,12 @@ class StructureService {
 
     if (!response.ok) {
       const error = await response.json().catch(() => ({}));
-      throw new Error(error.message || 'Erreur lors de l\'import bulk de la structure');
+      const msg =
+        error.message ||
+        error.error ||
+        (error.errors ? JSON.stringify(error.errors) : null) ||
+        `Erreur bulk structure (${response.status})`;
+      throw new Error(typeof msg === 'string' ? msg : 'Erreur lors de l\'import bulk de la structure');
     }
 
     const result = await response.json();
