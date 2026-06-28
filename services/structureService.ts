@@ -502,10 +502,42 @@ class StructureService {
   }
 
   /**
-   * ✅ DELETE par UUID — Immunisé aux renommages
-   * Utilise /api/projects/[pr_name]/granules/[id]
+   * Import bulk de structure (Agent IA) — 1 appel pour tout l'arbre
    */
-  async deleteGranuleById(
+  async bulkCreateStructure(
+    projectName: string,
+    parts: Array<{
+      title: string;
+      intro?: string;
+      chapters?: Array<{
+        title: string;
+        intro?: string;
+        paragraphs?: Array<{
+          title: string;
+          intro?: string;
+          notions?: Array<{ title: string; content: string }>;
+        }>;
+      }>;
+    }>
+  ): Promise<{ parts: number; chapters: number; paragraphs: number; notions: number; skipped: number }> {
+    const response = await authenticatedFetch(
+      `${API_BASE_URL}/api/projects/${encodeURIComponent(projectName)}/structure/bulk`,
+      {
+        method: 'POST',
+        body: JSON.stringify({ parts }),
+      }
+    );
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(error.message || 'Erreur lors de l\'import bulk de la structure');
+    }
+
+    const result = await response.json();
+    return result.data?.stats ?? result.data ?? { parts: 0, chapters: 0, paragraphs: 0, notions: 0, skipped: 0 };
+  }
+
+  /**
     projectName: string,
     id: string
   ): Promise<void> {

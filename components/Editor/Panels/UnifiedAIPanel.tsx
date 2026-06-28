@@ -20,15 +20,16 @@ import {
   X,
   Copy,
   Check,
-  StopCircle,
-  Square
+  Square,
+  Zap,
+  ListChecks
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/context/AuthContext';
-import { socraticService, SocraticAuditResult } from '@/services/socraticService';
+import { socraticService } from '@/services/socraticService';
 import { authService } from '@/services/authService';
-import { structureService } from '@/services/structureService';
-import { exerciseService } from '@/services/exerciseService';
+import { executeAIAction, type AIAction } from '@/services/courseAgentExecutor';
+import { useCourseAgent, type PanelMode } from '@/hooks/useCourseAgent';
 import toast from 'react-hot-toast';
 
 const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001').replace(/\/$/, '');
@@ -61,14 +62,8 @@ interface ChatMessage {
   role: 'user' | 'assistant' | 'system';
   content: string;
   actions?: AIAction[];
+  plan?: string;
   isActionExecuted?: boolean;
-}
-
-interface AIAction {
-  type: 'create_structure' | 'write_content' | 'create_exercise' | 'suggest_improvements';
-  data: any;
-  status?: 'pending' | 'executing' | 'done' | 'error';
-  error?: string;
 }
 
 const UnifiedAIPanel: React.FC<UnifiedAIPanelProps> = ({
@@ -81,16 +76,29 @@ const UnifiedAIPanel: React.FC<UnifiedAIPanelProps> = ({
 }) => {
   const { isAdmin } = useAuth();
   const [activeTab, setActiveTab] = useState<'chat' | 'audit'>('chat');
+  const [panelMode, setPanelMode] = useState<PanelMode>('chat');
   const [showScores, setShowScores] = useState(true);
   const [input, setInput] = useState('');
   const [isStreaming, setIsStreaming] = useState(false);
+
+  const {
+    isRunning: isAgentRunning,
+    progress: agentProgress,
+    stop: stopAgent,
+    runFullAgent,
+    startAbortController,
+  } = useCourseAgent({
+    project,
+    onStructureChanged,
+    onContentChanged,
+  });
 
   // ═══════ MANUAL CHAT STATE ═══════
   const [messages, setMessages] = useState<ChatMessage[]>([{
     id: 'welcome',
     role: 'assistant',
     content: isAdmin
-      ? "Bonjour ! Je suis votre assistant IA. Je peux vous aider à structurer vos cours, écrire du contenu, générer des exercices ou répondre à vos questions. Essayez : *\"Crée une structure de cours sur...\"*"
+      ? "Bonjour ! Je suis votre assistant IA XCCM. **Mode Chat** : je propose des actions à valider. **Mode Agent** : je construis le cours automatiquement. Essayez : *« Construis un cours complet sur… »*"
       : "Bonjour ! Je suis votre coach pédagogique XCCM. Je vous accompagne dans votre apprentissage via une approche socratique. Que souhaitez-vous approfondir aujourd'hui ?"
   }]);
 
@@ -107,10 +115,11 @@ const UnifiedAIPanel: React.FC<UnifiedAIPanelProps> = ({
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
       abortControllerRef.current = null;
-      setIsStreaming(false);
-      toast.success('Génération arrêtée');
     }
-  }, []);
+    stopAgent();
+    setIsStreaming(false);
+    toast.success('Génération arrêtée');
+  }, [stopAgent]);
 
   // ═══════ COPY MESSAGE ═══════
   const handleCopy = useCallback(async (messageId: string, content: string) => {
@@ -123,9 +132,9 @@ const UnifiedAIPanel: React.FC<UnifiedAIPanelProps> = ({
     }
   }, []);
 
-  // ═══════ MANUAL STREAMING CHAT ═══════
+  // ═══════ CHAT / AGENT ═══════
   const sendChatMessage = useCallback(async (userText: string) => {
-    if (!userText.trim() || isStreaming) return;
+    if (!userText.trim() || isStreaming || isAgentRunning) return;
 
     const userMessage: ChatMessage = {
       id: `user-${Date.now()}`,
@@ -142,31 +151,60 @@ const UnifiedAIPanel: React.FC<UnifiedAIPanelProps> = ({
     setMessages(prev => [...prev, userMessage, assistantMessage]);
     setIsStreaming(true);
 
-    // Determine which endpoint to use
     const isEditorMode = isAdmin && currentContext?.projectName;
-    const endpoint = isEditorMode
-      ? `${API_BASE_URL}/api/ai/editor`
-      : `${API_BASE_URL}/api/ai/socratic`;
+    const useAgent = isEditorMode && panelMode === 'agent';
+
+    const chatHistory = messages.filter(m => m.id !== 'welcome').map(m => ({
+      role: m.role,
+      content: m.content,
+    }));
+
+    const context = {
+      notionContent: editorContent,
+      partTitle: currentContext?.partTitle,
+      chapterTitle: currentContext?.chapterTitle,
+      paraName: currentContext?.paraName,
+      notionName: currentContext?.notionName,
+      projectName: currentContext?.projectName,
+    };
 
     try {
-      abortControllerRef.current = new AbortController();
+      abortControllerRef.current = startAbortController();
 
-      const chatHistory = messages.filter(m => m.id !== 'welcome').map(m => ({
-        role: m.role,
-        content: m.content,
-      }));
-      chatHistory.push({ role: 'user', content: userText.trim() });
+      if (useAgent) {
+        const result = await runFullAgent(userText.trim(), chatHistory, context);
 
-      const body: any = {
-        messages: chatHistory,
-        context: {
-          notionContent: editorContent,
-          partTitle: currentContext?.partTitle,
-          chapterTitle: currentContext?.chapterTitle,
-          paraName: currentContext?.paraName,
-          notionName: currentContext?.notionName,
-          projectName: currentContext?.projectName,
-        },
+        if (result.aborted) return;
+
+        const execSummary = result.execution
+          ? `\n\n✅ **Agent terminé** — ${result.execution.succeeded} action(s) réussie(s)${result.execution.failed ? `, ${result.execution.failed} échec(s)` : ''}.`
+          : '';
+
+        setMessages(prev => prev.map(m =>
+          m.id === assistantMessage.id
+            ? {
+                ...m,
+                content: (result.text || result.plan || 'Plan exécuté.') + execSummary,
+                plan: result.plan,
+                actions: result.actions.map(a => ({ ...a, status: 'done' as const })),
+                isActionExecuted: true,
+              }
+            : m
+        ));
+
+        if (result.execution?.succeeded) {
+          toast.success(`Cours construit : ${result.execution.succeeded} action(s)`);
+        }
+        return;
+      }
+
+      const endpoint = isEditorMode
+        ? `${API_BASE_URL}/api/ai/editor`
+        : `${API_BASE_URL}/api/ai/socratic`;
+
+      const body: Record<string, unknown> = {
+        messages: [...chatHistory, { role: 'user', content: userText.trim() }],
+        context,
       };
 
       const response = await fetch(endpoint, {
@@ -186,7 +224,6 @@ const UnifiedAIPanel: React.FC<UnifiedAIPanelProps> = ({
 
       const contentType = response.headers.get('content-type') || '';
 
-      // ═══ HANDLE JSON RESPONSE (Editor mode with actions) ═══
       if (contentType.includes('application/json')) {
         const data = await response.json();
         const aiContent = data.text || data.message || '';
@@ -197,9 +234,7 @@ const UnifiedAIPanel: React.FC<UnifiedAIPanelProps> = ({
             ? { ...m, content: aiContent, actions: actions.length > 0 ? actions : undefined }
             : m
         ));
-      }
-      // ═══ HANDLE STREAM RESPONSE (Socratic mode) ═══
-      else if (response.body) {
+      } else if (response.body) {
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
         let fullText = '';
@@ -207,30 +242,28 @@ const UnifiedAIPanel: React.FC<UnifiedAIPanelProps> = ({
         while (true) {
           const { done, value } = await reader.read();
           if (done) break;
-
-          const chunk = decoder.decode(value, { stream: true });
-          fullText += chunk;
-
+          fullText += decoder.decode(value, { stream: true });
           setMessages(prev => prev.map(m =>
             m.id === assistantMessage.id ? { ...m, content: fullText } : m
           ));
         }
       }
-    } catch (error: any) {
-      if (error.name === 'AbortError') return;
+    } catch (error: unknown) {
+      if (error instanceof DOMException && error.name === 'AbortError') return;
+      const msg = error instanceof Error ? error.message : 'Erreur inconnue';
       console.error('Chat error:', error);
       setMessages(prev => prev.map(m =>
         m.id === assistantMessage.id
-          ? { ...m, content: `❌ Erreur : ${error.message}. Vérifiez que le serveur est bien démarré.` }
+          ? { ...m, content: `❌ Erreur : ${msg}. Vérifiez que le serveur est bien démarré.` }
           : m
       ));
     } finally {
       setIsStreaming(false);
       abortControllerRef.current = null;
     }
-  }, [messages, isStreaming, isAdmin, currentContext, editorContent]);
+  }, [messages, isStreaming, isAgentRunning, isAdmin, currentContext, editorContent, panelMode, runFullAgent, startAbortController]);
 
-  // ═══════ EXECUTE AI ACTIONS ═══════
+  // ═══════ EXECUTE AI ACTIONS (mode Chat — manuel) ═══════
   const executeAction = useCallback(async (messageId: string, actionIndex: number) => {
     setMessages(prev => prev.map(m => {
       if (m.id !== messageId || !m.actions) return m;
@@ -244,121 +277,33 @@ const UnifiedAIPanel: React.FC<UnifiedAIPanelProps> = ({
       if (!msg?.actions) return;
       const action = msg.actions[actionIndex];
       const projectName = currentContext?.projectName;
-      if (!projectName) throw new Error("Aucun projet actif");
+      if (!projectName) throw new Error('Aucun projet actif');
 
-      switch (action.type) {
-        case 'create_structure': {
-          const { parts } = action.data;
-          for (let pi = 0; pi < parts.length; pi++) {
-            const part = parts[pi];
-            try {
-              await structureService.createPart(projectName, {
-                part_title: part.title,
-                part_number: pi + 1,
-                part_intro: part.intro || '',
-              });
+      await executeAIAction(action, projectName, project, { onContentChanged });
+      onStructureChanged?.();
 
-              if (part.chapters) {
-                for (let ci = 0; ci < part.chapters.length; ci++) {
-                  const ch = part.chapters[ci];
-                  try {
-                    await structureService.createChapter(projectName, part.title, {
-                      chapter_title: ch.title,
-                      chapter_number: ci + 1,
-                      chapter_intro: ch.intro || '',
-                    });
-
-                    if (ch.paragraphs) {
-                      for (let pai = 0; pai < ch.paragraphs.length; pai++) {
-                        const para = ch.paragraphs[pai];
-                        try {
-                          await structureService.createParagraph(projectName, part.title, ch.title, {
-                            para_name: para.title,
-                            para_number: pai + 1,
-                            para_intro: para.intro || '',
-                          });
-
-                          if (para.notions) {
-                            for (let ni = 0; ni < para.notions.length; ni++) {
-                              const notion = para.notions[ni];
-                              try {
-                                await structureService.createNotion(projectName, part.title, ch.title, para.title, {
-                                  notion_name: notion.title,
-                                  notion_content: notion.content || '',
-                                  notion_number: ni + 1,
-                                });
-                              } catch (e) { console.warn('Notion skip:', e); }
-                            }
-                          }
-                        } catch (e) { console.warn('Para skip:', e); }
-                      }
-                    }
-                  } catch (e) { console.warn('Chapter skip:', e); }
-                }
-              }
-            } catch (e) { console.warn('Part skip:', e); }
-          }
-          onStructureChanged?.();
-          toast.success(`Structure créée : ${parts.length} partie(s)`);
-          break;
-        }
-
-        case 'write_content': {
-          const { content, target } = action.data;
-          if (target === 'current' && onContentChanged) {
-            onContentChanged(content);
-            toast.success("Contenu injecté dans l'éditeur");
-          } else if (target === 'notion' && action.data.notionPath) {
-            const p = action.data.notionPath;
-            try {
-              await structureService.updateNotion(
-                projectName, p.partTitle, p.chapterTitle, p.paraName, p.notionName,
-                { notion_content: content }
-              );
-              onStructureChanged?.();
-              toast.success(`Contenu écrit dans : ${p.notionName}`);
-            } catch (e: any) {
-              throw new Error(`Impossible d'écrire dans ${p.notionName}: ${e.message}`);
-            }
-          }
-          break;
-        }
-
-        case 'create_exercise': {
-          const ex = action.data;
-          // Attach project context
-          if (project?.pr_id) ex.project_id = project.pr_id;
-          await exerciseService.createExercise(ex);
-          toast.success(`Exercice créé : ${ex.title}`);
-          break;
-        }
-
-        default:
-          break;
-      }
-
-      // Mark as done
       setMessages(prev => prev.map(m => {
         if (m.id !== messageId || !m.actions) return m;
         const newActions = [...m.actions];
         newActions[actionIndex] = { ...newActions[actionIndex], status: 'done' };
         return { ...m, actions: newActions, isActionExecuted: true };
       }));
-    } catch (error: any) {
-      console.error('Action execution error:', error);
+      toast.success('Action exécutée');
+    } catch (error: unknown) {
+      const errMsg = error instanceof Error ? error.message : 'Erreur';
       setMessages(prev => prev.map(m => {
         if (m.id !== messageId || !m.actions) return m;
         const newActions = [...m.actions];
-        newActions[actionIndex] = { ...newActions[actionIndex], status: 'error', error: error.message };
+        newActions[actionIndex] = { ...newActions[actionIndex], status: 'error', error: errMsg };
         return { ...m, actions: newActions };
       }));
-      toast.error(error.message);
+      toast.error(errMsg);
     }
-  }, [messages, currentContext, onStructureChanged, onContentChanged]);
+  }, [messages, currentContext, onStructureChanged, onContentChanged, project]);
 
   const handleSubmit = async (e?: { preventDefault?: () => void }) => {
     e?.preventDefault?.();
-    if (!input.trim() || isStreaming) return;
+    if (!input.trim() || isStreaming || isAgentRunning) return;
     const currentInput = input;
     setInput('');
     await sendChatMessage(currentInput);
@@ -492,6 +437,49 @@ const UnifiedAIPanel: React.FC<UnifiedAIPanelProps> = ({
         </button>
       </div>
 
+      {/* Mode Chat / Agent (auteurs uniquement) */}
+      {isAdmin && activeTab === 'chat' && (
+        <div className="flex gap-1 mx-4 mt-2 p-0.5 bg-gray-100 dark:bg-gray-800/80 rounded-lg">
+          <button
+            type="button"
+            onClick={() => setPanelMode('chat')}
+            className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-md text-xs font-medium transition-all ${
+              panelMode === 'chat'
+                ? 'bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 shadow-sm'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            <MessageSquare size={14} />
+            Chat
+          </button>
+          <button
+            type="button"
+            onClick={() => setPanelMode('agent')}
+            className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-md text-xs font-medium transition-all ${
+              panelMode === 'agent'
+                ? 'bg-[#99334C] text-white shadow-sm'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            <Zap size={14} />
+            Agent
+          </button>
+        </div>
+      )}
+
+      {/* Progression Agent */}
+      {isAgentRunning && agentProgress && (
+        <div className="mx-4 mt-2 p-3 bg-[#99334C]/5 border border-[#99334C]/20 rounded-xl">
+          <div className="flex items-center gap-2 text-xs font-medium text-[#99334C]">
+            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            {agentProgress.message}
+            {agentProgress.current != null && agentProgress.total != null && (
+              <span className="text-gray-400">({agentProgress.current}/{agentProgress.total})</span>
+            )}
+          </div>
+        </div>
+      )}
+
       <div className="flex-1 min-h-0 relative">
         <AnimatePresence mode="wait">
           {activeTab === 'chat' ? (
@@ -526,12 +514,19 @@ const UnifiedAIPanel: React.FC<UnifiedAIPanelProps> = ({
                           </button>
                         )}
                       </div>
-                      {/* AI Action Buttons */}
-                      {msg.actions && msg.actions.length > 0 && (
+                      {/* Actions manuelles (mode Chat) */}
+                      {panelMode === 'chat' && msg.actions && msg.actions.length > 0 && (
                         <div className="flex flex-wrap gap-2 mt-1">
                           {msg.actions.map((action, i) => (
                             <ActionButton key={i} action={action} messageId={msg.id} index={i} />
                           ))}
+                        </div>
+                      )}
+                      {/* Badge actions exécutées (mode Agent) */}
+                      {panelMode === 'agent' && msg.actions && msg.actions.length > 0 && msg.isActionExecuted && (
+                        <div className="flex items-center gap-1.5 px-3 py-1.5 bg-green-50 text-green-700 rounded-lg text-xs font-medium">
+                          <ListChecks className="w-3.5 h-3.5" />
+                          {msg.actions.length} action(s) exécutée(s) par l&apos;agent
                         </div>
                       )}
                     </div>
@@ -556,12 +551,22 @@ const UnifiedAIPanel: React.FC<UnifiedAIPanelProps> = ({
               <div className="flex flex-wrap gap-2 mt-4">
                 {isAdmin ? (
                   <>
-                    <button
-                      onClick={() => handleSendRequest("Crée une structure de cours complète sur le sujet de la notion actuelle")}
-                      className="text-[10px] px-2 py-1 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-full hover:border-[#99334C] transition-colors"
-                    >
-                      🏗️ Créer structure
-                    </button>
+                    {panelMode === 'agent' && (
+                      <button
+                        onClick={() => handleSendRequest("Construis un cours complet sur le sujet du projet : 2 à 3 parties, contenu pédagogique dans chaque notion, et 1 QCM par chapitre")}
+                        className="text-[10px] px-2 py-1 bg-[#99334C]/10 border border-[#99334C]/30 text-[#99334C] rounded-full hover:bg-[#99334C] hover:text-white transition-colors font-bold"
+                      >
+                        🤖 Construire le cours
+                      </button>
+                    )}
+                    {panelMode === 'chat' && (
+                      <button
+                        onClick={() => handleSendRequest("Crée une structure de cours complète sur le sujet de la notion actuelle")}
+                        className="text-[10px] px-2 py-1 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-full hover:border-[#99334C] transition-colors"
+                      >
+                        🏗️ Créer structure
+                      </button>
+                    )}
                     <button
                       onClick={() => handleSendRequest("Génère un QCM de 4 questions sur cette notion")}
                       className="text-[10px] px-2 py-1 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-full hover:border-[#99334C] transition-colors"
@@ -611,12 +616,16 @@ const UnifiedAIPanel: React.FC<UnifiedAIPanelProps> = ({
                   type="text"
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
-                  placeholder={isAdmin ? "Demandez à l'IA de créer, écrire, générer..." : "Posez une question à l'IA..."}
+                  placeholder={isAdmin
+                    ? (panelMode === 'agent'
+                      ? "Décrivez le cours à construire (l'agent exécutera automatiquement)…"
+                      : "Demandez à l'IA de créer, écrire, générer…")
+                    : "Posez une question à l'IA…"}
                   className="w-full pl-4 pr-20 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-[#99334C] outline-none text-sm transition-all shadow-sm"
-                  disabled={isStreaming}
+                  disabled={isStreaming || isAgentRunning}
                 />
                 <div className="absolute right-2 top-2 flex items-center gap-1">
-                  {isStreaming ? (
+                  {isStreaming || isAgentRunning ? (
                     <button
                       type="button"
                       onClick={handleStop}

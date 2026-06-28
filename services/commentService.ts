@@ -1,6 +1,6 @@
 // services/commentService.ts
 
-import { authenticatedFetch } from '@/lib/apiHelper';
+import { authenticatedFetch, getAuthToken } from '@/lib/apiHelper';
 
 const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001').trim();
 
@@ -19,6 +19,8 @@ export interface Comment {
 
 class CommentService {
     async getComments(projectName: string): Promise<Comment[]> {
+        if (!getAuthToken()) throw new Error('Non authentifié');
+
         const response = await authenticatedFetch(
             `${API_BASE_URL}/api/projects/${encodeURIComponent(projectName)}/comments`
         );
@@ -33,6 +35,8 @@ class CommentService {
     }
 
     async addComment(projectName: string, content: string): Promise<Comment> {
+        if (!getAuthToken()) throw new Error('Non authentifié');
+
         const response = await authenticatedFetch(
             `${API_BASE_URL}/api/projects/${encodeURIComponent(projectName)}/comments`,
             {
@@ -51,6 +55,8 @@ class CommentService {
     }
 
     async deleteComment(projectName: string, commentId: string): Promise<void> {
+        if (!getAuthToken()) throw new Error('Non authentifié');
+
         const response = await authenticatedFetch(
             `${API_BASE_URL}/api/projects/${encodeURIComponent(projectName)}/comments/${commentId}`,
             { method: 'DELETE' }

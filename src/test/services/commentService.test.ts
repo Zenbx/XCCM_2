@@ -11,8 +11,8 @@ function setCookie(token: string) {
   });
 }
 
-function makeRes(body: unknown, ok = true) {
-  return Promise.resolve({ ok, json: vi.fn().mockResolvedValue(body) });
+function makeRes(body: unknown, status = 200) {
+  return Promise.resolve(new Response(JSON.stringify(body), { status }));
 }
 
 beforeEach(() => {
@@ -52,8 +52,8 @@ describe('commentService.getComments', () => {
   });
 
   it('lève une erreur si response not ok', async () => {
-    mockFetch.mockReturnValue(makeRes({}, false));
-    await expect(commentService.getComments('p')).rejects.toThrow('Erreur recup commentaires');
+    mockFetch.mockReturnValue(makeRes({}, 500));
+    await expect(commentService.getComments('p')).rejects.toThrow('Erreur récupération commentaires');
   });
 });
 
@@ -79,7 +79,7 @@ describe('commentService.addComment', () => {
   });
 
   it('lève une erreur si response not ok', async () => {
-    mockFetch.mockReturnValue(makeRes({}, false));
+    mockFetch.mockReturnValue(makeRes({}, 500));
     await expect(commentService.addComment('p', 'x')).rejects.toThrow('Erreur ajout commentaire');
   });
 });
@@ -104,7 +104,7 @@ describe('commentService.deleteComment', () => {
   });
 
   it('lève une erreur si response not ok', async () => {
-    mockFetch.mockReturnValue(makeRes({}, false));
+    mockFetch.mockReturnValue(makeRes({}, 500));
     await expect(commentService.deleteComment('p', 'c1')).rejects.toThrow('Erreur suppression commentaire');
   });
 });
