@@ -55,6 +55,7 @@ interface UnifiedAIPanelProps {
   };
   onStructureChanged?: () => void; // Callback pour rafraîchir la structure après action IA
   onContentChanged?: (content: string) => void; // Callback pour mettre à jour le contenu éditeur
+  onAgentRunningChange?: (running: boolean) => void;
   project?: any;
   /** Nom du projet (URL) — disponible même sans granule sélectionné */
   authorProjectName?: string;
@@ -75,6 +76,7 @@ const UnifiedAIPanel: React.FC<UnifiedAIPanelProps> = ({
   socraticData,
   onStructureChanged,
   onContentChanged,
+  onAgentRunningChange,
   project,
   authorProjectName,
 }) => {
@@ -107,6 +109,7 @@ const UnifiedAIPanel: React.FC<UnifiedAIPanelProps> = ({
     project,
     onStructureChanged,
     onContentChanged,
+    onAgentRunningChange,
   });
 
   // ═══════ MANUAL CHAT STATE ═══════
@@ -133,6 +136,7 @@ const UnifiedAIPanel: React.FC<UnifiedAIPanelProps> = ({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
   const streamingMessageIdRef = useRef<string | null>(null);
+  const agentLiveMessageIdRef = useRef<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -178,6 +182,7 @@ const UnifiedAIPanel: React.FC<UnifiedAIPanelProps> = ({
     };
 
     streamingMessageIdRef.current = assistantMessage.id;
+    agentLiveMessageIdRef.current = assistantMessage.id;
     setMessages(prev => [...prev, userMessage, assistantMessage]);
     setIsStreaming(true);
 
@@ -312,6 +317,7 @@ const UnifiedAIPanel: React.FC<UnifiedAIPanelProps> = ({
     } finally {
       setIsStreaming(false);
       streamingMessageIdRef.current = null;
+      agentLiveMessageIdRef.current = null;
       abortControllerRef.current = null;
     }
   }, [messages, isStreaming, isAgentRunning, isAuthorMode, resolvedProjectName, currentContext, editorContent, panelMode, runFullAgent, startAbortController]);
@@ -552,7 +558,13 @@ const UnifiedAIPanel: React.FC<UnifiedAIPanelProps> = ({
                         }`}>
                         {msg.content
                           ? renderContent(msg.content)
-                          : (isStreaming && msg.id === streamingMessageIdRef.current ? <TypingDots /> : null)}
+                          : ((isStreaming || isAgentRunning) && msg.id === streamingMessageIdRef.current ? <TypingDots /> : null)}
+                        {(isAgentRunning && msg.id === agentLiveMessageIdRef.current) && (
+                          <div className="flex items-center gap-2 mt-2 pt-2 border-t border-gray-100 dark:border-gray-700 text-xs font-medium text-[#99334C]">
+                            <Loader2 className="w-3.5 h-3.5 animate-spin flex-shrink-0" />
+                            <span>Agent en cours…</span>
+                          </div>
+                        )}
                         {/* Copy button */}
                         {msg.role === 'assistant' && msg.content && msg.id !== 'welcome' && (
                           <button

@@ -42,6 +42,7 @@ import { granuleRevisionService, BlameMap } from '@/services/granuleRevisionServ
 import '../../styles/view-transitions.css';
 import { useOnboarding } from '@/context/OnboardingContext';
 import { editorTour } from '@/data/tours/editor.tour';
+import { hasSubstantialHtml, isEmptyEditorHtml, lookupDbHtmlForContext } from '@/lib/editorContentUtils';
 
 const XCCM2Editor = ({ isEmbedded = false, guestMode = false }: { isEmbedded?: boolean; guestMode?: boolean }) => {
   const searchParams = useSearchParams();
@@ -524,6 +525,12 @@ const XCCM2Editor = ({ isEmbedded = false, guestMode = false }: { isEmbedded?: b
   const lastSaveTimestamp = useRef<number>(0); // ✅ Prevent transition race conditions
   const isSavingInProgress = useRef<boolean>(false); // ✅ Prevent save concurrency
   const contextVersionRef = useRef<number>(0); // ✅ Prevent stale saves during rapid navigation
+  const agentSessionActiveRef = useRef<boolean>(false);
+  const [collabSessionKey, setCollabSessionKey] = useState(0);
+
+  const handleAgentRunningChange = useCallback((running: boolean) => {
+    agentSessionActiveRef.current = running;
+  }, []);
 
   const editorRef = useRef<HTMLDivElement>(null);
 
@@ -930,6 +937,18 @@ const XCCM2Editor = ({ isEmbedded = false, guestMode = false }: { isEmbedded?: b
         return;
       }
 
+      if (isAuto && agentSessionActiveRef.current) {
+        console.log('[Save] Skip auto-save: agent en cours');
+        return;
+      }
+
+      const dbHtml = lookupDbHtmlForContext(structure, currentContext);
+      if (isAuto && isEmptyEditorHtml(editorContent) && hasSubstantialHtml(dbHtml)) {
+        console.log('[Save] Skip auto-save: éditeur vide, contenu en base préservé');
+        setHasUnsavedChanges(false);
+        return;
+      }
+
       if (currentContext.type === 'notion' && currentContext.notion?.notion_id) {
         console.log(`[Save] Updating Notion by UUID: ${currentContext.notion.notion_id}`);
         await structureService.updateGranuleById(projectName, currentContext.notion.notion_id, { notion_content: editorContent });
@@ -1117,6 +1136,7 @@ const XCCM2Editor = ({ isEmbedded = false, guestMode = false }: { isEmbedded?: b
 
   // AUTO-SAVE: Debounced automatic save every 5 seconds of inactivity
   useEffect(() => {
+    if (agentSessionActiveRef.current) return;
     if (hasUnsavedChanges && !isSaving && !isImporting) {
       const timer = setTimeout(() => {
         console.log("Auto-saving...");
@@ -1270,6 +1290,7 @@ const XCCM2Editor = ({ isEmbedded = false, guestMode = false }: { isEmbedded?: b
                     });
                     setEditorContent(ctx.notion.notion_content || '');
                     setHasUnsavedChanges(false);
+                    setCollabSessionKey((k) => k + 1);
                     setIsMobileTOCOpen(false); // ✅ Auto-close on mobile
                   };
                   // @ts-ignore
@@ -1540,11 +1561,15 @@ const XCCM2Editor = ({ isEmbedded = false, guestMode = false }: { isEmbedded?: b
                 </div>
               )}
               <EditorArea
-                key={collaborationData ? collaborationData.documentId : currentContext?.type + "-" + ((currentContext as any)?.[(currentContext?.type || '') + 'Id'] || 'no-id')}
+                key={`${collaborationData ? collaborationData.documentId : currentContext?.type + "-" + ((currentContext as any)?.[(currentContext?.type || '') + 'Id'] || 'no-id')}-${collabSessionKey}`}
                 content={editorContent}
                 textFormat={textFormat}
                 onChange={(val) => {
                   setEditorContent(val);
+                  const dbHtml = lookupDbHtmlForContext(structure, currentContext);
+                  if (isEmptyEditorHtml(val) && hasSubstantialHtml(dbHtml)) {
+                    return;
+                  }
                   setHasUnsavedChanges(true);
                 }}
                 onEditorReady={setTiptapEditor}
@@ -1629,6 +1654,7 @@ const XCCM2Editor = ({ isEmbedded = false, guestMode = false }: { isEmbedded?: b
           }}
           editorContent={editorContent}
           onStructureChanged={() => loadProject(true)}
+          onAgentRunningChange={handleAgentRunningChange}
           onContentChanged={(content: string) => {
             setEditorContent(content);
             setHasUnsavedChanges(true);
@@ -1711,11 +1737,46 @@ const XCCM2Editor = ({ isEmbedded = false, guestMode = false }: { isEmbedded?: b
           notionId={currentContext.notion.notion_id}
           notionName={currentContext.notion.notion_name}
           onClose={() => setShowHistoryPanel(false)}
-          onRestore={(content) => {
-            setEditorContent(content);
-            setHasUnsavedChanges(true);
-            setShowHistoryPanel(false);
-            toast.success('Contenu restauré — pensez à sauvegarder');
+          onRestore={async (content) => {
+            if (!projectName || !currentContext.notion?.notion_id) return;
+            try {
+              await structureService.updateGranuleById(
+                projectName,
+                currentContext.notion.notion_id,
+                { notion_content: content }
+              );
+              setEditorContent(content);
+              setHasUnsavedChanges(false);
+              lastSaveTimestamp.current = Date.now();
+              setCollabSessionKey((k) => k + 1);
+              setStructure((prev) => prev.map((part) => ({
+                ...part,
+                chapters: part.chapters?.map((chapter) => ({
+                  ...chapter,
+                  paragraphs: chapter.paragraphs?.map((para) => ({
+                    ...para,
+                    notions: para.notions?.map((notion) =>
+                      notion.notion_id === currentContext.notion!.notion_id
+                        ? { ...notion, notion_content: content }
+                        : notion
+                    ),
+                  })),
+                })),
+              })));
+              setCurrentContext((prev) => prev && prev.notion
+                ? {
+                    ...prev,
+                    notion: { ...prev.notion, notion_content: content },
+                  }
+                : prev);
+              setShowHistoryPanel(false);
+              toast.success('Version restaurée');
+              if (projectName && !guestMode) {
+                granuleRevisionService.getBlame(projectName).then(setBlameMap).catch(() => {});
+              }
+            } catch (err: unknown) {
+              toast.error(err instanceof Error ? err.message : 'Échec de la restauration');
+            }
           }}
         />
       )}

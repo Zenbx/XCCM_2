@@ -31,6 +31,7 @@ export interface UseCourseAgentOptions {
   project?: { pr_id?: string };
   onStructureChanged?: () => void;
   onContentChanged?: (content: string) => void;
+  onAgentRunningChange?: (running: boolean) => void;
 }
 
 export interface RunFullAgentOptions {
@@ -39,7 +40,7 @@ export interface RunFullAgentOptions {
 }
 
 export function useCourseAgent(options: UseCourseAgentOptions) {
-  const { project, onStructureChanged, onContentChanged } = options;
+  const { project, onStructureChanged, onContentChanged, onAgentRunningChange } = options;
 
   const [isRunning, setIsRunning] = useState(false);
   const [progress, setProgress] = useState<AgentProgress | null>(null);
@@ -155,6 +156,7 @@ export function useCourseAgent(options: UseCourseAgentOptions) {
     const { onLiveMessage } = agentOptions;
     abortRef.current = new AbortController();
     setIsRunning(true);
+    onAgentRunningChange?.(true);
     stepsRef.current = [];
 
     pushLiveStep('⏳ Analyse de votre demande…', onLiveMessage);
@@ -212,9 +214,10 @@ export function useCourseAgent(options: UseCourseAgentOptions) {
       throw error;
     } finally {
       setIsRunning(false);
+      onAgentRunningChange?.(false);
       abortRef.current = null;
     }
-  }, [runAgent, executeActions, pushLiveStep]);
+  }, [runAgent, executeActions, pushLiveStep, onAgentRunningChange]);
 
   return {
     isRunning,

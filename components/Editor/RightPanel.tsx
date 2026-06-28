@@ -51,6 +51,7 @@ const RightPanel = ({
   editorContent,
   onStructureChanged,
   onContentChanged,
+  onAgentRunningChange,
   exerciseRefreshKey,
   authorProjectName,
 }: any) => {
@@ -192,6 +193,7 @@ const RightPanel = ({
                   socraticData={socraticData}
                   onStructureChanged={onStructureChanged}
                   onContentChanged={onContentChanged}
+                  onAgentRunningChange={onAgentRunningChange}
                   project={project}
                   authorProjectName={authorProjectName || project?.pr_name}
                 />
