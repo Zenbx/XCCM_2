@@ -74,7 +74,10 @@ const UnifiedAIPanel: React.FC<UnifiedAIPanelProps> = ({
   onContentChanged,
   project,
 }) => {
-  const { isAdmin } = useAuth();
+  const { isAuthenticated } = useAuth();
+  // Mode auteur = utilisateur connecté dans l'éditeur avec un projet ouvert
+  // (≠ isAdmin qui est le rôle plateforme admin uniquement)
+  const isAuthorMode = isAuthenticated && !!currentContext?.projectName;
   const [activeTab, setActiveTab] = useState<'chat' | 'audit'>('chat');
   const [panelMode, setPanelMode] = useState<PanelMode>('chat');
   const [showScores, setShowScores] = useState(true);
@@ -97,7 +100,7 @@ const UnifiedAIPanel: React.FC<UnifiedAIPanelProps> = ({
   const [messages, setMessages] = useState<ChatMessage[]>([{
     id: 'welcome',
     role: 'assistant',
-    content: isAdmin
+    content: isAuthorMode
       ? "Bonjour ! Je suis votre assistant IA XCCM. **Mode Chat** : je propose des actions à valider. **Mode Agent** : je construis le cours automatiquement. Essayez : *« Construis un cours complet sur… »*"
       : "Bonjour ! Je suis votre coach pédagogique XCCM. Je vous accompagne dans votre apprentissage via une approche socratique. Que souhaitez-vous approfondir aujourd'hui ?"
   }]);
@@ -151,7 +154,7 @@ const UnifiedAIPanel: React.FC<UnifiedAIPanelProps> = ({
     setMessages(prev => [...prev, userMessage, assistantMessage]);
     setIsStreaming(true);
 
-    const isEditorMode = isAdmin && currentContext?.projectName;
+    const isEditorMode = isAuthorMode;
     const useAgent = isEditorMode && panelMode === 'agent';
 
     const chatHistory = messages.filter(m => m.id !== 'welcome').map(m => ({
@@ -261,7 +264,7 @@ const UnifiedAIPanel: React.FC<UnifiedAIPanelProps> = ({
       setIsStreaming(false);
       abortControllerRef.current = null;
     }
-  }, [messages, isStreaming, isAgentRunning, isAdmin, currentContext, editorContent, panelMode, runFullAgent, startAbortController]);
+  }, [messages, isStreaming, isAgentRunning, isAuthorMode, currentContext, editorContent, panelMode, runFullAgent, startAbortController]);
 
   // ═══════ EXECUTE AI ACTIONS (mode Chat — manuel) ═══════
   const executeAction = useCallback(async (messageId: string, actionIndex: number) => {
@@ -423,7 +426,7 @@ const UnifiedAIPanel: React.FC<UnifiedAIPanelProps> = ({
             }`}
         >
           <MessageSquare size={16} />
-          Chat {isAdmin && '+ IA'}
+          Chat {isAuthorMode && '+ IA'}
         </button>
         <button
           onClick={() => setActiveTab('audit')}
@@ -438,7 +441,7 @@ const UnifiedAIPanel: React.FC<UnifiedAIPanelProps> = ({
       </div>
 
       {/* Mode Chat / Agent (auteurs uniquement) */}
-      {isAdmin && activeTab === 'chat' && (
+      {isAuthorMode && activeTab === 'chat' && (
         <div className="flex gap-1 mx-4 mt-2 p-0.5 bg-gray-100 dark:bg-gray-800/80 rounded-lg">
           <button
             type="button"
@@ -549,7 +552,7 @@ const UnifiedAIPanel: React.FC<UnifiedAIPanelProps> = ({
 
               {/* Suggestion chips */}
               <div className="flex flex-wrap gap-2 mt-4">
-                {isAdmin ? (
+                {isAuthorMode ? (
                   <>
                     {panelMode === 'agent' && (
                       <button
@@ -616,7 +619,7 @@ const UnifiedAIPanel: React.FC<UnifiedAIPanelProps> = ({
                   type="text"
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
-                  placeholder={isAdmin
+                  placeholder={isAuthorMode
                     ? (panelMode === 'agent'
                       ? "Décrivez le cours à construire (l'agent exécutera automatiquement)…"
                       : "Demandez à l'IA de créer, écrire, générer…")
