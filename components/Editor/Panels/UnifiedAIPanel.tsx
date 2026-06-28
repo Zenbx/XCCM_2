@@ -55,6 +55,8 @@ interface UnifiedAIPanelProps {
   onStructureChanged?: () => void; // Callback pour rafraîchir la structure après action IA
   onContentChanged?: (content: string) => void; // Callback pour mettre à jour le contenu éditeur
   project?: any;
+  /** Nom du projet (URL) — disponible même sans granule sélectionné */
+  authorProjectName?: string;
 }
 
 interface ChatMessage {
@@ -73,11 +75,22 @@ const UnifiedAIPanel: React.FC<UnifiedAIPanelProps> = ({
   onStructureChanged,
   onContentChanged,
   project,
+  authorProjectName,
 }) => {
   const { isAuthenticated } = useAuth();
-  // Mode auteur = utilisateur connecté dans l'éditeur avec un projet ouvert
-  // (≠ isAdmin qui est le rôle plateforme admin uniquement)
-  const isAuthorMode = isAuthenticated && !!currentContext?.projectName;
+
+  // Projet résolu : URL > projectData > granule sélectionné
+  const resolvedProjectName =
+    authorProjectName ||
+    project?.pr_name ||
+    currentContext?.projectName ||
+    '';
+
+  // Panneau monté uniquement dans l'éditeur auteur → toujours mode auteur si projet ou session
+  const isAuthorMode =
+    !!resolvedProjectName ||
+    isAuthenticated ||
+    !!authService.getAuthToken();
   const [activeTab, setActiveTab] = useState<'chat' | 'audit'>('chat');
   const [panelMode, setPanelMode] = useState<PanelMode>('chat');
   const [showScores, setShowScores] = useState(true);
@@ -97,13 +110,25 @@ const UnifiedAIPanel: React.FC<UnifiedAIPanelProps> = ({
   });
 
   // ═══════ MANUAL CHAT STATE ═══════
+  const authorWelcome =
+    "Bonjour ! Je suis votre assistant IA XCCM. **Mode Chat** : je propose des actions à valider. **Mode Agent** : je construis le cours automatiquement. Essayez : *« Construis un cours complet sur… »*";
+  const studentWelcome =
+    "Bonjour ! Je suis votre coach pédagogique XCCM. Je vous accompagne dans votre apprentissage via une approche socratique. Que souhaitez-vous approfondir aujourd'hui ?";
+
   const [messages, setMessages] = useState<ChatMessage[]>([{
     id: 'welcome',
     role: 'assistant',
-    content: isAuthorMode
-      ? "Bonjour ! Je suis votre assistant IA XCCM. **Mode Chat** : je propose des actions à valider. **Mode Agent** : je construis le cours automatiquement. Essayez : *« Construis un cours complet sur… »*"
-      : "Bonjour ! Je suis votre coach pédagogique XCCM. Je vous accompagne dans votre apprentissage via une approche socratique. Que souhaitez-vous approfondir aujourd'hui ?"
+    content: authorWelcome,
   }]);
+
+  // Met à jour le message d'accueil si le mode auteur devient actif (ex. chargement projet)
+  useEffect(() => {
+    setMessages(prev => prev.map(m =>
+      m.id === 'welcome'
+        ? { ...m, content: isAuthorMode ? authorWelcome : studentWelcome }
+        : m
+    ));
+  }, [isAuthorMode]);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -154,8 +179,8 @@ const UnifiedAIPanel: React.FC<UnifiedAIPanelProps> = ({
     setMessages(prev => [...prev, userMessage, assistantMessage]);
     setIsStreaming(true);
 
-    const isEditorMode = isAuthorMode;
-    const useAgent = isEditorMode && panelMode === 'agent';
+    const isEditorMode = true; // UnifiedAIPanel = éditeur auteur uniquement (jamais tuteur étudiant)
+    const useAgent = panelMode === 'agent' && !!resolvedProjectName;
 
     const chatHistory = messages.filter(m => m.id !== 'welcome').map(m => ({
       role: m.role,
@@ -168,7 +193,7 @@ const UnifiedAIPanel: React.FC<UnifiedAIPanelProps> = ({
       chapterTitle: currentContext?.chapterTitle,
       paraName: currentContext?.paraName,
       notionName: currentContext?.notionName,
-      projectName: currentContext?.projectName,
+      projectName: resolvedProjectName || currentContext?.projectName,
     };
 
     try {
@@ -264,7 +289,7 @@ const UnifiedAIPanel: React.FC<UnifiedAIPanelProps> = ({
       setIsStreaming(false);
       abortControllerRef.current = null;
     }
-  }, [messages, isStreaming, isAgentRunning, isAuthorMode, currentContext, editorContent, panelMode, runFullAgent, startAbortController]);
+  }, [messages, isStreaming, isAgentRunning, isAuthorMode, resolvedProjectName, currentContext, editorContent, panelMode, runFullAgent, startAbortController]);
 
   // ═══════ EXECUTE AI ACTIONS (mode Chat — manuel) ═══════
   const executeAction = useCallback(async (messageId: string, actionIndex: number) => {
@@ -279,7 +304,7 @@ const UnifiedAIPanel: React.FC<UnifiedAIPanelProps> = ({
       const msg = messages.find(m => m.id === messageId);
       if (!msg?.actions) return;
       const action = msg.actions[actionIndex];
-      const projectName = currentContext?.projectName;
+      const projectName = resolvedProjectName || currentContext?.projectName;
       if (!projectName) throw new Error('Aucun projet actif');
 
       await executeAIAction(action, projectName, project, { onContentChanged });
@@ -302,7 +327,7 @@ const UnifiedAIPanel: React.FC<UnifiedAIPanelProps> = ({
       }));
       toast.error(errMsg);
     }
-  }, [messages, currentContext, onStructureChanged, onContentChanged, project]);
+  }, [messages, resolvedProjectName, currentContext, onStructureChanged, onContentChanged, project]);
 
   const handleSubmit = async (e?: { preventDefault?: () => void }) => {
     e?.preventDefault?.();

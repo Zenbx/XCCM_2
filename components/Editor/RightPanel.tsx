@@ -52,6 +52,7 @@ const RightPanel = ({
   onStructureChanged,
   onContentChanged,
   exerciseRefreshKey,
+  authorProjectName,
 }: any) => {
   const [isExpanded, setIsExpanded] = useState(false);
 
@@ -192,6 +193,7 @@ const RightPanel = ({
                   onStructureChanged={onStructureChanged}
                   onContentChanged={onContentChanged}
                   project={project}
+                  authorProjectName={authorProjectName || project?.pr_name}
                 />
               )}
             </div>

@@ -1582,6 +1582,7 @@ const XCCM2Editor = ({ isEmbedded = false, guestMode = false }: { isEmbedded?: b
         <RightPanel
           activePanel={rightPanel}
           exerciseRefreshKey={exerciseRefreshKey}
+          authorProjectName={projectName || projectData?.pr_name || ''}
           onToggle={(id: string) => {
             setRightPanel(prev => prev === id ? null : id);
           }}
