@@ -6,7 +6,13 @@ import {
   AIAction,
   AgentProgress,
   executeAllActions,
+  normalizeStructurePayload,
 } from '@/services/courseAgentExecutor';
+import {
+  buildStructurePreviewSteps,
+  extractStructureParts,
+  formatAgentLiveMessage,
+} from '@/lib/agentUxHelpers';
 
 const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001').replace(/\/$/, '');
 
@@ -27,12 +33,33 @@ export interface UseCourseAgentOptions {
   onContentChanged?: (content: string) => void;
 }
 
+export interface RunFullAgentOptions {
+  /** Met à jour le contenu de la bulle assistant en direct */
+  onLiveMessage?: (content: string) => void;
+}
+
 export function useCourseAgent(options: UseCourseAgentOptions) {
   const { project, onStructureChanged, onContentChanged } = options;
 
   const [isRunning, setIsRunning] = useState(false);
   const [progress, setProgress] = useState<AgentProgress | null>(null);
   const abortRef = useRef<AbortController | null>(null);
+  const stepsRef = useRef<string[]>([]);
+
+  const pushLiveStep = useCallback((
+    line: string,
+    onLiveMessage?: (content: string) => void,
+    replaceLast = false
+  ) => {
+    if (replaceLast && stepsRef.current.length > 0) {
+      stepsRef.current[stepsRef.current.length - 1] = line;
+    } else {
+      stepsRef.current.push(line);
+    }
+    const content = formatAgentLiveMessage(stepsRef.current);
+    setProgress({ phase: 'planning', message: line, steps: [...stepsRef.current] });
+    onLiveMessage?.(content);
+  }, []);
 
   const stop = useCallback(() => {
     abortRef.current?.abort();
@@ -85,12 +112,12 @@ export function useCourseAgent(options: UseCourseAgentOptions) {
 
   const executeActions = useCallback(async (
     actions: AIAction[],
-    projectName: string
+    projectName: string,
+    onLiveMessage?: (content: string) => void
   ) => {
     if (!actions.length) return { succeeded: 0, failed: 0, summaries: [] as string[] };
 
     setIsRunning(true);
-    setProgress({ phase: 'structure', message: 'Exécution des actions…' });
 
     try {
       const result = await executeAllActions(
@@ -98,7 +125,15 @@ export function useCourseAgent(options: UseCourseAgentOptions) {
         projectName,
         project,
         {
-          onProgress: setProgress,
+          onProgress: (p) => {
+            setProgress(p);
+            if (p.steps?.length) {
+              stepsRef.current = p.steps;
+              onLiveMessage?.(formatAgentLiveMessage(p.steps));
+            } else if (p.message) {
+              pushLiveStep(p.message, onLiveMessage);
+            }
+          },
           onContentChanged,
           signal: abortRef.current?.signal,
         }
@@ -109,44 +144,77 @@ export function useCourseAgent(options: UseCourseAgentOptions) {
     } finally {
       setIsRunning(false);
     }
-  }, [project, onStructureChanged, onContentChanged]);
+  }, [project, onStructureChanged, onContentChanged, pushLiveStep]);
 
   const runFullAgent = useCallback(async (
     userPrompt: string,
     chatHistory: Array<{ role: string; content: string }>,
-    context: AgentContext
+    context: AgentContext,
+    agentOptions: RunFullAgentOptions = {}
   ) => {
+    const { onLiveMessage } = agentOptions;
     abortRef.current = new AbortController();
     setIsRunning(true);
-    setProgress({ phase: 'planning', message: 'Planification du cours…' });
+    stepsRef.current = [];
+
+    pushLiveStep('⏳ Analyse de votre demande…', onLiveMessage);
 
     try {
+      pushLiveStep('⏳ Génération de la structure avec Mistral (parties, chapitres, intros, contenus)…', onLiveMessage, true);
+
       const { text, plan, actions } = await runAgent(userPrompt, chatHistory, context, 'agent');
 
+      pushLiveStep('✅ Réponse Mistral reçue', onLiveMessage);
+
       if (!actions.length) {
-        setProgress({ phase: 'done', message: 'Aucune action à exécuter' });
+        pushLiveStep('⚠️ Aucune structure générée — précisez le sujet du cours', onLiveMessage);
         return { text, plan, actions, execution: null };
+      }
+
+      const structureAction = actions.find((a) => a.type === 'create_structure');
+      if (structureAction) {
+        const parts = extractStructureParts(structureAction.data as Record<string, unknown>);
+        const previewSteps = buildStructurePreviewSteps(parts);
+        for (const line of previewSteps) {
+          pushLiveStep(line, onLiveMessage);
+        }
+      } else {
+        const normalized = normalizeStructurePayload(
+          actions[0]?.data as Record<string, unknown>
+        );
+        if (normalized.length) {
+          for (const line of buildStructurePreviewSteps(normalized)) {
+            pushLiveStep(line, onLiveMessage);
+          }
+        }
       }
 
       const projectName = context.projectName;
       if (!projectName) throw new Error('Aucun projet actif');
 
-      const execution = await executeActions(actions, projectName);
+      pushLiveStep('⏳ Injection dans le projet…', onLiveMessage);
+
+      const execution = await executeActions(actions, projectName, onLiveMessage);
+
+      pushLiveStep(
+        `✅ **Terminé** — ${execution.succeeded} action(s) réussie(s)${execution.failed ? `, ${execution.failed} échec(s)` : ''}`,
+        onLiveMessage
+      );
+
       return { text, plan, actions, execution };
     } catch (error: unknown) {
       if (error instanceof DOMException && error.name === 'AbortError') {
         return { text: '', actions: [], execution: null, aborted: true };
       }
-      setProgress({
-        phase: 'error',
-        message: error instanceof Error ? error.message : 'Erreur agent',
-      });
+      const msg = error instanceof Error ? error.message : 'Erreur agent';
+      pushLiveStep(`❌ ${msg}`, onLiveMessage);
+      setProgress({ phase: 'error', message: msg });
       throw error;
     } finally {
       setIsRunning(false);
       abortRef.current = null;
     }
-  }, [runAgent, executeActions]);
+  }, [runAgent, executeActions, pushLiveStep]);
 
   return {
     isRunning,

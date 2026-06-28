@@ -18,6 +18,8 @@ export interface AgentProgress {
   message: string;
   current?: number;
   total?: number;
+  /** Journal cumulatif affiché dans le chat */
+  steps?: string[];
 }
 
 export interface ExecuteCallbacks {
@@ -33,25 +35,76 @@ function assertNotAborted(signal?: AbortSignal) {
 }
 
 /** Normalise le payload create_structure (titres AI → format bulk API) */
-function normalizeStructurePayload(data: Record<string, unknown> | undefined | null) {
+export function normalizeStructurePayload(data: Record<string, unknown> | undefined | null) {
   const raw = data && typeof data === 'object' ? data : {};
   const parts = (raw.parts as Array<Record<string, unknown>>) || [];
   return parts.map((part) => ({
     title: String(part.title || part.part_title || '').trim(),
-    intro: String(part.intro || part.part_intro || ''),
+    intro: String(part.intro || part.part_intro || part.introduction || ''),
     chapters: ((part.chapters as Array<Record<string, unknown>>) || []).map((ch) => ({
       title: String(ch.title || ch.chapter_title || '').trim(),
-      intro: String(ch.intro || ch.chapter_intro || ''),
+      intro: String(ch.intro || ch.chapter_intro || ch.introduction || ''),
       paragraphs: ((ch.paragraphs as Array<Record<string, unknown>>) || []).map((para) => ({
         title: String(para.title || para.para_name || '').trim(),
-        intro: String(para.intro || para.para_intro || ''),
+        intro: String(para.intro || para.para_intro || para.introduction || ''),
         notions: ((para.notions as Array<Record<string, unknown>>) || []).map((n) => ({
           title: String(n.title || n.notion_name || '').trim(),
-          content: String(n.content || n.notion_content || '<p>Contenu à compléter.</p>'),
+          content: String(
+            n.content || n.notion_content || n.body || n.html || n.text || ''
+          ) || '<p>Contenu à compléter.</p>',
         })),
       })),
     })),
   })).filter((p) => p.title.length >= 3);
+}
+
+function emitStructureProgress(
+  parts: ReturnType<typeof normalizeStructurePayload>,
+  onProgress: ExecuteCallbacks['onProgress'],
+  phase: 'preview' | 'creating',
+  extraSteps: string[] = []
+) {
+  const steps: string[] = [...extraSteps];
+
+  if (phase === 'preview') {
+    steps.push(`**${parts.length} partie(s)** à injecter dans le projet`);
+  }
+
+  for (const part of parts) {
+    if (phase === 'creating') {
+      steps.push(`⏳ Partie « ${part.title} »…`);
+    } else {
+      const hasIntro = part.intro && part.intro.replace(/<[^>]+>/g, '').trim().length >= 10;
+      steps.push(`📁 **${part.title}**${hasIntro ? ' — intro ✓' : ''}`);
+    }
+
+    for (const ch of part.chapters || []) {
+      const chIntro = ch.intro && ch.intro.replace(/<[^>]+>/g, '').trim().length >= 10;
+      steps.push(`   📂 ${ch.title}${chIntro ? ' — intro ✓' : ''}`);
+
+      for (const para of ch.paragraphs || []) {
+        steps.push(`      📄 ${para.title}`);
+        for (const notion of para.notions || []) {
+          const words = notion.content.replace(/<[^>]+>/g, ' ').trim().split(/\s+/).filter(Boolean).length;
+          steps.push(`         • ${notion.title} (${words} mots)`);
+        }
+      }
+    }
+  }
+
+  onProgress?.({
+    phase: 'structure',
+    message: phase === 'creating' ? `Injection de ${parts.length} partie(s)…` : 'Structure prête à injecter',
+    steps,
+  });
+}
+
+export interface StructureCreationStats {
+  parts: number;
+  chapters: number;
+  paragraphs: number;
+  notions: number;
+  skipped?: number;
 }
 
 export async function executeAIAction(
@@ -59,13 +112,12 @@ export async function executeAIAction(
   projectName: string,
   project: { pr_id?: string } | undefined,
   callbacks: ExecuteCallbacks = {}
-): Promise<{ summary: string }> {
+): Promise<{ summary: string; stats?: StructureCreationStats }> {
   const { onProgress, onContentChanged, signal } = callbacks;
   assertNotAborted(signal);
 
   switch (action.type) {
     case 'create_structure': {
-      onProgress?.({ phase: 'structure', message: 'Création de la structure du cours…' });
       const parts = normalizeStructurePayload(action.data as Record<string, unknown>);
 
       if (parts.length === 0) {
@@ -74,14 +126,35 @@ export async function executeAIAction(
         );
       }
 
+      emitStructureProgress(parts, onProgress, 'preview', ['✅ Structure validée — détail :']);
+
       try {
+        emitStructureProgress(parts, onProgress, 'creating', ['⏳ Injection dans le projet…']);
         const stats = await structureService.bulkCreateStructure(projectName, parts);
         const total = stats.parts + stats.chapters + stats.paragraphs + stats.notions;
         if (total === 0 && stats.skipped > 0) {
           return { summary: `Structure déjà existante (${stats.skipped} élément(s) ignorés)` };
         }
+        onProgress?.({
+          phase: 'done',
+          message: 'Structure injectée',
+          steps: [
+            '✅ Injection terminée',
+            `📁 ${stats.parts} partie(s)`,
+            `📂 ${stats.chapters} chapitre(s)`,
+            `📄 ${stats.paragraphs} paragraphe(s)`,
+            `📝 ${stats.notions} notion(s)`,
+          ],
+        });
         return {
           summary: `Structure créée : ${stats.parts} partie(s), ${stats.chapters} chapitre(s), ${stats.paragraphs} paragraphe(s), ${stats.notions} notion(s)`,
+          stats: {
+            parts: stats.parts,
+            chapters: stats.chapters,
+            paragraphs: stats.paragraphs,
+            notions: stats.notions,
+            skipped: stats.skipped,
+          },
         };
       } catch (bulkError) {
         console.warn('[Agent] Bulk import failed, fallback séquentiel:', bulkError);
@@ -213,10 +286,11 @@ export async function executeAllActions(
   projectName: string,
   project: { pr_id?: string } | undefined,
   callbacks: ExecuteCallbacks = {}
-): Promise<{ succeeded: number; failed: number; summaries: string[] }> {
+): Promise<{ succeeded: number; failed: number; summaries: string[]; stats?: StructureCreationStats }> {
   let succeeded = 0;
   let failed = 0;
   const summaries: string[] = [];
+  let stats: StructureCreationStats | undefined;
 
   for (let i = 0; i < actions.length; i++) {
     callbacks.onProgress?.({
@@ -227,8 +301,9 @@ export async function executeAllActions(
     });
 
     try {
-      const { summary } = await executeAIAction(actions[i], projectName, project, callbacks);
-      summaries.push(summary);
+      const result = await executeAIAction(actions[i], projectName, project, callbacks);
+      summaries.push(result.summary);
+      if (result.stats) stats = result.stats;
       succeeded++;
     } catch (error: unknown) {
       if (error instanceof DOMException && error.name === 'AbortError') throw error;
@@ -238,5 +313,5 @@ export async function executeAllActions(
   }
 
   callbacks.onProgress?.({ phase: 'done', message: `Terminé : ${succeeded} action(s) réussie(s)` });
-  return { succeeded, failed, summaries };
+  return { succeeded, failed, summaries, stats };
 }

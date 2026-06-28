@@ -30,6 +30,7 @@ import { socraticService } from '@/services/socraticService';
 import { authService } from '@/services/authService';
 import { executeAIAction, type AIAction } from '@/services/courseAgentExecutor';
 import { useCourseAgent, type PanelMode } from '@/hooks/useCourseAgent';
+import { formatCourseCreatedSummary } from '@/lib/agentUxHelpers';
 import toast from 'react-hot-toast';
 
 const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001').replace(/\/$/, '');
@@ -99,7 +100,6 @@ const UnifiedAIPanel: React.FC<UnifiedAIPanelProps> = ({
 
   const {
     isRunning: isAgentRunning,
-    progress: agentProgress,
     stop: stopAgent,
     runFullAgent,
     startAbortController,
@@ -111,7 +111,7 @@ const UnifiedAIPanel: React.FC<UnifiedAIPanelProps> = ({
 
   // ═══════ MANUAL CHAT STATE ═══════
   const authorWelcome =
-    "Bonjour ! Je suis votre assistant IA XCCM. **Mode Chat** : je propose des actions à valider. **Mode Agent** : je construis le cours automatiquement. Essayez : *« Construis un cours complet sur… »*";
+    "Bonjour ! Je suis votre assistant IA XCCM. **Mode Chat** : je propose des actions à valider. **Mode Agent** : je construis le cours automatiquement. Essayez : *« Construis un cours sur l'informatique quantique »*";
   const studentWelcome =
     "Bonjour ! Je suis votre coach pédagogique XCCM. Je vous accompagne dans votre apprentissage via une approche socratique. Que souhaitez-vous approfondir aujourd'hui ?";
 
@@ -132,6 +132,7 @@ const UnifiedAIPanel: React.FC<UnifiedAIPanelProps> = ({
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
+  const streamingMessageIdRef = useRef<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -176,6 +177,7 @@ const UnifiedAIPanel: React.FC<UnifiedAIPanelProps> = ({
       content: '',
     };
 
+    streamingMessageIdRef.current = assistantMessage.id;
     setMessages(prev => [...prev, userMessage, assistantMessage]);
     setIsStreaming(true);
 
@@ -200,33 +202,48 @@ const UnifiedAIPanel: React.FC<UnifiedAIPanelProps> = ({
       abortControllerRef.current = startAbortController();
 
       if (useAgent) {
-        const result = await runFullAgent(userText.trim(), chatHistory, context);
+        const updateLiveMessage = (content: string) => {
+          setMessages(prev => prev.map(m =>
+            m.id === assistantMessage.id ? { ...m, content } : m
+          ));
+        };
+
+        const result = await runFullAgent(userText.trim(), chatHistory, context, {
+          onLiveMessage: updateLiveMessage,
+        });
 
         if (result.aborted) return;
 
-        const execSummary = result.execution
-          ? `\n\n${result.execution.failed ? '⚠️' : '✅'} **Agent terminé** — ${result.execution.succeeded} action(s) réussie(s)${result.execution.failed ? `, ${result.execution.failed} échec(s)` : ''}.${result.execution.summaries?.length ? `\n${result.execution.summaries.map(s => `• ${s}`).join('\n')}` : ''}`
-          : (result.actions.length === 0
-            ? '\n\n⚠️ Plan généré mais aucune action exécutable. Réessayez avec « Construis le cours complet ».'
-            : '');
+        const noActionsHint = result.actions.length === 0
+          ? '⚠️ Aucune structure générée. Précisez le sujet : *« Construis un cours sur … »*'
+          : '';
 
-        setMessages(prev => prev.map(m =>
-          m.id === assistantMessage.id
-            ? {
-                ...m,
-                content: (result.text || result.plan || 'Plan exécuté.') + execSummary,
-                plan: result.plan,
-                actions: result.actions.map((a, i) => ({
-                  ...a,
-                  status: result.execution && i < result.execution.succeeded ? 'done' as const : result.execution?.failed ? 'error' as const : 'done' as const,
-                })),
-                isActionExecuted: true,
-              }
-            : m
-        ));
+        setMessages(prev => prev.map(m => {
+          if (m.id !== assistantMessage.id) return m;
+
+          let finalContent: string;
+          if (result.execution?.succeeded && result.actions.length > 0) {
+            finalContent = formatCourseCreatedSummary(result.actions, result.execution.stats);
+          } else if (noActionsHint) {
+            finalContent = noActionsHint;
+          } else {
+            finalContent = m.content || result.text || result.plan || '❌ Échec de la création du cours.';
+          }
+
+          return {
+            ...m,
+            content: finalContent,
+            plan: result.plan,
+            actions: result.actions.map((a, i) => ({
+              ...a,
+              status: result.execution && i < result.execution.succeeded ? 'done' as const : result.execution?.failed ? 'error' as const : 'done' as const,
+            })),
+            isActionExecuted: !!result.execution?.succeeded,
+          };
+        }));
 
         if (result.execution?.succeeded) {
-          toast.success(`Cours construit : ${result.execution.succeeded} action(s)`);
+          toast.success('Le cours a été créé avec succès');
         } else if (result.execution?.failed) {
           toast.error(result.execution.summaries?.find(s => s.includes('Erreur') || s.includes('Impossible')) || 'Échec de construction du cours');
         }
@@ -294,6 +311,7 @@ const UnifiedAIPanel: React.FC<UnifiedAIPanelProps> = ({
       ));
     } finally {
       setIsStreaming(false);
+      streamingMessageIdRef.current = null;
       abortControllerRef.current = null;
     }
   }, [messages, isStreaming, isAgentRunning, isAuthorMode, resolvedProjectName, currentContext, editorContent, panelMode, runFullAgent, startAbortController]);
@@ -435,6 +453,14 @@ const UnifiedAIPanel: React.FC<UnifiedAIPanelProps> = ({
   );
 
   // ═══════ RENDER MARKDOWN-LIKE CONTENT ═══════
+  const TypingDots = () => (
+    <span className="inline-flex gap-1 items-center h-4 py-0.5">
+      <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" />
+      <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce [animation-delay:0.2s]" />
+      <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce [animation-delay:0.4s]" />
+    </span>
+  );
+
   const renderContent = (content: string) => {
     if (!content) return null;
     // Simple markdown: bold, italic, code
@@ -502,19 +528,6 @@ const UnifiedAIPanel: React.FC<UnifiedAIPanelProps> = ({
         </div>
       )}
 
-      {/* Progression Agent */}
-      {isAgentRunning && agentProgress && (
-        <div className="mx-4 mt-2 p-3 bg-[#99334C]/5 border border-[#99334C]/20 rounded-xl">
-          <div className="flex items-center gap-2 text-xs font-medium text-[#99334C]">
-            <Loader2 className="w-3.5 h-3.5 animate-spin" />
-            {agentProgress.message}
-            {agentProgress.current != null && agentProgress.total != null && (
-              <span className="text-gray-400">({agentProgress.current}/{agentProgress.total})</span>
-            )}
-          </div>
-        </div>
-      )}
-
       <div className="flex-1 min-h-0 relative">
         <AnimatePresence mode="wait">
           {activeTab === 'chat' ? (
@@ -537,7 +550,9 @@ const UnifiedAIPanel: React.FC<UnifiedAIPanelProps> = ({
                           ? 'bg-[#99334C] text-white rounded-tr-none'
                           : 'bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm rounded-tl-none text-gray-800 dark:text-gray-200'
                         }`}>
-                        {renderContent(msg.content)}
+                        {msg.content
+                          ? renderContent(msg.content)
+                          : (isStreaming && msg.id === streamingMessageIdRef.current ? <TypingDots /> : null)}
                         {/* Copy button */}
                         {msg.role === 'assistant' && msg.content && msg.id !== 'welcome' && (
                           <button
@@ -567,18 +582,6 @@ const UnifiedAIPanel: React.FC<UnifiedAIPanelProps> = ({
                     </div>
                   </div>
                 ))}
-                {isStreaming && (
-                  <div className="flex gap-3">
-                    <div className="w-8 h-8 rounded-full bg-[#99334C] text-white flex items-center justify-center flex-shrink-0 animate-pulse">
-                      <Bot size={16} />
-                    </div>
-                    <div className="bg-white dark:bg-gray-800 p-3 rounded-2xl rounded-tl-none shadow-sm flex gap-1 items-center">
-                      <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce"></div>
-                      <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce [animation-delay:0.2s]"></div>
-                      <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce [animation-delay:0.4s]"></div>
-                    </div>
-                  </div>
-                )}
                 <div ref={messagesEndRef} />
               </div>
 
@@ -588,7 +591,7 @@ const UnifiedAIPanel: React.FC<UnifiedAIPanelProps> = ({
                   <>
                     {panelMode === 'agent' && (
                       <button
-                        onClick={() => handleSendRequest("Construis un cours complet sur le sujet du projet : 2 à 3 parties, contenu pédagogique dans chaque notion, et 1 QCM par chapitre")}
+                        onClick={() => handleSendRequest("Construis un cours sur le sujet du projet avec parties, chapitres, intros et contenu pédagogique dans chaque notion")}
                         className="text-[10px] px-2 py-1 bg-[#99334C]/10 border border-[#99334C]/30 text-[#99334C] rounded-full hover:bg-[#99334C] hover:text-white transition-colors font-bold"
                       >
                         🤖 Construire le cours
