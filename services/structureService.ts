@@ -538,6 +538,10 @@ class StructureService {
   }
 
   /**
+   * DELETE par UUID — immunisé aux renommages
+   * Utilise /api/projects/[pr_name]/granules/[id]
+   */
+  async deleteGranuleById(
     projectName: string,
     id: string
   ): Promise<void> {
