@@ -74,34 +74,12 @@ export const useEditorState = (
             if (!isSilent) setIsLoading(true);
             setError('');
 
+            // Embed Moodle : get ou create explicite (ne dépend plus du libellé d'erreur)
             let project;
-            try {
+            if (autoCreateIfMissing && !guestMode) {
+                project = await projectService.ensureProjectExists(projectName);
+            } else {
                 project = await projectService.getProjectByName(projectName);
-            } catch (loadErr: any) {
-                const msg = String(loadErr?.message || '').toLowerCase();
-                const status = loadErr?.status as number | undefined;
-                const missing =
-                    status === 404 ||
-                    msg.includes('non trouv') ||
-                    msg.includes('not found') ||
-                    msg.includes('introuvable') ||
-                    msg.includes('récupération du projet') ||
-                    msg.includes('recuperation du projet');
-
-                // Embed Moodle : créer le projet s'il n'existe pas (ou réessayer si 409)
-                if (autoCreateIfMissing && !guestMode && missing) {
-                    try {
-                        project = await projectService.createProject({ pr_name: projectName });
-                    } catch (createErr: any) {
-                        if (createErr?.status === 409) {
-                            project = await projectService.getProjectByName(projectName);
-                        } else {
-                            throw createErr;
-                        }
-                    }
-                } else {
-                    throw loadErr;
-                }
             }
 
             setProjectData(project);
@@ -142,9 +120,13 @@ export const useEditorState = (
             setProjectData(updated);
 
             if (data.pr_name && data.pr_name !== projectName) {
-                const newUrl = window.location.pathname + '?projectName=' + encodeURIComponent(data.pr_name);
-                window.history.replaceState(null, '', newUrl);
-                router.replace(`/edit?projectName=${encodeURIComponent(data.pr_name)}`);
+                const url = new URL(window.location.href);
+                url.searchParams.set('projectName', data.pr_name);
+                window.history.replaceState(null, '', url.toString());
+                // Hors embed uniquement : naviguer vers /edit
+                if (!autoCreateIfMissing) {
+                    router.replace(`/edit?projectName=${encodeURIComponent(data.pr_name)}`);
+                }
                 toast.success("Projet renommé avec succès");
             } else {
                 toast.success("Paramètres mis à jour");

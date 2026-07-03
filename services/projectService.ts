@@ -1,5 +1,7 @@
 // services/projectService.ts
 
+import { authService } from '@/services/authService';
+
 const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001').trim();
 
 export interface Project {
@@ -46,12 +48,30 @@ export interface ApiResponse<T> {
 
 
 class ProjectService {
+  /** Cookie + localStorage (l'embed Moodle pose le JWT dans les deux). */
   private getAuthToken(): string | null {
-    if (typeof window === 'undefined') return null;
-    const value = `; ${document.cookie}`;
-    const parts = value.split(`; auth_token=`);
-    if (parts.length === 2) return parts.pop()?.split(';').shift() || null;
-    return null;
+    return authService.getAuthToken();
+  }
+
+  /**
+   * Moodle embed : charge le projet, le crée s'il n'existe pas encore pour cet utilisateur.
+   */
+  async ensureProjectExists(projectName: string): Promise<ProjectWithOwner | Project> {
+    try {
+      return await this.getProjectByName(projectName);
+    } catch (loadErr: any) {
+      // Projet existant mais pas accessible → ne pas créer un doublon sous un autre propriétaire
+      if (loadErr?.status === 403) throw loadErr;
+
+      try {
+        return await this.createProject({ pr_name: projectName });
+      } catch (createErr: any) {
+        if (createErr?.status === 409) {
+          return await this.getProjectByName(projectName);
+        }
+        throw createErr;
+      }
+    }
   }
 
   async getPublishedProjects(): Promise<Project[]> {

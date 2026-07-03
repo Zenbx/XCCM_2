@@ -30,6 +30,8 @@ interface EditorHeaderProps {
     // Project-level presence (Ably)
     projectMembers?: ProjectMember[];
     onProjectMemberClick?: (member: ProjectMember) => void;
+    /** Mode iframe Moodle : pas de navigation hors /embed */
+    isEmbedded?: boolean;
 }
 
 const EditorHeader: React.FC<EditorHeaderProps> = ({
@@ -53,6 +55,7 @@ const EditorHeader: React.FC<EditorHeaderProps> = ({
     onUserClick,
     projectMembers = [],
     onProjectMemberClick,
+    isEmbedded = false,
 }) => {
     const currentGranuleId = currentContext?.type === 'notion'
         ? `notion-${currentContext?.notion?.notion_id || ''}`
@@ -71,14 +74,16 @@ const EditorHeader: React.FC<EditorHeaderProps> = ({
                     <Menu className="w-5 h-5" />
                 </TactileButton>
 
-                <RichTooltip title="Accueil" description="Retourner à la gestion de vos projets." shortcut="Alt+H">
-                    <Link
-                        href="/edit-home"
-                        className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors text-gray-600 dark:text-gray-400 hover:text-[#99334C] dark:hover:text-[#ff9daf]"
-                    >
-                        <Home className="w-5 h-5" />
-                    </Link>
-                </RichTooltip>
+                {!isEmbedded && (
+                    <RichTooltip title="Accueil" description="Retourner à la gestion de vos projets." shortcut="Alt+H">
+                        <Link
+                            href="/edit-home"
+                            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors text-gray-600 dark:text-gray-400 hover:text-[#99334C] dark:hover:text-[#ff9daf]"
+                        >
+                            <Home className="w-5 h-5" />
+                        </Link>
+                    </RichTooltip>
+                )}
 
                 <div className="flex flex-col min-w-0 max-w-50">
                     <h1 className="text-base font-bold text-gray-900 dark:text-white border-l pl-4 border-gray-200 dark:border-gray-700 truncate">
@@ -121,28 +126,32 @@ const EditorHeader: React.FC<EditorHeaderProps> = ({
             </div>
 
             <div className="flex items-center gap-2 ml-4 shrink-0">
-                <RichTooltip title="Aperçu" description="Visualiser le projet tel qu'il sera publié." shortcut="Alt+P">
-                    <TactileButton
-                        variant="ghost"
-                        onClick={onPreview}
-                        className="p-2 text-gray-500 hover:text-[#99334C] hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-all"
-                    >
-                        <Eye className="w-5 h-5" />
-                    </TactileButton>
-                </RichTooltip>
+                {!isEmbedded && (
+                    <>
+                        <RichTooltip title="Aperçu" description="Visualiser le projet tel qu'il sera publié." shortcut="Alt+P">
+                            <TactileButton
+                                variant="ghost"
+                                onClick={onPreview}
+                                className="p-2 text-gray-500 hover:text-[#99334C] hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-all"
+                            >
+                                <Eye className="w-5 h-5" />
+                            </TactileButton>
+                        </RichTooltip>
 
-                <DiscoveryTooltip featureId="collaboration-share" title="Collaboration temps réel" description="Invitez des coauteurs pour éditer simultanément. Chaque collaborateur a un curseur coloré visible en direct." placement="bottom">
-                    <RichTooltip title="Partager" description="Inviter des collaborateurs ou publier sur la marketplace.">
-                        <TactileButton
-                            id="share-button"
-                            variant="ghost"
-                            onClick={onShare}
-                            className="p-2 text-gray-500 hover:text-[#99334C] hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-all"
-                        >
-                            <Share2 className="w-5 h-5" />
-                        </TactileButton>
-                    </RichTooltip>
-                </DiscoveryTooltip>
+                        <DiscoveryTooltip featureId="collaboration-share" title="Collaboration temps réel" description="Invitez des coauteurs pour éditer simultanément. Chaque collaborateur a un curseur coloré visible en direct." placement="bottom">
+                            <RichTooltip title="Partager" description="Inviter des collaborateurs ou publier sur la marketplace.">
+                                <TactileButton
+                                    id="share-button"
+                                    variant="ghost"
+                                    onClick={onShare}
+                                    className="p-2 text-gray-500 hover:text-[#99334C] hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-all"
+                                >
+                                    <Share2 className="w-5 h-5" />
+                                </TactileButton>
+                            </RichTooltip>
+                        </DiscoveryTooltip>
+                    </>
+                )}
 
                 <div className="ml-2 pl-4 border-l border-gray-100 dark:border-gray-800 flex items-center gap-3">
                     <ProjectPresenceIndicator

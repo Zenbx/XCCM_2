@@ -1029,9 +1029,18 @@ export function XCCM2Editor({ isEmbedded = false, guestMode = false }: { isEmbed
   // Commands Hook
   useEditorCommands({
     onSave: () => handleSave(),
-    onPreview: () => router.push(`/preview?projectName=${projectName}`),
-    onShare: () => setShowShareOverlay(true),
-    onExport: () => router.push(`/preview?projectName=${projectName}`),
+    onPreview: () => {
+      if (isEmbedded) return;
+      router.push(`/preview?projectName=${projectName}`);
+    },
+    onShare: () => {
+      if (isEmbedded) return;
+      setShowShareOverlay(true);
+    },
+    onExport: () => {
+      if (isEmbedded) return;
+      router.push(`/preview?projectName=${projectName}`);
+    },
     onToggleZen: () => setIsZenMode(prev => !prev),
   });
 
@@ -1440,6 +1449,7 @@ export function XCCM2Editor({ isEmbedded = false, guestMode = false }: { isEmbed
             onUserClick={handleUserClick}
             projectMembers={projectMembers}
             onProjectMemberClick={handleProjectMemberClick}
+            isEmbedded={isEmbedded}
           />
         )}
 
