@@ -1194,7 +1194,21 @@ export function XCCM2Editor({ isEmbedded = false, guestMode = false }: { isEmbed
           <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Erreur</h2>
           <p className="text-gray-600 mb-4">{error}</p>
-          <button onClick={() => router.push('/edit-home')} className="px-6 py-3 bg-[#99334C] text-white rounded-xl hover:bg-[#7a283d] transition-all">Retour</button>
+          {isEmbedded ? (
+            <button
+              onClick={() => loadProject()}
+              className="px-6 py-3 bg-[#99334C] text-white rounded-xl hover:bg-[#7a283d] transition-all"
+            >
+              Réessayer
+            </button>
+          ) : (
+            <button
+              onClick={() => router.push('/edit-home')}
+              className="px-6 py-3 bg-[#99334C] text-white rounded-xl hover:bg-[#7a283d] transition-all"
+            >
+              Retour
+            </button>
+          )}
         </div>
       </div>
     );

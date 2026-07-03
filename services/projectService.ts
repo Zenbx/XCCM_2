@@ -149,13 +149,24 @@ class ProjectService {
         },
       });
 
+      const payload = await response.json().catch(() => ({}));
+
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Erreur lors de la récupération du projet');
+        const message =
+          (typeof payload.message === 'string' && payload.message) ||
+          'Erreur lors de la récupération du projet';
+        const err = new Error(message) as Error & { status?: number };
+        err.status = response.status;
+        throw err;
       }
 
-      const result: ApiResponse<{ project: ProjectWithOwner }> = await response.json();
-      return result.data.project;
+      const project = payload?.data?.project ?? payload?.project;
+      if (!project) {
+        const err = new Error('Projet non trouvé') as Error & { status?: number };
+        err.status = 404;
+        throw err;
+      }
+      return project;
     } catch (error) {
       console.error('Erreur getProjectByName:', error);
       throw error;
@@ -179,13 +190,22 @@ class ProjectService {
         body: JSON.stringify(data),
       });
 
+      const payload = await response.json().catch(() => ({}));
+
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Erreur lors de la création du projet');
+        const message =
+          (typeof payload.message === 'string' && payload.message) ||
+          'Erreur lors de la création du projet';
+        const err = new Error(message) as Error & { status?: number };
+        err.status = response.status;
+        throw err;
       }
 
-      const result: ApiResponse<{ project: Project }> = await response.json();
-      return result.data.project;
+      const project = payload?.data?.project ?? payload?.project;
+      if (!project) {
+        throw new Error('Projet créé mais réponse API invalide');
+      }
+      return project;
     } catch (error) {
       console.error('Erreur createProject:', error);
       throw error;

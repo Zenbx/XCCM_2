@@ -78,20 +78,30 @@ export const useEditorState = (
             try {
                 project = await projectService.getProjectByName(projectName);
             } catch (loadErr: any) {
-                const msg = (loadErr?.message || '').toLowerCase();
+                const msg = String(loadErr?.message || '').toLowerCase();
+                const status = loadErr?.status as number | undefined;
                 const missing =
+                    status === 404 ||
                     msg.includes('non trouv') ||
                     msg.includes('not found') ||
-                    msg.includes('404') ||
-                    msg.includes('introuvable');
+                    msg.includes('introuvable') ||
+                    msg.includes('récupération du projet') ||
+                    msg.includes('recuperation du projet');
 
-                if (!autoCreateIfMissing || guestMode || !missing) {
+                // Embed Moodle : créer le projet s'il n'existe pas (ou réessayer si 409)
+                if (autoCreateIfMissing && !guestMode && missing) {
+                    try {
+                        project = await projectService.createProject({ pr_name: projectName });
+                    } catch (createErr: any) {
+                        if (createErr?.status === 409) {
+                            project = await projectService.getProjectByName(projectName);
+                        } else {
+                            throw createErr;
+                        }
+                    }
+                } else {
                     throw loadErr;
                 }
-
-                // Première ouverture depuis Moodle : créer le projet au nom demandé
-                await projectService.createProject({ pr_name: projectName });
-                project = await projectService.getProjectByName(projectName);
             }
 
             setProjectData(project);
@@ -106,6 +116,11 @@ export const useEditorState = (
             return parts;
         } catch (err: any) {
             if (err.message && err.message.includes('Token invalide ou expiré')) {
+                if (autoCreateIfMissing) {
+                    setError('Session invalide. Rechargez la page depuis Moodle.');
+                    if (!isSilent) setIsLoading(false);
+                    return null;
+                }
                 toast.error('⚠️ Votre session a expiré. Veuillez vous reconnecter.');
                 window.location.href = '/login';
                 return null;
