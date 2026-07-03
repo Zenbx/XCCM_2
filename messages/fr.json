@@ -284,11 +284,11 @@
         "onThisPage": "Sur cette page",
         "contactHint": "Utilisez le formulaire ci-contre (connexion requise).",
         "docsHintTitle": "Avant de contacter le support",
-        "docsHintBody": "Consultez les sections Documentation, FAQ et Moodle : la plupart des erreurs de projet, de session iframe et de configuration plugin y sont décrites.",
+        "docsHintBody": "Parcourez d’abord la Documentation, la FAQ et la partie Moodle : beaucoup de questions sur les projets, les classes et Moodle y sont déjà répondues.",
         "sections": {
             "documentation": {
                 "title": "Documentation",
-                "subtitle": "Référence à jour des fonctionnalités XCCM 2 (éditeur, classes, Moodle, API)",
+                "subtitle": "Tout ce qu’il faut savoir pour créer, partager et enseigner avec XCCM 2",
                 "subsections": {
                     "intro": "Introduction",
                     "demarrage": "Démarrage rapide",
@@ -330,13 +330,13 @@
             },
             "support": {
                 "title": "Support technique",
-                "subtitle": "Contact, compatibilité, API et administration Moodle",
+                "subtitle": "Contact, navigateurs, intégrations et réglages Moodle",
                 "subsections": {
                     "contact": "Nous contacter",
-                    "bug-report": "Signaler un bug",
-                    "compatibilite": "Compatibilité",
-                    "api": "API et intégration",
-                    "moodle-admin": "Admin plugin Moodle"
+                    "bug-report": "Signaler un problème",
+                    "compatibilite": "Navigateurs et appareils",
+                    "api": "Connecter d’autres outils",
+                    "moodle-admin": "Configurer Moodle"
                 }
             }
         }

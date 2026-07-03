@@ -1,6 +1,6 @@
 /**
- * Documentation du centre d'aide XCCM 2.
- * Contenu aligné sur les fonctionnalités réelles (éditeur, classes, Moodle, API).
+ * Documentation utilisateur du centre d'aide XCCM 2.
+ * Langage orienté interface (boutons, menus), sans chemins techniques.
  */
 
 export type HelpLocale = 'fr' | 'en';
@@ -16,245 +16,233 @@ export type HelpContentMap = Record<string, Record<string, HelpArticle>>;
 const fr: HelpContentMap = {
   documentation: {
     intro: {
-      title: 'Introduction à XCCM 2',
-      content: `XCCM 2 est une plateforme de création et de diffusion de contenus pédagogiques structurés. Elle s’adresse aux enseignants, auteurs et établissements qui veulent concevoir des cours hiérarchiques, collaborer en temps réel, et les diffuser via des classes ou un LMS externe (Moodle).
+      title: 'Qu’est-ce que XCCM 2 ?',
+      content: `XCCM 2 vous aide à créer des cours structurés, à collaborer avec d’autres auteurs, et à les partager avec vos élèves — directement sur la plateforme ou depuis Moodle.
 
-Ce que vous pouvez faire avec XCCM 2 :
-• Créer des projets de cours organisés en Parties → Chapitres → Paragraphes → Notions
-• Éditer le contenu dans un éditeur riche (TipTap), avec sauvegarde et collaboration
-• Utiliser l’assistant IA pédagogique (aide à la rédaction, méthode socratique côté apprenant)
-• Gérer des classes, devoirs et exercices interactifs
-• Publier des documents dans la bibliothèque et partager des granules via la marketplace
-• Intégrer l’éditeur dans Moodle grâce au plugin mod_xccm (iframe sécurisée)
+Avec XCCM 2, vous pouvez :
+• Concevoir un cours en Parties, Chapitres, Paragraphes et Notions
+• Rédiger dans un éditeur de texte riche (mise en forme, images, formules)
+• Travailler à plusieurs en même temps sur le même projet
+• Vous faire aider par l’assistant IA pour rédiger ou guider les apprenants
+• Animer des classes (annonces, devoirs, exercices)
+• Publier des contenus dans la bibliothèque ou les réutiliser via la marketplace
+• Ouvrir l’éditeur depuis une activité Moodle, sans quitter votre cours
 
-XCCM 2 sépare clairement l’espace de création (vos projets) de l’espace de diffusion (classes, bibliothèque, Moodle).`,
+Vos projets restent votre espace de création. Les classes, la bibliothèque et Moodle servent à diffuser le contenu aux apprenants.`,
     },
     demarrage: {
-      title: 'Démarrage rapide',
-      content: `1. Créez un compte
-Allez sur Inscription, renseignez email, prénom, nom et mot de passe. Vous pouvez aussi vous connecter via les fournisseurs OAuth configurés.
+      title: 'Premiers pas',
+      content: `1. Créez votre compte
+Cliquez sur « S’inscrire », renseignez votre email, votre nom et un mot de passe, puis validez. Vous pourrez ensuite vous connecter avec « Se connecter ».
 
-2. Ouvrez vos projets
-Après connexion, la page d’accueil des projets (/edit-home) liste vos cours. Cliquez sur « Nouveau projet », donnez un nom (3 à 100 caractères), puis ouvrez l’éditeur.
+2. Créez un projet
+Une fois connecté, vous arrivez sur la liste de vos projets. Cliquez sur « Nouveau projet », donnez-lui un nom clair (par exemple le titre du cours), puis ouvrez-le.
 
-3. Construisez la structure
-Dans la table des matières à gauche, ajoutez des Parties, puis des Chapitres, Paragraphes et Notions. Sélectionnez une notion pour rédiger dans la zone centrale.
+3. Construisez le plan du cours
+À gauche, la table des matières permet d’ajouter des Parties, puis des Chapitres, des Paragraphes et des Notions. Cliquez sur une notion pour écrire dans la zone centrale.
 
-4. Utilisez le panneau de droite
-Import de fichiers, marketplace, coffre-fort, IA, commentaires, exercices, paramètres du projet et tutoriel intégré.
+4. Explorez le panneau de droite
+Vous y trouverez l’import de fichiers, la marketplace, votre coffre-fort, l’assistant IA, les commentaires, les exercices, les paramètres du projet et un tutoriel.
 
-5. Sauvegardez et prévisualisez
-Ctrl+S enregistre. Le bouton Aperçu montre le rendu publié. Partagez le projet avec des co-auteurs via le bouton Partager.
+5. Enregistrez et regardez le résultat
+Utilisez le bouton « Enregistrer » (ou le raccourci clavier indiqué dans l’éditeur). « Aperçu » montre le rendu pour les lecteurs. « Partager » invite des co-auteurs.
 
-Astuce : un tour guidé démarre automatiquement la première fois dans l’éditeur.`,
+Astuce : la première fois, un petit tour guidé vous présente l’éditeur.`,
     },
     fonctionnalites: {
-      title: 'Fonctionnalités principales',
+      title: 'Ce que propose XCCM 2',
       content: `Éditeur de cours
-• Structure granulaire à 4 niveaux (Partie, Chapitre, Paragraphe, Notion)
-• Éditeur WYSIWYG (gras, italique, listes, alignement, images, formules)
-• Mode Zen pour se concentrer sur le texte
-• Import intelligent de documents (PDF, DOCX) découpés en structure
-• Historique local d’actions (annuler / rétablir structure)
-• Blame / révisions de granules en contexte collaboratif
+• Plan en quatre niveaux : Partie, Chapitre, Paragraphe, Notion
+• Mise en forme du texte, listes, images, formules
+• Mode Zen pour écrire sans distraction
+• Import de documents (PDF, Word) découpés automatiquement en plan de cours
+• Annuler / rétablir les actions sur la structure
 
-Collaboration
-• Invitations par email avec rôles
-• Présence en temps réel (utilisateurs connectés, curseurs)
+Travail en équipe
+• Invitation de co-auteurs par email
+• Voir qui est connecté en même temps que vous
 • Commentaires sur le projet
-• Synchronisation structure via Synapse
+• Mises à jour visibles en direct
 
-Intelligence artificielle
-• Panneau XCCM AI dans l’éditeur (génération, reformulation, aide pédagogique)
-• Mode socratique pour les apprenants (guide sans donner la réponse brute)
+Assistant IA
+• Aide à la rédaction et à la reformulation dans l’éditeur
+• Pour les élèves : questions guidantes (méthode socratique), sans donner la réponse toute faite
 
-Classes (LMS intégré)
-• Création de classes et code d’invitation
-• Flux d’annonces
-• Devoirs (texte ou fichier) et suivi des rendus
-• Lien projet ↔ classe avec synchronisation
-• Exercices (QCM, questions ouvertes, etc.) attachés aux notions
-• Analytics de classe et de projet
+Classes
+• Créer une classe et inviter les élèves avec un code
+• Annonces, devoirs (texte ou fichier), suivi des rendus
+• Lier un projet à une classe et le mettre à jour pour les élèves
+• Exercices liés aux notions (QCM, questions ouvertes, etc.)
+• Statistiques de suivi
 
-Bibliothèque & partage
-• Publication de documents consultables
-• Marketplace de granules réutilisables
-• Coffre-fort personnel (vault)
+Bibliothèque et partage
+• Publier un cours consultable
+• Partager ou récupérer des briques de contenu dans la marketplace
+• Garder vos éléments favoris dans le coffre-fort
 
-Intégration Moodle
-• Activité mod_xccm dans un cours Moodle
-• Authentification automatique (JWT) et ouverture de l’éditeur en iframe
-• Création automatique du projet s’il n’existe pas encore pour l’utilisateur Moodle`,
+Moodle
+• Activité XCCM 2 dans un cours Moodle
+• Connexion automatique : l’éditeur s’ouvre dans la page Moodle
+• Le projet est préparé pour vous dès la première ouverture`,
     },
     interface: {
-      title: 'Interface de l’éditeur',
-      content: `L’éditeur (/edit?projectName=…) est organisé en trois zones :
+      title: 'L’écran d’édition',
+      content: `Quand vous ouvrez un projet, l’écran se divise en trois zones.
 
-Gauche — Table des matières
-• Arborescence du cours
-• Création, renommage, réordonnancement et déplacement des granules
-• Ouverture mobile via le bouton menu
+À gauche — Table des matières
+• Le plan complet de votre cours
+• Ajouter, renommer, réordonner ou déplacer les éléments
+• Sur mobile, ouvrez-la avec le bouton menu
 
-Centre — Rédaction
-• En-tête : nom du projet, fil d’Ariane, présence des collaborateurs, Enregistrer
-• Barre d’outils de formatage et Mode Zen
-• Zone TipTap pour le contenu de la notion ou de l’intro de partie sélectionnée
+Au centre — Zone d’écriture
+• En haut : nom du projet, où vous vous trouvez dans le plan, collègues connectés, bouton Enregistrer
+• Barre d’outils de mise en forme et mode Zen
+• Zone de texte pour la notion (ou l’introduction de partie) sélectionnée
 
-Droite — Panneau d’outils
+À droite — Outils
 • Importer un fichier
 • Marketplace
 • Coffre-fort
-• XCCM AI
+• Assistant IA
 • Commentaires
 • Informations du projet
-• Paramètres (métadonnées, export, publication)
-• Exercices liés au granule courant
+• Paramètres
+• Exercices
 • Tutoriel
 
-En mode Moodle (iframe /embed/editor), certains liens de navigation hors éditeur (Accueil, Aperçu, Partager) sont masqués pour rester dans le cadre Moodle.`,
+Si vous travaillez depuis Moodle, certains boutons inutiles dans ce contexte (retour à la liste des projets, aperçu externe, partage web) sont masqués pour que vous restiez dans votre activité Moodle.`,
     },
     structure: {
-      title: 'Structure d’un cours',
-      content: `Tout projet suit la hiérarchie :
+      title: 'Comment est organisé un cours',
+      content: `Chaque projet suit le même plan :
 
 Partie
   └─ Chapitre
        └─ Paragraphe
-            └─ Notion  ← unité de contenu principale (texte riche, exercices)
+            └─ Notion  ← c’est ici que vous rédigez le contenu principal
 
-Règles utiles
-• Une Partie peut avoir une introduction (contenu au niveau partie)
-• Les Notions portent le contenu pédagogique détaillé
-• Les exercices se rattachent au granule sélectionné
-• Les noms de projet sont uniques par propriétaire (3–100 caractères, lettres, chiffres, espaces et ponctuation courante)
+À retenir
+• Une Partie peut aussi avoir une courte introduction
+• Les exercices se rattachent à la notion que vous avez sélectionnée
+• Le nom du projet doit être unique parmi vos projets (quelques caractères minimum, pas de symboles exotiques)
 
-Bonnes pratiques de nommage
-• Parties : thèmes larges (« Algèbre linéaire »)
+Conseils de nommage
+• Parties : grands thèmes (« Algèbre linéaire »)
 • Chapitres : séquences (« Matrices et déterminants »)
-• Notions : objectifs précis (« Calcul du déterminant 2×2 »)`,
+• Notions : un objectif précis (« Calculer un déterminant 2×2 »)`,
     },
     collaboration: {
-      title: 'Collaboration en temps réel',
-      content: `Inviter des co-auteurs
-1. Ouvrez le projet dans l’éditeur
-2. Cliquez sur Partager
-3. Envoyez une invitation par email
-4. Le co-auteur accepte l’invitation depuis le lien reçu
+      title: 'Travailler à plusieurs',
+      content: `Inviter quelqu’un
+1. Ouvrez le projet
+2. Cliquez sur « Partager »
+3. Saisissez l’email de la personne
+4. Elle reçoit une invitation à accepter
 
-Pendant l’édition
-• Les avatars des membres connectés apparaissent dans l’en-tête
-• Les modifications de structure se synchronisent entre sessions
-• Les commentaires permettent de discuter sans quitter l’éditeur
+Pendant le travail
+• Les avatars des personnes connectées apparaissent en haut de l’éditeur
+• Les changements de plan se mettent à jour pour tout le monde
+• Les commentaires servent à discuter sans quitter la page
 
-Permissions
-• Propriétaire : administration complète, invitations, suppression
-• Invité accepté : accès selon le rôle défini à l’invitation
+Rôles
+• Le propriétaire gère le projet, les invitations et la suppression
+• Les co-auteurs invités peuvent contribuer selon les droits accordés
 
-Si la connexion temps réel se coupe, un indicateur de statut apparaît ; vous pouvez forcer une reconnexion depuis l’en-tête.`,
+Si la connexion en direct se coupe, un indicateur apparaît en haut de l’écran : vous pourrez vous reconnecter depuis là.`,
     },
     ia: {
-      title: 'Assistant IA',
-      content: `Panneau XCCM AI (éditeur)
-Accessible depuis l’icône étincelles à droite. Il s’appuie sur le contexte du granule sélectionné et le contenu affiché pour :
-• Proposer ou reformuler du contenu pédagogique
-• Aider à structurer une notion
-• Auditer la clarté du texte
+      title: 'L’assistant IA',
+      content: `Dans l’éditeur
+Ouvrez le panneau IA à droite (icône en forme d’étincelles). L’assistant s’appuie sur la notion en cours pour vous aider à :
+• Rédiger ou reformuler un passage
+• Clarifier une explication
+• Structurer une idée
 
-Mode socratique (apprenants)
-Dans le lecteur / parcours étudiant, l’IA ne donne pas la réponse finale : elle pose des questions pour faire progresser l’apprenant. Elle connaît la notion courante.
+Pour les élèves
+Dans le parcours de lecture, l’aide IA pose des questions pour faire réfléchir, plutôt que de livrer la réponse complète. Elle connaît le contenu de la notion affichée.
 
 Conseils
-• Sélectionnez d’abord la bonne notion avant d’appeler l’IA
-• Relisez toujours le contenu généré avant de publier
-• L’IA complète l’auteur, elle ne le remplace pas`,
+• Sélectionnez d’abord la bonne notion
+• Relisez toujours ce que propose l’IA avant d’enregistrer ou de publier
+• L’IA est un assistant, pas un auteur à votre place`,
     },
     classes: {
-      title: 'Classes et LMS',
-      content: `Projets vs Classes
-• Projet : espace de création et d’édition (bibliothèque personnelle)
-• Classe : espace de diffusion vers des élèves, avec annonces, devoirs et analytics
+      title: 'Classes et élèves',
+      content: `Projets et classes, deux usages différents
+• Le projet : vous créez et modifiez le cours
+• La classe : vous le diffusez à des élèves, avec annonces et devoirs
 
 Créer une classe
-1. Menu Classes → Nouvelle classe
-2. Donnez un nom et récupérez le code d’invitation
-3. Transmettez le code aux élèves (Classes → Rejoindre)
+1. Allez dans « Classes », puis « Nouvelle classe »
+2. Donnez un nom et notez le code d’invitation
+3. Transmettez ce code aux élèves : ils le saisissent dans « Rejoindre une classe »
 
-Lier un cours
-Ajoutez un projet à la classe, puis synchronisez pour que les élèves voient la version publiée / à jour.
+Ajouter un cours à la classe
+Liez l’un de vos projets à la classe, puis synchronisez pour que les élèves voient la version à jour.
 
 Devoirs
-Types supportés : réponse texte ou dépôt de fichier. Suivez les rendus depuis l’onglet Devoirs de la classe.
+Créez un devoir en réponse texte ou en dépôt de fichier, avec une date limite si besoin. Suivez les rendus dans l’onglet dédié.
 
 Exercices dans le cours
-Depuis l’éditeur, panneau Exercices : créez des activités liées à une notion (QCM, question ouverte, etc.). Les élèves les retrouvent dans leur parcours.`,
+Dans l’éditeur, panneau « Exercices » : créez des activités liées à une notion. Les élèves les retrouvent dans leur parcours.`,
     },
     moodle: {
-      title: 'Intégration Moodle',
-      content: `XCCM 2 s’intègre à Moodle via le plugin d’activité mod_xccm.
+      title: 'Utiliser XCCM 2 dans Moodle',
+      content: `Si votre établissement a installé l’activité XCCM 2 dans Moodle, vous pouvez éditer un cours sans quitter Moodle.
 
-Côté enseignant Moodle
-1. L’administrateur installe le plugin et configure :
-   • URL de base XCCM 2 (ex. https://xccm-2.vercel.app) — le front doit proxyfier /api/*
-   • Secret API (PLUGIN_API_SECRET), identique à celui de l’API XCCM 2
-2. Dans un cours Moodle, ajoutez une activité « XCCM2 »
-3. Indiquez le nom du projet XCCM (option individuelle : modèle avec {user_id})
+Pour l’enseignant dans Moodle
+1. Dans un cours Moodle, ajoutez une activité « XCCM 2 »
+2. Indiquez le nom du projet (celui qui apparaîtra dans XCCM)
+3. Enregistrez l’activité
 
-Côté étudiant / auteur dans Moodle
-• À l’ouverture de l’activité, Moodle obtient un JWT via POST /api/auth/external
-• L’éditeur s’affiche dans une iframe : /embed/editor?projectName=…&token=…
-• Si le projet n’existe pas encore pour cet utilisateur XCCM, il est créé automatiquement
-• L’édition reste dans l’iframe Moodle (pas de redirection vers l’accueil XCCM)
+Pour l’utilisateur qui ouvre l’activité
+• Vous êtes reconnu automatiquement (pas besoin de vous reconnecter à la main)
+• L’éditeur XCCM s’affiche dans la page Moodle
+• Au premier accès, le projet est créé pour vous s’il n’existait pas encore
+• Vous restez dans Moodle pendant toute l’édition
 
-Points d’attention
-• L’utilisateur Moodle est provisionné dans XCCM (email Moodle) : ce n’est pas forcément le même compte que votre admin web XCCM
-• En cas de « Session invalide », rechargez l’activité depuis Moodle (nouveau token)
-• Le secret API ne doit jamais être exposé côté navigateur : seul le serveur Moodle l’utilise`,
+En cas de message d’erreur de session
+Rechargez simplement l’activité depuis Moodle (menu du cours), pour obtenir une nouvelle connexion.
+
+Bon à savoir
+Le compte utilisé depuis Moodle est lié à votre adresse email Moodle. Ce n’est pas forcément le même compte que celui créé à la main sur le site XCCM, sauf si vous utilisez le même email.`,
     },
     publication: {
-      title: 'Publication et partage',
+      title: 'Publier et partager',
       content: `Aperçu
-Utilisez Aperçu pour voir le rendu avant diffusion.
+Le bouton « Aperçu » montre le cours tel qu’un lecteur le verra.
 
-Publication document
-Depuis les paramètres du projet ou le flux de publication, rendez un cours accessible dans la bibliothèque selon la visibilité choisie.
+Bibliothèque
+Vous pouvez publier un document pour le rendre consultable selon les options de visibilité choisies.
 
 Marketplace
-Publiez un granule (partie, notion…) pour le réutiliser ou le partager avec la communauté. Importez des granules depuis le panneau Marketplace de l’éditeur.
+Partagez une partie de votre cours (une brique de contenu) pour la réutiliser plus tard, ou importez des briques proposées par d’autres auteurs depuis le panneau Marketplace.
 
 Export
-Exportez le projet (PDF / formats supportés selon la configuration) depuis les actions d’export / aperçu.
+Exportez votre projet (par exemple en PDF) depuis les options d’export disponibles dans l’éditeur.
 
-Classes
-Pour les élèves d’une classe, préférez le lien projet + synchronisation plutôt qu’un simple lien public.`,
+Pour une classe
+Préférez lier le projet à la classe et synchroniser, plutôt que de seulement partager un lien public.`,
     },
     shortcuts: {
-      title: 'Raccourcis clavier',
-      content: `Éditeur
-• Ctrl + S — Enregistrer
-• Ctrl + B / I / U — Gras / Italique / Souligné
-• Alt + Z — Mode Zen
-• Alt + P — Aperçu (hors embed Moodle)
-• Alt + H — Accueil projets (hors embed Moodle)
-• Échap — Fermer menus et dialogues
+      title: 'Raccourcis clavier utiles',
+      content: `Dans l’éditeur
+• Enregistrer : Ctrl + S (Cmd + S sur Mac)
+• Gras / Italique / Souligné : Ctrl + B / I / U
+• Mode Zen : Alt + Z
+• Fermer un menu ou une fenêtre : Échap
 
-Édition de texte (raccourcis navigateur / TipTap)
-• Ctrl + Z / Ctrl + Y — Annuler / Rétablir dans le texte
-• Les actions de structure (déplacer, renommer) disposent aussi d’un historique dédié dans l’éditeur`,
+Les raccourcis d’aperçu ou de retour à la liste des projets ne s’appliquent pas lorsque vous travaillez depuis Moodle (pour rester dans l’activité).`,
     },
     'slash-commands': {
-      title: 'Commandes Slash (/)',
-      content: `Dans la zone d’édition, tapez / pour ouvrir le menu d’actions rapides (selon la configuration de l’éditeur) :
+      title: 'Le menu « / » dans le texte',
+      content: `Dans la zone d’écriture, tapez le caractère / pour ouvrir un menu d’actions rapides, par exemple :
+• créer une partie, un chapitre, un paragraphe ou une notion
+• insérer une image
+• ouvrir l’assistant IA
+• ajouter une formule ou une note
 
-• /part ou /p — Nouvelle partie
-• /chap ou /c — Nouveau chapitre
-• /para — Nouveau paragraphe
-• /notion ou /n — Nouvelle notion
-• /img — Insérer une image
-• /ai ou /bot — Ouvrir l’assistant IA
-• /math — Formule (LaTeX)
-• /note — Bloc note
-
-Vous pouvez aussi créer la structure depuis la table des matières (recommandé pour les gros cours).`,
+Pour un gros cours, il est souvent plus simple de construire le plan depuis la table des matières à gauche.`,
     },
   },
 
@@ -262,150 +250,148 @@ Vous pouvez aussi créer la structure depuis la table des matières (recommandé
     compte: {
       title: 'Compte et connexion',
       content: `Q : Comment créer un compte ?
-R : Page Inscription, puis validation du formulaire. Connexion ensuite via /login.
+R : Cliquez sur « S’inscrire », remplissez le formulaire, puis connectez-vous avec « Se connecter ».
 
-Q : Mot de passe oublié ?
-R : Lien « Mot de passe oublié » sur la page de connexion ; un email de réinitialisation est envoyé.
+Q : J’ai oublié mon mot de passe
+R : Sur la page de connexion, utilisez « Mot de passe oublié ». Un email vous indiquera la marche à suivre.
 
-Q : Puis-je modifier mon profil ?
-R : Oui, depuis Compte / Paramètres (nom, photo, préférences).
+Q : Où modifier mon profil ?
+R : Dans « Compte » ou « Paramètres » (nom, photo, préférences).
 
-Q : Je me connecte depuis Moodle : ai-je besoin d’un compte séparé ?
-R : Moodle crée / réutilise un compte XCCM basé sur votre email Moodle. Ce n’est pas automatiquement le même compte que celui créé manuellement sur le site, sauf si les emails coïncident.`,
+Q : Moodle et le site XCCM, est-ce le même compte ?
+R : Moodle ouvre XCCM avec l’email de votre compte Moodle. Si vous vous êtes inscrit à la main avec un autre email, ce sont deux comptes différents.`,
     },
     editeur: {
       title: 'Éditeur et projets',
       content: `Q : Combien de projets puis-je avoir ?
-R : Autant que nécessaire ; chaque nom de projet est unique pour votre compte.
+R : Autant que vous voulez. Chaque projet doit avoir un nom différent parmi les vôtres.
 
-Q : Que signifie « Erreur lors de la récupération du projet » ?
-R : Le projet n’existe pas pour votre utilisateur, ou le token a expiré. Depuis Moodle, rechargez l’activité (création auto du projet). Depuis le web, créez le projet sur /edit-home ou vérifiez le nom exact.
+Q : Message « impossible de récupérer le projet »
+R : Soit le projet n’existe pas encore pour votre compte, soit votre session a expiré. Depuis Moodle, rechargez l’activité. Depuis le site, créez le projet dans votre liste ou vérifiez le nom.
 
-Q : Mes modifications sont-elles sauvegardées automatiquement ?
-R : Utilisez Ctrl+S / le bouton Enregistrer pour une sauvegarde explicite. Ne fermez pas l’onglet avec des changements non enregistrés (indicateur dans l’en-tête).
+Q : Faut-il enregistrer à la main ?
+R : Oui, utilisez le bouton « Enregistrer ». Ne fermez pas la page s’il reste des modifications non enregistrées (indiquées en haut de l’éditeur).
 
-Q : Puis-je travailler hors ligne ?
-R : Non, une connexion est requise pour l’API et la collaboration temps réel.`,
+Q : Puis-je travailler sans Internet ?
+R : Non, une connexion est nécessaire.`,
     },
     classes: {
       title: 'Classes et élèves',
-      content: `Q : Comment un élève rejoint-il une classe ?
-R : Avec le code d’invitation fourni par l’enseignant (Classes → Rejoindre).
+      content: `Q : Comment un élève rejoint-il ma classe ?
+R : Donnez-lui le code d’invitation. Il le saisit dans « Classes », puis « Rejoindre ».
 
 Q : Les élèves voient-ils mes brouillons ?
-R : Non. Ils accèdent aux contenus liés / synchronisés dans la classe, pas à vos projets privés non partagés.
+R : Non. Ils voient uniquement ce qui est lié et synchronisé dans la classe.
 
-Q : Comment mettre à jour un cours déjà dans une classe ?
-R : Modifiez le projet, puis synchronisez depuis la classe.`,
+Q : J’ai modifié mon cours, les élèves ne voient rien
+R : Ouvrez la classe et lancez la synchronisation du projet lié.`,
     },
     moodle: {
       title: 'Moodle',
-      content: `Q : L’iframe affiche une erreur de session
-R : Le JWT a expiré ou est invalide. Rouvrez l’activité depuis Moodle (un nouveau token est émis).
+      content: `Q : Message de session invalide dans Moodle
+R : Rouvrez l’activité depuis le cours Moodle pour vous reconnecter automatiquement.
 
-Q : Le projet est vide / inexistant pour mon compte Moodle
-R : Normal au premier accès : XCCM crée le projet au nom configuré dans l’activité. Vérifiez le nom du projet dans les paramètres de l’activité Moodle.
+Q : Le projet est vide au premier accès
+R : C’est normal : XCCM prépare le projet pour vous. Vérifiez le nom du projet dans les paramètres de l’activité Moodle.
 
-Q : Je suis redirigé vers la liste des projets dans l’iframe
-R : Ancien comportement corrigé : restez sur /embed/editor. Rechargez après mise à jour du front, et n’utilisez pas les liens Accueil hors embed.
+Q : Je me retrouve sur la liste des projets dans Moodle
+R : Rechargez l’activité Moodle. L’éditeur doit rester affiché dans la page du cours.
 
-Q : Qui configure le secret API ?
-R : Uniquement l’administrateur Moodle (réglages du plugin) et l’administrateur de l’API XCCM (variable PLUGIN_API_SECRET).`,
+Q : Qui configure le lien entre Moodle et XCCM ?
+R : L’administrateur Moodle de votre établissement, dans les réglages du plugin.`,
     },
     problemes: {
-      title: 'Problèmes courants',
+      title: 'Problèmes fréquents',
       content: `Q : L’éditeur ne répond plus
-R : Rechargez la page (F5). Vérifiez votre connexion. Réenregistrez après rechargement.
+R : Actualisez la page, puis enregistrez à nouveau.
 
-Q : Boucle de chargement / trop d’appels réseau
-R : Déconnectez-vous, videz le cache du site pour le domaine XCCM, reconnectez-vous. Signalez le bug si cela continue.
+Q : La page charge en boucle
+R : Déconnectez-vous, reconnectez-vous. Si le problème continue, signalez-le via le formulaire de contact.
 
-Q : L’aperçu ne correspond pas au contenu
-R : Enregistrez d’abord, puis rouvrez l’aperçu. Videz le cache navigateur si besoin.
+Q : L’aperçu ne correspond pas à ce que j’ai écrit
+R : Enregistrez d’abord, puis rouvrez l’aperçu.
 
-Q : Import PDF/DOCX incomplet
-R : Vérifiez le format et la taille du fichier. Relancez l’import ; pour les très gros documents, découpez-les.`,
+Q : L’import d’un document est incomplet
+R : Vérifiez le format (PDF ou Word) et la taille. Réessayez, ou découpez le document en plusieurs fichiers.`,
     },
     securite: {
-      title: 'Sécurité et confidentialité',
+      title: 'Confidentialité',
       content: `Q : Qui voit mes projets non publiés ?
-R : Vous et les collaborateurs explicitement invités.
+R : Uniquement vous et les personnes que vous avez invitées.
 
-Q : Les communications sont-elles chiffrées ?
-R : Oui, en HTTPS (TLS) sur les déploiements de production.
+Q : Mes échanges sont-ils protégés ?
+R : Oui, la connexion au site utilise une liaison sécurisée (cadenas dans le navigateur).
 
-Q : Où est le secret Moodle ?
-R : Uniquement côté serveur Moodle et variables d’environnement API — jamais dans le front public ni dans l’URL de l’iframe (seul un JWT temporaire y figure).
-
-Q : Suppression de compte
-R : Contactez le support via le formulaire du centre d’aide (compte connecté requis).`,
+Q : Puis-je supprimer mon compte ?
+R : Oui, contactez-nous via le formulaire de cette page (vous devez être connecté).`,
     },
   },
 
   guide: {
     'premier-projet': {
       title: 'Créer votre premier projet',
-      content: `1. Connectez-vous et ouvrez /edit-home
-2. Cliquez sur Nouveau projet et choisissez un nom clair (ex. « Analyse 1 — Semestre A »)
-3. Dans l’éditeur, créez une première Partie et une Notion
-4. Rédigez le contenu, insérez une image si besoin
-5. Enregistrez (Ctrl+S)
-6. Ouvrez l’Aperçu pour valider le rendu
-7. (Optionnel) Invitez un collègue via Partager
+      content: `1. Connectez-vous
+2. Dans la liste de vos projets, cliquez sur « Nouveau projet »
+3. Donnez un nom clair (ex. « Analyse 1 — semestre A »)
+4. Ajoutez une Partie et une Notion dans la table des matières
+5. Rédigez le contenu de la notion
+6. Cliquez sur « Enregistrer »
+7. Ouvrez « Aperçu » pour vérifier le rendu
+8. (Optionnel) Invitez un collègue avec « Partager »
 
-Objectif : un squelette Partie → Chapitre → Notion avant de rédiger en masse.`,
+Commencez par un petit plan avant d’écrire tout le cours d’un coup.`,
     },
     structuration: {
       title: 'Bien structurer un cours',
-      content: `Méthode recommandée
-1. Découpez le programme en Parties (modules)
-2. Chaque Partie : 2 à 5 Chapitres
-3. Chaque Chapitre : Paragraphes thématiques
-4. Chaque Paragraphe : Notions atomiques (une idée = une notion)
+      content: `Méthode simple
+1. Découpez le programme en Parties (grands modules)
+2. Chaque Partie : quelques Chapitres
+3. Chaque Chapitre : des Paragraphes thématiques
+4. Chaque Paragraphe : des Notions courtes (une idée claire par notion)
 
-Évitez
-• Une seule notion géante de 20 pages
-• Des titres ambigus (« Suite », « Suite 2 »)
-• De mélanger exercices et théorie sans granule dédié
+À éviter
+• Une seule notion très longue
+• Des titres vagues (« Suite », « Suite 2 »)
+• Mélanger théorie et exercices sans les séparer
 
 Exercices
-Attachez les exercices à la notion concernée via le panneau Exercices, pour que le parcours étudiant reste cohérent.`,
+Attachez chaque exercice à la notion concernée (panneau « Exercices »), pour que le parcours des élèves reste logique.`,
     },
     exercices: {
-      title: 'Exercices interactifs',
-      content: `1. Sélectionnez une notion dans la TOC
-2. Ouvrez le panneau Exercices à droite
-3. Créez un exercice (QCM, question ouverte, etc. selon les types disponibles)
+      title: 'Ajouter des exercices',
+      content: `1. Sélectionnez une notion dans la table des matières
+2. Ouvrez le panneau « Exercices » à droite
+3. Créez un exercice (QCM, question ouverte, etc.)
 4. Enregistrez le projet
 
-Les élèves rencontrent ces exercices dans leur parcours de lecture / classe. Corrigez et suivez les soumissions depuis l’espace classe lorsque le cours y est lié.`,
+Les élèves rencontrent ces exercices dans leur parcours de lecture ou dans la classe, selon la façon dont le cours est diffusé.`,
     },
     'classes-guide': {
       title: 'Animer une classe',
-      content: `1. Créez la classe et partagez le code
-2. Liez votre projet stabilisé
-3. Synchronisez après chaque mise à jour majeure
+      content: `1. Créez la classe et partagez le code d’invitation
+2. Liez un projet déjà bien avancé
+3. Synchronisez après chaque mise à jour importante
 4. Publiez des annonces pour les échéances
-5. Créez des devoirs (texte ou fichier) avec date limite
-6. Consultez les analytics pour repérer les notions difficiles
+5. Créez des devoirs avec date limite
+6. Consultez les statistiques pour repérer les notions difficiles
 
-Séparez bien « version de travail » (projet) et « version élèves » (dernière sync classe).`,
+Gardez à l’esprit : le projet est votre atelier ; la classe est ce que voient les élèves après synchronisation.`,
     },
     collaboration: {
       title: 'Travailler en équipe',
-      content: `• Un propriétaire unique par projet, co-auteurs invités
-• Répartissez les Parties par auteur pour limiter les conflits
+      content: `• Un propriétaire par projet, des co-auteurs invités
+• Répartissez les Parties entre vous pour limiter les conflits
 • Utilisez les commentaires pour les relectures
-• Convenez d’une convention de titres avant d’écrire
-• Faites une passe Aperçu commune avant publication ou sync classe`,
+• Mettez-vous d’accord sur les titres avant d’écrire
+• Faites un aperçu commun avant de publier ou de synchroniser une classe`,
     },
     'bonnes-pratiques': {
-      title: 'Bonnes pratiques pédagogiques',
-      content: `• Une notion = un objectif d’apprentissage mesurable
-• Alternez explication courte et exercice
-• Utilisez l’IA pour reformuler, pas pour publier sans relecture
-• En Moodle, testez l’activité avec un compte étudiant
-• Gardez des noms de projets stables : ils apparaissent dans les URLs et l’activité Moodle`,
+      title: 'Bonnes pratiques',
+      content: `• Une notion = un objectif d’apprentissage clair
+• Alternez courte explication et exercice
+• Relisez toujours le texte proposé par l’IA
+• Si vous utilisez Moodle, testez l’activité avec un compte élève
+• Choisissez des noms de projets stables : ils servent aussi dans Moodle`,
     },
   },
 
@@ -415,108 +401,80 @@ Séparez bien « version de travail » (projet) et « version élèves » (derni
       isForm: true,
     },
     'bug-report': {
-      title: 'Signaler un bug',
-      content: `Utilisez le formulaire de contact (section Support) en indiquant :
+      title: 'Signaler un problème',
+      content: `Utilisez le formulaire de contact en indiquant :
 
-• Navigateur et version (ex. Chrome 125)
-• Système d’exploitation
-• URL exacte (edit, embed Moodle, classe…)
-• Compte concerné (web ou Moodle) — sans mot de passe
-• Étapes de reproduction
-• Message d’erreur affiché
-• Capture d’écran si possible
+• Votre navigateur (Chrome, Firefox, Edge, Safari…)
+• Votre ordinateur (Windows, Mac, Linux…) ou téléphone
+• Où le problème apparaît (liste des projets, éditeur, classe, activité Moodle…)
+• Ce que vous avez fait juste avant
+• Le message d’erreur affiché, s’il y en a un
+• Une capture d’écran si possible
 
 Exemple
-« Navigateur : Firefox 126 / Windows 11
-Contexte : activité Moodle, iframe /embed/editor
-Projet : Cours-Analyse-L1
-Étapes : ouvrir l’activité → erreur Session invalide
-Attendu : éditeur du projet
-Obtenu : message session invalide »
+« Navigateur : Firefox, Windows
+Lieu : activité XCCM dans mon cours Moodle
+Actions : j’ouvre l’activité et un message de session s’affiche
+Attendu : l’éditeur du cours
+Obtenu : message d’erreur »
 
-Plus le rapport est précis, plus le correctif est rapide.`,
+Plus votre description est précise, plus nous pourrons vous aider rapidement.`,
     },
     compatibilite: {
-      title: 'Compatibilité',
-      content: `Navigateurs supportés
-• Google Chrome 100+ (recommandé)
-• Microsoft Edge 100+
-• Mozilla Firefox 100+
-• Safari 15+
+      title: 'Navigateurs et appareils',
+      content: `Navigateurs recommandés
+• Google Chrome (recommandé)
+• Microsoft Edge
+• Mozilla Firefox
+• Safari (versions récentes)
 
-Requis
-• JavaScript activé
-• Cookies / stockage local autorisés pour le domaine XCCM (auth JWT)
-• Largeur d’écran confortable : 1280px+ pour l’éditeur complet (TOC + panneau)
+Pour bien travailler
+• JavaScript activé (réglage par défaut des navigateurs modernes)
+• Autoriser le site à mémoriser votre connexion
+• Un écran assez large pour voir la table des matières et le panneau d’outils en même temps
 
-Moodle
-• Testé avec les thèmes standards ; l’iframe nécessite une hauteur suffisante (recommandé ≥ 900px)
-• L’URL de base XCCM doit être en HTTPS en production
+Dans Moodle
+• L’éditeur s’affiche dans la page du cours : une hauteur confortable est recommandée
+• Utilisez de préférence une connexion sécurisée (cadenas dans la barre d’adresse)
 
 Non supporté
-• Internet Explorer
-• Navigateurs très anciens (> 3 ans sans mise à jour)`,
+• Internet Explorer et navigateurs très anciens`,
     },
     api: {
-      title: 'API et intégration',
-      content: `Architecture
-• Front (Next.js) : interface, page /embed/editor, proxy /api/* vers l’API
-• API (Next.js) : authentification, projets, structure, classes, etc.
-• Synapse : temps réel / collaboration
+      title: 'Connecter XCCM à d’autres outils',
+      content: `XCCM 2 peut s’ouvrir depuis d’autres plateformes pédagogiques, en particulier Moodle.
 
-Authentification classique
-• POST /api/auth/login — connexion
-• POST /api/auth/register — inscription
-• GET /api/auth/me — profil (Bearer JWT)
+Pour les enseignants
+• Demandez à votre administrateur d’activer l’activité XCCM 2 dans Moodle
+• Ajoutez ensuite l’activité dans votre cours et indiquez le nom du projet
+• Vos étudiants ouvrent l’éditeur directement dans Moodle
 
-Authentification externe (Moodle / plugins)
-• POST /api/auth/external
-• Corps JSON : api_secret, email, firstname, lastname, source (ex. "moodle")
-• Réponse : JWT à passer à l’iframe
+Pour les établissements
+• L’administrateur configure une seule fois le lien entre Moodle et XCCM (adresse du service et clé secrète partagée)
+• Aucune installation n’est demandée aux enseignants au quotidien
 
-Embed éditeur
-• URL : {FRONT}/embed/editor?projectName={nom}&token={jwt}
-• Messages postMessage : XCCM_EDITOR_READY, XCCM_CONTENT_SAVED
-
-Projets
-• GET /api/projects — liste
-• POST /api/projects — création { pr_name }
-• GET /api/projects/{pr_name} — détail
-• PATCH /api/projects/{pr_name} — mise à jour
-
-Sécurité
-• Toutes les routes projet exigent un Bearer token (sauf routes publiques listées côté API)
-• PLUGIN_API_SECRET : secret partagé Moodle ↔ API, minimum long et aléatoire
-
-SDK
-Un package @xccm/editor-sdk permet d’embarquer l’éditeur dans une app React tierce via iframe + postMessage.
-
-Les URLs exactes dépendent de votre déploiement (ex. front et API sur Vercel, ou VM interne).`,
+Si vous développez votre propre outil
+• Un kit d’intégration permet d’afficher l’éditeur dans une autre application
+• Contactez l’équipe via le formulaire pour obtenir les informations d’intégration adaptées à votre cas`,
     },
     'moodle-admin': {
-      title: 'Administration du plugin Moodle',
-      content: `Installation
-1. Déployez le dossier mod_xccm dans mod/xccm de Moodle (ou public/mod/xccm selon la version)
-2. Allez dans Administration du site → Notifications pour installer le plugin
-3. Réglages du plugin mod_xccm :
-   • URL de base = URL du front XCCM (avec rewrites /api/*)
-   • Secret API = même valeur que PLUGIN_API_SECRET sur l’API
+      title: 'Configurer Moodle (administrateurs)',
+      content: `Installation (une fois)
+1. Installez le plugin d’activité XCCM 2 dans Moodle
+2. Dans les réglages du plugin, renseignez :
+   • l’adresse du site XCCM fournie par votre équipe technique
+   • la clé secrète partagée (la même que côté XCCM)
+3. Enregistrez
 
-Création d’activité
-• Ajouter une activité → XCCM2
-• Nom affiché dans le cours
-• Nom du projet XCCM (et mode individuel avec {user_id} si besoin)
-• Hauteur de l’iframe (900px ou plus recommandé)
+Pour les enseignants
+Ils ajoutent une activité « XCCM 2 » dans un cours, indiquent le nom du projet et, si besoin, une hauteur d’affichage confortable.
 
-Vérifications
-• POST manuel vers /api/auth/external avec le secret doit renvoyer un token
-• L’iframe doit charger /embed/editor sans erreur de session
-• Un premier accès crée le projet pour l’utilisateur Moodle
+Vérifications rapides
+• Ouvrir l’activité affiche l’éditeur sans message d’erreur
+• Au premier accès, le projet apparaît pour l’utilisateur
+• En cas d’échec de connexion, vérifiez que l’adresse du site et la clé secrète sont identiques des deux côtés
 
-Dépannage
-• « Token manquant » côté API : la route /api/auth/external doit être publique dans le middleware API
-• Secret refusé : écart entre Moodle et PLUGIN_API_SECRET
-• Projet introuvable : vérifier le nom exact et le compte provisionné`,
+En cas de doute, contactez l’équipe XCCM via le formulaire de support.`,
     },
   },
 };
@@ -524,151 +482,161 @@ Dépannage
 const en: HelpContentMap = {
   documentation: {
     intro: {
-      title: 'Introduction to XCCM 2',
-      content: `XCCM 2 is a platform for creating and delivering structured learning content. Teachers and institutions can build hierarchical courses, collaborate in real time, and publish through classes or an external LMS (Moodle).
+      title: 'What is XCCM 2?',
+      content: `XCCM 2 helps you build structured courses, collaborate with co-authors, and share them with learners — on the platform or from Moodle.
 
-What you can do:
-• Build courses as Parts → Chapters → Paragraphs → Notions
-• Edit with a rich TipTap editor, save, and collaborate
-• Use the pedagogical AI assistant (authoring help; Socratic mode for learners)
-• Manage classes, assignments, and interactive exercises
-• Publish to the library and share granules on the marketplace
-• Embed the editor in Moodle with the mod_xccm activity plugin
+You can:
+• Organize a course into Parts, Chapters, Paragraphs, and Notions
+• Write in a rich text editor (formatting, images, formulas)
+• Work with others on the same project at the same time
+• Use the AI assistant to draft content or guide learners
+• Run classes (announcements, assignments, exercises)
+• Publish to the library or reuse content from the marketplace
+• Open the editor from a Moodle activity without leaving your course
 
-Creation (projects) stays separate from delivery (classes, library, Moodle).`,
+Projects are your authoring space. Classes, the library, and Moodle are how you deliver content to learners.`,
     },
     demarrage: {
-      title: 'Quick start',
-      content: `1. Create an account (Register) or sign in (/login).
-2. Open /edit-home, create a project (name length 3–100), open the editor.
-3. Build the outline on the left (Parts, Chapters, Paragraphs, Notions).
-4. Use the right panel: import, marketplace, vault, AI, comments, exercises, settings.
-5. Save with Ctrl+S; use Preview and Share when not in Moodle embed.
+      title: 'Getting started',
+      content: `1. Create your account
+Click “Sign up”, enter your email, name, and password. Then use “Sign in”.
 
-A guided tour starts on first editor visit.`,
+2. Create a project
+After signing in, open your project list. Click “New project”, give it a clear name, and open it.
+
+3. Build the outline
+On the left, use the table of contents to add Parts, Chapters, Paragraphs, and Notions. Select a notion to write in the center.
+
+4. Use the right-hand tools
+Import files, marketplace, vault, AI assistant, comments, exercises, project settings, and a tutorial.
+
+5. Save and review
+Use “Save”. “Preview” shows the reader view. “Share” invites co-authors.
+
+Tip: a short guided tour appears the first time you open the editor.`,
     },
     fonctionnalites: {
-      title: 'Main features',
-      content: `Course editor — 4-level structure, WYSIWYG, Zen mode, PDF/DOCX import, structure history, collaborative blame.
+      title: 'What XCCM 2 offers',
+      content: `Course editor — four-level outline, rich formatting, Zen mode, PDF/Word import, undo/redo for structure.
 
-Collaboration — email invites, live presence, comments, Synapse sync.
+Teamwork — email invites, live presence, comments, live updates.
 
-AI — authoring panel; Socratic help for learners.
+AI assistant — writing help in the editor; guiding questions for learners (Socratic style).
 
-Classes — invite codes, announcements, assignments, project sync, exercises, analytics.
+Classes — invite codes, announcements, assignments, link a project and sync, exercises, stats.
 
-Library & sharing — published documents, marketplace granules, personal vault.
+Library & sharing — publish documents, marketplace bricks, personal vault.
 
-Moodle — mod_xccm activity, JWT auth, /embed/editor iframe, auto-create project when missing.`,
+Moodle — XCCM 2 activity, automatic sign-in, editor inside the Moodle page, project ready on first open.`,
     },
     interface: {
-      title: 'Editor interface',
-      content: `Left: course outline (TOC). Center: header, formatting toolbar, TipTap content. Right: import, marketplace, vault, AI, comments, info, settings, exercises, tutorial.
+      title: 'The editing screen',
+      content: `Left: table of contents (outline). Center: project name, formatting toolbar, writing area. Right: import, marketplace, vault, AI, comments, info, settings, exercises, tutorial.
 
-In Moodle embed (/embed/editor), Home / Preview / Share navigation is hidden so you stay inside the iframe.`,
+In Moodle, some buttons (project list, external preview, web share) are hidden so you stay inside the activity.`,
     },
     structure: {
-      title: 'Course structure',
-      content: `Part → Chapter → Paragraph → Notion (main rich-text unit). Parts may have an intro. Exercises attach to the selected granule. Project names are unique per owner.`,
+      title: 'How a course is organized',
+      content: `Part → Chapter → Paragraph → Notion (main writing unit). Parts can have a short intro. Exercises attach to the selected notion. Project names must be unique among yours.`,
     },
     collaboration: {
-      title: 'Real-time collaboration',
-      content: `Share → invite by email → co-author accepts. Connected members appear in the header. Structure changes sync live. Owner manages invites; guests access per invitation role.`,
+      title: 'Working together',
+      content: `Open the project → Share → enter an email → co-author accepts. Connected people appear at the top. Outline changes update for everyone. The owner manages invites; co-authors contribute with their granted rights.`,
     },
     ia: {
       title: 'AI assistant',
-      content: `XCCM AI (right panel) uses the current granule context to draft or refine content. Learner Socratic mode asks guiding questions instead of giving the final answer. Always review AI output before publishing.`,
+      content: `Open the AI panel on the right. It uses the current notion to help you draft or clarify text. For learners, it asks guiding questions instead of giving the full answer. Always review AI suggestions before saving.`,
     },
     classes: {
-      title: 'Classes & LMS',
+      title: 'Classes and learners',
       content: `Projects are for authoring; classes are for learners. Create a class, share the invite code, link a project, sync updates, post announcements, and collect assignments (text or file).`,
     },
     moodle: {
-      title: 'Moodle integration',
-      content: `Admin installs mod_xccm, sets XCCM front base URL (with /api/* proxy) and PLUGIN_API_SECRET. Teachers add an XCCM2 activity with a project name (optional {user_id} in individual mode). Opening the activity requests POST /api/auth/external, then loads /embed/editor?projectName=…&token=…. Missing projects are created automatically. Stay in the iframe; reload from Moodle if the session expires.`,
+      title: 'Using XCCM 2 in Moodle',
+      content: `If your institution enabled the XCCM 2 activity, add it to a Moodle course, set the project name, and open it. You are signed in automatically and the editor appears inside Moodle. On first open, the project is prepared for you. If you see a session error, reopen the activity from the course page.`,
     },
     publication: {
-      title: 'Publishing & sharing',
-      content: `Use Preview, publish to the library, share granules on the marketplace, export supported formats, and sync class-linked projects for students.`,
+      title: 'Publish and share',
+      content: `Use Preview, publish to the library, share content bricks on the marketplace, export when available, and sync class-linked projects for students.`,
     },
     shortcuts: {
-      title: 'Keyboard shortcuts',
-      content: `Ctrl+S save · Ctrl+B/I/U formatting · Alt+Z Zen · Alt+P preview (not in Moodle embed) · Alt+H home (not in embed) · Esc close dialogs.`,
+      title: 'Useful keyboard shortcuts',
+      content: `Save: Ctrl+S (Cmd+S on Mac). Bold / Italic / Underline: Ctrl+B / I / U. Zen mode: Alt+Z. Close a dialog: Esc. Some shortcuts are disabled in Moodle so you stay in the activity.`,
     },
     'slash-commands': {
-      title: 'Slash commands (/)',
-      content: `/part /chap /para /notion /img /ai /math /note — quick actions in the editor. Prefer the TOC for large course structures.`,
+      title: 'The “/” menu while writing',
+      content: `Type / in the writing area for quick actions (new part, chapter, notion, image, AI, formula, note). For large courses, build the outline from the left-hand table of contents.`,
     },
   },
   faq: {
     compte: {
-      title: 'Account & sign-in',
-      content: `Register on the sign-up page; use Forgot password on /login. Profile is under Account / Settings. Moodle provisions an XCCM user from the Moodle email — it may differ from a manually created web account.`,
+      title: 'Account and sign-in',
+      content: `Sign up, then sign in. Use “Forgot password” if needed. Edit your profile under Account / Settings. Moodle uses your Moodle email — it may differ from a manually created XCCM account.`,
     },
     editeur: {
-      title: 'Editor & projects',
-      content: `Project names are unique per user. “Failed to load project” means missing project or expired token — reload from Moodle or create the project on /edit-home. Save explicitly with Ctrl+S. Online connection required.`,
+      title: 'Editor and projects',
+      content: `You can have as many projects as you need, each with a unique name. “Could not load project” means it is missing or your session expired — reload from Moodle or create it in your project list. Always use Save. An internet connection is required.`,
     },
     classes: {
-      title: 'Classes & learners',
+      title: 'Classes and learners',
       content: `Learners join with an invite code. They do not see private drafts. After editing a linked project, sync from the class.`,
     },
     moodle: {
       title: 'Moodle',
-      content: `Invalid session → reopen the activity. Empty project on first open → auto-created for the Moodle user. Stay on /embed/editor. Only admins configure PLUGIN_API_SECRET.`,
+      content: `Invalid session → reopen the activity. Empty project on first open is normal. Stay in the Moodle page while editing. Only your Moodle administrator configures the link to XCCM.`,
     },
     problemes: {
       title: 'Common issues',
-      content: `Editor freeze → refresh and save again. Network loops → sign out, clear site data, sign in. Preview mismatch → save first. Incomplete import → check file format/size.`,
+      content: `Editor frozen → refresh, then save. Endless loading → sign out and sign in again. Preview outdated → save first. Incomplete import → check file format and size.`,
     },
     securite: {
-      title: 'Security & privacy',
-      content: `Unpublished projects are visible only to you and invited collaborators. Production uses HTTPS. Moodle secret stays on the server; the iframe only receives a short-lived JWT. Request account deletion via the contact form.`,
+      title: 'Privacy',
+      content: `Unpublished projects are only visible to you and people you invite. The site uses a secure connection. Request account deletion through the contact form while signed in.`,
     },
   },
   guide: {
     'premier-projet': {
       title: 'Create your first project',
-      content: `Open /edit-home → New project → add Part + Notion → write → Ctrl+S → Preview → optional Share. Build a small outline before writing everything.`,
+      content: `Sign in → New project → add a Part and a Notion → write → Save → Preview → optional Share. Start with a small outline.`,
     },
     structuration: {
       title: 'Structure a course well',
-      content: `Parts = modules, Chapters = sequences, Notions = atomic objectives. Avoid huge single notions and vague titles. Attach exercises to the relevant notion.`,
+      content: `Parts = modules, Chapters = sequences, Notions = clear objectives. Avoid huge single notions and vague titles. Attach exercises to the right notion.`,
     },
     exercices: {
-      title: 'Interactive exercises',
-      content: `Select a notion → Exercises panel → create (MCQ, open question, …) → save. Learners see them in their reading path / class.`,
+      title: 'Add exercises',
+      content: `Select a notion → Exercises panel → create (quiz, open question, …) → Save. Learners see them in their reading path or class.`,
     },
     'classes-guide': {
       title: 'Run a class',
-      content: `Create class → share code → link project → sync after major edits → announcements → assignments → analytics.`,
+      content: `Create the class → share the code → link a project → sync after major edits → announcements → assignments → stats.`,
     },
     collaboration: {
       title: 'Teamwork',
-      content: `One owner, invited co-authors, split Parts by author, use comments for review, shared Preview before publish/sync.`,
+      content: `One owner, invited co-authors, split Parts, use comments for review, shared Preview before publish or class sync.`,
     },
     'bonnes-pratiques': {
-      title: 'Pedagogical tips',
-      content: `One notion = one learning objective. Alternate explanation and practice. Review AI output. Test Moodle with a student account. Keep stable project names.`,
+      title: 'Best practices',
+      content: `One notion = one learning goal. Alternate explanation and practice. Review AI text. Test Moodle with a student account. Keep stable project names.`,
     },
   },
   support: {
     contact: { title: 'Contact us', isForm: true },
     'bug-report': {
-      title: 'Report a bug',
-      content: `Use the contact form with browser, OS, exact URL, web vs Moodle account (no password), steps, error message, and screenshot.`,
+      title: 'Report a problem',
+      content: `Use the contact form with your browser, device, where it happened (projects, editor, class, Moodle), steps, error message, and a screenshot if possible.`,
     },
     compatibilite: {
-      title: 'Compatibility',
-      content: `Chrome / Edge / Firefox 100+, Safari 15+. JavaScript and storage required. Editor works best at 1280px+. Moodle iframe height ≥ 900px. HTTPS in production. No Internet Explorer.`,
+      title: 'Browsers and devices',
+      content: `Chrome (recommended), Edge, Firefox, recent Safari. Allow the site to remember your session. A wide screen is more comfortable for the editor. In Moodle, the editor appears inside the course page. Internet Explorer is not supported.`,
     },
     api: {
-      title: 'API & integration',
-      content: `Front proxies /api/* to the API. Auth: /api/auth/login, /register, /me. External (Moodle): POST /api/auth/external → JWT. Embed: /embed/editor?projectName=&token=. Projects: GET/POST /api/projects, GET/PATCH /api/projects/{name}. Use PLUGIN_API_SECRET only on the server. Optional @xccm/editor-sdk for React hosts.`,
+      title: 'Connect XCCM to other tools',
+      content: `Teachers: ask your admin to enable the XCCM 2 activity in Moodle, then add it to your course. Institutions: admins configure the link once. For custom tools, contact us through the form for integration details.`,
     },
     'moodle-admin': {
-      title: 'Moodle plugin administration',
-      content: `Install mod_xccm, set base URL + API secret, add XCCM2 activity with project name and iframe height. Test /api/auth/external and first embed open (auto-creates project). Fix public route and secret mismatches if auth fails.`,
+      title: 'Set up Moodle (administrators)',
+      content: `Install the XCCM 2 activity plugin, set the XCCM site address and shared secret provided by your technical team, then let teachers add the activity to courses. If connection fails, check that address and secret match on both sides. Contact support if needed.`,
     },
   },
 };
