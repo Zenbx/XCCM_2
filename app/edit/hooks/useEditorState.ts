@@ -5,7 +5,12 @@ import { structureService, Part, Notion } from '@/services/structureService';
 import { useTranslations } from 'next-intl';
 import toast from 'react-hot-toast';
 
-export const useEditorState = (projectName: string | null, guestMode = false) => {
+export const useEditorState = (
+    projectName: string | null,
+    guestMode = false,
+    /** Moodle / iframe : crée le projet s'il n'existe pas encore */
+    autoCreateIfMissing = false,
+) => {
     const t = useTranslations('editor');
 
     const [projectData, setProjectData] = useState<any | null>(null);
@@ -69,7 +74,26 @@ export const useEditorState = (projectName: string | null, guestMode = false) =>
             if (!isSilent) setIsLoading(true);
             setError('');
 
-            const project = await projectService.getProjectByName(projectName);
+            let project;
+            try {
+                project = await projectService.getProjectByName(projectName);
+            } catch (loadErr: any) {
+                const msg = (loadErr?.message || '').toLowerCase();
+                const missing =
+                    msg.includes('non trouv') ||
+                    msg.includes('not found') ||
+                    msg.includes('404') ||
+                    msg.includes('introuvable');
+
+                if (!autoCreateIfMissing || guestMode || !missing) {
+                    throw loadErr;
+                }
+
+                // Première ouverture depuis Moodle : créer le projet au nom demandé
+                await projectService.createProject({ pr_name: projectName });
+                project = await projectService.getProjectByName(projectName);
+            }
+
             setProjectData(project);
             setLikes(0);
 
@@ -90,7 +114,7 @@ export const useEditorState = (projectName: string | null, guestMode = false) =>
             if (!isSilent) setIsLoading(false);
             return null;
         }
-    }, [projectName, fetchComments]);
+    }, [projectName, fetchComments, autoCreateIfMissing, guestMode]);
 
     const handleUpdateProjectSettings = async (data: Partial<Project>, router: any) => {
         if (!projectData || !projectName) return;

@@ -8,6 +8,7 @@ export default function MainLayoutWrapper({ children }: { children: React.ReactN
 
     const shouldHidePadding = pathname?.startsWith('/book-reader') ||
         pathname?.startsWith('/admin') ||
+        pathname?.startsWith('/embed') ||
         (pathname?.startsWith('/edit') && !pathname?.startsWith('/edit-home'));
 
     return (
