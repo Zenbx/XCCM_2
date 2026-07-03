@@ -266,54 +266,67 @@
     },
     "help": {
         "title": "Help Center",
-        "searchPlaceholder": "Search...",
+        "searchPlaceholder": "Search the documentation…",
         "searchResults": "Search results",
         "noResults": "No results found for \"{query}\".",
-        "version": "Version 2.0.0",
-        "projectYear": "HCI Project 2025",
+        "version": "XCCM 2 documentation",
+        "projectYear": "HCI project — updated 2026",
+        "onThisPage": "On this page",
+        "contactHint": "Use the form on the left (sign-in required).",
+        "docsHintTitle": "Before contacting support",
+        "docsHintBody": "Check Documentation, FAQ, and Moodle sections first — most project, iframe session, and plugin setup issues are covered there.",
         "sections": {
             "documentation": {
                 "title": "Documentation",
-                "subtitle": "Discover all XCCM 2 features",
+                "subtitle": "Up-to-date reference for XCCM 2 (editor, classes, Moodle, API)",
                 "subsections": {
-                    "intro": "Introduction to XCCM 2",
-                    "fonctionnalites": "Main features",
-                    "interface": "User interface",
-                    "shortcuts": "Keyboard Shortcuts",
-                    "slash-commands": "Slash Commands (/)",
-                    "organisation": "Course organization",
-                    "publication": "Publication and sharing"
+                    "intro": "Introduction",
+                    "demarrage": "Quick start",
+                    "fonctionnalites": "Features",
+                    "interface": "Editor UI",
+                    "structure": "Course structure",
+                    "collaboration": "Collaboration",
+                    "ia": "AI assistant",
+                    "classes": "Classes & LMS",
+                    "moodle": "Moodle integration",
+                    "publication": "Publishing & sharing",
+                    "shortcuts": "Keyboard shortcuts",
+                    "slash-commands": "Slash commands (/)"
                 }
             },
             "faq": {
                 "title": "FAQ",
-                "subtitle": "Answers to frequently asked questions",
+                "subtitle": "Answers to common questions",
                 "subsections": {
-                    "compte": "Account management",
-                    "creation": "Content creation",
+                    "compte": "Account & sign-in",
+                    "editeur": "Editor & projects",
+                    "classes": "Classes & learners",
+                    "moodle": "Moodle",
                     "problemes": "Common issues",
                     "securite": "Security & privacy"
                 }
             },
             "guide": {
-                "title": "Author Guide",
-                "subtitle": "Learn to create quality courses",
+                "title": "How-to guides",
+                "subtitle": "Step-by-step for authors and teachers",
                 "subsections": {
-                    "premier-cours": "Create your first course",
-                    "structuration": "Structure your content",
-                    "bonnes-pratiques": "Best pedagogical practices",
-                    "multimedia": "Add multimedia",
-                    "collaboration": "Work as a team"
+                    "premier-projet": "First project",
+                    "structuration": "Structure a course",
+                    "exercices": "Interactive exercises",
+                    "classes-guide": "Run a class",
+                    "collaboration": "Teamwork",
+                    "bonnes-pratiques": "Best practices"
                 }
             },
             "support": {
-                "title": "Technical Support",
-                "subtitle": "Get technical help",
+                "title": "Technical support",
+                "subtitle": "Contact, compatibility, API, and Moodle admin",
                 "subsections": {
                     "contact": "Contact us",
                     "bug-report": "Report a bug",
-                    "compatibilite": "Browser compatibility",
-                    "api": "API documentation"
+                    "compatibilite": "Compatibility",
+                    "api": "API & integration",
+                    "moodle-admin": "Moodle plugin admin"
                 }
             }
         }

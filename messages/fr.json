@@ -276,54 +276,67 @@
     },
     "help": {
         "title": "Centre d'aide",
-        "searchPlaceholder": "Rechercher...",
+        "searchPlaceholder": "Rechercher dans la documentation…",
         "searchResults": "Résultats de recherche",
         "noResults": "Aucun résultat trouvé pour \"{query}\".",
-        "version": "Version 2.0.0",
-        "projectYear": "Projet IHM 2025",
+        "version": "Documentation XCCM 2",
+        "projectYear": "Projet IHM — mise à jour 2026",
+        "onThisPage": "Sur cette page",
+        "contactHint": "Utilisez le formulaire ci-contre (connexion requise).",
+        "docsHintTitle": "Avant de contacter le support",
+        "docsHintBody": "Consultez les sections Documentation, FAQ et Moodle : la plupart des erreurs de projet, de session iframe et de configuration plugin y sont décrites.",
         "sections": {
             "documentation": {
                 "title": "Documentation",
-                "subtitle": "Découvrez toutes les fonctionnalités de XCCM 2",
+                "subtitle": "Référence à jour des fonctionnalités XCCM 2 (éditeur, classes, Moodle, API)",
                 "subsections": {
-                    "intro": "Introduction à XCCM 2",
-                    "fonctionnalites": "Fonctionnalités principales",
-                    "interface": "Interface utilisateur",
-                    "shortcuts": "Raccourcis Clavier",
-                    "slash-commands": "Commandes Slash (/)",
-                    "organisation": "Organisation des cours",
-                    "publication": "Publication et partage"
+                    "intro": "Introduction",
+                    "demarrage": "Démarrage rapide",
+                    "fonctionnalites": "Fonctionnalités",
+                    "interface": "Interface éditeur",
+                    "structure": "Structure d'un cours",
+                    "collaboration": "Collaboration",
+                    "ia": "Assistant IA",
+                    "classes": "Classes et LMS",
+                    "moodle": "Intégration Moodle",
+                    "publication": "Publication et partage",
+                    "shortcuts": "Raccourcis clavier",
+                    "slash-commands": "Commandes Slash (/)"
                 }
             },
             "faq": {
                 "title": "FAQ",
-                "subtitle": "Réponses aux questions fréquemment posées",
+                "subtitle": "Réponses aux questions les plus fréquentes",
                 "subsections": {
-                    "compte": "Gestion du compte",
-                    "creation": "Création de contenu",
+                    "compte": "Compte et connexion",
+                    "editeur": "Éditeur et projets",
+                    "classes": "Classes et élèves",
+                    "moodle": "Moodle",
                     "problemes": "Problèmes courants",
                     "securite": "Sécurité et confidentialité"
                 }
             },
             "guide": {
-                "title": "Guide Auteurs",
-                "subtitle": "Apprenez à créer des cours de qualité",
+                "title": "Guides pratiques",
+                "subtitle": "Parcours pas à pas pour auteurs et enseignants",
                 "subsections": {
-                    "premier-cours": "Créer votre premier cours",
-                    "structuration": "Structurer vos contenus",
-                    "bonnes-pratiques": "Bonnes pratiques pédagogiques",
-                    "multimedia": "Ajouter du multimédia",
-                    "collaboration": "Travailler en équipe"
+                    "premier-projet": "Premier projet",
+                    "structuration": "Structurer un cours",
+                    "exercices": "Exercices interactifs",
+                    "classes-guide": "Animer une classe",
+                    "collaboration": "Travailler en équipe",
+                    "bonnes-pratiques": "Bonnes pratiques"
                 }
             },
             "support": {
-                "title": "Support Technique",
-                "subtitle": "Obtenez de l'aide technique",
+                "title": "Support technique",
+                "subtitle": "Contact, compatibilité, API et administration Moodle",
                 "subsections": {
                     "contact": "Nous contacter",
                     "bug-report": "Signaler un bug",
-                    "compatibilite": "Compatibilité navigateurs",
-                    "api": "Documentation API"
+                    "compatibilite": "Compatibilité",
+                    "api": "API et intégration",
+                    "moodle-admin": "Admin plugin Moodle"
                 }
             }
         }
