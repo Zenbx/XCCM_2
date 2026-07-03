@@ -1227,7 +1227,7 @@ export function XCCM2Editor({ isEmbedded = false, guestMode = false }: { isEmbed
       />
       {/* 1. Sidebar TOC - Desktop (Sticky) & Mobile (Drawer) */}
       <AnimatePresence>
-        {!isZenMode && !isEmbedded && !isMindMapOpen && (isMobileTOCOpen || sidebarWidth > 0) && (
+        {!isZenMode && !isMindMapOpen && (isMobileTOCOpen || sidebarWidth > 0) && (
           <>
             {/* Mobile Backdrop */}
             {isMobileTOCOpen && (
@@ -1404,7 +1404,7 @@ export function XCCM2Editor({ isEmbedded = false, guestMode = false }: { isEmbed
 
       {/* 2. Centre : Header + Toolbar + Content Area (Sandwich) */}
       <div className={`flex-1 flex flex-col min-w-0 h-full relative overflow-hidden bg-white dark:bg-gray-900 ${isZenMode ? 'fixed inset-0 z-[100]' : ''}`}>
-        {!isZenMode && !isEmbedded && (
+        {!isZenMode && (
           <EditorHeader
             projectName={projectName || ''}
             projectData={projectData}
@@ -1602,8 +1602,8 @@ export function XCCM2Editor({ isEmbedded = false, guestMode = false }: { isEmbed
         </main>
       </div>
 
-      {/* 3. RightPanel - Pleine Hauteur (Droite) */}
-      {!isZenMode && !isEmbedded && (
+      {/* 3. RightPanel - Pleine Hauteur (Droite) — aussi en embed Moodle */}
+      {!isZenMode && (
         <RightPanel
           activePanel={rightPanel}
           exerciseRefreshKey={exerciseRefreshKey}

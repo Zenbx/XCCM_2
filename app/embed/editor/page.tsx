@@ -2,16 +2,26 @@
 
 import React, { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { XCCM2Editor } from '@/app/edit/page';
+import { XCCM2Editor } from '@/app/edit/XCCM2Editor';
 import EditorSkeletonView from '@/app/edit/components/EditorSkeletonView';
 import { authService } from '@/services/authService';
 import { useAuth } from '@/context/AuthContext';
+import { useTheme } from '@/context/ThemeContext';
 
 export default function EmbeddedEditorPage() {
   const searchParams = useSearchParams();
   const { refreshUser } = useAuth();
+  const { setTheme } = useTheme();
   const [ready, setReady] = useState(false);
   const [guestMode, setGuestMode] = useState(false);
+
+  // Moodle / iframe : toujours le thème clair (ignore préférence système / utilisateur)
+  useEffect(() => {
+    setTheme('light');
+    document.documentElement.classList.remove('dark');
+    document.documentElement.classList.add('light');
+    document.documentElement.style.colorScheme = 'light';
+  }, [setTheme]);
 
   useEffect(() => {
     const token = searchParams.get('token');
