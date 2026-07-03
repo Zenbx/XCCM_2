@@ -1,7 +1,7 @@
 // context/AuthContext.tsx
 "use client";
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { authService } from '@/services/authService';
 
@@ -11,7 +11,7 @@ interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  isAdmin: boolean; // Ajout de la commodité isAdmin
+  isAdmin: boolean;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   register: (userData: any) => Promise<void>;
@@ -30,14 +30,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const isAuthenticated = !!user;
   const isAdmin = isAuthenticated && user?.role === 'admin';
 
-  useEffect(() => {
-    checkAuth();
-  }, []);
-
-  const checkAuth = async () => {
+  const checkAuth = useCallback(async () => {
     setIsLoading(true);
     try {
-      // Essayer de charger rapidement depuis le cache local d'abord
       const cachedUser = typeof window !== 'undefined'
         ? localStorage.getItem('xccm2_user')
         : null;
@@ -46,42 +41,42 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         try {
           const parsed = JSON.parse(cachedUser);
           setUser(parsed);
-          // Continuer à vérifier en arrière-plan
           setIsLoading(false);
         } catch {
-          // Cache invalide, ignorer
+          // Cache invalide
         }
       }
 
-      // Vérifier avec l'API pour s'assurer que la session est valide
       const userData = await authService.getCurrentUser();
       setUser(userData);
-    } catch (error) {
+    } catch {
       setUser(null);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
-  const login = async (email: string, password: string) => {
+  useEffect(() => {
+    checkAuth();
+  }, [checkAuth]);
+
+  const login = useCallback(async (email: string, password: string) => {
     const loggedInUser = await authService.login(email, password);
     setUser(loggedInUser);
 
-    // Redirection basée sur le rôle
     if (loggedInUser.role === 'admin') {
       router.push('/admin');
     } else {
       router.push('/edit-home');
     }
-  };
+  }, [router]);
 
-  const logout = async () => {
+  const logout = useCallback(async () => {
     await authService.logout();
     setUser(null);
     router.push('/');
-  };
+  }, [router]);
 
-  // Écouteur global pour l'expiration de session (401)
   useEffect(() => {
     const handleAuthExpired = () => {
       console.warn("🔔 [AuthContext] Session expirée détectée globalement. Déconnexion...");
@@ -92,43 +87,52 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => window.removeEventListener('xccm2:auth-expired', handleAuthExpired);
   }, [logout]);
 
-  const register = async (userData: any) => {
+  const register = useCallback(async (userData: any) => {
     const newUser = await authService.register(userData);
     setUser(newUser);
     router.push('/edit-home');
-  };
+  }, [router]);
 
-  const refreshUser = async () => {
+  const refreshUser = useCallback(async () => {
     await checkAuth();
-  };
+  }, [checkAuth]);
 
-  const getAuthToken = () => {
+  const getAuthToken = useCallback(() => {
     return authService.getAuthToken();
-  };
+  }, []);
 
-  // Protection de route raffinée
   useEffect(() => {
     const publicRoutes = ['/', '/login', '/register', '/library', '/help', '/about', '/book-reader', '/auth', '/embed', '/sandbox'];
     const isPublicRoute = publicRoutes.some(route => pathname === route || pathname.startsWith(route + '/'));
 
-    if (isLoading) return; // Ne rien faire pendant le chargement initial
+    if (isLoading) return;
 
     if (!isAuthenticated && !isPublicRoute) {
-      // Vérifier si un token existe malgré l'absence d'objet user (gap d'hydratation)
       const token = authService.getAuthToken();
       if (token) {
-        console.log("⏳ Hydratation en cours (token présent mais user absent), on attend...");
         return;
       }
-
-      console.log("🛑 Non authentifié sur une route protégée, redirection vers /login");
       router.push('/login');
     }
   }, [isLoading, isAuthenticated, pathname, router]);
 
+  const value = useMemo(
+    () => ({
+      user,
+      isAuthenticated,
+      isLoading,
+      isAdmin,
+      login,
+      logout,
+      register,
+      refreshUser,
+      getAuthToken,
+    }),
+    [user, isAuthenticated, isLoading, isAdmin, login, logout, register, refreshUser, getAuthToken],
+  );
 
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated, isLoading, isAdmin, login, logout, register, refreshUser, getAuthToken }}>
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { Suspense, useEffect, useState } from 'react';
+import React, { Suspense, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { XCCM2Editor } from '@/app/edit/XCCM2Editor';
 import EditorSkeletonView from '@/app/edit/components/EditorSkeletonView';
@@ -14,8 +14,9 @@ export default function EmbeddedEditorPage() {
   const { setTheme } = useTheme();
   const [ready, setReady] = useState(false);
   const [guestMode, setGuestMode] = useState(false);
+  const initDone = useRef(false);
 
-  // Moodle / iframe : toujours le thème clair (ignore préférence système / utilisateur)
+  // Moodle / iframe : toujours le thème clair
   useEffect(() => {
     setTheme('light');
     document.documentElement.classList.remove('dark');
@@ -23,7 +24,11 @@ export default function EmbeddedEditorPage() {
     document.documentElement.style.colorScheme = 'light';
   }, [setTheme]);
 
+  // Une seule initialisation (évite la boucle /api/auth/me)
   useEffect(() => {
+    if (initDone.current) return;
+    initDone.current = true;
+
     const token = searchParams.get('token');
 
     const init = async () => {
@@ -32,11 +37,9 @@ export default function EmbeddedEditorPage() {
         try {
           await refreshUser();
         } catch {
-          // Bad token — fall through to guest mode
           setGuestMode(true);
         }
       } else {
-        // No token provided: render editor in guest/demo mode without auth
         setGuestMode(true);
       }
       setReady(true);
@@ -53,7 +56,9 @@ export default function EmbeddedEditorPage() {
     };
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
-  }, [searchParams, refreshUser]);
+    // Intentionnellement sans refreshUser / searchParams en deps : init unique au montage
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div className="w-full h-screen bg-white m-0 p-0 overflow-hidden">
