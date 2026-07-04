@@ -335,7 +335,12 @@ export async function executeAIAction(
       } | undefined;
 
       if (path?.partTitle && path?.chapterTitle && path?.paraName && path?.notionName) {
-        const ids = await resolveNotionIds(projectName, path);
+        const ids = await resolveNotionIds(projectName, {
+          partTitle: path.partTitle,
+          chapterTitle: path.chapterTitle,
+          paraName: path.paraName,
+          notionName: path.notionName,
+        });
         if (ids) {
           ex.part_id = ids.part_id;
           ex.chapter_id = ids.chapter_id;
