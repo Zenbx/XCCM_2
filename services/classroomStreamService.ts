@@ -51,7 +51,7 @@ export interface AssignmentSubmission {
 
 export interface Notification {
   id: string;
-  type: 'NEW_ASSIGNMENT' | 'COURSE_UPDATE' | 'NEW_ANNOUNCEMENT';
+  type: 'NEW_ASSIGNMENT' | 'COURSE_UPDATE' | 'NEW_ANNOUNCEMENT' | 'PROJECT_INVITATION';
   message: string;
   link?: string;
   is_read: boolean;

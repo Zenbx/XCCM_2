@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Bell, BookOpen, FileText, Megaphone, CheckCheck, X } from 'lucide-react';
+import { Bell, BookOpen, FileText, Megaphone, CheckCheck, Mail } from 'lucide-react';
 import { classroomStreamService, Notification } from '@/services/classroomStreamService';
 import { useRouter } from 'next/navigation';
 
@@ -71,6 +71,8 @@ const NotificationBell: React.FC = () => {
       case 'NEW_ASSIGNMENT': return <FileText className="w-4 h-4 text-amber-500" />;
       case 'NEW_ANNOUNCEMENT': return <Megaphone className="w-4 h-4 text-[#99334C]" />;
       case 'COURSE_UPDATE': return <BookOpen className="w-4 h-4 text-green-500" />;
+      case 'PROJECT_INVITATION': return <Mail className="w-4 h-4 text-purple-500" />;
+      default: return <Bell className="w-4 h-4 text-gray-400" />;
     }
   };
 
