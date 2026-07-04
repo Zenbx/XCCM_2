@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "next build --webpack",
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run",
@@ -17,6 +17,7 @@
     "@ai-sdk/anthropic": "^3.0.66",
     "@ai-sdk/google": "^3.0.58",
     "@ai-sdk/react": "^3.0.148",
+    "@fontsource/poppins": "^5.2.7",
     "@hocuspocus/provider": "^3.4.3",
     "@tiptap/extension-collaboration": "2.27.2",
     "@tiptap/extension-collaboration-cursor": "2.27.2",

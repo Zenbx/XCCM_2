@@ -1764,15 +1764,32 @@ export function XCCM2Editor({ isEmbedded = false, guestMode = false }: { isEmbed
           onRestore={async (content) => {
             if (!projectName || !currentContext.notion?.notion_id) return;
             try {
+              // force_ydoc: aligne le CRDT en base sur le HTML restauré (Mind Map OK,
+              // mais l'éditeur collab lit le ydoc — sans ça la restore est ignorée).
               await structureService.updateGranuleById(
                 projectName,
                 currentContext.notion.notion_id,
-                { notion_content: content }
+                { notion_content: content, force_ydoc: true }
               );
               setEditorContent(content);
               setHasUnsavedChanges(false);
               lastSaveTimestamp.current = Date.now();
-              setCollabSessionKey((k) => k + 1);
+
+              // Appliquer au Yjs live (pas de remount si OK) : un remount déclencherait
+              // onStoreDocument avec l'ancien CRDT et écraserait force_ydoc en base.
+              let appliedLive = false;
+              if (tiptapEditor && !tiptapEditor.isDestroyed) {
+                try {
+                  tiptapEditor.commands.setContent(content, false);
+                  appliedLive = true;
+                } catch (e) {
+                  console.warn('[Restore] setContent collab failed', e);
+                }
+              }
+              if (!appliedLive) {
+                setCollabSessionKey((k) => k + 1);
+              }
+
               setStructure((prev) => prev.map((part) => ({
                 ...part,
                 chapters: part.chapters?.map((chapter) => ({
