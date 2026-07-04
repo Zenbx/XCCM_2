@@ -9,7 +9,9 @@ import {
   normalizeStructurePayload,
 } from '@/services/courseAgentExecutor';
 import {
+  buildExercisePreviewSteps,
   buildStructurePreviewSteps,
+  detectAgentIntent,
   extractStructureParts,
   formatAgentLiveMessage,
 } from '@/lib/agentUxHelpers';
@@ -162,14 +164,26 @@ export function useCourseAgent(options: UseCourseAgentOptions) {
     pushLiveStep('⏳ Analyse de votre demande…', onLiveMessage);
 
     try {
-      pushLiveStep('⏳ Génération de la structure avec Mistral (parties, chapitres, intros, contenus)…', onLiveMessage, true);
+      const intent = detectAgentIntent(userPrompt);
+      const genLabel = intent.wantsCourse && intent.wantsExercises
+        ? '⏳ Génération du cours et des exercices avec Mistral…'
+        : intent.wantsExercises
+          ? '⏳ Génération d\'exercices avec Mistral (QCM, QRO, textes à trous…)…'
+          : '⏳ Génération de la structure avec Mistral (parties, chapitres, intros, contenus)…';
+
+      pushLiveStep(genLabel, onLiveMessage, true);
 
       const { text, plan, actions } = await runAgent(userPrompt, chatHistory, context, 'agent');
 
       pushLiveStep('✅ Réponse Mistral reçue', onLiveMessage);
 
       if (!actions.length) {
-        pushLiveStep('⚠️ Aucune structure générée — précisez le sujet du cours', onLiveMessage);
+        pushLiveStep(
+          intent.wantsExercises && !intent.wantsCourse
+            ? '⚠️ Aucun exercice généré — précisez les types (QCM, QRO, textes à trous…)'
+            : '⚠️ Aucune structure générée — précisez le sujet du cours',
+          onLiveMessage
+        );
         return { text, plan, actions, execution: null };
       }
 
@@ -180,7 +194,7 @@ export function useCourseAgent(options: UseCourseAgentOptions) {
         for (const line of previewSteps) {
           pushLiveStep(line, onLiveMessage);
         }
-      } else {
+      } else if (actions[0]?.type === 'create_structure') {
         const normalized = normalizeStructurePayload(
           actions[0]?.data as Record<string, unknown>
         );
@@ -191,15 +205,28 @@ export function useCourseAgent(options: UseCourseAgentOptions) {
         }
       }
 
+      const exercisePreview = buildExercisePreviewSteps(actions);
+      for (const line of exercisePreview) {
+        pushLiveStep(line, onLiveMessage);
+      }
+
       const projectName = context.projectName;
       if (!projectName) throw new Error('Aucun projet actif');
 
-      pushLiveStep('⏳ Injection dans le projet…', onLiveMessage);
+      const injectLabel = structureAction && exercisePreview.length
+        ? '⏳ Injection du cours puis génération d\'exercices…'
+        : exercisePreview.length
+          ? '⏳ Génération d\'exercices…'
+          : '⏳ Injection dans le projet…';
+      pushLiveStep(injectLabel, onLiveMessage);
 
       const execution = await executeActions(actions, projectName, onLiveMessage);
 
+      const exCount = actions.filter((a) => a.type === 'create_exercise').length;
       pushLiveStep(
-        `✅ **Terminé** — ${execution.succeeded} action(s) réussie(s)${execution.failed ? `, ${execution.failed} échec(s)` : ''}`,
+        `✅ **Terminé** — ${execution.succeeded} action(s) réussie(s)`
+        + (exCount ? `, ${exCount} exercice(s)` : '')
+        + (execution.failed ? `, ${execution.failed} échec(s)` : ''),
         onLiveMessage
       );
 

@@ -34,6 +34,53 @@ function assertNotAborted(signal?: AbortSignal) {
   }
 }
 
+const TYPE_LABELS: Record<string, string> = {
+  QCU: 'QCU',
+  QCM: 'QCM',
+  QRO: 'QRO',
+  QROA: 'QRO ouverte',
+  CODE: 'Code',
+  FILL_BLANKS: 'Texte à trous',
+};
+
+/** Résout notionPath (titres) → IDs Mongo pour rattacher l'exercice. */
+async function resolveNotionIds(
+  projectName: string,
+  path: { partTitle: string; chapterTitle: string; paraName: string; notionName: string }
+): Promise<{
+  part_id: string;
+  chapter_id: string;
+  para_id: string;
+  notion_id: string;
+} | null> {
+  try {
+    const structure = await structureService.getProjectStructureOptimized(projectName);
+    const norm = (s: string) => s.toLowerCase().trim();
+
+    const part = structure.find((p) => norm(p.part_title) === norm(path.partTitle));
+    if (!part) return null;
+
+    const chapter = part.chapters?.find((c) => norm(c.chapter_title) === norm(path.chapterTitle));
+    if (!chapter) return null;
+
+    const para = chapter.paragraphs?.find((p) => norm(p.para_name) === norm(path.paraName));
+    if (!para) return null;
+
+    const notion = para.notions?.find((n) => norm(n.notion_name) === norm(path.notionName));
+    if (!notion) return null;
+
+    return {
+      part_id: part.part_id,
+      chapter_id: chapter.chapter_id,
+      para_id: para.para_id,
+      notion_id: notion.notion_id,
+    };
+  } catch (err) {
+    console.warn('[agent] resolveNotionIds failed:', err);
+    return null;
+  }
+}
+
 /** Normalise le payload create_structure (titres AI → format bulk API) */
 export function normalizeStructurePayload(data: Record<string, unknown> | undefined | null) {
   const raw = data && typeof data === 'object' ? data : {};
@@ -269,11 +316,40 @@ export async function executeAIAction(
     }
 
     case 'create_exercise': {
-      onProgress?.({ phase: 'exercise', message: 'Création de l\'exercice…' });
       const ex = { ...action.data } as Record<string, unknown>;
+      const title = String(ex.title || 'Exercice');
+      const type = String(ex.type || 'QCM');
+      onProgress?.({
+        phase: 'exercise',
+        message: `Génération d'exercices — ${type} « ${title} »…`,
+      });
+
       if (project?.pr_id) ex.project_id = project.pr_id;
+
+      // Rattacher à la notion (sinon invisible dans ExercisePanel au niveau notion)
+      const path = (ex.notionPath || ex.notion_path) as {
+        partTitle?: string;
+        chapterTitle?: string;
+        paraName?: string;
+        notionName?: string;
+      } | undefined;
+
+      if (path?.partTitle && path?.chapterTitle && path?.paraName && path?.notionName) {
+        const ids = await resolveNotionIds(projectName, path);
+        if (ids) {
+          ex.part_id = ids.part_id;
+          ex.chapter_id = ids.chapter_id;
+          ex.para_id = ids.para_id;
+          ex.notion_id = ids.notion_id;
+        }
+      }
+
+      // Nettoyer les champs non acceptés par l'API
+      delete ex.notionPath;
+      delete ex.notion_path;
+
       await exerciseService.createExercise(ex as Parameters<typeof exerciseService.createExercise>[0]);
-      return { summary: `Exercice créé : ${ex.title}` };
+      return { summary: `Exercice ${type} créé : ${title}` };
     }
 
     default:
@@ -291,27 +367,114 @@ export async function executeAllActions(
   let failed = 0;
   const summaries: string[] = [];
   let stats: StructureCreationStats | undefined;
+  const liveSteps: string[] = [];
+
+  const exerciseActions = actions.filter((a) => a.type === 'create_exercise');
+  const structureActions = actions.filter((a) => a.type === 'create_structure');
+  let exerciseIndex = 0;
 
   for (let i = 0; i < actions.length; i++) {
-    callbacks.onProgress?.({
-      phase: actions[i].type === 'create_exercise' ? 'exercise' : actions[i].type === 'write_content' ? 'content' : 'structure',
-      message: `Action ${i + 1}/${actions.length}…`,
-      current: i + 1,
-      total: actions.length,
-    });
+    const action = actions[i];
+    const phase =
+      action.type === 'create_exercise'
+        ? 'exercise'
+        : action.type === 'write_content'
+          ? 'content'
+          : 'structure';
+
+    if (action.type === 'create_exercise') {
+      exerciseIndex++;
+      const exType = String((action.data as { type?: string })?.type || 'QCM');
+      const exTitle = String((action.data as { title?: string })?.title || 'Exercice');
+      const label = TYPE_LABELS[exType] || exType;
+      const line = `⏳ Génération d'exercices (${exerciseIndex}/${exerciseActions.length}) — ${label} « ${exTitle} »…`;
+      liveSteps.push(line);
+      callbacks.onProgress?.({
+        phase: 'exercise',
+        message: line,
+        current: exerciseIndex,
+        total: exerciseActions.length,
+        steps: [...liveSteps],
+      });
+    } else if (action.type === 'create_structure') {
+      const line = `⏳ Injection de la structure (${structureActions.length ? 'cours' : 'contenu'})…`;
+      liveSteps.push(line);
+      callbacks.onProgress?.({
+        phase: 'structure',
+        message: line,
+        current: i + 1,
+        total: actions.length,
+        steps: [...liveSteps],
+      });
+    } else {
+      callbacks.onProgress?.({
+        phase,
+        message: `Action ${i + 1}/${actions.length}…`,
+        current: i + 1,
+        total: actions.length,
+        steps: [...liveSteps],
+      });
+    }
 
     try {
-      const result = await executeAIAction(actions[i], projectName, project, callbacks);
+      const result = await executeAIAction(action, projectName, project, {
+        ...callbacks,
+        onProgress: (p) => {
+          // Remplacer la dernière ligne « en cours » par le détail, sans perdre le journal
+          callbacks.onProgress?.({
+            ...p,
+            steps: p.steps?.length ? p.steps : [...liveSteps],
+          });
+        },
+      });
       summaries.push(result.summary);
+
+      if (action.type === 'create_exercise') {
+        liveSteps[liveSteps.length - 1] = `✅ ${result.summary}`;
+        callbacks.onProgress?.({
+          phase: 'exercise',
+          message: result.summary,
+          current: exerciseIndex,
+          total: exerciseActions.length,
+          steps: [...liveSteps],
+        });
+      } else if (action.type === 'create_structure') {
+        liveSteps[liveSteps.length - 1] = `✅ ${result.summary}`;
+        callbacks.onProgress?.({
+          phase: 'structure',
+          message: result.summary,
+          steps: [...liveSteps],
+        });
+      }
+
       if (result.stats) stats = result.stats;
       succeeded++;
     } catch (error: unknown) {
       if (error instanceof DOMException && error.name === 'AbortError') throw error;
       failed++;
-      summaries.push(error instanceof Error ? error.message : 'Erreur inconnue');
+      const errMsg = error instanceof Error ? error.message : 'Erreur inconnue';
+      summaries.push(errMsg);
+      if (action.type === 'create_exercise' || action.type === 'create_structure') {
+        liveSteps[liveSteps.length - 1] = `❌ ${errMsg}`;
+        callbacks.onProgress?.({
+          phase,
+          message: errMsg,
+          steps: [...liveSteps],
+        });
+      }
     }
   }
 
-  callbacks.onProgress?.({ phase: 'done', message: `Terminé : ${succeeded} action(s) réussie(s)` });
+  const exerciseCount = exerciseActions.length;
+  const doneMsg = exerciseCount
+    ? `Terminé : ${succeeded} action(s) réussie(s)${exerciseCount ? `, dont ${exerciseCount} exercice(s)` : ''}`
+    : `Terminé : ${succeeded} action(s) réussie(s)`;
+
+  liveSteps.push(`✅ **${doneMsg}**`);
+  callbacks.onProgress?.({
+    phase: 'done',
+    message: doneMsg,
+    steps: [...liveSteps],
+  });
   return { succeeded, failed, summaries, stats };
 }

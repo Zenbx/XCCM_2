@@ -1,5 +1,54 @@
 import type { AIAction } from '@/services/courseAgentExecutor';
 
+export type AgentIntent = {
+  wantsCourse: boolean;
+  wantsExercises: boolean;
+  exerciseTypes: string[];
+};
+
+/** Détecte cours / exercices / les deux (miroir backend). */
+export function detectAgentIntent(prompt: string): AgentIntent {
+  const lower = (prompt || '').toLowerCase();
+
+  const wantsExercises = /exercice|exercices|quiz|qcm|qcu|qro|texte[s]?\s*à\s*trous|texte[s]?\s*a\s*trous|fill[\s_-]?blank|évaluation|evaluation formative|auto[\s-]?évaluation/i.test(lower);
+
+  const wantsCourse = /cours|structure|partie|chapitre|paragraphe|notion|construis|construire|génère un cours|genere un cours|créer un cours|cree un cours|module|leçon|lecon|contenu pédagogique|contenu pedagogique/i.test(lower)
+    || (!wantsExercises);
+
+  const exerciseTypes: string[] = [];
+  if (/\bqcu\b/i.test(lower)) exerciseTypes.push('QCU');
+  if (/\bqcm\b/i.test(lower)) exerciseTypes.push('QCM');
+  if (/\bqro\b/i.test(lower)) exerciseTypes.push('QRO');
+  if (/texte[s]?\s*à\s*trous|texte[s]?\s*a\s*trous|fill[\s_-]?blank/i.test(lower)) {
+    exerciseTypes.push('FILL_BLANKS');
+  }
+  if (/\bcode\b/i.test(lower) && wantsExercises) exerciseTypes.push('CODE');
+  if (wantsExercises && exerciseTypes.length === 0) {
+    exerciseTypes.push('QCM', 'QRO', 'FILL_BLANKS');
+  }
+
+  return {
+    wantsCourse: wantsCourse || !wantsExercises,
+    wantsExercises,
+    exerciseTypes,
+  };
+}
+
+export function buildExercisePreviewSteps(actions: AIAction[]): string[] {
+  const exercises = actions.filter((a) => a.type === 'create_exercise');
+  if (!exercises.length) return [];
+
+  const lines = [`**Génération d'exercices** — ${exercises.length} exercice(s)`];
+  for (const ex of exercises) {
+    const data = ex.data as { type?: string; title?: string; notionPath?: { notionName?: string } };
+    const type = data.type || 'QCM';
+    const title = data.title || 'Sans titre';
+    const notion = data.notionPath?.notionName;
+    lines.push(`   📝 ${type} — **${title}**${notion ? ` _(sur « ${notion} »)_` : ''}`);
+  }
+  return lines;
+}
+
 export type StructurePart = {
   title: string;
   intro?: string;
@@ -84,6 +133,26 @@ export function formatCourseCreatedSummary(
   stats?: { parts?: number; chapters?: number; paragraphs?: number; notions?: number }
 ): string {
   const structureAction = actions.find((a) => a.type === 'create_structure');
+  const exerciseActions = actions.filter((a) => a.type === 'create_exercise');
+
+  if (!structureAction && exerciseActions.length) {
+    const lines = [
+      `✅ **${exerciseActions.length} exercice(s) créé(s).**`,
+      '',
+      '### 📝 Exercices',
+      '',
+    ];
+    for (const ex of exerciseActions) {
+      const data = ex.data as { type?: string; title?: string; notionPath?: { notionName?: string } };
+      lines.push(
+        `- **${data.type || 'QCM'}** — ${data.title || 'Exercice'}`
+        + (data.notionPath?.notionName ? ` _(notion « ${data.notionPath.notionName} »)_` : '')
+      );
+    }
+    lines.push('', 'Ouvrez le panneau **Exercices** sur la notion concernée pour les voir.');
+    return lines.join('\n').trim();
+  }
+
   if (!structureAction) return '✅ **Cours créé.**';
 
   const parts = extractStructureParts(structureAction.data as Record<string, unknown>);
@@ -152,6 +221,20 @@ export function formatCourseCreatedSummary(
   }
 
   lines.push(`**Total contenu des notions** : **${totalWords} mot(s)** sur ${totalNotions} notion(s).`);
+
+  if (exerciseActions.length) {
+    lines.push('');
+    lines.push(`### 📝 Exercices (${exerciseActions.length})`);
+    lines.push('');
+    for (const ex of exerciseActions) {
+      const data = ex.data as { type?: string; title?: string; notionPath?: { notionName?: string } };
+      lines.push(
+        `- **${data.type || 'QCM'}** — ${data.title || 'Exercice'}`
+        + (data.notionPath?.notionName ? ` _(notion « ${data.notionPath.notionName} »)_` : '')
+      );
+    }
+    lines.push('', 'Ouvrez le panneau **Exercices** sur la notion concernée pour les voir.');
+  }
 
   if (missingIntros > 0 || missingContent > 0) {
     lines.push('');
