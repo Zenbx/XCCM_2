@@ -10,7 +10,8 @@ import { Color } from '@tiptap/extension-color';
 import { FontFamily } from '@tiptap/extension-font-family';
 import { TextAlign } from '@tiptap/extension-text-align';
 import Highlight from '@tiptap/extension-highlight';
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
+import { hasSubstantialHtml, isEmptyEditorHtml } from '@/lib/editorContentUtils';
 import { NoteBlock } from './Blocks/NoteBlock';
 import { CaptureZoneBlock } from './Blocks/CaptureZoneBlock';
 import { MathBlock } from './Blocks/MathBlock';
@@ -231,6 +232,10 @@ const TiptapEditor: React.FC<TiptapEditorProps> = (props) => {
     content: hasYDoc ? undefined : (content || ''),
     editable: !readOnly,
     onCreate: ({ editor }) => {
+      // Si le CRDT est vide mais le HTML (agent / Mind Map) est présent, injecter une fois.
+      if (hasYDoc && hasSubstantialHtml(content) && isEmptyEditorHtml(editor.getHTML())) {
+        editor.commands.setContent(content, false);
+      }
       onReady?.(editor);
     },
     onUpdate: ({ editor }) => {
@@ -263,10 +268,25 @@ const TiptapEditor: React.FC<TiptapEditorProps> = (props) => {
     }
   }, [content, editor]);
 
-  // Note: client-side Yjs seeding removed.
-  // The Synapse server handles seeding via onLoadDocument (TiptapTransformer.toYdoc from DB).
-  // Client-side seeding races with the Hocuspocus sync and creates duplicate Yjs operations,
-  // causing CRDT conflicts and content divergence between collaborators.
+  // Filet de sécurité post-sync : CRDT toujours vide alors que le HTML structure est là
+  // (contenu agent, seed serveur manqué). setContent écrit dans Yjs via Collaboration.
+  const seededDocRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!editor || !collaboration || !hasYDoc) return;
+    const docKey = collaboration.documentId;
+    if (seededDocRef.current === docKey) return;
+    if (!hasSubstantialHtml(content)) return;
+    if (!isEmptyEditorHtml(editor.getHTML())) {
+      seededDocRef.current = docKey;
+      return;
+    }
+    seededDocRef.current = docKey;
+    queueMicrotask(() => {
+      if (editor && !editor.isDestroyed && isEmptyEditorHtml(editor.getHTML())) {
+        editor.commands.setContent(content, false);
+      }
+    });
+  }, [editor, collaboration, hasYDoc, content, collaboration?.documentId]);
 
   // Gérer le mode lecture seule
   useEffect(() => {

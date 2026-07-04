@@ -788,6 +788,7 @@ export function XCCM2Editor({ isEmbedded = false, guestMode = false }: { isEmbed
     localClientId,
     provider,
     yDoc,
+    isSynced: synapseSynced,
     connectionStatus: synapseStatus,
     reconnect: synapseReconnect,
   } = useSynapseSync({
@@ -821,21 +822,22 @@ export function XCCM2Editor({ isEmbedded = false, guestMode = false }: { isEmbed
     };
   }, [authUser?.user_id, collaborationUsername, userColor, synapseDocId, presenceGranuleName]);
 
-  // yDoc is now available synchronously (useMemo in useSynapseSync).
-  // Return collaborationData as soon as yDoc exists — provider may still be null
-  // (connecting). TiptapEditor handles provider=null by showing content without cursors.
+  // Attendre la 1ère sync Synapse avant d'activer Yjs : sinon TipTap se lie à un
+  // CRDT vide (contenu agent/Mind Map invisible) et l'auto-save peut partir trop tôt.
+  // Avant sync, l'éditeur affiche le HTML (notion_content) — même source que la Mind Map.
   const collaborationData = useMemo(() => {
-    if (!synapseDocId || !yDoc) return undefined;
+    if (!synapseDocId || !yDoc || !synapseSynced) return undefined;
     return {
-      provider,          // null while connecting, set once WebSocket is up
+      provider,
       documentId: synapseDocId,
       username: collaborationUsername,
       userColor,
       colors: ['#99334C', '#2563EB', '#10B981', '#F59E0B'],
-      yDoc
+      yDoc,
+      isSynced: synapseSynced,
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [synapseDocId, provider, yDoc]);
+  }, [synapseDocId, provider, yDoc, synapseSynced]);
 
   // Scroll editor to a collaborator's cursor position
   const handleUserClick = useCallback((user: any) => {
@@ -939,6 +941,12 @@ export function XCCM2Editor({ isEmbedded = false, guestMode = false }: { isEmbed
 
       if (isAuto && agentSessionActiveRef.current) {
         console.log('[Save] Skip auto-save: agent en cours');
+        return;
+      }
+
+      // Ne pas sauvegarder un éditeur encore lié à un CRDT non synchronisé
+      if (isAuto && synapseDocId && !synapseSynced) {
+        console.log('[Save] Skip auto-save: attente sync collab');
         return;
       }
 
