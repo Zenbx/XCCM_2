@@ -123,6 +123,41 @@ class AdminService {
     }
 
     /**
+     * Supprime un template (créateur ou admin)
+     */
+    async deleteTemplate(templateId: string) {
+        const response = await authenticatedFetch(
+            `${API_BASE_URL}/api/templates/${templateId}`,
+            { method: 'DELETE' }
+        );
+        if (!response.ok) {
+            const error = await response.json().catch(() => ({}));
+            throw new Error(error.message || 'Erreur lors de la suppression du modèle');
+        }
+    }
+
+    /**
+     * Met à jour les métadonnées d'un template
+     */
+    async updateTemplate(
+        templateId: string,
+        data: { template_name?: string; description?: string; category?: string; is_public?: boolean }
+    ) {
+        const response = await authenticatedFetch(
+            `${API_BASE_URL}/api/templates/${templateId}`,
+            {
+                method: 'PATCH',
+                body: JSON.stringify(data),
+            }
+        );
+        if (!response.ok) {
+            const error = await response.json().catch(() => ({}));
+            throw new Error(error.message || 'Erreur lors de la mise à jour du modèle');
+        }
+        return response.json();
+    }
+
+    /**
      * Met à jour le rôle d'un utilisateur (Admin)
      */
     async updateUserRole(userId: string, role: string) {

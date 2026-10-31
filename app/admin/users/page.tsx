@@ -9,9 +9,7 @@ import {
     Loader2,
     Shield,
     Trash2,
-    UserPlus,
     Clock,
-    Mail,
     UserCheck
 } from 'lucide-react';
 import { adminService } from '@/services/adminService';
@@ -19,12 +17,18 @@ import toast from 'react-hot-toast';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 
+type ConfirmModal =
+    | { isOpen: true; type: 'role'; userId: string; currentRole: string }
+    | { isOpen: true; type: 'delete'; userId: string; label: string }
+    | null;
+
 export default function UserManagement() {
-    const { isAdmin, isLoading: authLoading } = useAuth();
+    const { isAdmin, isLoading: authLoading, user: authUser } = useAuth();
     const router = useRouter();
     const [searchTerm, setSearchTerm] = useState('');
     const [users, setUsers] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const [confirmModal, setConfirmModal] = useState<ConfirmModal>(null);
 
     useEffect(() => {
         if (!authLoading) {
@@ -41,7 +45,6 @@ export default function UserManagement() {
         try {
             setLoading(true);
             const data = await adminService.getAllUsers();
-            // Handle both { users: [...] } and direct [...] responses
             const usersList = Array.isArray(data) ? data : ((data as any)?.users || data || []);
             setUsers(usersList);
         } catch (error) {
@@ -59,8 +62,28 @@ export default function UserManagement() {
             toast.success("Rôle mis à jour");
             fetchUsers();
             setConfirmModal(null);
-        } catch (error) {
+        } catch {
             toast.error("Échec de la mise à jour");
+        }
+    };
+
+    const deleteUser = async (userId: string) => {
+        try {
+            await adminService.deleteUser(userId);
+            toast.success("Utilisateur supprimé");
+            setConfirmModal(null);
+            fetchUsers();
+        } catch (error: any) {
+            toast.error(error?.message || "Échec de la suppression");
+        }
+    };
+
+    const handleConfirm = () => {
+        if (!confirmModal) return;
+        if (confirmModal.type === 'role') {
+            toggleRole(confirmModal.userId, confirmModal.currentRole);
+        } else {
+            deleteUser(confirmModal.userId);
         }
     };
 
@@ -78,11 +101,8 @@ export default function UserManagement() {
         );
     }
 
-    const [confirmModal, setConfirmModal] = useState<{ isOpen: boolean; type: 'role'; userId: string; currentRole: string } | null>(null);
-
     return (
         <div className="space-y-8 max-w-7xl mx-auto pb-20">
-            {/* Header Section */}
             <header className="flex flex-col md:flex-row md:items-end justify-between gap-8">
                 <div className="space-y-1">
                     <h1 className="text-2xl font-bold text-gray-900 tracking-tight flex items-center gap-3">
@@ -115,7 +135,6 @@ export default function UserManagement() {
                 </div>
             </header>
 
-            {/* Table Section - Neo-Glassmorphism subtle feel */}
             <div className="bg-white rounded-[24px] border border-gray-100 shadow-xl shadow-gray-200/20 overflow-hidden">
                 <div className="overflow-x-auto">
                     <table className="w-full text-left border-collapse text-sm">
@@ -124,7 +143,7 @@ export default function UserManagement() {
                                 <th className="px-8 py-5 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Utilisateur</th>
                                 <th className="px-8 py-5 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Rôle</th>
                                 <th className="px-8 py-5 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Activité</th>
-                                <th className="px-8 py-5 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Date d'inscription</th>
+                                <th className="px-8 py-5 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Date d&apos;inscription</th>
                                 <th className="px-8 py-5 text-[10px] font-bold text-gray-400 uppercase tracking-widest text-right">Actions</th>
                             </tr>
                         </thead>
@@ -194,8 +213,17 @@ export default function UserManagement() {
                                                 <span>{user.role === 'admin' ? "Rétrograder" : "Promouvoir"}</span>
                                             </button>
                                             <button
-                                                className="p-2.5 text-gray-300 hover:text-rose-500 hover:bg-rose-50 rounded-2xl transition-all hover:scale-110 active:scale-90"
-                                                onClick={() => toast("Sécurité : Suppression bientôt activée.")}
+                                                className="p-2.5 text-gray-300 hover:text-rose-500 hover:bg-rose-50 rounded-2xl transition-all hover:scale-110 active:scale-90 disabled:opacity-40"
+                                                disabled={authUser?.user_id === user.user_id}
+                                                title={authUser?.user_id === user.user_id ? "Vous ne pouvez pas vous supprimer" : "Supprimer"}
+                                                onClick={() =>
+                                                    setConfirmModal({
+                                                        isOpen: true,
+                                                        type: 'delete',
+                                                        userId: user.user_id,
+                                                        label: `${user.firstname || ''} ${user.lastname || ''}`.trim() || user.email,
+                                                    })
+                                                }
                                             >
                                                 <Trash2 size={18} />
                                             </button>
@@ -220,13 +248,33 @@ export default function UserManagement() {
             <ConfirmationModal
                 isOpen={!!confirmModal}
                 onClose={() => setConfirmModal(null)}
-                onConfirm={() => confirmModal && toggleRole(confirmModal.userId, confirmModal.currentRole)}
-                title={confirmModal?.currentRole === 'admin' ? "Rétrograder l'administrateur ?" : "Promouvoir administrateur ?"}
-                message={confirmModal?.currentRole === 'admin'
-                    ? "Cet utilisateur perdra l'accès aux fonctions de gestion et au dashboard de la console. Êtes-vous certain de vouloir continuer ?"
-                    : "Cet utilisateur aura un accès complet à la console d'administration et pourra gérer les utilisateurs et le contenu. Confirmer l'élévation de privilèges ?"}
-                confirmText={confirmModal?.currentRole === 'admin' ? "Rétrograder" : "Promouvoir"}
-                variant={confirmModal?.currentRole === 'admin' ? 'warning' : 'info'}
+                onConfirm={handleConfirm}
+                title={
+                    confirmModal?.type === 'delete'
+                        ? "Supprimer cet utilisateur ?"
+                        : confirmModal?.currentRole === 'admin'
+                            ? "Rétrograder l'administrateur ?"
+                            : "Promouvoir administrateur ?"
+                }
+                message={
+                    confirmModal?.type === 'delete'
+                        ? `Le compte « ${confirmModal.label} » et ses données associées seront définitivement supprimés. Cette action est irréversible.`
+                        : confirmModal?.currentRole === 'admin'
+                            ? "Cet utilisateur perdra l'accès aux fonctions de gestion et au dashboard de la console. Êtes-vous certain de vouloir continuer ?"
+                            : "Cet utilisateur aura un accès complet à la console d'administration et pourra gérer les utilisateurs et le contenu. Confirmer l'élévation de privilèges ?"
+                }
+                confirmText={
+                    confirmModal?.type === 'delete'
+                        ? "Supprimer"
+                        : confirmModal?.currentRole === 'admin'
+                            ? "Rétrograder"
+                            : "Promouvoir"
+                }
+                variant={
+                    confirmModal?.type === 'delete' || confirmModal?.currentRole === 'admin'
+                        ? 'warning'
+                        : 'info'
+                }
             />
         </div>
     );

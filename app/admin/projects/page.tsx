@@ -151,7 +151,14 @@ export default function ProjectManagement() {
                                     <td className="px-6 py-4 text-right">
                                         <button
                                             className="p-2 text-gray-400 hover:text-[#99334C] hover:bg-[#99334C]/5 rounded-xl transition-all shadow-sm bg-white border border-gray-100"
-                                            onClick={() => toast("Aperçu projet bientôt disponible en Admin.")}
+                                            title="Ouvrir dans l'éditeur"
+                                            onClick={() => {
+                                                if (!proj.name) {
+                                                    toast.error("Nom de projet manquant");
+                                                    return;
+                                                }
+                                                router.push(`/edit?projectName=${encodeURIComponent(proj.name)}`);
+                                            }}
                                         >
                                             <ExternalLink size={14} />
                                         </button>

@@ -39,6 +39,8 @@ import { NotionHistoryPanel } from '@/components/Editor/NotionHistoryPanel';
 import { structureService } from '@/services/structureService';
 import { commentService } from '@/services/commentService';
 import { granuleRevisionService, BlameMap } from '@/services/granuleRevisionService';
+import { vaultService } from '@/services/vaultService';
+import { marketplaceService } from '@/services/marketplaceService';
 import '../../styles/view-transitions.css';
 import { useOnboarding } from '@/context/OnboardingContext';
 import { editorTour } from '@/data/tours/editor.tour';
@@ -160,104 +162,57 @@ export function XCCM2Editor({ isEmbedded = false, guestMode = false }: { isEmbed
     input.click();
   };
 
-  // Mock Granules for ImportPanel (Strict & Rich Hierarchy: Part > Chapter > Paragraph > Notion)
-  const [importableGranules, setImportableGranules] = useState<any[]>([
-    {
-      id: 'g1',
-      type: 'part',
-      content: 'Partie 1: Design System & UI',
-      icon: 'Folder',
-      author: 'Equipe XCCM',
-      introduction: 'Cette partie explore les bases des systèmes de design modernes...',
-      children: [
-        {
-          id: 'c1',
-          type: 'chapter',
-          content: 'Chapitre A: Identité Visuelle',
-          icon: 'Book',
-          children: [
-            {
-              id: 'p1',
-              type: 'paragraph',
-              content: 'Logotype & Symboles',
-              icon: 'FileText',
-              children: [
-                {
-                  id: 'n1',
-                  type: 'notion',
-                  content: 'Boutons Tactiles',
-                  icon: 'File',
-                  previewContent: 'Le bouton tactile doit avoir un retour haptique visuel...'
-                }
-              ]
-            }
-          ]
-        },
-        {
-          id: 'c2',
-          type: 'chapter',
-          content: 'Chapitre B: Composants Tactiles',
-          icon: 'Book',
-          children: [
-            {
-              id: 'p2',
-              type: 'paragraph',
-              content: 'Saisie de Données',
-              icon: 'FileText',
-              children: [
-                {
-                  id: 'n2',
-                  type: 'notion',
-                  content: 'Inputs Modernes',
-                  icon: 'File',
-                  previewContent: 'Les champs de saisie doivent être optimisés pour le toucher.'
-                }
-              ]
-            }
-          ]
-        }
-      ]
-    },
-    {
-      id: 'g3',
-      type: 'part',
-      content: 'Partie 3: Stratégie Pédagogique',
-      icon: 'Folder',
-      author: 'Expert EdTech',
-      introduction: 'Méthodologies avancées pour la création de parcours d\'apprentissage captivants.',
-      children: [
-        {
-          id: 'c3',
-          type: 'chapter',
-          content: 'Chapitre 1: Engagement de l\'Apprenant',
-          icon: 'Book',
-          children: [
-            {
-              id: 'p3',
-              type: 'paragraph',
-              content: 'Mécanismes de Gamification',
-              icon: 'FileText',
-              children: [
-                { id: 'n3', type: 'notion', content: 'Récompenses Immédiates', icon: 'File', previewContent: 'L\'importance du feedback visuel instantané.' },
-                { id: 'n4', type: 'notion', content: 'Progression Narrative', icon: 'File', previewContent: 'Transformer le cours en une aventure.' },
-                { id: 'n5', type: 'notion', content: 'Tableaux de Classement', icon: 'File', previewContent: 'Utiliser la saine compétition.' }
-              ]
-            },
-            {
-              id: 'p4',
-              type: 'paragraph',
-              content: 'Interactivité Cognitive',
-              icon: 'FileText',
-              children: [
-                { id: 'n6', type: 'notion', content: 'Zones Réactives', icon: 'File', previewContent: 'Encourager l\'exploration par le clic.' },
-                { id: 'n7', type: 'notion', content: 'Auto-évaluation', icon: 'File', previewContent: 'Quizz rapides intégrés au contenu.' }
-              ]
-            }
-          ]
-        }
-      ]
-    }
-  ]);
+  // Granules importables : vault + marketplace (plus de mock)
+  const [importableGranules, setImportableGranules] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (guestMode) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const iconFor = (type: string) =>
+          type === 'notion' ? 'File' : type === 'paragraph' ? 'FileText' : type === 'chapter' ? 'Book' : 'Folder';
+        const structureTypes = new Set(['part', 'chapter', 'paragraph', 'notion']);
+
+        const [vaultItems, marketItems] = await Promise.all([
+          vaultService.getVaultItems().catch(() => []),
+          marketplaceService.getItems().catch(() => []),
+        ]);
+        if (cancelled) return;
+
+        const fromVault = vaultItems
+          .filter((item) => structureTypes.has(item.type))
+          .map((item) => ({
+            id: `vault-${item.id}`,
+            type: item.type,
+            content: item.title,
+            icon: iconFor(item.type),
+            author: 'Coffre-fort',
+            previewContent: item.content,
+            introduction: item.content,
+          }));
+
+        const fromMarket = marketItems.map((item) => ({
+          id: `market-${item.id}`,
+          type: item.type,
+          content: item.title,
+          icon: iconFor(item.type),
+          author: item.seller
+            ? `${item.seller.firstname} ${item.seller.lastname}`.trim()
+            : 'Marketplace',
+          previewContent: item.content || item.description,
+          introduction: item.description,
+        }));
+
+        setImportableGranules([...fromVault, ...fromMarket]);
+      } catch (err) {
+        console.error('Chargement granules import:', err);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [guestMode]);
 
   const handleDragStart = (e: React.DragEvent, granule: any) => {
     e.dataTransfer.setData('granule', JSON.stringify(granule));

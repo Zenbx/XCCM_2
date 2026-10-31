@@ -43,8 +43,44 @@ export default function TemplateManagement() {
         }
     };
 
+    const templateLabel = (t: any) => t.template_name || t.name || 'Sans titre';
+    const templateId = (t: any) => t.template_id || t.id;
+
+    const handleRename = async (item: any) => {
+        const id = templateId(item);
+        if (!id) {
+            toast.error('Identifiant modèle manquant');
+            return;
+        }
+        const next = window.prompt('Nouveau nom du modèle', templateLabel(item));
+        if (!next || !next.trim()) return;
+        try {
+            await adminService.updateTemplate(id, { template_name: next.trim() });
+            toast.success('Modèle renommé');
+            fetchTemplates();
+        } catch (error: any) {
+            toast.error(error?.message || 'Échec du renommage');
+        }
+    };
+
+    const handleDelete = async (item: any) => {
+        const id = templateId(item);
+        if (!id) {
+            toast.error('Identifiant modèle manquant');
+            return;
+        }
+        if (!window.confirm(`Supprimer le modèle « ${templateLabel(item)} » ?`)) return;
+        try {
+            await adminService.deleteTemplate(id);
+            toast.success('Modèle supprimé');
+            fetchTemplates();
+        } catch (error: any) {
+            toast.error(error?.message || 'Échec de la suppression');
+        }
+    };
+
     const filteredTemplates = templates.filter(t =>
-        t.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        templateLabel(t).toLowerCase().includes(searchTerm.toLowerCase()) ||
         t.category?.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
@@ -118,7 +154,7 @@ export default function TemplateManagement() {
                             animate={{ opacity: 1, scale: 1 }}
                             exit={{ opacity: 0, scale: 0.95 }}
                             transition={{ delay: i * 0.05 }}
-                            key={item.id}
+                            key={templateId(item) || i}
                             className="bg-white rounded-[24px] border border-gray-100 shadow-sm overflow-hidden group hover:shadow-xl hover:shadow-gray-200/40 transition-all duration-500 flex flex-col"
                         >
                             {/* Visual Preview Placeholder */}
@@ -147,7 +183,7 @@ export default function TemplateManagement() {
                                         {item.category || 'Général'}
                                     </p>
                                     <h3 className="font-black text-gray-900 leading-tight group-hover:text-[#99334C] transition-colors">
-                                        {item.name}
+                                        {templateLabel(item)}
                                     </h3>
                                     <p className="text-[10px] text-gray-400 font-bold uppercase tracking-tight mt-1">Par {item.creator?.firstname} {item.creator?.lastname}</p>
                                 </div>
@@ -160,13 +196,15 @@ export default function TemplateManagement() {
                                     <div className="flex items-center gap-2">
                                         <button
                                             className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
-                                            onClick={() => toast("Mode édition soon")}
+                                            title="Renommer"
+                                            onClick={() => handleRename(item)}
                                         >
                                             <Edit3 size={16} />
                                         </button>
                                         <button
                                             className="p-2 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all"
-                                            onClick={() => toast("Action réservée")}
+                                            title="Supprimer"
+                                            onClick={() => handleDelete(item)}
                                         >
                                             <Trash2 size={16} />
                                         </button>
